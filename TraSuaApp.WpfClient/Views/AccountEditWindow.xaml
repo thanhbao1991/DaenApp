@@ -1,0 +1,131 @@
+﻿<Window
+    x:Class="TraSuaApp.WpfClient.Views.AccountEditWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Tài khoản"
+    Width="800"
+    Height="520"
+    PreviewKeyDown="Window_KeyDown"
+    AllowsTransparency="True"
+    Background="#88888888"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="None">
+
+    <Border
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        Background="White"
+        BorderBrush="#DDD"
+        BorderThickness="1"
+        CornerRadius="12">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--  Tiêu đề  -->
+            <DockPanel
+                Grid.Row="0"
+                Margin="0,0,0,10"
+                VerticalAlignment="Center">
+                <TextBlock
+                    Margin="10,5"
+                    FontSize="20"
+                    FontWeight="Bold"
+                    Foreground="#333"
+                    Text="Tài khoản" />
+                <Button
+                    Width="28"
+                    Height="28"
+                    Margin="0,5,5,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="CloseButton_Click"
+                    Content="✖"
+                    Cursor="Hand"
+                    DockPanel.Dock="Right"
+                    FontSize="14"
+                    Foreground="#888" />
+            </DockPanel>
+
+            <!--  Nội dung form  -->
+            <StackPanel Grid.Row="1" Margin="0,10,0,10">
+                <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                    <TextBlock
+                        Width="120"
+                        VerticalAlignment="Center"
+                        Text="Tên đăng nhập:" />
+                    <TextBox x:Name="TenDangNhapTextBox" Width="240" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                    <TextBlock
+                        Width="120"
+                        VerticalAlignment="Center"
+                        Text="Mật khẩu:" />
+                    <PasswordBox x:Name="MatKhauBox" Width="240" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                    <TextBlock
+                        Width="120"
+                        VerticalAlignment="Center"
+                        Text="Tên hiển thị:" />
+                    <TextBox x:Name="TenHienThiTextBox" Width="240" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                    <TextBlock
+                        Width="120"
+                        VerticalAlignment="Center"
+                        Text="Vai trò:" />
+                    <ComboBox x:Name="VaiTroComboBox" Width="240">
+                        <ComboBoxItem Content="Admin" />
+                        <ComboBoxItem Content="Nhân viên" />
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                    <TextBlock
+                        Width="120"
+                        VerticalAlignment="Center"
+                        Text="Hoạt động:" />
+                    <CheckBox x:Name="IsActiveCheckBox" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!--  Hiển thị lỗi  -->
+                <TextBlock
+                    x:Name="ErrorTextBlock"
+                    Margin="0,10,0,0"
+                    FontWeight="SemiBold"
+                    Foreground="Red"
+                    TextWrapping="Wrap"
+                    />
+            </StackPanel>
+
+            <!--  Nút Lưu / Huỷ  -->
+            <StackPanel
+                Grid.Row="2"
+                HorizontalAlignment="Right"
+                Orientation="Horizontal">
+                <Button
+                    x:Name="SaveButton"
+                    Width="80"
+                    Margin="0,0,10,0"
+                    Background="#2196F3"
+                    Click="SaveButton_Click"
+                    Content="Lưu"
+                    Foreground="White" />
+                <Button
+                    Width="80"
+                    Click="CloseButton_Click"
+                    Content="Huỷ" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
