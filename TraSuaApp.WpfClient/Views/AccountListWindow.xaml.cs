@@ -17,13 +17,52 @@ namespace TraSuaApp.WpfClient.Views
         {
             InitializeComponent();
             _ = LoadAccountsAsync();
+
+            this.PreviewKeyDown += AccountListWindow_PreviewKeyDown;
         }
 
+        // 🟟 Tách phương thức mở form sửa/thêm
+        private async Task OpenEditWindowAsync(TaiKhoanDto? account = null)
+        {
+            var window = new AccountEditWindow(account)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight
+            };
+
+            if (window.ShowDialog() == true)
+            {
+                await LoadAccountsAsync();
+            }
+        }
+
+        private void AccountListWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N)
+            {
+                AddButton_Click(null!, null!);
+                e.Handled = true;
+            }
+            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E)
+            {
+                EditButton_Click(null!, null!);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Delete)
+            {
+                DeleteButton_Click(null!, null!);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.F5)
+            {
+                ReloadButton_Click(null!, null!);
+                e.Handled = true;
+            }
+        }
         private async void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
             await LoadAccountsAsync();
         }
-
         private async Task LoadAccountsAsync()
         {
             Mouse.OverrideCursor = Cursors.Wait;
@@ -36,7 +75,7 @@ namespace TraSuaApp.WpfClient.Views
                     var data = await response.Content.ReadFromJsonAsync<List<TaiKhoanDto>>();
                     if (data != null)
                     {
-                        _allAccounts = data;
+                        _allAccounts = data.OrderBy(x => x.ThoiGianTao).ToList();
                         ApplySearch();
                     }
                 }
@@ -61,15 +100,13 @@ namespace TraSuaApp.WpfClient.Views
             var keyword = SearchTextBox.Text.Trim().ToLower();
             var filtered = _allAccounts
             .Where(x =>
-            x.TenDangNhap.ToLower().Contains(keyword) ||
-            (!string.IsNullOrEmpty(x.TenHienThi) && x.TenHienThi.ToLower().Contains(keyword)) ||
-            (!string.IsNullOrEmpty(x.VaiTro) && x.VaiTro.ToLower().Contains(keyword)))
+                x.TenDangNhap.ToLower().Contains(keyword) ||
+                (!string.IsNullOrEmpty(x.TenHienThi) && x.TenHienThi.ToLower().Contains(keyword)) ||
+                (!string.IsNullOrEmpty(x.VaiTro) && x.VaiTro.ToLower().Contains(keyword)))
             .ToList();
 
             for (int i = 0; i < filtered.Count; i++)
-            {
                 filtered[i].STT = i + 1;
-            }
 
             AccountDataGrid.ItemsSource = filtered;
         }
@@ -84,19 +121,11 @@ namespace TraSuaApp.WpfClient.Views
             Close();
         }
 
-        private void AddButton_Click(object sender, RoutedEventArgs e)
+        private async void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            var editWindow = new AccountEditWindow
-            {
-                Width = this.ActualWidth,
-                Height = this.ActualHeight
-            };
-
-            if (editWindow.ShowDialog() == true)
-            {
-                _ = LoadAccountsAsync(); // reload sau khi thêm thành công
-            }
+            await OpenEditWindowAsync(); // mở form thêm
         }
+
         private async void EditButton_Click(object sender, RoutedEventArgs e)
         {
             if (AccountDataGrid.SelectedItem is not TaiKhoanDto selected)
@@ -107,7 +136,6 @@ namespace TraSuaApp.WpfClient.Views
 
             try
             {
-                // Lấy dữ liệu từ API để đảm bảo mới nhất
                 var response = await ApiClient.GetAsync($"/api/taikhoan/{selected.Id}");
                 if (!response.IsSuccessStatusCode)
                 {
@@ -116,29 +144,21 @@ namespace TraSuaApp.WpfClient.Views
                     return;
                 }
 
-                var account = await response.Content.ReadFromJsonAsync<TaiKhoanDto>();
-                if (account == null)
+                var latest = await response.Content.ReadFromJsonAsync<TaiKhoanDto>();
+                if (latest == null)
                 {
                     MessageBox.Show("Không tìm thấy dữ liệu tài khoản.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                var editWindow = new AccountEditWindow(account)
-                {
-                    Width = this.ActualWidth,
-                    Height = this.ActualHeight
-                };
-
-                if (editWindow.ShowDialog() == true)
-                {
-                    await LoadAccountsAsync(); // ✅ Tải lại danh sách nếu sửa thành công
-                }
+                await OpenEditWindowAsync(latest); // mở form sửa
             }
             catch (Exception ex)
             {
                 _errorHandler.Handle(ex, "EditButton_Click");
             }
         }
+
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (AccountDataGrid.SelectedItem is not TaiKhoanDto selected)
@@ -147,7 +167,6 @@ namespace TraSuaApp.WpfClient.Views
                 return;
             }
 
-            // ❌ Không cho xoá chính mình
             if (selected.TenDangNhap == CurrentUser.TenDangNhap)
             {
                 MessageBox.Show("Bạn không thể xoá chính mình.", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -171,7 +190,6 @@ namespace TraSuaApp.WpfClient.Views
 
                 if (response.IsSuccessStatusCode)
                 {
-                    //MessageBox.Show("Đã xoá thành công.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                     await LoadAccountsAsync();
                 }
                 else
@@ -190,28 +208,21 @@ namespace TraSuaApp.WpfClient.Views
             }
         }
 
-        private void AccountDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private async void AccountDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            // Kiểm tra xem phần tử bị double-click có phải là một DataGridRow không
             var row = ItemsControl.ContainerFromElement(AccountDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
-            if (row == null)
-                return; // Không phải double click lên dòng
+            if (row == null) return;
 
-            // Lấy đối tượng được chọn
-            if (AccountDataGrid.SelectedItem is TaiKhoanDto selectedAccount)
+            if (row.Item is TaiKhoanDto selected)
             {
-                var editWindow = new AccountEditWindow(selectedAccount)
-                {
-                    Width = this.ActualWidth,
-                    Height = this.ActualHeight
-                };
+                var response = await ApiClient.GetAsync($"/api/taikhoan/{selected.Id}");
+                if (!response.IsSuccessStatusCode) return;
 
-                if (editWindow.ShowDialog() == true)
-                {
-                    _ = LoadAccountsAsync(); // reload danh sách
-                }
+                var latest = await response.Content.ReadFromJsonAsync<TaiKhoanDto>();
+                if (latest == null) return;
+
+                await OpenEditWindowAsync(latest);
             }
         }
-
     }
 }
