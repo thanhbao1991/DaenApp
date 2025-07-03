@@ -3,11 +3,13 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using TraSuaApp.Api.Helpers; // nơi chứa AutoMapperProfile
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Infrastructure.Services;
-var builder = WebApplication.CreateBuilder(args);
 
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile).Assembly);
 // Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -48,6 +50,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 //{
 //    options.ListenLocalhost(5000); // chỉ HTTP 1 port
 //});
+
+
 var app = builder.Build();
 
 // Middleware
