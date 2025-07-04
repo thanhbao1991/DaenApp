@@ -2,6 +2,8 @@ namespace TraSuaApp.Shared.Dtos;
 
 public class SanPhamDto
 {
+    public int STT { get; set; }
+
     public Guid Id { get; set; }
     public string Ten { get; set; } = string.Empty;
     public string? MoTa { get; set; }

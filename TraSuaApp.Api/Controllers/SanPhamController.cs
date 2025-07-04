@@ -4,8 +4,8 @@ using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Shared.Dtos;
 
 [Authorize]
+[Route("api/[controller]")]
 [ApiController]
-[Route("api/sanpham")]
 public class SanPhamController : ControllerBase
 {
     private readonly ISanPhamService _service;
@@ -16,34 +16,34 @@ public class SanPhamController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
-        => Ok(await _service.GetAllAsync());
+    public async Task<IActionResult> GetAll() =>
+        Ok(await _service.GetAllAsync());
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var item = await _service.GetByIdAsync(id);
-        return item == null ? NotFound() : Ok(item);
+        var result = await _service.GetByIdAsync(id);
+        return result == null ? NotFound() : Ok(result);
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] SanPhamDto dto)
     {
-        await _service.CreateAsync(dto);
-        return Ok();
+        var result = await _service.CreateAsync(dto);
+        return Ok(result);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] SanPhamDto dto)
     {
-        await _service.UpdateAsync(id, dto);
-        return Ok();
+        var result = await _service.UpdateAsync(id, dto);
+        return Ok(result);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        await _service.DeleteAsync(id);
-        return Ok();
+        var success = await _service.DeleteAsync(id);
+        return success ? Ok() : NotFound();
     }
 }

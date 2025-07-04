@@ -28,7 +28,7 @@ namespace TraSuaApp.WpfClient
                 });
             };
 
-            var login = new LoginWindow();
+            var login = new ProductListWindow();
             login.Show();
         }
     }

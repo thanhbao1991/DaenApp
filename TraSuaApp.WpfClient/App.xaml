@@ -2,13 +2,23 @@
     x:Class="TraSuaApp.WpfClient.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    StartupUri="Views/LoginWindow.xaml">
+    xmlns:local="clr-namespace:TraSuaApp.WpfClient.Helpers">
 
     <Application.Resources>
 
         <!--  Converter  -->
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <!--  🟟 Hiệu ứng đổ bóng cho Border  -->
+
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#FAFAFA" />
+            <Setter Property="BorderBrush" Value="#CCC" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="10,0,10,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
 
         <!--  Style dùng cho CheckBox trong DataGrid (dùng cho DataGridCheckBoxColumn.ElementStyle)  -->
         <Style x:Key="CenteredDataGridCheckBoxStyle" TargetType="CheckBox">
@@ -45,16 +55,6 @@
             </Setter>
         </Style>
 
-        <!--  Style chung cho TextBox  -->
-        <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#FAFAFA" />
-            <Setter Property="BorderBrush" Value="#CCC" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Padding" Value="10,0,10,0" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
 
         <!--  Style chung cho PasswordBox  -->
         <Style TargetType="PasswordBox">
