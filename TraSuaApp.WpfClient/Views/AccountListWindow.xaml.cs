@@ -76,6 +76,9 @@ namespace TraSuaApp.WpfClient.Views
                     if (data != null)
                     {
                         _allAccounts = data.OrderBy(x => x.ThoiGianTao).ToList();
+                        foreach (var a in _allAccounts)
+                            a.TenNormalized = TextSearchHelper.NormalizeText(a.TenHienThi ?? "");
+
                         ApplySearch();
                     }
                 }
@@ -97,13 +100,8 @@ namespace TraSuaApp.WpfClient.Views
 
         private void ApplySearch()
         {
-            var keyword = SearchTextBox.Text.Trim().ToLower();
-            var filtered = _allAccounts
-            .Where(x =>
-                x.TenDangNhap.ToLower().Contains(keyword) ||
-                (!string.IsNullOrEmpty(x.TenHienThi) && x.TenHienThi.ToLower().Contains(keyword)) ||
-                (!string.IsNullOrEmpty(x.VaiTro) && x.VaiTro.ToLower().Contains(keyword)))
-            .ToList();
+            var keyword = SearchTextBox.Text.Trim();
+            var filtered = TextSearchHelper.FilterAccounts(_allAccounts, keyword);
 
             for (int i = 0; i < filtered.Count; i++)
                 filtered[i].STT = i + 1;

@@ -55,7 +55,10 @@ public partial class ProductListWindow : Window
                 var data = await response.Content.ReadFromJsonAsync<List<SanPhamDto>>();
                 if (data != null)
                 {
-                    _allProducts = data.OrderBy(x => x.Ten).ToList();
+                    _allProducts = data.OrderBy(x => x.NgungBan).ThenBy(x => x.Ten).ToList();
+                    foreach (var p in _allProducts)
+                        p.TenNormalized = TextSearchHelper.NormalizeText(p.Ten);
+
                     ApplySearch();
                 }
             }
@@ -77,13 +80,8 @@ public partial class ProductListWindow : Window
 
     private void ApplySearch()
     {
-        var keyword = SearchTextBox.Text.Trim().ToLower();
-        var filtered = _allProducts
-            .Where(x =>
-                x.Ten.ToLower().Contains(keyword) ||
-                (!string.IsNullOrEmpty(x.MoTa) && x.MoTa.ToLower().Contains(keyword)) ||
-                (!string.IsNullOrEmpty(x.VietTat) && x.VietTat.ToLower().Contains(keyword)))
-            .ToList();
+        var keyword = SearchTextBox.Text.Trim();
+        var filtered = TextSearchHelper.FilterProducts(_allProducts, keyword);
 
         for (int i = 0; i < filtered.Count; i++)
             filtered[i].STT = i + 1;

@@ -81,24 +81,24 @@
                     Orientation="Horizontal">
                     <Button
                         Width="80"
-                        Background="#4CAF50"
                         Click="AddButton_Click"
-                        Content="Thêm" />
+                        Content="Thêm"
+                        Style="{StaticResource AddButtonStyle}" />
                     <Button
                         Width="80"
-                        Background="#2196F3"
                         Click="EditButton_Click"
-                        Content="Sửa" />
+                        Content="Sửa"
+                        Style="{StaticResource EditButtonStyle}" />
                     <Button
                         Width="80"
-                        Background="#F44336"
                         Click="DeleteButton_Click"
-                        Content="Xoá" />
+                        Content="Xoá"
+                        Style="{StaticResource DeleteButtonStyle}" />
                     <Button
                         Width="80"
-                        Background="#9E9E9E"
                         Click="ReloadButton_Click"
-                        Content="Tải lại" />
+                        Content="Tải lại"
+                        Style="{StaticResource ReloadButtonStyle}" />
                 </StackPanel>
             </Grid>
 
@@ -109,6 +109,15 @@
                 Margin="10"
                 AutoGenerateColumns="False"
                 MouseDoubleClick="ProductDataGrid_MouseDoubleClick">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding NgungBan}" Value="True">
+                                <Setter Property="Opacity" Value="0.25" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
                     <DataGridTextColumn
                         Width="50"
@@ -130,11 +139,17 @@
                         Binding="{Binding DaBan}"
                         ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="Đã bán" />
-                    <DataGridTextColumn
-                        Width="150"
-                        Binding="{Binding MoTa}"
-                        ElementStyle="{StaticResource CenterTextCellStyle}"
-                        Header="Mô tả" />
+                    <DataGridTemplateColumn Width="40" Header="">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    Text="★"
+                                    Visibility="{Binding TichDiem, Converter={StaticResource BoolToVisibilityConverter}}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

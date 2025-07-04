@@ -9,11 +9,12 @@ namespace TraSuaApp.WpfClient.Views
 {
     public partial class LoginWindow : Window
     {
-        private readonly ErrorHandler _errorHandler = new WpfErrorHandler();
+        private readonly WpfErrorHandler _errorHandler;
 
         public LoginWindow()
         {
             InitializeComponent();
+            _errorHandler = new WpfErrorHandler(ErrorTextBlock); // Truyền TextBlock vào
 
             if (Properties.Settings.Default.Luu)
             {
@@ -44,6 +45,7 @@ namespace TraSuaApp.WpfClient.Views
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
+            _errorHandler.Clear();
             LoginButton.IsEnabled = false;
             Mouse.OverrideCursor = Cursors.Wait;
 

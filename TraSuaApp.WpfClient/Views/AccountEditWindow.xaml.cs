@@ -3,7 +3,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
@@ -12,11 +11,13 @@ namespace TraSuaApp.WpfClient.Views
     {
         public TaiKhoanDto Account { get; private set; }
         private readonly bool _isEdit;
-        private readonly ErrorHandler _errorHandler = new WpfErrorHandler();
+        private readonly WpfErrorHandler _errorHandler;
 
         public AccountEditWindow(TaiKhoanDto? taiKhoan = null)
         {
             InitializeComponent();
+            _errorHandler = new WpfErrorHandler(ErrorTextBlock);
+
             _isEdit = taiKhoan != null;
             Account = taiKhoan ?? new TaiKhoanDto();
 
@@ -44,23 +45,17 @@ namespace TraSuaApp.WpfClient.Views
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            ErrorTextBlock.Text = "";
+            _errorHandler.Clear();
             SaveButton.IsEnabled = false;
             Mouse.OverrideCursor = Cursors.Wait;
 
             try
             {
                 if (string.IsNullOrWhiteSpace(TenDangNhapTextBox.Text))
-                {
-                    ErrorTextBlock.Text = "Tên đăng nhập là bắt buộc.";
-                    return;
-                }
+                    throw new Exception("Tên đăng nhập là bắt buộc.");
 
                 if (!_isEdit && string.IsNullOrWhiteSpace(MatKhauBox.Password))
-                {
-                    ErrorTextBlock.Text = "Mật khẩu là bắt buộc khi thêm mới.";
-                    return;
-                }
+                    throw new Exception("Mật khẩu là bắt buộc khi thêm mới.");
 
                 Account.TenDangNhap = TenDangNhapTextBox.Text.Trim();
                 Account.TenHienThi = TenHienThiTextBox.Text.Trim();
@@ -83,12 +78,12 @@ namespace TraSuaApp.WpfClient.Views
                 else
                 {
                     var msg = await response.Content.ReadAsStringAsync();
-                    ErrorTextBlock.Text = $"Lỗi {(int)response.StatusCode}: {msg}";
+                    throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
                 }
             }
             catch (Exception ex)
             {
-                ErrorTextBlock.Text = $"Lỗi: {ex.Message}";
+                _errorHandler.Handle(ex, "Lưu tài khoản");
             }
             finally
             {

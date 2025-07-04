@@ -2,6 +2,8 @@
 {
     public class ErrorHandler
     {
+
+
         public virtual void Handle(Exception ex, string context = "")
         {
             var message = $"Lỗi: {ex.Message}";

@@ -6,14 +6,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
 {
     public partial class ProductEditWindow : Window
     {
-        private readonly ErrorHandler _errorHandler = new WpfErrorHandler();
+        private readonly WpfErrorHandler _errorHandler;
         private readonly bool _isEdit;
         private SanPhamDto _sanPham = new();
         private SanPhamBienTheDto? _bienTheDangChon = null;
@@ -23,6 +22,8 @@ namespace TraSuaApp.WpfClient.Views
         public ProductEditWindow(SanPhamDto? sanPham = null)
         {
             InitializeComponent();
+            _errorHandler = new WpfErrorHandler(ErrorTextBlock);
+
             _isEdit = sanPham != null;
             _sanPham = sanPham ?? new SanPhamDto();
 
@@ -36,8 +37,13 @@ namespace TraSuaApp.WpfClient.Views
             {
                 TenTextBox.Text = _sanPham.Ten;
                 VietTatTextBox.Text = _sanPham.VietTat;
-                MoTaTextBox.Text = _sanPham.MoTa;
-                DaBanTextBlock.Text = (_sanPham.DaBan ?? 0).ToString("N0");
+                MoTaTextBox.Text = _sanPham.DinhLuong;
+                NgungBanCheckBox.IsChecked = _sanPham.NgungBan;
+                TichDiemCheckBox.IsChecked = _sanPham.TichDiem;
+
+
+                //DaBanTextBlock.Text = (_sanPham.DaBan ?? 0).ToString("N0");
+
                 BienTheListBox.ItemsSource = new ObservableCollection<SanPhamBienTheDto>(_sanPham.BienThe ?? []);
             }
             catch (Exception ex)
@@ -53,18 +59,19 @@ namespace TraSuaApp.WpfClient.Views
 
             try
             {
-                ErrorTextBlock.Text = "";
+                _errorHandler.Clear();
+
                 _sanPham.Ten = TenTextBox.Text.Trim();
                 _sanPham.VietTat = VietTatTextBox.Text.Trim();
-                _sanPham.MoTa = MoTaTextBox.Text.Trim();
+                _sanPham.DinhLuong = MoTaTextBox.Text.Trim();
+                _sanPham.NgungBan = NgungBanCheckBox.IsChecked == true ? true : false;
+                _sanPham.TichDiem = TichDiemCheckBox.IsChecked == true ? true : false;
+
+
 
                 if (string.IsNullOrWhiteSpace(_sanPham.Ten))
-                {
-                    ErrorTextBlock.Text = "Tên sản phẩm không được để trống.";
-                    return;
-                }
+                    throw new Exception("Tên sản phẩm không được để trống.");
 
-                // Gán lại IdSanPham cho các biến thể
                 var bienThes = (BienTheListBox.ItemsSource as ObservableCollection<SanPhamBienTheDto>) ?? new();
                 foreach (var bt in bienThes)
                     bt.IdSanPham = _sanPham.Id;
@@ -83,12 +90,12 @@ namespace TraSuaApp.WpfClient.Views
                 else
                 {
                     var msg = await response.Content.ReadAsStringAsync();
-                    ErrorTextBlock.Text = $"Lỗi {(int)response.StatusCode}: {msg}";
+                    throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
                 }
             }
             catch (Exception ex)
             {
-                _errorHandler.Handle(ex, "SaveButton_Click");
+                _errorHandler.Handle(ex, "Lưu sản phẩm");
             }
             finally
             {
@@ -97,10 +104,7 @@ namespace TraSuaApp.WpfClient.Views
             }
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            DialogResult = false;
-        }
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => DialogResult = false;
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
@@ -132,20 +136,14 @@ namespace TraSuaApp.WpfClient.Views
         {
             try
             {
-                ErrorTextBlock.Text = "";
+                _errorHandler.Clear();
 
                 var ten = TenBienTheTextBox.Text.Trim();
                 if (string.IsNullOrWhiteSpace(ten))
-                {
-                    ErrorTextBlock.Text = "Tên biến thể không được để trống.";
-                    return;
-                }
+                    throw new Exception("Tên biến thể không được để trống.");
 
                 if (!decimal.TryParse(Regex.Replace(GiaBanTextBox.Text, @"[^\d]", ""), out var gia))
-                {
-                    ErrorTextBlock.Text = "Giá bán không hợp lệ.";
-                    return;
-                }
+                    throw new Exception("Giá bán không hợp lệ.");
 
                 var bienThes = (ObservableCollection<SanPhamBienTheDto>)BienTheListBox.ItemsSource!;
                 bienThes.Add(new SanPhamBienTheDto
@@ -161,7 +159,7 @@ namespace TraSuaApp.WpfClient.Views
             }
             catch (Exception ex)
             {
-                _errorHandler.Handle(ex, "ThemBienTheButton_Click");
+                _errorHandler.Handle(ex, "Thêm biến thể");
             }
         }
 
@@ -169,18 +167,23 @@ namespace TraSuaApp.WpfClient.Views
         {
             try
             {
-                if (sender is Button btn && btn.Tag is SanPhamBienTheDto bt)
+                if (BienTheListBox.SelectedItem is SanPhamBienTheDto bt)
                 {
                     var bienThes = (ObservableCollection<SanPhamBienTheDto>)BienTheListBox.ItemsSource!;
                     bienThes.Remove(bt);
+
                     _bienTheDangChon = null;
                     TenBienTheTextBox.Text = "";
                     GiaBanTextBox.Text = "";
                 }
+                else
+                {
+                    MessageBox.Show("Vui lòng chọn một biến thể để xoá.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
             catch (Exception ex)
             {
-                _errorHandler.Handle(ex, "XoaBienTheButton_Click");
+                _errorHandler.Handle(ex, "Xoá biến thể");
             }
         }
 
@@ -198,27 +201,21 @@ namespace TraSuaApp.WpfClient.Views
         {
             try
             {
+                _errorHandler.Clear();
+
                 if (_bienTheDangChon == null)
-                {
-                    ErrorTextBlock.Text = "Chưa chọn biến thể để sửa.";
-                    return;
-                }
+                    throw new Exception("Chưa chọn biến thể để sửa.");
 
                 var ten = TenBienTheTextBox.Text.Trim();
                 if (string.IsNullOrWhiteSpace(ten))
-                {
-                    ErrorTextBlock.Text = "Tên biến thể không được để trống.";
-                    return;
-                }
+                    throw new Exception("Tên biến thể không được để trống.");
 
                 if (!decimal.TryParse(Regex.Replace(GiaBanTextBox.Text, @"[^\d]", ""), out var gia))
-                {
-                    ErrorTextBlock.Text = "Giá bán không hợp lệ.";
-                    return;
-                }
+                    throw new Exception("Giá bán không hợp lệ.");
 
                 _bienTheDangChon.TenBienThe = ten;
                 _bienTheDangChon.GiaBan = gia;
+
                 BienTheListBox.Items.Refresh();
 
                 TenBienTheTextBox.Text = "";
@@ -227,7 +224,7 @@ namespace TraSuaApp.WpfClient.Views
             }
             catch (Exception ex)
             {
-                _errorHandler.Handle(ex, "SuaBienTheButton_Click");
+                _errorHandler.Handle(ex, "Sửa biến thể");
             }
         }
     }

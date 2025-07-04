@@ -12,4 +12,6 @@ public class TaiKhoanDto
     public string? VaiTro { get; set; }
     public bool IsActive { get; set; }
     public DateTime ThoiGianTao { get; set; }
+    public string? TenNormalized { get; set; }
+
 }
