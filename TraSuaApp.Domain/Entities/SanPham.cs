@@ -10,7 +10,8 @@ public class SanPham
     public bool NgungBan { get; set; }
     public string? DinhLuong { get; set; }
     public int IdOld { get; set; }
-
     public Guid? IdNhomSanPham { get; set; }
+
+    public NhomSanPham? NhomSanPham { get; set; }
     public ICollection<SanPhamBienThe> BienThe { get; set; }
 }

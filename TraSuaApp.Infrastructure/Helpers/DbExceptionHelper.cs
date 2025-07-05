@@ -16,7 +16,9 @@ namespace TraSuaApp.Infrastructure.Helpers
                         ["IX_SanPham_Ten"] = "Tên sản phẩm đã tồn tại.",
                         ["IX_BienThe_Ten_IdSanPham"] = "Tên biến thể bị trùng trong cùng một sản phẩm.",
                         ["IX_BienThe_MacDinh"] = "Mỗi sản phẩm chỉ có duy nhất một biến thể được đánh dấu là mặc định.",
-                        ["IX_TaiKhoan_TenDangNhap"] = "Tên đăng nhập đã tồn tại."
+                        ["IX_TaiKhoan_TenDangNhap"] = "Tên đăng nhập đã tồn tại.",
+                        ["IX_NhomSanPham_Ten"] = "Tên nhóm đã tồn tại."
+
                     };
 
                     foreach (var pair in messages)
