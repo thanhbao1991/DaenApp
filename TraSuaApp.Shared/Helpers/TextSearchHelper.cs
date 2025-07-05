@@ -64,6 +64,7 @@ namespace TraSuaApp.Shared.Helpers
 
             return allProducts.Where(x =>
                     IsMatch(keyword, x.Ten) ||
+                      (!string.IsNullOrEmpty(x.TenNhomSanPham) && NormalizeText(x.TenNhomSanPham).Contains(NormalizeText(keyword))) ||
                     (!string.IsNullOrEmpty(x.VietTat) && NormalizeText(x.VietTat).Contains(NormalizeText(keyword)))
             ).ToList();
         }

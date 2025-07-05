@@ -21,6 +21,7 @@ public class SanPhamService : ISanPhamService
     {
         var list = await _context.SanPhams
             .Include(sp => sp.BienThe)
+                .Include(sp => sp.NhomSanPham)
             .ToListAsync();
 
         return _mapper.Map<List<SanPhamDto>>(list);
@@ -30,6 +31,8 @@ public class SanPhamService : ISanPhamService
     {
         var entity = await _context.SanPhams
             .Include(sp => sp.BienThe)
+                .Include(sp => sp.NhomSanPham)
+
             .FirstOrDefaultAsync(x => x.Id == id);
 
         return entity == null ? null : _mapper.Map<SanPhamDto>(entity);

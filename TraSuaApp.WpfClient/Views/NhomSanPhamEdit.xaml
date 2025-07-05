@@ -1,5 +1,5 @@
 ﻿<Window
-    x:Class="TraSuaApp.WpfClient.Views.NhomSanPhamEditWindow"
+    x:Class="TraSuaApp.WpfClient.Views.NhomSanPhamEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Nhóm sản phẩm"

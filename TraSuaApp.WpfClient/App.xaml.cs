@@ -14,12 +14,12 @@ namespace TraSuaApp.WpfClient
             {
                 Current.Dispatcher.Invoke(() =>
                 {
-                    var loginWindow = new LoginWindow();
+                    var loginWindow = new LoginForm();
                     loginWindow.Show();
 
                     foreach (Window w in Current.Windows)
                     {
-                        if (w is not LoginWindow)
+                        if (w is not LoginForm)
                             w.Close();
                     }
                 });
@@ -35,7 +35,7 @@ namespace TraSuaApp.WpfClient
             //    MessageBox.Show($"❌ Lỗi seed dữ liệu:\n{ex.Message}");
             //}
 
-            var login = new NhomSanPhamListWindow();
+            var login = new MainWindow();
             login.Show();
         }
     }

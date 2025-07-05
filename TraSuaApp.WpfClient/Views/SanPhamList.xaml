@@ -1,5 +1,5 @@
 ﻿<Window
-    x:Class="TraSuaApp.WpfClient.Views.ProductListWindow"
+    x:Class="TraSuaApp.WpfClient.Views.SanPhamList"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Danh sách sản phẩm"
@@ -130,6 +130,11 @@
                         Binding="{Binding Ten}"
                         ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="Tên" />
+                    <DataGridTextColumn
+                        Width="150"
+                        Binding="{Binding TenNhomSanPham}"
+                        ElementStyle="{StaticResource CenterTextCellStyle}"
+                        Header="Nhóm" />
                     <DataGridTextColumn
                         Width="120"
                         Binding="{Binding VietTat}"

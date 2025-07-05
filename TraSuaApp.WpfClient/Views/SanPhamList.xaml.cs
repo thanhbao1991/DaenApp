@@ -8,12 +8,12 @@ using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views;
 
-public partial class ProductListWindow : Window
+public partial class SanPhamList : Window
 {
     private List<SanPhamDto> _allProducts = new();
     private readonly ErrorHandler _errorHandler = new WpfErrorHandler();
 
-    public ProductListWindow()
+    public SanPhamList()
     {
         InitializeComponent();
         _ = LoadDataAsync();
@@ -106,7 +106,7 @@ public partial class ProductListWindow : Window
 
     private async Task OpenEditWindowAsync(SanPhamDto? product = null)
     {
-        var window = new ProductEditWindow(product)
+        var window = new SanPhamEdit(product)
         {
             Width = this.ActualWidth,
             Height = this.ActualHeight

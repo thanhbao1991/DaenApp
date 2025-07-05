@@ -1,6 +1,6 @@
 ﻿<!--  ProductEditWindow.xaml  -->
 <Window
-    x:Class="TraSuaApp.WpfClient.Views.ProductEditWindow"
+    x:Class="TraSuaApp.WpfClient.Views.SanPhamEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Sản phẩm"
@@ -121,7 +121,7 @@
                         <StackPanel Orientation="Vertical">
                             <ListBox
                                 x:Name="BienTheListBox"
-                                Height="100"
+                                Height="80"
                                 Margin="8,8,8,0"
                                 HorizontalContentAlignment="Stretch"
                                 Background="#f0f0f0"
@@ -129,7 +129,7 @@
                                 SelectionChanged="BienTheListBox_SelectionChanged">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Height="24" Margin="4,2">
+                                        <Grid Height="20" Margin="4,2">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="100" />

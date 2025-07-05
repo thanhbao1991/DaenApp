@@ -6,13 +6,13 @@ using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
 {
-    public partial class NhomSanPhamEditWindow : Window
+    public partial class NhomSanPhamEdit : Window
     {
         public NhomSanPhamDto Data { get; private set; }
         private readonly bool _isEdit;
         private readonly WpfErrorHandler _errorHandler;
 
-        public NhomSanPhamEditWindow(NhomSanPhamDto? dto = null)
+        public NhomSanPhamEdit(NhomSanPhamDto? dto = null)
         {
             InitializeComponent();
             _errorHandler = new WpfErrorHandler(ErrorTextBlock);

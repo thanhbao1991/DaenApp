@@ -1,4 +1,6 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TraSuaApp.Domain.Entities;
 
 public class SanPham
 {
@@ -11,7 +13,7 @@ public class SanPham
     public string? DinhLuong { get; set; }
     public int IdOld { get; set; }
     public Guid? IdNhomSanPham { get; set; }
-
+    [ForeignKey(nameof(IdNhomSanPham))]
     public NhomSanPham? NhomSanPham { get; set; }
     public ICollection<SanPhamBienThe> BienThe { get; set; }
 }

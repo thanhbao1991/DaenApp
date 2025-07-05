@@ -59,6 +59,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage(); // ← dòng này quan trọng
+}
+else
+{
+    app.UseExceptionHandler("/error"); // Production dùng handler khác
+}
+
 // Middleware
 if (app.Environment.IsDevelopment())
 {

@@ -10,7 +10,7 @@ using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
 {
-    public partial class ProductEditWindow : Window
+    public partial class SanPhamEdit : Window
     {
         private readonly WpfErrorHandler _errorHandler;
         private readonly bool _isEdit;
@@ -19,7 +19,7 @@ namespace TraSuaApp.WpfClient.Views
 
         public bool IsSaved { get; private set; }
 
-        public ProductEditWindow(SanPhamDto? sanPham = null)
+        public SanPhamEdit(SanPhamDto? sanPham = null)
         {
             InitializeComponent();
             _errorHandler = new WpfErrorHandler(ErrorTextBlock);

@@ -7,11 +7,11 @@ using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
 {
-    public partial class LoginWindow : Window
+    public partial class LoginForm : Window
     {
         private readonly WpfErrorHandler _errorHandler;
 
-        public LoginWindow()
+        public LoginForm()
         {
             InitializeComponent();
             _errorHandler = new WpfErrorHandler(ErrorTextBlock); // Truyền TextBlock vào
@@ -93,7 +93,7 @@ namespace TraSuaApp.WpfClient.Views
 
                         Properties.Settings.Default.Save();
 
-                        var accountListWindow = new AccountListWindow();
+                        var accountListWindow = new MainWindow();
                         accountListWindow.Show();
                         this.Close();
                     }

@@ -8,12 +8,12 @@ using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views;
 
-public partial class NhomSanPhamListWindow : Window
+public partial class NhomSanPhamList : Window
 {
     private List<NhomSanPhamDto> _all = new();
     private readonly WpfErrorHandler _errorHandler = new();
 
-    public NhomSanPhamListWindow()
+    public NhomSanPhamList()
     {
         InitializeComponent();
         _ = LoadAsync();
@@ -22,7 +22,7 @@ public partial class NhomSanPhamListWindow : Window
 
     private async Task OpenEditWindowAsync(NhomSanPhamDto? dto = null)
     {
-        var window = new NhomSanPhamEditWindow(dto)
+        var window = new NhomSanPhamEdit(dto)
         {
             Width = this.ActualWidth,
             Height = this.ActualHeight

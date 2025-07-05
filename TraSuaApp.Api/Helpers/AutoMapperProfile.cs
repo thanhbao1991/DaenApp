@@ -9,9 +9,11 @@ namespace TraSuaApp.Api.Helpers // ✅ chỉnh lại nếu khác
         public AutoMapperProfile()
         {
             CreateMap<NhomSanPham, NhomSanPhamDto>().ReverseMap();
-            CreateMap<SanPham, SanPhamDto>().ReverseMap();
             CreateMap<SanPhamBienThe, SanPhamBienTheDto>().ReverseMap();
             CreateMap<TaiKhoan, TaiKhoanDto>().ReverseMap();
+            CreateMap<SanPham, SanPhamDto>()
+         .ForMember(dest => dest.TenNhomSanPham, opt => opt.MapFrom(src => src.NhomSanPham != null ? src.NhomSanPham.Ten : null))
+         .ReverseMap();
         }
     }
 }

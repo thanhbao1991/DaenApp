@@ -8,12 +8,12 @@ using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
 {
-    public partial class AccountListWindow : Window
+    public partial class TaiKhoanList : Window
     {
         private List<TaiKhoanDto> _allAccounts = new();
         private readonly ErrorHandler _errorHandler = new WpfErrorHandler();
 
-        public AccountListWindow()
+        public TaiKhoanList()
         {
             InitializeComponent();
             _ = LoadAccountsAsync();
@@ -24,7 +24,7 @@ namespace TraSuaApp.WpfClient.Views
         // 🟟 Tách phương thức mở form sửa/thêm
         private async Task OpenEditWindowAsync(TaiKhoanDto? account = null)
         {
-            var window = new AccountEditWindow(account)
+            var window = new TaiKhoanEdit(account)
             {
                 Width = this.ActualWidth,
                 Height = this.ActualHeight

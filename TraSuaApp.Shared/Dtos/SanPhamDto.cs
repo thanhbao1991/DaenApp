@@ -12,6 +12,7 @@ public class SanPhamDto
     public bool TichDiem { get; set; }
     public bool NgungBan { get; set; }
     public Guid? IdNhomSanPham { get; set; }
+    public string? TenNhomSanPham { get; set; }
     public int IdOld { get; set; }
     public string? TenNormalized { get; set; }
 

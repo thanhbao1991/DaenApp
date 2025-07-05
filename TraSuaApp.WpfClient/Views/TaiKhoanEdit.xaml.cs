@@ -7,13 +7,13 @@ using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
 {
-    public partial class AccountEditWindow : Window
+    public partial class TaiKhoanEdit : Window
     {
         public TaiKhoanDto Account { get; private set; }
         private readonly bool _isEdit;
         private readonly WpfErrorHandler _errorHandler;
 
-        public AccountEditWindow(TaiKhoanDto? taiKhoan = null)
+        public TaiKhoanEdit(TaiKhoanDto? taiKhoan = null)
         {
             InitializeComponent();
             _errorHandler = new WpfErrorHandler(ErrorTextBlock);
