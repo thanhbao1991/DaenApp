@@ -14,10 +14,12 @@ namespace TraSuaApp.Infrastructure.Helpers
                     var messages = new Dictionary<string, string>
                     {
                         ["IX_SanPham_Ten"] = "Tên sản phẩm đã tồn tại.",
-                        ["IX_BienThe_Ten_IdSanPham"] = "Tên biến thể bị trùng trong cùng một sản phẩm.",
-                        ["IX_BienThe_MacDinh"] = "Mỗi sản phẩm chỉ có duy nhất một biến thể được đánh dấu là mặc định.",
+                        ["IX_BienThe_Ten_IdSanPham"] = "Tên size đã tồn tại.",
+                        ["IX_BienThe_MacDinh"] = "Chỉ một dòng được đánh dấu là mặc định.",
                         ["IX_TaiKhoan_TenDangNhap"] = "Tên đăng nhập đã tồn tại.",
-                        ["IX_NhomSanPham_Ten"] = "Tên nhóm đã tồn tại."
+                        ["IX_NhomSanPham_Ten"] = "Tên nhóm đã tồn tại.",
+                        ["IX_Topping_Ten"] = "Tên topping đã tồn tại."
+
 
                     };
 

@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,18 +29,15 @@ namespace TraSuaApp.WpfClient.Views
             _isEdit = sanPham != null;
             _sanPham = sanPham ?? new SanPhamDto();
 
-            LoadForm();
             this.KeyDown += Window_KeyDown;
+            Loaded += async (_, __) => await LoadFormAsync(); // ✅ Gọi async đúng cách sau khi Window load
         }
 
-        private void LoadForm()
+        private async Task LoadFormAsync()
         {
             try
             {
-                // Lấy danh sách nhóm sản phẩm
-                _dsNhomSanPham = await ApiClient.Get<List<NhomSanPhamDto>>("/api/nhomsanpham");
-                NhomSanPhamComboBox.ItemsSource = _dsNhomSanPham;
-                NhomSanPhamComboBox.SelectedValue = _sanPham.IdNhomSanPham;
+                await LoadNhomSanPhamAsync();
 
                 TenTextBox.Text = _sanPham.Ten;
                 VietTatTextBox.Text = _sanPham.VietTat;
@@ -53,6 +51,30 @@ namespace TraSuaApp.WpfClient.Views
             catch (Exception ex)
             {
                 _errorHandler.Handle(ex, "LoadForm");
+            }
+        }
+
+        private async Task LoadNhomSanPhamAsync()
+        {
+            try
+            {
+                var response = await ApiClient.GetAsync("/api/nhomsanpham");
+                if (response.IsSuccessStatusCode)
+                {
+                    var data = await response.Content.ReadFromJsonAsync<List<NhomSanPhamDto>>();
+                    _dsNhomSanPham = data ?? new();
+                    NhomSanPhamComboBox.ItemsSource = _dsNhomSanPham;
+                    NhomSanPhamComboBox.SelectedValue = _sanPham.IdNhomSanPham;
+                }
+                else
+                {
+                    var msg = await response.Content.ReadAsStringAsync();
+                    throw new Exception($"API lỗi: {msg}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandler.Handle(ex, "Tải nhóm sản phẩm");
             }
         }
 
@@ -82,11 +104,8 @@ namespace TraSuaApp.WpfClient.Views
                 var macDinhs = bienThes.Where(x => x.MacDinh).ToList();
                 if (macDinhs.Count > 1)
                     throw new Exception("Chỉ được chọn một biến thể mặc định.");
-
                 if (macDinhs.Count == 0 && bienThes.Count > 0)
-                {
                     bienThes[0].MacDinh = true;
-                }
 
                 _sanPham.BienThe = bienThes.ToList();
 

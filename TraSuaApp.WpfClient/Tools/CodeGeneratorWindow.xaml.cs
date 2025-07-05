@@ -6,6 +6,9 @@ namespace TraSuaApp.WpfClient.Tools
 {
     public partial class CodeGeneratorWindow : Window
     {
+        private string _entityName = "";
+        private CodeGenService? _service;
+
         public CodeGeneratorWindow()
         {
             InitializeComponent();
@@ -27,32 +30,80 @@ namespace TraSuaApp.WpfClient.Tools
 
         private void Generate_Click(object sender, RoutedEventArgs e)
         {
-            var filePath = FilePathTextBox.Text;
-            if (!File.Exists(filePath))
+            try
             {
-                StatusTextBlock.Text = "❌ File không tồn tại.";
+                var filePath = FilePathTextBox.Text;
+                if (!File.Exists(filePath))
+                {
+                    StatusTextBlock.Text = "❌ File không tồn tại.";
+                    return;
+                }
+
+                _entityName = Path.GetFileNameWithoutExtension(filePath);
+                var entityNamespace = "TraSuaApp.Domain.Entities";
+
+                _service = new CodeGenService
+                {
+                    EntityName = _entityName,
+                    EntityNamespace = entityNamespace
+                };
+
+                // ✅ Chỉ preview, chưa tạo file
+                var preview = $"""
+                    // ========== I{_entityName}Service.cs ==========
+                    {_service.GenerateServiceInterface()}
+
+
+                    // ========== {_entityName}Service.cs ==========
+                    {_service.GenerateServiceImplementation()}
+
+
+                    // ========== {_entityName}Controller.cs ==========
+                    {_service.GenerateController()}
+
+
+                    // ========== {_entityName}Dto.cs ==========
+                    {_service.GenerateDto()}
+
+
+                    // ========== AutoMapper Entry ==========
+                    {_service.GenerateAutoMapperProfileEntry()}
+                    """;
+
+                PreviewTextBox.Text = preview;
+                StatusTextBlock.Text = $"✅ Đã sinh code cho: {_entityName} (xem trước phía dưới)";
+            }
+            catch (Exception ex)
+            {
+                StatusTextBlock.Text = "❌ Lỗi khi sinh mã: " + ex.Message;
+            }
+        }
+
+        private void SaveToFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_service == null || string.IsNullOrWhiteSpace(_entityName))
+            {
+                StatusTextBlock.Text = "❌ Vui lòng preview trước khi lưu.";
                 return;
             }
 
-            var entityName = Path.GetFileNameWithoutExtension(filePath);
-            var entityNamespace = "TraSuaApp.Domain.Entities";
-
-            var outputRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", entityName);
-            Directory.CreateDirectory(outputRoot);
-
-            var service = new CodeGenService
+            try
             {
-                EntityName = entityName,
-                EntityNamespace = entityNamespace
-            };
+                var outputRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", _entityName);
+                Directory.CreateDirectory(outputRoot);
 
-            File.WriteAllText(Path.Combine(outputRoot, $"I{entityName}Service.cs"), service.GenerateServiceInterface());
-            File.WriteAllText(Path.Combine(outputRoot, $"{entityName}Service.cs"), service.GenerateServiceImplementation());
-            File.WriteAllText(Path.Combine(outputRoot, $"{entityName}Controller.cs"), service.GenerateController());
-            File.WriteAllText(Path.Combine(outputRoot, $"{entityName}Dto.cs"), service.GenerateDto());
-            File.WriteAllText(Path.Combine(outputRoot, $"AutoMapperEntry_{entityName}.txt"), service.GenerateAutoMapperProfileEntry());
+                File.WriteAllText(Path.Combine(outputRoot, $"I{_entityName}Service.cs"), _service.GenerateServiceInterface());
+                File.WriteAllText(Path.Combine(outputRoot, $"{_entityName}Service.cs"), _service.GenerateServiceImplementation());
+                File.WriteAllText(Path.Combine(outputRoot, $"{_entityName}Controller.cs"), _service.GenerateController());
+                File.WriteAllText(Path.Combine(outputRoot, $"{_entityName}Dto.cs"), _service.GenerateDto());
+                File.WriteAllText(Path.Combine(outputRoot, $"AutoMapperEntry_{_entityName}.txt"), _service.GenerateAutoMapperProfileEntry());
 
-            StatusTextBlock.Text = $"✅ Đã sinh code cho: {entityName} tại thư mục /Output/{entityName}";
+                StatusTextBlock.Text = $"✅ Đã lưu mã vào thư mục /Output/{_entityName}";
+            }
+            catch (Exception ex)
+            {
+                StatusTextBlock.Text = "❌ Lỗi khi lưu file: " + ex.Message;
+            }
         }
     }
 }
