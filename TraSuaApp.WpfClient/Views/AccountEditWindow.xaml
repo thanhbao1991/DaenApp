@@ -101,6 +101,8 @@
                 <!--  Hiển thị lỗi  -->
                 <TextBlock
                     x:Name="ErrorTextBlock"
+                    MaxWidth="400"
+                    MaxHeight="40"
                     Margin="0,10,0,0"
                     FontWeight="SemiBold"
                     Foreground="Red"

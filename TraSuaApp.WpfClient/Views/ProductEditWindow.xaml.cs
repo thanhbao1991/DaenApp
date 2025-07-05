@@ -41,10 +41,8 @@ namespace TraSuaApp.WpfClient.Views
                 NgungBanCheckBox.IsChecked = _sanPham.NgungBan;
                 TichDiemCheckBox.IsChecked = _sanPham.TichDiem;
 
-
-                //DaBanTextBlock.Text = (_sanPham.DaBan ?? 0).ToString("N0");
-
-                BienTheListBox.ItemsSource = new ObservableCollection<SanPhamBienTheDto>(_sanPham.BienThe ?? []);
+                var bienThes = _sanPham.BienThe?.OrderBy(x => x.GiaBan).ToList() ?? new();
+                BienTheListBox.ItemsSource = new ObservableCollection<SanPhamBienTheDto>(bienThes);
             }
             catch (Exception ex)
             {
@@ -64,10 +62,8 @@ namespace TraSuaApp.WpfClient.Views
                 _sanPham.Ten = TenTextBox.Text.Trim();
                 _sanPham.VietTat = VietTatTextBox.Text.Trim();
                 _sanPham.DinhLuong = MoTaTextBox.Text.Trim();
-                _sanPham.NgungBan = NgungBanCheckBox.IsChecked == true ? true : false;
-                _sanPham.TichDiem = TichDiemCheckBox.IsChecked == true ? true : false;
-
-
+                _sanPham.NgungBan = NgungBanCheckBox.IsChecked == true;
+                _sanPham.TichDiem = TichDiemCheckBox.IsChecked == true;
 
                 if (string.IsNullOrWhiteSpace(_sanPham.Ten))
                     throw new Exception("Tên sản phẩm không được để trống.");
@@ -75,6 +71,17 @@ namespace TraSuaApp.WpfClient.Views
                 var bienThes = (BienTheListBox.ItemsSource as ObservableCollection<SanPhamBienTheDto>) ?? new();
                 foreach (var bt in bienThes)
                     bt.IdSanPham = _sanPham.Id;
+
+                // ⚠️ Đảm bảo duy nhất 1 biến thể MacDinh
+                var macDinhs = bienThes.Where(x => x.MacDinh).ToList();
+                if (macDinhs.Count > 1)
+                    throw new Exception("Chỉ được chọn một biến thể mặc định.");
+
+                // ⚠️ Nếu không có cái nào là mặc định thì tự chọn cái đầu tiên
+                if (macDinhs.Count == 0 && bienThes.Count > 0)
+                {
+                    bienThes[0].MacDinh = true;
+                }
 
                 _sanPham.BienThe = bienThes.ToList();
 
@@ -146,15 +153,25 @@ namespace TraSuaApp.WpfClient.Views
                     throw new Exception("Giá bán không hợp lệ.");
 
                 var bienThes = (ObservableCollection<SanPhamBienTheDto>)BienTheListBox.ItemsSource!;
+                bool isMacDinh = MacDinhCheckBox.IsChecked == true;
+
+                if (isMacDinh)
+                {
+                    foreach (var b in bienThes)
+                        b.MacDinh = false;
+                }
+
                 bienThes.Add(new SanPhamBienTheDto
                 {
                     TenBienThe = ten,
                     GiaBan = gia,
-                    IdSanPham = _sanPham.Id
+                    IdSanPham = _sanPham.Id,
+                    MacDinh = isMacDinh
                 });
 
                 TenBienTheTextBox.Text = "";
                 GiaBanTextBox.Text = "";
+                MacDinhCheckBox.IsChecked = false;
                 _bienTheDangChon = null;
             }
             catch (Exception ex)
@@ -175,6 +192,7 @@ namespace TraSuaApp.WpfClient.Views
                     _bienTheDangChon = null;
                     TenBienTheTextBox.Text = "";
                     GiaBanTextBox.Text = "";
+                    MacDinhCheckBox.IsChecked = false;
                 }
                 else
                 {
@@ -194,6 +212,7 @@ namespace TraSuaApp.WpfClient.Views
                 _bienTheDangChon = bt;
                 TenBienTheTextBox.Text = bt.TenBienThe;
                 GiaBanTextBox.Text = bt.GiaBan.ToString("N0");
+                MacDinhCheckBox.IsChecked = bt.MacDinh;
             }
         }
 
@@ -213,18 +232,42 @@ namespace TraSuaApp.WpfClient.Views
                 if (!decimal.TryParse(Regex.Replace(GiaBanTextBox.Text, @"[^\d]", ""), out var gia))
                     throw new Exception("Giá bán không hợp lệ.");
 
+                var isMacDinh = MacDinhCheckBox.IsChecked == true;
+                var bienThes = (ObservableCollection<SanPhamBienTheDto>)BienTheListBox.ItemsSource!;
+
+                if (isMacDinh)
+                {
+                    foreach (var b in bienThes)
+                        b.MacDinh = false;
+                }
+
                 _bienTheDangChon.TenBienThe = ten;
                 _bienTheDangChon.GiaBan = gia;
+                _bienTheDangChon.MacDinh = isMacDinh;
 
                 BienTheListBox.Items.Refresh();
 
                 TenBienTheTextBox.Text = "";
                 GiaBanTextBox.Text = "";
+                MacDinhCheckBox.IsChecked = false;
                 _bienTheDangChon = null;
             }
             catch (Exception ex)
             {
                 _errorHandler.Handle(ex, "Sửa biến thể");
+            }
+        }
+
+        private void MacDinhCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (MacDinhCheckBox.IsChecked == true && _bienTheDangChon != null)
+            {
+                var bienThes = (ObservableCollection<SanPhamBienTheDto>)BienTheListBox.ItemsSource!;
+                foreach (var b in bienThes)
+                    b.MacDinh = false;
+
+                _bienTheDangChon.MacDinh = true;
+                BienTheListBox.Items.Refresh();
             }
         }
     }

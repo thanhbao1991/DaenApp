@@ -15,13 +15,6 @@ public class SanPhamDto
     public int IdOld { get; set; }
     public string? TenNormalized { get; set; }
 
-    public List<SanPhamBienTheDto> BienThe { get; set; } = new();
-}
 
-public class SanPhamBienTheDto
-{
-    public Guid Id { get; set; }
-    public Guid IdSanPham { get; set; }
-    public string TenBienThe { get; set; } = string.Empty;
-    public decimal GiaBan { get; set; }
+    public List<SanPhamBienTheDto> BienThe { get; set; } = new();
 }

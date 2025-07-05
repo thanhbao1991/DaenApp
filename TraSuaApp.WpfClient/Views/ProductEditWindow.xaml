@@ -97,63 +97,79 @@
 
                 </StackPanel>
 
-                <StackPanel Margin="0,0,0,8" Orientation="Horizontal">
-                    <TextBlock
-                        Width="120"
-                        VerticalAlignment="Center"
-                        FontWeight="Bold"
-                        Text="Tên Size / Giá" />
-                    <TextBox
-                        x:Name="TenBienTheTextBox"
-                        Width="210"
-                        Margin="0,0,10,0" />
-                    <TextBox
-                        x:Name="GiaBanTextBox"
-                        Width="80"
-                        HorizontalContentAlignment="Right"
-                        PreviewTextInput="GiaBanTextBox_PreviewTextInput"
-                        TextChanged="GiaBanTextBox_TextChanged" />
-                </StackPanel>
-                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                    <Button
-                        Click="ThemBienTheButton_Click"
-                        Content="Thêm"
-                        Style="{StaticResource ThemButtonStyle}" />
-                    <Button
-                        Click="SuaBienTheButton_Click"
-                        Content="Sửa"
-                        Style="{StaticResource SuaButtonStyle}" />
-                    <Button
-                        Click="XoaBienTheButton_Click"
-                        Content="Xoá"
-                        Style="{StaticResource XoaButtonStyle}" />
-                </StackPanel>
-                <ListBox
-                    x:Name="BienTheListBox"
-                    Height="128"
-                    HorizontalContentAlignment="Stretch"
-                    Background="#f0f0f0"
-                    SelectionChanged="BienTheListBox_SelectionChanged">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Height="32" Margin="4,2">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="100" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock VerticalAlignment="Center" Text="{Binding TenBienThe}" />
-                                <TextBlock
-                                    Grid.Column="1"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    Text="{Binding GiaBan, StringFormat={}{0:N0}}" />
-                            </Grid>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                <GroupBox Header="Size">
+                    <StackPanel>
+                        <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                            <TextBox
+                                x:Name="TenBienTheTextBox"
+                                Width="220"
+                                Margin="8,0,10,0" />
+                            <TextBox
+                                x:Name="GiaBanTextBox"
+                                Width="70"
+                                Margin="0,0,10,0"
+                                HorizontalContentAlignment="Right"
+                                PreviewTextInput="GiaBanTextBox_PreviewTextInput"
+                                TextChanged="GiaBanTextBox_TextChanged" />
+                            <CheckBox x:Name="MacDinhCheckBox" Content="Mặc định" Checked="MacDinhCheckBox_Checked"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Vertical">
+                            <ListBox
+                                x:Name="BienTheListBox"
+                                Height="100"
+                                Margin="8,8,8,0"
+                                HorizontalContentAlignment="Stretch"
+                                Background="#f0f0f0"
+                                BorderBrush="Transparent"
+                                SelectionChanged="BienTheListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Height="24" Margin="4,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="100" />
+                                                <ColumnDefinition Width="40" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock VerticalAlignment="Center" Text="{Binding TenBienThe}" />
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center"
+                                                Text="{Binding GiaBan, StringFormat={}{0:N0}}" />
+                                            <TextBlock
+                                                Grid.Column="2"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Text="★"
+                                                Visibility="{Binding MacDinh, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <WrapPanel>
+                                <Button
+                                    Click="ThemBienTheButton_Click"
+                                    Content="Thêm"
+                                    Style="{StaticResource ThemButtonStyle}" />
+                                <Button
+                                    Click="SuaBienTheButton_Click"
+                                    Content="Cập nhật"
+                                    Style="{StaticResource SuaButtonStyle}" />
+                                <Button
+                                    Click="XoaBienTheButton_Click"
+                                    Content="Xoá"
+                                    Style="{StaticResource XoaButtonStyle}" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
                 <!--  Hiển thị lỗi  -->
                 <TextBlock
                     x:Name="ErrorTextBlock"
+                    MaxWidth="400"
+                    MaxHeight="40"
                     Margin="0,10,0,0"
                     FontWeight="SemiBold"
                     Foreground="Red"
