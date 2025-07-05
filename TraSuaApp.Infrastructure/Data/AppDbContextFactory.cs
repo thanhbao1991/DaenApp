@@ -14,4 +14,11 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 
         return new AppDbContext(optionsBuilder.Options);
     }
+
+    // ✅ Thêm method mới không cần args
+    public AppDbContext CreateDbContext()
+    {
+        return CreateDbContext(new string[0]);
+    }
+
 }

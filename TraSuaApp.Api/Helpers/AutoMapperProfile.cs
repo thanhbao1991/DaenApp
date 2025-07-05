@@ -8,8 +8,10 @@ namespace TraSuaApp.Api.Helpers // ✅ chỉnh lại nếu khác
     {
         public AutoMapperProfile()
         {
+            CreateMap<NhomSanPham, NhomSanPhamDto>().ReverseMap();
             CreateMap<SanPham, SanPhamDto>().ReverseMap();
             CreateMap<SanPhamBienThe, SanPhamBienTheDto>().ReverseMap();
+            CreateMap<TaiKhoan, TaiKhoanDto>().ReverseMap();
         }
     }
 }

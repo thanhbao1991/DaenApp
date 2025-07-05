@@ -1,0 +1,37 @@
+﻿<Window
+    x:Class="TraSuaApp.WpfClient.Tools.CodeGeneratorWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Code Generator"
+    Width="500"
+    Height="250">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+            <TextBox
+                x:Name="FilePathTextBox"
+                Width="350"
+                Margin="0,0,10,0"
+                IsReadOnly="True" />
+            <Button Click="ChooseFile_Click" Content="Chọn File" />
+        </StackPanel>
+
+        <Button
+            Grid.Row="1"
+            Width="100"
+            HorizontalAlignment="Left"
+            Click="Generate_Click"
+            Content="Sinh Code" />
+
+        <TextBlock
+            x:Name="StatusTextBlock"
+            Grid.Row="2"
+            Margin="0,10,0,0"
+            TextWrapping="Wrap" />
+    </Grid>
+</Window>

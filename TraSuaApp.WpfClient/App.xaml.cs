@@ -4,23 +4,20 @@ using TraSuaApp.WpfClient.Views;
 
 namespace TraSuaApp.WpfClient
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
     public partial class App : System.Windows.Application
     {
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
             ApiClient.OnTokenExpired += () =>
             {
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                Current.Dispatcher.Invoke(() =>
                 {
                     var loginWindow = new LoginWindow();
                     loginWindow.Show();
 
-                    foreach (Window w in System.Windows.Application.Current.Windows)
+                    foreach (Window w in Current.Windows)
                     {
                         if (w is not LoginWindow)
                             w.Close();
@@ -28,7 +25,17 @@ namespace TraSuaApp.WpfClient
                 });
             };
 
-            var login = new ProductListWindow();
+            try
+            {
+                await SeedHelper.SeedNhomSanPhamAsync();
+                MessageBox.Show("✅ Seed NhomSanPham thành công!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Lỗi seed dữ liệu:\n{ex.Message}");
+            }
+
+            var login = new LoginWindow();
             login.Show();
         }
     }

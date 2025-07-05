@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
@@ -8,41 +9,24 @@ using TraSuaApp.Shared.Helpers;
 public class TaiKhoanService : ITaiKhoanService
 {
     private readonly AppDbContext _context;
+    private readonly IMapper _mapper;
 
-    public TaiKhoanService(AppDbContext context)
+    public TaiKhoanService(AppDbContext context, IMapper mapper)
     {
         _context = context;
+        _mapper = mapper;
     }
 
     public async Task<List<TaiKhoanDto>> GetAllAsync()
     {
-        return await _context.TaiKhoans
-            .Select(x => new TaiKhoanDto
-            {
-                Id = x.Id,
-                TenDangNhap = x.TenDangNhap,
-                TenHienThi = x.TenHienThi,
-                VaiTro = x.VaiTro,
-                IsActive = x.IsActive,
-                ThoiGianTao = x.ThoiGianTao
-            })
-            .ToListAsync();
+        var list = await _context.TaiKhoans.ToListAsync();
+        return _mapper.Map<List<TaiKhoanDto>>(list);
     }
 
     public async Task<TaiKhoanDto?> GetByIdAsync(Guid id)
     {
         var entity = await _context.TaiKhoans.FindAsync(id);
-        if (entity == null) return null;
-
-        return new TaiKhoanDto
-        {
-            Id = entity.Id,
-            TenDangNhap = entity.TenDangNhap,
-            TenHienThi = entity.TenHienThi,
-            VaiTro = entity.VaiTro,
-            IsActive = entity.IsActive,
-            ThoiGianTao = entity.ThoiGianTao
-        };
+        return entity == null ? null : _mapper.Map<TaiKhoanDto>(entity);
     }
 
     public async Task<Result> CreateAsync(TaiKhoanDto dto)
@@ -54,16 +38,10 @@ public class TaiKhoanService : ITaiKhoanService
         if (trung)
             return Result.Failure("Tên đăng nhập đã tồn tại.");
 
-        var entity = new TaiKhoan
-        {
-            Id = Guid.NewGuid(),
-            TenDangNhap = dto.TenDangNhap,
-            MatKhau = PasswordHelper.HashPassword(dto.MatKhau),
-            TenHienThi = dto.TenHienThi,
-            VaiTro = dto.VaiTro,
-            IsActive = dto.IsActive,
-            ThoiGianTao = DateTime.Now
-        };
+        var entity = _mapper.Map<TaiKhoan>(dto);
+        entity.Id = Guid.NewGuid();
+        entity.MatKhau = PasswordHelper.HashPassword(dto.MatKhau);
+        entity.ThoiGianTao = DateTime.Now;
 
         _context.TaiKhoans.Add(entity);
         await _context.SaveChangesAsync();
@@ -76,26 +54,25 @@ public class TaiKhoanService : ITaiKhoanService
         if (entity == null)
             return Result.Failure("Tài khoản không tồn tại.");
 
-        // ✅ Kiểm tra trùng tên đăng nhập với tài khoản khác
         var exists = await _context.TaiKhoans
             .AnyAsync(x => x.TenDangNhap == dto.TenDangNhap && x.Id != id);
 
         if (exists)
             return Result.Failure("Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác.");
 
-        // Cập nhật thông tin
-        entity.TenDangNhap = dto.TenDangNhap;
-        entity.TenHienThi = dto.TenHienThi;
-        entity.VaiTro = dto.VaiTro;
-        entity.IsActive = dto.IsActive;
+        // Giữ lại mật khẩu cũ nếu dto không có
+        var oldPassword = entity.MatKhau;
 
-        // Chỉ cập nhật mật khẩu nếu có nhập
-        if (!string.IsNullOrWhiteSpace(dto.MatKhau))
-            entity.MatKhau = PasswordHelper.HashPassword(dto.MatKhau);
+        _mapper.Map(dto, entity);
+
+        entity.MatKhau = string.IsNullOrWhiteSpace(dto.MatKhau)
+            ? oldPassword
+            : PasswordHelper.HashPassword(dto.MatKhau);
 
         await _context.SaveChangesAsync();
         return Result.Success("Đã cập nhật tài khoản.");
     }
+
     public async Task<Result> DeleteAsync(Guid id)
     {
         var taiKhoan = await _context.TaiKhoans.FindAsync(id);
@@ -104,7 +81,6 @@ public class TaiKhoanService : ITaiKhoanService
 
         _context.TaiKhoans.Remove(taiKhoan);
         await _context.SaveChangesAsync();
-
         return Result.Success("Đã xoá thành công.");
     }
 }

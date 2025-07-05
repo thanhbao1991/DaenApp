@@ -143,8 +143,8 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock
-                                    VerticalAlignment="Center"
                                     HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
                                     Text="★"
                                     Visibility="{Binding TichDiem, Converter={StaticResource BoolToVisibilityConverter}}" />
                             </DataTemplate>

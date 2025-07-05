@@ -111,7 +111,10 @@
                                 HorizontalContentAlignment="Right"
                                 PreviewTextInput="GiaBanTextBox_PreviewTextInput"
                                 TextChanged="GiaBanTextBox_TextChanged" />
-                            <CheckBox x:Name="MacDinhCheckBox" Content="Mặc định" Checked="MacDinhCheckBox_Checked"/>
+                            <CheckBox
+                                x:Name="MacDinhCheckBox"
+                                Checked="MacDinhCheckBox_Checked"
+                                Content="Mặc định" />
                         </StackPanel>
                         <StackPanel Orientation="Vertical">
                             <ListBox

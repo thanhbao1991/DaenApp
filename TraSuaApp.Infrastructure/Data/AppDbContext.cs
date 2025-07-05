@@ -77,7 +77,7 @@ public class AppDbContext : DbContext
     public DbSet<ShippingAddress> ShippingAddresses => Set<ShippingAddress>();
     public DbSet<CustomerPhoneNumber> CustomerPhoneNumbers => Set<CustomerPhoneNumber>();
     public DbSet<TaiKhoan> TaiKhoans => Set<TaiKhoan>();
-
+    public DbSet<NhomSanPham> NhomSanPhams { get; set; }
     public DbSet<SanPham> SanPhams => Set<SanPham>();
     public DbSet<SanPhamBienThe> SanPhamBienThes => Set<SanPhamBienThe>();
     public DbSet<Topping> Toppings => Set<Topping>();
