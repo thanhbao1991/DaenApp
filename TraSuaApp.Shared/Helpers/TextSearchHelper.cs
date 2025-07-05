@@ -77,5 +77,16 @@ namespace TraSuaApp.Shared.Helpers
                     (!string.IsNullOrWhiteSpace(x.TenHienThi) && IsMatch(keyword, x.TenHienThi))
             ).ToList();
         }
+
+        public static List<NhomSanPhamDto> FilterNhomSanPhams(List<NhomSanPhamDto> allItems, string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+                return allItems;
+
+            return allItems.Where(x =>
+                (!string.IsNullOrWhiteSpace(x.Ten) && IsMatch(keyword, x.Ten))
+            ).ToList();
+
+        }
     }
 }

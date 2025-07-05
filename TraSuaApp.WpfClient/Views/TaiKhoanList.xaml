@@ -23,33 +23,31 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!--  Thanh tiêu đề  -->
-            <DockPanel
-                Grid.Row="0"
-                Margin="0,0,0,10"
-                VerticalAlignment="Center">
+            <!--  Tiêu đề  -->
+            <DockPanel Grid.Row="0" Margin="0,0,0,10" LastChildFill="True">
                 <TextBlock
-                    Margin="10,5"
-                    FontSize="20"
-                    FontWeight="Bold"
-                    Foreground="#333"
-                    Text="Tài khoản" />
-                <Button
-                    Width="28"
-                    Height="28"
-                    Margin="0,5,5,0"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Click="CloseButton_Click"
-                    Content="✖"
-                    Cursor="Hand"
-                    DockPanel.Dock="Right"
-                    FontSize="14"
-                    Foreground="#888" />
-            </DockPanel>
+        Margin="10,5"
+        FontSize="20"
+        FontWeight="Bold"
+        Foreground="#333"
+        VerticalAlignment="Center"
+        Text="Tài khoản" />
 
+                <Button
+        Width="28"
+        Height="28"
+        Margin="0,5,5,0"
+        Background="Transparent"
+        BorderThickness="0"
+        Click="CloseButton_Click"
+        Content="✖"
+        Cursor="Hand"
+        DockPanel.Dock="Right"
+        FontSize="14"
+        Foreground="#888"
+        VerticalAlignment="Center"
+        HorizontalAlignment="Right" />
+            </DockPanel>
             <!--  Thanh công cụ  -->
             <Grid Grid.Row="1" Margin="10,0,10,10">
                 <Grid.ColumnDefinitions>

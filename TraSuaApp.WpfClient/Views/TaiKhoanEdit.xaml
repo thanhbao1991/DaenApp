@@ -27,16 +27,19 @@
             </Grid.RowDefinitions>
 
             <!--  Tiêu đề  -->
+            <!--  Tiêu đề  -->
             <DockPanel
                 Grid.Row="0"
                 Margin="0,0,0,10"
-                VerticalAlignment="Center">
+                LastChildFill="True">
                 <TextBlock
                     Margin="10,5"
+                    VerticalAlignment="Center"
                     FontSize="20"
                     FontWeight="Bold"
                     Foreground="#333"
                     Text="Tài khoản" />
+
                 <Button
                     Width="28"
                     Height="28"
@@ -52,6 +55,7 @@
                     FontSize="14"
                     Foreground="#888" />
             </DockPanel>
+
 
             <!--  Nội dung form  -->
             <StackPanel Grid.Row="1" Margin="0,10,0,10">
@@ -102,7 +106,7 @@
                 <TextBlock
                     x:Name="ErrorTextBlock"
                     MaxWidth="400"
-                    MaxHeight="40"
+                    MaxHeight="30"
                     Margin="0,10,0,0"
                     FontWeight="SemiBold"
                     Foreground="Red"

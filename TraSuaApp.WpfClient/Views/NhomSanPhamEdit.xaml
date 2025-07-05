@@ -1,0 +1,99 @@
+﻿<Window
+    x:Class="TraSuaApp.WpfClient.Views.NhomSanPhamEditWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Nhóm sản phẩm"
+    Width="800"
+    Height="520"
+    AllowsTransparency="True"
+    Background="#88888888"
+    PreviewKeyDown="Window_KeyDown"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="None">
+
+    <Border
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        Background="White"
+        BorderBrush="#DDD"
+        BorderThickness="1"
+        CornerRadius="12">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--  Tiêu đề  -->
+            <DockPanel
+                Grid.Row="0"
+                Margin="0,0,0,10"
+                LastChildFill="True">
+                <TextBlock
+                    Margin="10,5"
+                    VerticalAlignment="Center"
+                    FontSize="20"
+                    FontWeight="Bold"
+                    Foreground="#333"
+                    Text="Nhóm sản phẩm" />
+
+                <Button
+                    Width="28"
+                    Height="28"
+                    Margin="0,5,5,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="CloseButton_Click"
+                    Content="✖"
+                    Cursor="Hand"
+                    DockPanel.Dock="Right"
+                    FontSize="14"
+                    Foreground="#888" />
+            </DockPanel>
+
+            <!--  Nội dung  -->
+            <StackPanel Grid.Row="1" Margin="0,10,0,10">
+                <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                    <TextBlock
+                        Width="120"
+                        VerticalAlignment="Center"
+                        Text="Tên nhóm:" />
+                    <TextBox x:Name="TenTextBox" Width="240" />
+                </StackPanel>
+
+                <!--  Lỗi  -->
+                <TextBlock
+                    x:Name="ErrorTextBlock"
+                    MaxWidth="400"
+                    MaxHeight="30"
+                    Margin="0,10,0,0"
+                    FontWeight="SemiBold"
+                    Foreground="Red"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!--  Nút  -->
+            <StackPanel
+                Grid.Row="2"
+                HorizontalAlignment="Right"
+                Orientation="Horizontal">
+                <Button
+                    x:Name="SaveButton"
+                    Width="80"
+                    Margin="0,0,10,0"
+                    Click="SaveButton_Click"
+                    Content="Lưu"
+                    Style="{StaticResource EditButtonStyle}" />
+                <Button
+                    Width="80"
+                    Click="CloseButton_Click"
+                    Content="Huỷ"
+                    Style="{StaticResource BaseButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

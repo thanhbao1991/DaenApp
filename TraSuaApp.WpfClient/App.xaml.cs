@@ -25,17 +25,17 @@ namespace TraSuaApp.WpfClient
                 });
             };
 
-            try
-            {
-                await SeedHelper.SeedNhomSanPhamAsync();
-                MessageBox.Show("✅ Seed NhomSanPham thành công!");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"❌ Lỗi seed dữ liệu:\n{ex.Message}");
-            }
+            //try
+            //{
+            //    await SeedHelper.SeedNhomSanPhamAsync();
+            //    MessageBox.Show("✅ Seed NhomSanPham thành công!");
+            //}
+            //catch (Exception ex)
+            //{
+            //    MessageBox.Show($"❌ Lỗi seed dữ liệu:\n{ex.Message}");
+            //}
 
-            var login = new LoginWindow();
+            var login = new NhomSanPhamListWindow();
             login.Show();
         }
     }

@@ -144,6 +144,9 @@ public class {EntityName}Dto
     public Guid Id {{ get; set; }}
     public int? IdOld {{ get; set; }}
     public string Ten {{ get; set; }} = string.Empty;
+
+    public int STT {{ get; set; }}
+    public string? TenNormalized {{ get; set; }}
 }}";
     }
 
@@ -153,7 +156,6 @@ public class {EntityName}Dto
 $@"CreateMap<{EntityName}, {EntityName}Dto>().ReverseMap();";
     }
 
-    // Helper để lấy tên DbSet đúng (thêm "s" hoặc "es" theo quy tắc đơn giản)
     private string EntityNamePlural()
     {
         if (EntityName.EndsWith("s"))

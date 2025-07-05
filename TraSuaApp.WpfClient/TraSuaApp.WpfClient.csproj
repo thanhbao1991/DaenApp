@@ -16,16 +16,22 @@
     <Compile Update="Tools\CodeGeneratorWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Views\ProductEditWindow.xaml.cs">
+    <Compile Update="Views\NhomSanPhamList.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Views\AccountEditWindow.xaml.cs">
+    <Compile Update="Views\NhomSanPhamEdit.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Views\ProductListWindow.xaml.cs">
+    <Compile Update="Views\SanPhamEdit.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Views\AccountListWindow.xaml.cs">
+    <Compile Update="Views\TaiKhoanEdit.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\SanPhamList.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\TaiKhoanList.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
