@@ -71,6 +71,17 @@ namespace TraSuaApp.WpfClient.Helpers
         }
 
         // ✅ Các phương thức API
+        public static async Task<T?> Get<T>(string uri, bool includeToken = true)
+        {
+            var response = await GetAsync(uri, includeToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<T>();
+            }
+
+            var msg = await response.Content.ReadAsStringAsync();
+            throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+        }
 
         public static Task<HttpResponseMessage> GetAsync(string uri, bool includeToken = true)
         {

@@ -96,6 +96,12 @@
                         Width="120"
                         Margin="0,12,0,4"
                         Content="Tích điểm" />
+                    <ComboBox
+                        x:Name="NhomSanPhamComboBox"
+                        Width="300"
+                        DisplayMemberPath="Ten"
+                        SelectedValue="{Binding IdNhomSanPham, Mode=TwoWay}"
+                        SelectedValuePath="Id" />
 
                 </StackPanel>
 

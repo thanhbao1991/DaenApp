@@ -16,6 +16,7 @@ namespace TraSuaApp.WpfClient.Views
         private readonly bool _isEdit;
         private SanPhamDto _sanPham = new();
         private SanPhamBienTheDto? _bienTheDangChon = null;
+        private List<NhomSanPhamDto> _dsNhomSanPham = new();
 
         public bool IsSaved { get; private set; }
 
@@ -35,6 +36,11 @@ namespace TraSuaApp.WpfClient.Views
         {
             try
             {
+                // Lấy danh sách nhóm sản phẩm
+                _dsNhomSanPham = await ApiClient.Get<List<NhomSanPhamDto>>("/api/nhomsanpham");
+                NhomSanPhamComboBox.ItemsSource = _dsNhomSanPham;
+                NhomSanPhamComboBox.SelectedValue = _sanPham.IdNhomSanPham;
+
                 TenTextBox.Text = _sanPham.Ten;
                 VietTatTextBox.Text = _sanPham.VietTat;
                 MoTaTextBox.Text = _sanPham.DinhLuong;
@@ -64,6 +70,7 @@ namespace TraSuaApp.WpfClient.Views
                 _sanPham.DinhLuong = MoTaTextBox.Text.Trim();
                 _sanPham.NgungBan = NgungBanCheckBox.IsChecked == true;
                 _sanPham.TichDiem = TichDiemCheckBox.IsChecked == true;
+                _sanPham.IdNhomSanPham = NhomSanPhamComboBox.SelectedValue as Guid?;
 
                 if (string.IsNullOrWhiteSpace(_sanPham.Ten))
                     throw new Exception("Tên sản phẩm không được để trống.");
@@ -72,12 +79,10 @@ namespace TraSuaApp.WpfClient.Views
                 foreach (var bt in bienThes)
                     bt.IdSanPham = _sanPham.Id;
 
-                // ⚠️ Đảm bảo duy nhất 1 biến thể MacDinh
                 var macDinhs = bienThes.Where(x => x.MacDinh).ToList();
                 if (macDinhs.Count > 1)
                     throw new Exception("Chỉ được chọn một biến thể mặc định.");
 
-                // ⚠️ Nếu không có cái nào là mặc định thì tự chọn cái đầu tiên
                 if (macDinhs.Count == 0 && bienThes.Count > 0)
                 {
                     bienThes[0].MacDinh = true;
