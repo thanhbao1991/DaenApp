@@ -101,7 +101,7 @@ namespace TraSuaApp.WpfClient.Views
         private void ApplySearch()
         {
             var keyword = SearchTextBox.Text.Trim();
-            var filtered = TextSearchHelper.FilterAccounts(_allAccounts, keyword);
+            var filtered = TextSearchHelper.FilterTaiKhoans(_allAccounts, keyword);
 
             for (int i = 0; i < filtered.Count; i++)
                 filtered[i].STT = i + 1;

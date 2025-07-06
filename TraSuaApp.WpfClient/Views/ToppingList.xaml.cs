@@ -8,21 +8,21 @@ using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views;
 
-public partial class NhomSanPhamList : Window
+public partial class ToppingList : Window
 {
-    private List<NhomSanPhamDto> _all = new();
+    private List<ToppingDto> _all = new();
     private readonly WpfErrorHandler _errorHandler = new();
 
-    public NhomSanPhamList()
+    public ToppingList()
     {
         InitializeComponent();
         _ = LoadAsync();
-        this.PreviewKeyDown += NhomSanPhamListWindow_PreviewKeyDown;
+        this.PreviewKeyDown += ToppingListWindow_PreviewKeyDown;
     }
 
-    private async Task OpenEditWindowAsync(NhomSanPhamDto? dto = null)
+    private async Task OpenEditWindowAsync(ToppingDto? dto = null)
     {
-        var window = new NhomSanPhamEdit(dto)
+        var window = new ToppingEdit(dto)
         {
             Width = this.ActualWidth,
             Height = this.ActualHeight
@@ -31,7 +31,7 @@ public partial class NhomSanPhamList : Window
             await LoadAsync();
     }
 
-    private void NhomSanPhamListWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    private void ToppingListWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N)
         {
@@ -61,15 +61,15 @@ public partial class NhomSanPhamList : Window
         try
         {
             Mouse.OverrideCursor = Cursors.Wait;
-            var response = await ApiClient.GetAsync("/api/nhomsanpham");
+            var response = await ApiClient.GetAsync("/api/topping");
             if (!response.IsSuccessStatusCode)
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                _errorHandler.Handle(new Exception(msg), "Tải nhóm sản phẩm");
+                _errorHandler.Handle(new Exception(msg), "Tải topping");
                 return;
             }
 
-            var data = await response.Content.ReadFromJsonAsync<List<NhomSanPhamDto>>();
+            var data = await response.Content.ReadFromJsonAsync<List<ToppingDto>>();
             if (data != null)
             {
                 _all = data.OrderBy(x => x.Ten).ToList();
@@ -80,7 +80,7 @@ public partial class NhomSanPhamList : Window
         }
         catch (Exception ex)
         {
-            _errorHandler.Handle(ex, "LoadAsync");
+            _errorHandler.Handle(ex, "Load topping");
         }
         finally
         {
@@ -96,7 +96,7 @@ public partial class NhomSanPhamList : Window
         for (int i = 0; i < filtered.Count; i++)
             filtered[i].STT = i + 1;
 
-        NhomSanPhamDataGrid.ItemsSource = filtered;
+        ToppingDataGrid.ItemsSource = filtered;
     }
 
     private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -116,22 +116,22 @@ public partial class NhomSanPhamList : Window
 
     private async void EditButton_Click(object sender, RoutedEventArgs e)
     {
-        if (NhomSanPhamDataGrid.SelectedItem is not NhomSanPhamDto selected) return;
+        if (ToppingDataGrid.SelectedItem is not ToppingDto selected) return;
 
-        var response = await ApiClient.GetAsync($"/api/nhomsanpham/{selected.Id}");
+        var response = await ApiClient.GetAsync($"/api/topping/{selected.Id}");
         if (!response.IsSuccessStatusCode) return;
 
-        var latest = await response.Content.ReadFromJsonAsync<NhomSanPhamDto>();
+        var latest = await response.Content.ReadFromJsonAsync<ToppingDto>();
         if (latest != null)
             await OpenEditWindowAsync(latest);
     }
 
     private async void DeleteButton_Click(object sender, RoutedEventArgs e)
     {
-        if (NhomSanPhamDataGrid.SelectedItem is not NhomSanPhamDto selected) return;
+        if (ToppingDataGrid.SelectedItem is not ToppingDto selected) return;
 
         var confirm = MessageBox.Show(
-            $"Bạn có chắc chắn muốn xoá nhóm '{selected.Ten}'?",
+            $"Bạn có chắc chắn muốn xoá topping '{selected.Ten}'?",
             "Xác nhận xoá",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
@@ -141,7 +141,7 @@ public partial class NhomSanPhamList : Window
         try
         {
             Mouse.OverrideCursor = Cursors.Wait;
-            var response = await ApiClient.DeleteAsync($"/api/nhomsanpham/{selected.Id}");
+            var response = await ApiClient.DeleteAsync($"/api/topping/{selected.Id}");
 
             if (response.IsSuccessStatusCode)
             {
@@ -150,12 +150,12 @@ public partial class NhomSanPhamList : Window
             else
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                _errorHandler.Handle(new Exception(msg), "Xoá nhóm sản phẩm");
+                _errorHandler.Handle(new Exception(msg), "Xoá topping");
             }
         }
         catch (Exception ex)
         {
-            _errorHandler.Handle(ex, "DeleteButton_Click");
+            _errorHandler.Handle(ex, "Delete topping");
         }
         finally
         {
@@ -163,15 +163,15 @@ public partial class NhomSanPhamList : Window
         }
     }
 
-    private async void NhomSanPhamDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private async void ToppingDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        var row = ItemsControl.ContainerFromElement(NhomSanPhamDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
+        var row = ItemsControl.ContainerFromElement(ToppingDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
         if (row == null) return;
 
-        if (row.Item is NhomSanPhamDto selected)
+        if (row.Item is ToppingDto selected)
         {
-            var response = await ApiClient.GetAsync($"/api/nhomsanpham/{selected.Id}");
-            var latest = await response.Content.ReadFromJsonAsync<NhomSanPhamDto>();
+            var response = await ApiClient.GetAsync($"/api/topping/{selected.Id}");
+            var latest = await response.Content.ReadFromJsonAsync<ToppingDto>();
             if (latest != null)
                 await OpenEditWindowAsync(latest);
         }

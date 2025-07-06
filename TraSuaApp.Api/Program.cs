@@ -24,7 +24,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
            .EnableSensitiveDataLogging()
 );
 
-// Đăng ký các servicebuilder.Services.AddScoped<ISanPhamService, SanPhamService>();
+// Đăng ký các service
+builder.Services.AddScoped<IToppingService, ToppingService>();
 builder.Services.AddScoped<INhomSanPhamService, NhomSanPhamService>();
 builder.Services.AddScoped<ISanPhamService, SanPhamService>();
 builder.Services.AddScoped<ITaiKhoanService, TaiKhoanService>();

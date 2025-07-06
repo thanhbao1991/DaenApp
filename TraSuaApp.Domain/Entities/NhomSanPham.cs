@@ -8,4 +8,6 @@ public class NhomSanPham
 
 
     public ICollection<SanPham> SanPhams { get; set; } = new List<SanPham>();
+    public List<ToppingNhomSanPham> DanhSachTopping { get; set; } = new();
+
 }

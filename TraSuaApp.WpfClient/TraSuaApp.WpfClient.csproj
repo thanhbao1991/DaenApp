@@ -16,6 +16,12 @@
     <Compile Update="Tools\CodeGeneratorWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\ToppingList.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\ToppingEdit.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\NhomSanPhamList.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

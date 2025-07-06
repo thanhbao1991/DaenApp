@@ -81,7 +81,7 @@ public partial class SanPhamList : Window
     private void ApplySearch()
     {
         var keyword = SearchTextBox.Text.Trim();
-        var filtered = TextSearchHelper.FilterProducts(_allProducts, keyword);
+        var filtered = TextSearchHelper.FilterSanPhams(_allProducts, keyword);
 
         for (int i = 0; i < filtered.Count; i++)
             filtered[i].STT = i + 1;

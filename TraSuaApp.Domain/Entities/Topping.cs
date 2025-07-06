@@ -10,5 +10,5 @@ public class Topping
 
     public bool NgungBan { get; set; }
 
-    public ICollection<NhomSanPham> NhomSanPhams { get; set; } = new List<NhomSanPham>();
+    public List<ToppingNhomSanPham> DanhSachNhomSanPham { get; set; } = new();
 }

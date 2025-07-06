@@ -1,0 +1,105 @@
+﻿<Window
+    x:Class="TraSuaApp.WpfClient.Views.ToppingEdit"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Width="800"
+    Height="520"
+    AllowsTransparency="True"
+    Background="#88888888"
+    PreviewKeyDown="Window_KeyDown"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="None">
+
+    <Border
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        Background="White"
+        BorderBrush="#DDD"
+        BorderThickness="1"
+        CornerRadius="12">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--  Tiêu đề  -->
+            <DockPanel
+                Grid.Row="0"
+                Margin="0,0,0,10"
+                LastChildFill="True">
+                <TextBlock
+                    Margin="10,5"
+                    VerticalAlignment="Center"
+                    FontSize="20"
+                    FontWeight="Bold"
+                    Foreground="#333"
+                    Text="Topping" />
+
+                <Button
+                    Width="28"
+                    Height="28"
+                    Margin="0,5,5,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="CloseButton_Click"
+                    Content="✖"
+                    Cursor="Hand"
+                    DockPanel.Dock="Right"
+                    FontSize="14"
+                    Foreground="#888" />
+            </DockPanel>
+
+            <!--  Nội dung form  -->
+            <StackPanel Grid.Row="1" Margin="0,10,0,10">
+                <TextBlock Margin="0,0,0,5" Text="Tên topping:" />
+                <TextBox x:Name="TenTextBox" Height="32" />
+            </StackPanel>
+
+            <!--  Nhóm sản phẩm  -->
+            <StackPanel Grid.Row="2" Margin="0,0,0,10">
+                <TextBlock Margin="0,0,0,5" Text="Áp dụng cho nhóm sản phẩm:" />
+                <ListBox
+                    x:Name="NhomSanPhamListBox"
+                    Background="Transparent"
+                    BorderBrush="#CCC"
+                    BorderThickness="1"
+                    Focusable="False"
+                    SelectionChanged="NhomSanPhamListBox_SelectionChanged"
+                    SelectionMode="Single">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="3" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox
+                                
+                                Content="{Binding Ten}"
+                                IsChecked="{Binding IsChecked, Mode=TwoWay}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </StackPanel>
+
+            <!--  Nút và lỗi  -->
+            <StackPanel Grid.Row="3" Orientation="Vertical">
+                <TextBlock
+                    x:Name="ErrorTextBlock"
+                    Margin="0,0,0,5"
+                    Foreground="Red" />
+                <Button
+                    x:Name="SaveButton"
+                    Click="SaveButton_Click"
+                    Content="Lưu"
+                    Style="{StaticResource SaveButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

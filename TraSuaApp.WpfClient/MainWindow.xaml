@@ -29,19 +29,27 @@
                 Foreground="#333"
                 Text="🟟 TRA SUA APP"
                 TextAlignment="Center" />
-
             <Button
-                Click="TaiKhoan_Click"
+                Click="MenuButton_Click"
                 Content="Tài khoản"
-                Style="{StaticResource MenuButtonStyle}" />
+                Style="{StaticResource MenuButtonStyle}"
+                Tag="AccountList" />
             <Button
-                Click="NhomSanPham_Click"
+                Click="MenuButton_Click"
                 Content="Nhóm sản phẩm"
-                Style="{StaticResource MenuButtonStyle}" />
+                Style="{StaticResource MenuButtonStyle}"
+                Tag="NhomSanPhamList" />
             <Button
-                Click="SanPham_Click"
+                Click="MenuButton_Click"
                 Content="Sản phẩm"
-                Style="{StaticResource MenuButtonStyle}" />
+                Style="{StaticResource MenuButtonStyle}"
+                Tag="SanPhamList" />
+            <Button
+                Click="MenuButton_Click"
+                Content="Topping"
+                Style="{StaticResource MenuButtonStyle}"
+                Tag="ToppingList" />
+
 
             <!--  Thêm nút khác nếu cần  -->
 

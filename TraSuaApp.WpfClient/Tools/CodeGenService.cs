@@ -5,7 +5,10 @@
     public string DtoNamespace { get; set; } = "TraSuaApp.Shared.Dtos";
     public string InterfaceNamespace { get; set; } = "TraSuaApp.Application.Interfaces";
     public string DbContextName { get; set; } = "AppDbContext";
-
+    public string GenerateAddScopedService()
+    {
+        return $"builder.Services.AddScoped<I{EntityName}Service, {EntityName}Service>();";
+    }
     public string GenerateServiceInterface()
     {
         return

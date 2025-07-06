@@ -7,7 +7,7 @@ public class NhomSanPhamDto
     public string? TenNormalized { get; set; }
 
 
-    public Guid? Id { get; set; }
+    public Guid Id { get; set; }
     public string Ten { get; set; } = string.Empty;
     public string? MoTa { get; set; }
     public int? IdOld { get; set; }

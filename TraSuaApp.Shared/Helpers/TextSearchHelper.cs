@@ -26,9 +26,6 @@ namespace TraSuaApp.Shared.Helpers
                 .Replace("đ", "d");
         }
 
-        /// <summary>
-        /// Tạo chuỗi viết tắt từ mỗi chữ cái đầu tiên của các từ trong tên.
-        /// </summary>
         public static string GetAcronym(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return "";
@@ -42,9 +39,6 @@ namespace TraSuaApp.Shared.Helpers
             return acronym.ToString(); // không cần .ToLowerInvariant() nữa vì Normalize đã làm
         }
 
-        /// <summary>
-        /// Kiểm tra keyword khớp với chuỗi normalize hoặc viết tắt.
-        /// </summary>
         public static bool IsMatch(string keyword, string text)
         {
             var normalizedKeyword = NormalizeText(keyword);
@@ -54,10 +48,7 @@ namespace TraSuaApp.Shared.Helpers
             return normalizedText.Contains(normalizedKeyword) || acronymText.Contains(normalizedKeyword);
         }
 
-        /// <summary>
-        /// Lọc danh sách sản phẩm dựa trên Tên và Viết tắt.
-        /// </summary>
-        public static List<SanPhamDto> FilterProducts(List<SanPhamDto> allProducts, string keyword)
+        public static List<SanPhamDto> FilterSanPhams(List<SanPhamDto> allProducts, string keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword))
                 return allProducts;
@@ -68,7 +59,7 @@ namespace TraSuaApp.Shared.Helpers
                     (!string.IsNullOrEmpty(x.VietTat) && NormalizeText(x.VietTat).Contains(NormalizeText(keyword)))
             ).ToList();
         }
-        public static List<TaiKhoanDto> FilterAccounts(List<TaiKhoanDto> allAccounts, string keyword)
+        public static List<TaiKhoanDto> FilterTaiKhoans(List<TaiKhoanDto> allAccounts, string keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword))
                 return allAccounts;
@@ -79,15 +70,14 @@ namespace TraSuaApp.Shared.Helpers
             ).ToList();
         }
 
-        public static List<NhomSanPhamDto> FilterNhomSanPhams(List<NhomSanPhamDto> allItems, string keyword)
+        public static List<T> FilterByTen<T>(List<T> items, string keyword, Func<T, string?> getText)
         {
             if (string.IsNullOrWhiteSpace(keyword))
-                return allItems;
+                return items;
 
-            return allItems.Where(x =>
-                (!string.IsNullOrWhiteSpace(x.Ten) && IsMatch(keyword, x.Ten))
-            ).ToList();
-
+            return items
+                .Where(x => !string.IsNullOrWhiteSpace(getText(x)) && IsMatch(keyword, getText(x)!))
+                .ToList();
         }
     }
 }

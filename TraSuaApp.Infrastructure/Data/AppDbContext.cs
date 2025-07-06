@@ -12,20 +12,34 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Seed tài khoản mẫu
-        modelBuilder.Entity<TaiKhoan>().HasData(
-            new TaiKhoan
-            {
-                Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                TenDangNhap = "admin",
-                MatKhau = "$2a$11$aJuKxwEIPxnHRKFX2rfEyO9bWhe1EkoeAEUtWwSadgCS/Cha49uVO", // 🟟 Mật khẩu thô để test, sau này cần mã hoá
-                TenHienThi = "Quản trị viên",
-                VaiTro = "Admin",
-                IsActive = true,
-                ThoiGianTao = new DateTime(2025, 7, 1, 0, 0, 0)
-            }
-        );
+        //// Seed tài khoản mẫu
+        //modelBuilder.Entity<TaiKhoan>().HasData(
+        //    new TaiKhoan
+        //    {
+        //        Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+        //        TenDangNhap = "admin",
+        //        MatKhau = "$2a$11$aJuKxwEIPxnHRKFX2rfEyO9bWhe1EkoeAEUtWwSadgCS/Cha49uVO", // 🟟 Mật khẩu thô để test, sau này cần mã hoá
+        //        TenHienThi = "Quản trị viên",
+        //        VaiTro = "Admin",
+        //        IsActive = true,
+        //        ThoiGianTao = new DateTime(2025, 7, 1, 0, 0, 0)
+        //    }
+        //);
 
+
+        //ToppingNhomSanPham
+        modelBuilder.Entity<ToppingNhomSanPham>()
+    .HasKey(x => new { x.IdTopping, x.IdNhomSanPham });
+        modelBuilder.Entity<ToppingNhomSanPham>()
+            .HasOne(x => x.Topping)
+            .WithMany(x => x.DanhSachNhomSanPham)
+            .HasForeignKey(x => x.IdTopping)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<ToppingNhomSanPham>()
+            .HasOne(x => x.NhomSanPham)
+            .WithMany(x => x.DanhSachTopping)
+            .HasForeignKey(x => x.IdNhomSanPham)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // ChiTietHoaDon
         modelBuilder.Entity<ChiTietHoaDon>().Property(x => x.DonGia).HasPrecision(18, 2);
