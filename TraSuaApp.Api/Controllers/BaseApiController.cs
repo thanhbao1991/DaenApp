@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
 
@@ -14,4 +15,7 @@ public abstract class BaseApiController : ControllerBase
 
     protected IActionResult Result(bool success, string message)
         => success ? Ok(new { Message = message }) : BadRequest(new { Message = message });
+
+    protected IActionResult FromResult(Result result)
+        => result.IsSuccess ? Ok(new { Message = result.Message }) : BadRequest(new { Message = result.Message });
 }
