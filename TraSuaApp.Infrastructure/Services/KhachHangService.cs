@@ -5,6 +5,7 @@ using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Infrastructure.Services;
 
@@ -47,7 +48,6 @@ public class KhachHangService : IKhachHangService
             var entity = _mapper.Map<KhachHang>(dto);
             entity.Id = Guid.NewGuid();
 
-            // Xử lý số điện thoại
             entity.PhoneNumbers = dto.PhoneNumbers?
                 .Select(p => new CustomerPhoneNumber
                 {
@@ -60,7 +60,6 @@ public class KhachHangService : IKhachHangService
             if (entity.PhoneNumbers.Count(p => p.IsDefault) > 1)
                 throw new Exception("Chỉ được chọn một số điện thoại mặc định.");
 
-            // Xử lý địa chỉ
             entity.ShippingAddresses = dto.ShippingAddresses?
                 .Select(d => new ShippingAddress
                 {
@@ -84,7 +83,7 @@ public class KhachHangService : IKhachHangService
         }
     }
 
-    public async Task<bool> UpdateAsync(Guid id, KhachHangDto dto)
+    public async Task<Result> UpdateAsync(Guid id, KhachHangDto dto)
     {
         try
         {
@@ -93,11 +92,11 @@ public class KhachHangService : IKhachHangService
                 .Include(kh => kh.ShippingAddresses)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (entity == null) return false;
+            if (entity == null)
+                return new Result { IsSuccess = false, Message = "Không tìm thấy khách hàng." };
 
             _mapper.Map(dto, entity);
 
-            // Xử lý số điện thoại
             _context.CustomerPhoneNumbers.RemoveRange(entity.PhoneNumbers);
             entity.PhoneNumbers = dto.PhoneNumbers?
                 .Select(p => new CustomerPhoneNumber
@@ -109,9 +108,8 @@ public class KhachHangService : IKhachHangService
                 }).ToList() ?? new();
 
             if (entity.PhoneNumbers.Count(p => p.IsDefault) > 1)
-                throw new Exception("Chỉ được chọn một số điện thoại mặc định.");
+                return new Result { IsSuccess = false, Message = "Chỉ được chọn một số điện thoại mặc định." };
 
-            // Xử lý địa chỉ
             _context.ShippingAddresses.RemoveRange(entity.ShippingAddresses);
             entity.ShippingAddresses = dto.ShippingAddresses?
                 .Select(d => new ShippingAddress
@@ -123,10 +121,10 @@ public class KhachHangService : IKhachHangService
                 }).ToList() ?? new();
 
             if (entity.ShippingAddresses.Count(d => d.IsDefault) > 1)
-                throw new Exception("Chỉ được chọn một địa chỉ mặc định.");
+                return new Result { IsSuccess = false, Message = "Chỉ được chọn một địa chỉ mặc định." };
 
             await _context.SaveChangesAsync();
-            return true;
+            return new Result { IsSuccess = true, Message = "Cập nhật thành công." };
         }
         catch (Exception ex)
         {
@@ -134,20 +132,21 @@ public class KhachHangService : IKhachHangService
         }
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task<Result> DeleteAsync(Guid id)
     {
         var entity = await _context.KhachHangs
             .Include(kh => kh.PhoneNumbers)
             .Include(kh => kh.ShippingAddresses)
             .FirstOrDefaultAsync(x => x.Id == id);
 
-        if (entity == null) return false;
+        if (entity == null)
+            return new Result { IsSuccess = false, Message = "Không tìm thấy khách hàng." };
 
         _context.CustomerPhoneNumbers.RemoveRange(entity.PhoneNumbers);
         _context.ShippingAddresses.RemoveRange(entity.ShippingAddresses);
         _context.KhachHangs.Remove(entity);
 
         await _context.SaveChangesAsync();
-        return true;
+        return new Result { IsSuccess = true, Message = "Xoá thành công." };
     }
 }

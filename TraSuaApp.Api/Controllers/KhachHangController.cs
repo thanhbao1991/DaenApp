@@ -8,7 +8,7 @@ namespace TraSuaApp.Api.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class KhachHangController : BaseApiController // hoặc : BaseApiController nếu bạn có BaseApiController
+public class KhachHangController : BaseApiController
 {
     private readonly IKhachHangService _service;
 
@@ -24,15 +24,17 @@ public class KhachHangController : BaseApiController // hoặc : BaseApiControll
         return Ok(result);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await _service.GetByIdAsync(id);
-        return result == null ? NotFound() : Ok(result);
+        return result == null
+            ? NotFound(new { Message = "Không tìm thấy khách hàng." })
+            : Ok(result);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(KhachHangDto dto)
+    public async Task<IActionResult> Create([FromBody] KhachHangDto dto)
     {
         try
         {
@@ -41,35 +43,25 @@ public class KhachHangController : BaseApiController // hoặc : BaseApiControll
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, new { Message = ex.Message });
         }
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, KhachHangDto dto)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] KhachHangDto dto)
     {
-        try
-        {
-            var result = await _service.UpdateAsync(id, dto);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
+        var result = await _service.UpdateAsync(id, dto);
+        return result.IsSuccess
+            ? Ok(new { result.Message })
+            : BadRequest(new { result.Message });
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        try
-        {
-            var result = await _service.DeleteAsync(id);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
+        var result = await _service.DeleteAsync(id);
+        return result.IsSuccess
+            ? Ok(new { result.Message })
+            : BadRequest(new { result.Message });
     }
 }
