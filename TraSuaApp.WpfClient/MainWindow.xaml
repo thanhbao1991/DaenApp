@@ -31,23 +31,28 @@
                 TextAlignment="Center" />
             <Button
                 Click="MenuButton_Click"
+                Content="Bot"
+                Style="{StaticResource DeleteButtonStyle}"
+                Tag="CodeGeneratorWindow" />
+            <Button
+                Click="MenuButton_Click"
                 Content="Tài khoản"
-                Style="{StaticResource MenuButtonStyle}"
-                Tag="AccountList" />
+                Style="{StaticResource DeleteButtonStyle}"
+                Tag="TaiKhoanList" />
             <Button
                 Click="MenuButton_Click"
                 Content="Nhóm sản phẩm"
-                Style="{StaticResource MenuButtonStyle}"
+                Style="{StaticResource DeleteButtonStyle}"
                 Tag="NhomSanPhamList" />
             <Button
                 Click="MenuButton_Click"
                 Content="Sản phẩm"
-                Style="{StaticResource MenuButtonStyle}"
+                Style="{StaticResource DeleteButtonStyle}"
                 Tag="SanPhamList" />
             <Button
                 Click="MenuButton_Click"
                 Content="Topping"
-                Style="{StaticResource MenuButtonStyle}"
+                Style="{StaticResource DeleteButtonStyle}"
                 Tag="ToppingList" />
 
 

@@ -79,10 +79,7 @@
                     </ListBox.ItemsPanel>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <CheckBox
-                                
-                                Content="{Binding Ten}"
-                                IsChecked="{Binding IsChecked, Mode=TwoWay}" />
+                            <CheckBox Content="{Binding Ten}" IsChecked="{Binding IsChecked, Mode=TwoWay}" />
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>

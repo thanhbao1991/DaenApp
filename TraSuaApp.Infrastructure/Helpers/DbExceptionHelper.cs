@@ -25,7 +25,7 @@ namespace TraSuaApp.Infrastructure.Helpers
 
                     foreach (var pair in messages)
                     {
-                        if (sqlEx.Message.Contains(pair.Key))
+                        if (sqlEx.Message.IndexOf(pair.Key, StringComparison.OrdinalIgnoreCase) >= 0)
                             return new Exception(pair.Value);
                     }
                 }

@@ -5,10 +5,12 @@
     public string DtoNamespace { get; set; } = "TraSuaApp.Shared.Dtos";
     public string InterfaceNamespace { get; set; } = "TraSuaApp.Application.Interfaces";
     public string DbContextName { get; set; } = "AppDbContext";
+
     public string GenerateAddScopedService()
     {
         return $"builder.Services.AddScoped<I{EntityName}Service, {EntityName}Service>();";
     }
+
     public string GenerateServiceInterface()
     {
         return
@@ -34,6 +36,7 @@ using Microsoft.EntityFrameworkCore;
 using {InterfaceNamespace};
 using {EntityNamespace};
 using TraSuaApp.Infrastructure.Data;
+using TraSuaApp.Infrastructure.Helpers;
 using {DtoNamespace};
 
 namespace TraSuaApp.Infrastructure.Services;
@@ -63,31 +66,52 @@ public class {EntityName}Service : I{EntityName}Service
 
     public async Task<{EntityName}Dto> CreateAsync({EntityName}Dto dto)
     {{
-        var entity = _mapper.Map<{EntityName}>(dto);
-        entity.Id = Guid.NewGuid();
-        _context.{EntityNamePlural()}.Add(entity);
-        await _context.SaveChangesAsync();
-        return _mapper.Map<{EntityName}Dto>(entity);
+        try
+        {{
+            var entity = _mapper.Map<{EntityName}>(dto);
+            entity.Id = Guid.NewGuid();
+            _context.{EntityNamePlural()}.Add(entity);
+            await _context.SaveChangesAsync();
+            return _mapper.Map<{EntityName}Dto>(entity);
+        }}
+        catch (Exception ex)
+        {{
+            throw DbExceptionHelper.Handle(ex);
+        }}
     }}
 
     public async Task<bool> UpdateAsync(Guid id, {EntityName}Dto dto)
     {{
-        var entity = await _context.{EntityNamePlural()}.FindAsync(id);
-        if (entity == null) return false;
+        try
+        {{
+            var entity = await _context.{EntityNamePlural()}.FindAsync(id);
+            if (entity == null) return false;
 
-        _mapper.Map(dto, entity);
-        await _context.SaveChangesAsync();
-        return true;
+            _mapper.Map(dto, entity);
+            await _context.SaveChangesAsync();
+            return true;
+        }}
+        catch (Exception ex)
+        {{
+            throw DbExceptionHelper.Handle(ex);
+        }}
     }}
 
     public async Task<bool> DeleteAsync(Guid id)
     {{
-        var entity = await _context.{EntityNamePlural()}.FindAsync(id);
-        if (entity == null) return false;
+        try
+        {{
+            var entity = await _context.{EntityNamePlural()}.FindAsync(id);
+            if (entity == null) return false;
 
-        _context.{EntityNamePlural()}.Remove(entity);
-        await _context.SaveChangesAsync();
-        return true;
+            _context.{EntityNamePlural()}.Remove(entity);
+            await _context.SaveChangesAsync();
+            return true;
+        }}
+        catch (Exception ex)
+        {{
+            throw DbExceptionHelper.Handle(ex);
+        }}
     }}
 }}";
     }
@@ -95,12 +119,15 @@ public class {EntityName}Service : I{EntityName}Service
     public string GenerateController()
     {
         return
-$@"using Microsoft.AspNetCore.Mvc;
+$@"using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using TraSuaApp.Infrastructure.Helpers;
 using {InterfaceNamespace};
 using {DtoNamespace};
 
 namespace TraSuaApp.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route(""api/[controller]"")]
 public class {EntityName}Controller : ControllerBase
@@ -120,20 +147,59 @@ public class {EntityName}Controller : ControllerBase
     public async Task<IActionResult> GetById(Guid id)
     {{
         var result = await _service.GetByIdAsync(id);
-        return result == null ? NotFound() : Ok(result);
+        return result == null
+            ? NotFound(new {{ Message = ""Không tìm thấy {EntityName.ToLower()}."" }})
+            : Ok(result);
     }}
 
     [HttpPost]
-    public async Task<IActionResult> Create({EntityName}Dto dto)
-        => Ok(await _service.CreateAsync(dto));
+    public async Task<IActionResult> Create([FromBody] {EntityName}Dto dto)
+    {{
+        try
+        {{
+            var result = await _service.CreateAsync(dto);
+            return Ok(result);
+        }}
+        catch (Exception ex)
+        {{
+            var friendly = DbExceptionHelper.Handle(ex);
+            return StatusCode(500, new {{ Message = friendly.Message }});
+        }}
+    }}
 
     [HttpPut(""{{id}}"")]
-    public async Task<IActionResult> Update(Guid id, {EntityName}Dto dto)
-        => Ok(await _service.UpdateAsync(id, dto));
+    public async Task<IActionResult> Update(Guid id, [FromBody] {EntityName}Dto dto)
+    {{
+        try
+        {{
+            var result = await _service.UpdateAsync(id, dto);
+            return result
+                ? Ok(new {{ Message = ""Cập nhật thành công."" }})
+                : NotFound(new {{ Message = ""Không tìm thấy {EntityName.ToLower()}."" }});
+        }}
+        catch (Exception ex)
+        {{
+            var friendly = DbExceptionHelper.Handle(ex);
+            return StatusCode(500, new {{ Message = friendly.Message }});
+        }}
+    }}
 
     [HttpDelete(""{{id}}"")]
     public async Task<IActionResult> Delete(Guid id)
-        => Ok(await _service.DeleteAsync(id));
+    {{
+        try
+        {{
+            var result = await _service.DeleteAsync(id);
+            return result
+                ? Ok(new {{ Message = ""Xoá thành công."" }})
+                : NotFound(new {{ Message = ""Không tìm thấy {EntityName.ToLower()}."" }});
+        }}
+        catch (Exception ex)
+        {{
+            var friendly = DbExceptionHelper.Handle(ex);
+            return StatusCode(500, new {{ Message = friendly.Message }});
+        }}
+    }}
 }}";
     }
 
@@ -145,9 +211,7 @@ $@"namespace {DtoNamespace};
 public class {EntityName}Dto
 {{
     public Guid Id {{ get; set; }}
-    public int? IdOld {{ get; set; }}
     public string Ten {{ get; set; }} = string.Empty;
-
     public int STT {{ get; set; }}
     public string? TenNormalized {{ get; set; }}
 }}";

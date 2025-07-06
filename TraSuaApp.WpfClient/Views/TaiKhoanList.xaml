@@ -86,16 +86,19 @@
                     Orientation="Horizontal">
                     <Button
                         Width="80"
+                        Margin="0,0,4,0"
                         Click="AddButton_Click"
                         Content="Thêm"
                         Style="{StaticResource AddButtonStyle}" />
                     <Button
                         Width="80"
+                        Margin="0,0,4,0"
                         Click="EditButton_Click"
                         Content="Sửa"
                         Style="{StaticResource EditButtonStyle}" />
                     <Button
                         Width="80"
+                        Margin="0,0,4,0"
                         Click="DeleteButton_Click"
                         Content="Xoá"
                         Style="{StaticResource DeleteButtonStyle}" />
@@ -141,7 +144,6 @@
                     <DataGridCheckBoxColumn
                         Width="80"
                         Binding="{Binding IsActive}"
-                        ElementStyle="{StaticResource CenteredDataGridCheckBoxStyle}"
                         Header="Kích hoạt" />
 
                     <DataGridTextColumn

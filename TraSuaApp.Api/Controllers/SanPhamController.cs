@@ -16,34 +16,32 @@ public class SanPhamController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll() =>
-        Ok(await _service.GetAllAsync());
+    public async Task<IActionResult> GetAll()
+        => Ok(await _service.GetAllAsync());
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await _service.GetByIdAsync(id);
-        return result == null ? NotFound() : Ok(result);
+        return result == null
+            ? NotFound(new { Message = "Không tìm thấy sản phẩm." })
+            : Ok(result);
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] SanPhamDto dto)
-    {
-        var result = await _service.CreateAsync(dto);
-        return Ok(result);
-    }
+        => Ok(await _service.CreateAsync(dto));
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] SanPhamDto dto)
-    {
-        var result = await _service.UpdateAsync(id, dto);
-        return Ok(result);
-    }
+        => Ok(await _service.UpdateAsync(id, dto));
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var success = await _service.DeleteAsync(id);
-        return success ? Ok() : NotFound();
+        return success
+            ? Ok(new { Message = "Xóa thành công." })
+            : NotFound(new { Message = "Không tìm thấy sản phẩm." });
     }
 }

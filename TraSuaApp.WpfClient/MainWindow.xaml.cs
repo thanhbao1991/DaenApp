@@ -1,6 +1,5 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using TraSuaApp.WpfClient.Tools;
 
 namespace TraSuaApp.WpfClient.Views
 {
@@ -45,7 +44,7 @@ namespace TraSuaApp.WpfClient.Views
         }
         private void Thoat_Click(object sender, RoutedEventArgs e)
         {
-            new CodeGeneratorWindow().ShowDialog();
+            //  new CodeGeneratorWindow().ShowDialog();
 
             this.Close();
         }

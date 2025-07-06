@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
+using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Dtos;
 
 namespace TraSuaApp.Infrastructure.Services;
@@ -22,7 +23,7 @@ public class ToppingService : IToppingService
     {
         var list = await _context.Toppings
             .Include(t => t.DanhSachNhomSanPham)
-            .ThenInclude(tp => tp.NhomSanPham)
+                .ThenInclude(tp => tp.NhomSanPham)
             .ToListAsync();
 
         return _mapper.Map<List<ToppingDto>>(list);
@@ -39,58 +40,79 @@ public class ToppingService : IToppingService
 
     public async Task<ToppingDto> CreateAsync(ToppingDto dto)
     {
-        var entity = _mapper.Map<Topping>(dto);
-        entity.Id = Guid.NewGuid();
+        try
+        {
+            var entity = _mapper.Map<Topping>(dto);
+            entity.Id = Guid.NewGuid();
 
-        // Gán danh sách liên kết nhóm sản phẩm
-        entity.DanhSachNhomSanPham = dto.IdNhomSanPham?
-            .Select(id => new ToppingNhomSanPham
-            {
-                IdTopping = entity.Id,
-                IdNhomSanPham = id
-            }).ToList() ?? new();
+            entity.DanhSachNhomSanPham = dto.IdNhomSanPham?
+                .Select(id => new ToppingNhomSanPham
+                {
+                    IdTopping = entity.Id,
+                    IdNhomSanPham = id
+                }).ToList() ?? new();
 
-        _context.Toppings.Add(entity);
-        await _context.SaveChangesAsync();
+            _context.Toppings.Add(entity);
+            await _context.SaveChangesAsync();
 
-        return _mapper.Map<ToppingDto>(entity);
+            return _mapper.Map<ToppingDto>(entity);
+        }
+        catch (DbUpdateException ex)
+        {
+            throw DbExceptionHelper.Handle(ex);
+        }
     }
 
     public async Task<bool> UpdateAsync(Guid id, ToppingDto dto)
     {
-        var entity = await _context.Toppings
-            .Include(t => t.DanhSachNhomSanPham)
-            .FirstOrDefaultAsync(t => t.Id == id);
-
-        if (entity == null) return false;
-
-        _mapper.Map(dto, entity);
-
-        // Cập nhật lại quan hệ NhomSanPham
-        entity.DanhSachNhomSanPham.Clear();
-        if (dto.IdNhomSanPham != null)
+        try
         {
-            foreach (var idNhom in dto.IdNhomSanPham)
-            {
-                entity.DanhSachNhomSanPham.Add(new ToppingNhomSanPham
-                {
-                    IdTopping = id,
-                    IdNhomSanPham = idNhom
-                });
-            }
-        }
+            var entity = await _context.Toppings
+                .Include(t => t.DanhSachNhomSanPham)
+                .FirstOrDefaultAsync(t => t.Id == id);
 
-        await _context.SaveChangesAsync();
-        return true;
+            if (entity == null)
+                return false;
+
+            _mapper.Map(dto, entity);
+
+            // Cập nhật lại bảng trung gian
+            entity.DanhSachNhomSanPham.Clear();
+            if (dto.IdNhomSanPham != null)
+            {
+                foreach (var idNhom in dto.IdNhomSanPham)
+                {
+                    entity.DanhSachNhomSanPham.Add(new ToppingNhomSanPham
+                    {
+                        IdTopping = id,
+                        IdNhomSanPham = idNhom
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException ex)
+        {
+            throw DbExceptionHelper.Handle(ex);
+        }
     }
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        var entity = await _context.Toppings.FindAsync(id);
-        if (entity == null) return false;
+        try
+        {
+            var entity = await _context.Toppings.FindAsync(id);
+            if (entity == null) return false;
 
-        _context.Toppings.Remove(entity);
-        await _context.SaveChangesAsync();
-        return true;
+            _context.Toppings.Remove(entity);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException ex)
+        {
+            throw DbExceptionHelper.Handle(ex);
+        }
     }
 }

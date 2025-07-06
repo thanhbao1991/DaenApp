@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
+using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Dtos;
 
 namespace TraSuaApp.Infrastructure.Services;
@@ -35,41 +36,60 @@ public class NhomSanPhamService : INhomSanPhamService
 
     public async Task<NhomSanPhamDto> CreateAsync(NhomSanPhamDto dto)
     {
-        // ✅ Kiểm tra trùng tên
-        var trungTen = await _context.NhomSanPhams.AnyAsync(x => x.Ten == dto.Ten);
-        if (trungTen)
-            throw new Exception("Tên nhóm sản phẩm đã tồn tại.");
+        try
+        {
+            // ✅ Kiểm tra trùng tên
+            var trungTen = await _context.NhomSanPhams.AnyAsync(x => x.Ten == dto.Ten);
+            if (trungTen)
+                throw new Exception("Tên nhóm sản phẩm đã tồn tại.");
 
-        var entity = _mapper.Map<NhomSanPham>(dto);
-        entity.Id = Guid.NewGuid();
+            var entity = _mapper.Map<NhomSanPham>(dto);
+            entity.Id = Guid.NewGuid();
 
-        _context.NhomSanPhams.Add(entity);
-        await _context.SaveChangesAsync();
+            _context.NhomSanPhams.Add(entity);
+            await _context.SaveChangesAsync();
 
-        return _mapper.Map<NhomSanPhamDto>(entity);
+            return _mapper.Map<NhomSanPhamDto>(entity);
+        }
+        catch (Exception ex)
+        {
+            throw DbExceptionHelper.Handle(ex);
+        }
     }
 
     public async Task<bool> UpdateAsync(Guid id, NhomSanPhamDto dto)
     {
-        var entity = await _context.NhomSanPhams.FindAsync(id);
-        if (entity == null)
-            return false;
+        try
+        {
+            var entity = await _context.NhomSanPhams.FindAsync(id);
+            if (entity == null)
+                return false;
 
-        // ✅ Map từ dto sang entity
-        _mapper.Map(dto, entity);
-
-        await _context.SaveChangesAsync();
-        return true;
+            _mapper.Map(dto, entity);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw DbExceptionHelper.Handle(ex);
+        }
     }
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        var entity = await _context.NhomSanPhams.FindAsync(id);
-        if (entity == null)
-            return false;
+        try
+        {
+            var entity = await _context.NhomSanPhams.FindAsync(id);
+            if (entity == null)
+                return false;
 
-        _context.NhomSanPhams.Remove(entity);
-        await _context.SaveChangesAsync();
-        return true;
+            _context.NhomSanPhams.Remove(entity);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw DbExceptionHelper.Handle(ex);
+        }
     }
 }

@@ -1,9 +1,11 @@
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Shared.Dtos;
 
 namespace TraSuaApp.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ToppingController : ControllerBase
@@ -23,18 +25,29 @@ public class ToppingController : ControllerBase
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await _service.GetByIdAsync(id);
-        return result == null ? NotFound() : Ok(result);
+        return result == null
+            ? NotFound(new { Message = "Không tìm thấy topping." })
+            : Ok(result);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(ToppingDto dto)
-        => Ok(await _service.CreateAsync(dto));
+    public async Task<IActionResult> Create([FromBody] ToppingDto dto)
+    {
+        var result = await _service.CreateAsync(dto);
+        return Ok(result);
+    }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, ToppingDto dto)
-        => Ok(await _service.UpdateAsync(id, dto));
+    public async Task<IActionResult> Update(Guid id, [FromBody] ToppingDto dto)
+    {
+        var result = await _service.UpdateAsync(id, dto);
+        return Ok(result);
+    }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
-        => Ok(await _service.DeleteAsync(id));
+    {
+        var result = await _service.DeleteAsync(id);
+        return Ok(result);
+    }
 }
