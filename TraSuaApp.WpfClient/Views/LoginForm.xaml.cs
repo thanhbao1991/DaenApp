@@ -14,7 +14,7 @@ namespace TraSuaApp.WpfClient.Views
         public LoginForm()
         {
             InitializeComponent();
-            _errorHandler = new WpfErrorHandler(ErrorTextBlock); // Truyền TextBlock vào
+            _errorHandler = new WpfErrorHandler(ErrorTextBlock);
 
             if (Properties.Settings.Default.Luu)
             {
@@ -93,8 +93,17 @@ namespace TraSuaApp.WpfClient.Views
 
                         Properties.Settings.Default.Save();
 
-                        var accountListWindow = new MainWindow();
-                        accountListWindow.Show();
+                        var role = JwtHelper.GetRole(result.Token!);
+                        var userId = JwtHelper.GetUserId(result.Token!);
+
+                        var mainWindow = new MainWindow
+                        {
+                            VaiTro = role ?? "NhanVien",
+                            UserId = userId ?? "",
+                            TenHienThi = result.TenHienThi ?? "Người dùng"
+                        };
+
+                        mainWindow.Show();
                         this.Close();
                     }
                     else

@@ -6,6 +6,8 @@ using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 
+namespace TraSuaApp.Infrastructure.Services;
+
 public class TaiKhoanService : ITaiKhoanService
 {
     private readonly AppDbContext _context;
@@ -34,8 +36,8 @@ public class TaiKhoanService : ITaiKhoanService
         if (string.IsNullOrWhiteSpace(dto.TenDangNhap) || string.IsNullOrWhiteSpace(dto.MatKhau))
             return Result.Failure("Tên đăng nhập và mật khẩu là bắt buộc.");
 
-        var trung = await _context.TaiKhoans.AnyAsync(x => x.TenDangNhap == dto.TenDangNhap);
-        if (trung)
+        var exists = await _context.TaiKhoans.AnyAsync(x => x.TenDangNhap == dto.TenDangNhap);
+        if (exists)
             return Result.Failure("Tên đăng nhập đã tồn tại.");
 
         var entity = _mapper.Map<TaiKhoan>(dto);
@@ -45,6 +47,7 @@ public class TaiKhoanService : ITaiKhoanService
 
         _context.TaiKhoans.Add(entity);
         await _context.SaveChangesAsync();
+
         return Result.Success("Đã thêm tài khoản.");
     }
 
@@ -54,13 +57,12 @@ public class TaiKhoanService : ITaiKhoanService
         if (entity == null)
             return Result.Failure("Tài khoản không tồn tại.");
 
-        var exists = await _context.TaiKhoans
+        var trungTen = await _context.TaiKhoans
             .AnyAsync(x => x.TenDangNhap == dto.TenDangNhap && x.Id != id);
+        if (trungTen)
+            return Result.Failure("Tên đăng nhập đã tồn tại.");
 
-        if (exists)
-            return Result.Failure("Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác.");
-
-        // Giữ lại mật khẩu cũ nếu dto không có
+        // Giữ lại mật khẩu cũ nếu không truyền
         var oldPassword = entity.MatKhau;
 
         _mapper.Map(dto, entity);
@@ -75,12 +77,12 @@ public class TaiKhoanService : ITaiKhoanService
 
     public async Task<Result> DeleteAsync(Guid id)
     {
-        var taiKhoan = await _context.TaiKhoans.FindAsync(id);
-        if (taiKhoan == null)
+        var entity = await _context.TaiKhoans.FindAsync(id);
+        if (entity == null)
             return Result.Failure("Tài khoản không tồn tại.");
 
-        _context.TaiKhoans.Remove(taiKhoan);
+        _context.TaiKhoans.Remove(entity);
         await _context.SaveChangesAsync();
-        return Result.Success("Đã xoá thành công.");
+        return Result.Success("Đã xoá tài khoản.");
     }
 }

@@ -35,7 +35,7 @@ namespace TraSuaApp.WpfClient
             //    MessageBox.Show($"❌ Lỗi seed dữ liệu:\n{ex.Message}");
             //}
 
-            var login = new MainWindow();
+            var login = new LoginForm();
             login.Show();
         }
     }

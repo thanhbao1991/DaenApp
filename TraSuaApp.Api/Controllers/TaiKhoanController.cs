@@ -4,7 +4,7 @@ using TraSuaApp.Api.Controllers;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Shared.Dtos;
 
-[Authorize]
+[Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/[controller]")]
 public class TaiKhoanController : BaseApiController
@@ -33,7 +33,7 @@ public class TaiKhoanController : BaseApiController
     public async Task<IActionResult> Create([FromBody] TaiKhoanDto dto)
     {
         var result = await _service.CreateAsync(dto);
-        return result.ThanhCong
+        return result.IsSuccess
             ? Ok(new { result.Message })
             : BadRequest(new { result.Message });
     }
@@ -42,7 +42,7 @@ public class TaiKhoanController : BaseApiController
     public async Task<IActionResult> Update(Guid id, [FromBody] TaiKhoanDto dto)
     {
         var result = await _service.UpdateAsync(id, dto);
-        return result.ThanhCong
+        return result.IsSuccess
             ? Ok(new { result.Message })
             : BadRequest(new { result.Message });
     }
@@ -51,7 +51,7 @@ public class TaiKhoanController : BaseApiController
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _service.DeleteAsync(id);
-        return result.ThanhCong
+        return result.IsSuccess
             ? Ok(new { result.Message })
             : BadRequest(new { result.Message });
     }

@@ -5,6 +5,7 @@ using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Infrastructure.Services;
 
@@ -34,14 +35,13 @@ public class NhomSanPhamService : INhomSanPhamService
         return entity == null ? null : _mapper.Map<NhomSanPhamDto>(entity);
     }
 
-    public async Task<NhomSanPhamDto> CreateAsync(NhomSanPhamDto dto)
+    public async Task<Result> CreateAsync(NhomSanPhamDto dto)
     {
         try
         {
-            // ✅ Kiểm tra trùng tên
             var trungTen = await _context.NhomSanPhams.AnyAsync(x => x.Ten == dto.Ten);
             if (trungTen)
-                throw new Exception("Tên nhóm sản phẩm đã tồn tại.");
+                return Result.Failure("Tên nhóm sản phẩm đã tồn tại.");
 
             var entity = _mapper.Map<NhomSanPham>(dto);
             entity.Id = Guid.NewGuid();
@@ -49,47 +49,53 @@ public class NhomSanPhamService : INhomSanPhamService
             _context.NhomSanPhams.Add(entity);
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<NhomSanPhamDto>(entity);
+            return Result.Success("Đã thêm nhóm sản phẩm.");
         }
         catch (Exception ex)
         {
-            throw DbExceptionHelper.Handle(ex);
+            return Result.Failure(DbExceptionHelper.Handle(ex).Message);
         }
     }
 
-    public async Task<bool> UpdateAsync(Guid id, NhomSanPhamDto dto)
+    public async Task<Result> UpdateAsync(Guid id, NhomSanPhamDto dto)
     {
         try
         {
             var entity = await _context.NhomSanPhams.FindAsync(id);
             if (entity == null)
-                return false;
+                return Result.Failure("Nhóm sản phẩm không tồn tại.");
+
+            var trungTen = await _context.NhomSanPhams
+                .AnyAsync(x => x.Ten == dto.Ten && x.Id != id);
+
+            if (trungTen)
+                return Result.Failure("Tên nhóm sản phẩm đã tồn tại.");
 
             _mapper.Map(dto, entity);
             await _context.SaveChangesAsync();
-            return true;
+            return Result.Success("Đã cập nhật nhóm sản phẩm.");
         }
         catch (Exception ex)
         {
-            throw DbExceptionHelper.Handle(ex);
+            return Result.Failure(DbExceptionHelper.Handle(ex).Message);
         }
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task<Result> DeleteAsync(Guid id)
     {
         try
         {
             var entity = await _context.NhomSanPhams.FindAsync(id);
             if (entity == null)
-                return false;
+                return Result.Failure("Nhóm sản phẩm không tồn tại.");
 
             _context.NhomSanPhams.Remove(entity);
             await _context.SaveChangesAsync();
-            return true;
+            return Result.Success("Đã xoá nhóm sản phẩm.");
         }
         catch (Exception ex)
         {
-            throw DbExceptionHelper.Handle(ex);
+            return Result.Failure(DbExceptionHelper.Handle(ex).Message);
         }
     }
 }

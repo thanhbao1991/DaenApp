@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="TraSuaApp"
     Width="400"
+    Loaded="Window_Loaded"
     Height="500"
     AllowsTransparency="True"
     Background="Transparent"
@@ -35,6 +36,7 @@
                 Style="{StaticResource DeleteButtonStyle}"
                 Tag="CodeGeneratorWindow" />
             <Button
+                x:Name="BtnTaiKhoan"
                 Click="MenuButton_Click"
                 Content="Tài khoản"
                 Style="{StaticResource DeleteButtonStyle}"
