@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TraSuaApp.Api.Controllers;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Shared.Dtos;
 
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class TaiKhoanController : ControllerBase
+public class TaiKhoanController : BaseApiController
 {
     private readonly ITaiKhoanService _service;
 

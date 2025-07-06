@@ -8,7 +8,7 @@ namespace TraSuaApp.Api.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class ToppingController : ControllerBase
+public class ToppingController : BaseApiController
 {
     private readonly IToppingService _service;
 

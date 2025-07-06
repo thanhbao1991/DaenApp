@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
 
-namespace TraSuaApp.WpfClient.Tools
+namespace TraSuaApp.WpfClient.Views
 {
     public partial class CodeGeneratorWindow : Window
     {

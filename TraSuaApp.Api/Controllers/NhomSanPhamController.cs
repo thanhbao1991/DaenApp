@@ -8,7 +8,7 @@ namespace TraSuaApp.Api.Controllers;
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
-public class NhomSanPhamController : ControllerBase
+public class NhomSanPhamController : BaseApiController
 {
     private readonly INhomSanPhamService _service;
 

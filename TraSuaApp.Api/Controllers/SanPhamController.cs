@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TraSuaApp.Api.Controllers;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Shared.Dtos;
 
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
-public class SanPhamController : ControllerBase
+public class SanPhamController : BaseApiController
 {
     private readonly ISanPhamService _service;
 

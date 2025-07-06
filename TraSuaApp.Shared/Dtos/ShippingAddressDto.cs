@@ -1,0 +1,8 @@
+namespace TraSuaApp.Shared.Dtos;
+
+public class ShippingAddressDto
+{
+    public Guid Id { get; set; }
+    public string DiaChi { get; set; } = string.Empty;
+    public bool IsDefault { get; set; }
+}
