@@ -28,7 +28,7 @@ namespace TraSuaApp.Api.Middleware
                 Method = request.Method,
                 Path = request.Path,
                 QueryString = request.QueryString.ToString(),
-                IP = context.Connection.RemoteIpAddress?.ToString()
+                Ip = context.Connection.RemoteIpAddress?.ToString()
             };
 
             // Ghi lại Request Body nếu không phải GET

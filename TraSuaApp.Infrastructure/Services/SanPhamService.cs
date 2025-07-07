@@ -20,8 +20,8 @@ public class SanPhamService : ISanPhamService
     public async Task<List<SanPhamDto>> GetAllAsync()
     {
         var list = await _context.SanPhams
-            .Include(sp => sp.BienThe)
-            .Include(sp => sp.NhomSanPham)
+            .Include(sp => sp.SanPhamBienThes)
+            .Include(sp => sp.IdNhomNavigation)
             .ToListAsync();
 
         return _mapper.Map<List<SanPhamDto>>(list);
@@ -30,8 +30,8 @@ public class SanPhamService : ISanPhamService
     public async Task<SanPhamDto?> GetByIdAsync(Guid id)
     {
         var entity = await _context.SanPhams
-            .Include(sp => sp.BienThe)
-            .Include(sp => sp.NhomSanPham)
+            .Include(sp => sp.SanPhamBienThes)
+            .Include(sp => sp.IdNhomNavigation)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         return entity == null ? null : _mapper.Map<SanPhamDto>(entity);
@@ -44,7 +44,7 @@ public class SanPhamService : ISanPhamService
             var entity = _mapper.Map<SanPham>(dto);
             entity.Id = Guid.NewGuid();
 
-            foreach (var bt in entity.BienThe)
+            foreach (var bt in entity.SanPhamBienThes)
             {
                 bt.Id = Guid.NewGuid();
                 bt.IdSanPham = entity.Id;
@@ -70,7 +70,7 @@ public class SanPhamService : ISanPhamService
         try
         {
             var entity = await _context.SanPhams
-                .Include(sp => sp.BienThe)
+                .Include(sp => sp.SanPhamBienThes)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
@@ -79,12 +79,12 @@ public class SanPhamService : ISanPhamService
             _mapper.Map(dto, entity);
 
             var bienTheMoi = dto.BienThe;
-            var bienTheCu = entity.BienThe.ToList();
+            var bienTheCu = entity.SanPhamBienThes.ToList();
 
             if (bienTheMoi.Count(bt => bt.MacDinh) > 1)
                 return Result.Failure("Chỉ được chọn một biến thể mặc định.");
 
-            foreach (var bt in entity.BienThe)
+            foreach (var bt in entity.SanPhamBienThes)
                 bt.MacDinh = false;
 
             await _context.SaveChangesAsync();
@@ -94,7 +94,7 @@ public class SanPhamService : ISanPhamService
                 if (!bienTheMoi.Any(bt => bt.Id == btCu.Id))
                 {
                     bool daSuDung = await _context.ChiTietHoaDons
-                        .AnyAsync(ct => ct.IdSanPhamBienThe == btCu.Id);
+                        .AnyAsync(ct => ct.SanPhamBienTheId == btCu.Id);
 
                     if (!daSuDung)
                         _context.SanPhamBienThes.Remove(btCu);
@@ -103,7 +103,7 @@ public class SanPhamService : ISanPhamService
 
             foreach (var btMoi in bienTheMoi)
             {
-                var btEntity = entity.BienThe.FirstOrDefault(x => x.Id == btMoi.Id);
+                var btEntity = entity.SanPhamBienThes.FirstOrDefault(x => x.Id == btMoi.Id);
                 if (btEntity != null)
                 {
                     btEntity.TenBienThe = btMoi.TenBienThe;
@@ -135,13 +135,13 @@ public class SanPhamService : ISanPhamService
     public async Task<Result> DeleteAsync(Guid id)
     {
         var entity = await _context.SanPhams
-            .Include(sp => sp.BienThe)
+            .Include(sp => sp.SanPhamBienThes)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null)
             return Result.Failure("Không tìm thấy sản phẩm.");
 
-        _context.SanPhamBienThes.RemoveRange(entity.BienThe);
+        _context.SanPhamBienThes.RemoveRange(entity.SanPhamBienThes);
         _context.SanPhams.Remove(entity);
         await _context.SaveChangesAsync();
         return Result.Success("Đã xoá sản phẩm.");

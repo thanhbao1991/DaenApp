@@ -22,8 +22,7 @@ public class ToppingService : IToppingService
     public async Task<List<ToppingDto>> GetAllAsync()
     {
         var list = await _context.Toppings
-            .Include(t => t.DanhSachNhomSanPham)
-            .ThenInclude(tp => tp.NhomSanPham)
+            .Include(t => t.IdNhomSanPhams)
             .ToListAsync();
 
         return _mapper.Map<List<ToppingDto>>(list);
@@ -32,7 +31,7 @@ public class ToppingService : IToppingService
     public async Task<ToppingDto?> GetByIdAsync(Guid id)
     {
         var entity = await _context.Toppings
-            .Include(t => t.DanhSachNhomSanPham)
+            .Include(t => t.IdNhomSanPhams)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         return entity == null ? null : _mapper.Map<ToppingDto>(entity);
@@ -46,12 +45,15 @@ public class ToppingService : IToppingService
 
         var entity = _mapper.Map<Topping>(dto);
         entity.Id = Guid.NewGuid();
-        entity.DanhSachNhomSanPham = dto.IdNhomSanPham?
-            .Select(id => new ToppingNhomSanPham
-            {
-                IdTopping = entity.Id,
-                IdNhomSanPham = id
-            }).ToList() ?? new();
+
+        // Gán quan hệ many-to-many
+        if (dto.IdNhomSanPham != null)
+        {
+            var nhomSanPhams = await _context.NhomSanPhams
+                .Where(n => dto.IdNhomSanPham.Contains(n.Id))
+                .ToListAsync();
+            entity.IdNhomSanPhams = nhomSanPhams;
+        }
 
         _context.Toppings.Add(entity);
         await _context.SaveChangesAsync();
@@ -61,7 +63,7 @@ public class ToppingService : IToppingService
     public async Task<Result> UpdateAsync(Guid id, ToppingDto dto)
     {
         var entity = await _context.Toppings
-            .Include(t => t.DanhSachNhomSanPham)
+            .Include(t => t.IdNhomSanPhams)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (entity == null)
@@ -75,17 +77,14 @@ public class ToppingService : IToppingService
 
         _mapper.Map(dto, entity);
 
-        entity.DanhSachNhomSanPham.Clear();
+        // Cập nhật quan hệ many-to-many
+        entity.IdNhomSanPhams.Clear();
         if (dto.IdNhomSanPham != null)
         {
-            foreach (var idNhom in dto.IdNhomSanPham)
-            {
-                entity.DanhSachNhomSanPham.Add(new ToppingNhomSanPham
-                {
-                    IdTopping = id,
-                    IdNhomSanPham = idNhom
-                });
-            }
+            var nhomSanPhams = await _context.NhomSanPhams
+                .Where(n => dto.IdNhomSanPham.Contains(n.Id))
+                .ToListAsync();
+            entity.IdNhomSanPhams = nhomSanPhams;
         }
 
         await _context.SaveChangesAsync();
@@ -94,11 +93,16 @@ public class ToppingService : IToppingService
 
     public async Task<Result> DeleteAsync(Guid id)
     {
-        var entity = await _context.Toppings.FindAsync(id);
+        var entity = await _context.Toppings
+            .Include(t => t.IdNhomSanPhams)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
         if (entity == null)
             return Result.Failure("Topping không tồn tại.");
 
+        entity.IdNhomSanPhams.Clear();
         _context.Toppings.Remove(entity);
+
         await _context.SaveChangesAsync();
         return Result.Success("Đã xoá topping.");
     }
