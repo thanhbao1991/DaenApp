@@ -15,7 +15,7 @@ namespace TraSuaApp.Infrastructure
             services.AddScoped<ISanPhamService, SanPhamService>();
             services.AddScoped<IToppingService, ToppingService>();
             services.AddScoped<IKhachHangService, KhachHangService>();
-
+            // services.AddScoped<ILogQueryService, LogQueryService>();
 
             // Nếu có các service khác, thêm tiếp ở đây
             services.AddScoped<ILogService, LogService>();

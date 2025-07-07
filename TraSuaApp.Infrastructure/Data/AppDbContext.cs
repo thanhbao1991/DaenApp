@@ -83,7 +83,7 @@ public class AppDbContext : DbContext
     }
 
     // DbSet cho toàn bộ entity đã khai báo
-    public DbSet<LogEntry> Logs => Set<LogEntry>();
+    public DbSet<Log> Logs => Set<Log>();
     public DbSet<ToppingNhomSanPham> ToppingNhomSanPhams => Set<ToppingNhomSanPham>();
     public DbSet<KhachHang> KhachHangs => Set<KhachHang>();
     public DbSet<KhachHangAddress> KhachHangAddresses => Set<KhachHangAddress>();

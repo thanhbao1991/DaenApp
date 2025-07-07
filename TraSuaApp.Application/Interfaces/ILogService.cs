@@ -1,9 +1,12 @@
-﻿
-using TraSuaApp.Domain.Entities;
+﻿using TraSuaApp.Domain.Entities;
+using TraSuaApp.Shared.Dtos;
 
-namespace TraSuaApp.Application.Interfaces;
-
-public interface ILogService
+namespace TraSuaApp.Application.Interfaces
 {
-    Task LogAsync(LogEntry log, CancellationToken cancellationToken = default);
+    public interface ILogService
+    {
+        Task LogAsync(Log log); // Ghi log
+        Task<PagedResult<LogDto>> GetLogsAsync(LogFilterDto filter); // Truy vấn danh sách
+        Task<Log?> GetLogByIdAsync(Guid id); // Xem chi tiết
+    }
 }

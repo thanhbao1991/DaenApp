@@ -8,7 +8,7 @@ using TraSuaApp.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🟟 Add controller & JSON config
+// 🟟 Add Controller & JSON config
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -25,7 +25,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // 🟟 Add AutoMapper & App Services
 builder.Services.AddAutoMapper(typeof(Program));
-builder.Services.AddInfrastructureServices(); // -> bạn đã định nghĩa hàm này
+builder.Services.AddInfrastructureServices();
 builder.Services.AddScoped<JwtTokenService>();
 
 // 🟟 Add Authentication & JWT
@@ -49,27 +49,22 @@ builder.Services.AddAuthentication(opt =>
     };
 });
 
-// 🟟 Add Authorization
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+app.UseMiddleware<LogMiddleware>(); // 🟟 Gọi Middleware tại đây
 
-// 🟟 Use Swagger in development
+// 🟟 Swagger for development
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// ===== Middleware pipeline =====
-app.UseRouting(); // Optional but helps with custom middleware order
-
-app.UseAuthentication(); // ⬅️ Trước Authorization
+// 🟟 Middleware pipeline
+app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseMiddleware<ExceptionMiddleware>(); // Xử lý lỗi toàn cục
-app.UseMiddleware<LogMiddleware>();       // Ghi log toàn bộ request/response
-
-app.MapControllers(); // ⬅️ Kết nối Controller với routing
+app.MapControllers();
 
 app.Run();
