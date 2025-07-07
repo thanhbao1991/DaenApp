@@ -11,12 +11,18 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<Log>(entity =>
+        {
+            entity.Property(e => e.RequestBodyShort).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.ResponseBodyShort).HasColumnType("nvarchar(max)");
+        });
 
         //ToppingNhomSanPham
         //       modelBuilder.Entity<KhachHangAddress>()
         //.ToTable("KhachHangAddresses");
         //    modelBuilder.Entity<ToppingNhomSanPham>()
         //.ToTable("ToppingNhomSanPhams");
+
 
 
         modelBuilder.Entity<ToppingNhomSanPham>()

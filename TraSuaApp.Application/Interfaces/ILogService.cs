@@ -6,7 +6,7 @@ namespace TraSuaApp.Application.Interfaces
     public interface ILogService
     {
         Task LogAsync(Log log); // Ghi log
-        Task<PagedResult<LogDto>> GetLogsAsync(LogFilterDto filter); // Truy vấn danh sách
+        Task<PagedResultDto<LogDto>> GetLogsAsync(LogFilterDto filter); // Truy vấn danh sách
         Task<Log?> GetLogByIdAsync(Guid id); // Xem chi tiết
     }
 }

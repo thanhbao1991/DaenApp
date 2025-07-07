@@ -1,14 +1,14 @@
-﻿namespace TraSuaApp.Shared.Dtos
-{
-    public class PagedResult<T>
-    {
-        public List<T> Items { get; set; }
-        public int TotalItems { get; set; }
+﻿using System.Text.Json.Serialization;
 
-        public PagedResult(List<T> items, int total)
-        {
-            Items = items;
-            TotalItems = total;
-        }
+public class PagedResultDto<T>
+{
+    public List<T> Items { get; }
+    public int TotalItems { get; }
+
+    [JsonConstructor]
+    public PagedResultDto(List<T> items, int totalItems)
+    {
+        Items = items;
+        TotalItems = totalItems;
     }
 }

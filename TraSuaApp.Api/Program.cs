@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using TraSuaApp.Api.Middleware;
 using TraSuaApp.Infrastructure;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Infrastructure.Services;
