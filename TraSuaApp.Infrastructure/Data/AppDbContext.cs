@@ -12,22 +12,13 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        //// Seed tài khoản mẫu
-        //modelBuilder.Entity<TaiKhoan>().HasData(
-        //    new TaiKhoan
-        //    {
-        //        Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-        //        TenDangNhap = "admin",
-        //        MatKhau = "$2a$11$aJuKxwEIPxnHRKFX2rfEyO9bWhe1EkoeAEUtWwSadgCS/Cha49uVO", // 🟟 Mật khẩu thô để test, sau này cần mã hoá
-        //        TenHienThi = "Quản trị viên",
-        //        VaiTro = "Admin",
-        //        IsActive = true,
-        //        ThoiGianTao = new DateTime(2025, 7, 1, 0, 0, 0)
-        //    }
-        //);
-
-
         //ToppingNhomSanPham
+        //       modelBuilder.Entity<KhachHangAddress>()
+        //.ToTable("KhachHangAddresses");
+        //    modelBuilder.Entity<ToppingNhomSanPham>()
+        //.ToTable("ToppingNhomSanPhams");
+
+
         modelBuilder.Entity<ToppingNhomSanPham>()
     .HasKey(x => new { x.IdTopping, x.IdNhomSanPham });
         modelBuilder.Entity<ToppingNhomSanPham>()
@@ -41,6 +32,19 @@ public class AppDbContext : DbContext
             .HasForeignKey(x => x.IdNhomSanPham)
             .OnDelete(DeleteBehavior.Cascade);
 
+        NewMethod(modelBuilder);
+    }
+
+    private static void NewMethod(ModelBuilder modelBuilder)
+    {
+        // Topping
+        modelBuilder.Entity<Topping>().Property(x => x.Gia).HasPrecision(18, 2);
+
+        // Voucher
+        modelBuilder.Entity<Voucher>().Property(x => x.GiaTri).HasPrecision(18, 2);
+
+        // VoucherLog
+        modelBuilder.Entity<VoucherLog>().Property(x => x.GiaTriApDung).HasPrecision(18, 2);
         // ChiTietHoaDon
         modelBuilder.Entity<ChiTietHoaDon>().Property(x => x.DonGia).HasPrecision(18, 2);
         modelBuilder.Entity<ChiTietHoaDon>().Property(x => x.ThanhTien).HasPrecision(18, 2);
@@ -76,20 +80,14 @@ public class AppDbContext : DbContext
 
         // SuDungNguyenLieu
         modelBuilder.Entity<SuDungNguyenLieu>().Property(x => x.SoLuong).HasPrecision(18, 2);
-
-        // Topping
-        modelBuilder.Entity<Topping>().Property(x => x.Gia).HasPrecision(18, 2);
-
-        // Voucher
-        modelBuilder.Entity<Voucher>().Property(x => x.GiaTri).HasPrecision(18, 2);
-
-        // VoucherLog
-        modelBuilder.Entity<VoucherLog>().Property(x => x.GiaTriApDung).HasPrecision(18, 2);
     }
+
     // DbSet cho toàn bộ entity đã khai báo
+    public DbSet<LogEntry> Logs => Set<LogEntry>();
+    public DbSet<ToppingNhomSanPham> ToppingNhomSanPhams => Set<ToppingNhomSanPham>();
     public DbSet<KhachHang> KhachHangs => Set<KhachHang>();
-    public DbSet<ShippingAddress> ShippingAddresses => Set<ShippingAddress>();
-    public DbSet<CustomerPhoneNumber> CustomerPhoneNumbers => Set<CustomerPhoneNumber>();
+    public DbSet<KhachHangAddress> KhachHangAddresses => Set<KhachHangAddress>();
+    public DbSet<KhachHangPhone> KhachHangPhones => Set<KhachHangPhone>();
     public DbSet<TaiKhoan> TaiKhoans => Set<TaiKhoan>();
     public DbSet<NhomSanPham> NhomSanPhams { get; set; }
     public DbSet<SanPham> SanPhams => Set<SanPham>();

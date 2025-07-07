@@ -23,5 +23,9 @@
     <ProjectReference Include="..\TraSuaApp.Infrastructure\TraSuaApp.Infrastructure.csproj" />
     <ProjectReference Include="..\TraSuaApp.Shared\TraSuaApp.Shared.csproj" />
   </ItemGroup>
+	
+  <ItemGroup>
+    <Folder Include="Helper\" />
+  </ItemGroup>
 
 </Project>

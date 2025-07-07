@@ -9,12 +9,12 @@ namespace TraSuaApp.Api.Helpers // ✅ chỉnh lại nếu khác
         public AutoMapperProfile()
         {
             CreateMap<KhachHang, KhachHangDto>()
-    .ForMember(dest => dest.PhoneNumbers, opt => opt.MapFrom(src => src.PhoneNumbers))
-    .ForMember(dest => dest.ShippingAddresses, opt => opt.MapFrom(src => src.ShippingAddresses))
+    .ForMember(dest => dest.Phones, opt => opt.MapFrom(src => src.Phones))
+    .ForMember(dest => dest.Addresses, opt => opt.MapFrom(src => src.Addresss))
     .ReverseMap();
 
-            CreateMap<CustomerPhoneNumber, CustomerPhoneNumberDto>().ReverseMap();
-            CreateMap<ShippingAddress, ShippingAddressDto>().ReverseMap();
+            CreateMap<KhachHangPhone, KhachHangPhoneDto>().ReverseMap();
+            CreateMap<KhachHangAddressDto, KhachHangAddressDto>().ReverseMap();
             CreateMap<Topping, ToppingDto>().ReverseMap();
             CreateMap<NhomSanPham, NhomSanPhamDto>().ReverseMap();
             CreateMap<SanPhamBienThe, SanPhamBienTheDto>().ReverseMap();

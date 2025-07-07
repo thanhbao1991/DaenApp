@@ -23,8 +23,8 @@ public class KhachHangService : IKhachHangService
     public async Task<List<KhachHangDto>> GetAllAsync()
     {
         var list = await _context.KhachHangs
-            .Include(kh => kh.PhoneNumbers)
-            .Include(kh => kh.ShippingAddresses)
+            .Include(kh => kh.Phones)
+            .Include(kh => kh.Addresss)
             .OrderBy(kh => kh.Ten)
             .ToListAsync();
 
@@ -34,8 +34,8 @@ public class KhachHangService : IKhachHangService
     public async Task<KhachHangDto?> GetByIdAsync(Guid id)
     {
         var entity = await _context.KhachHangs
-            .Include(kh => kh.PhoneNumbers)
-            .Include(kh => kh.ShippingAddresses)
+            .Include(kh => kh.Phones)
+            .Include(kh => kh.Addresss)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         return entity == null ? null : _mapper.Map<KhachHangDto>(entity);
@@ -48,8 +48,8 @@ public class KhachHangService : IKhachHangService
             var entity = _mapper.Map<KhachHang>(dto);
             entity.Id = Guid.NewGuid();
 
-            entity.PhoneNumbers = dto.PhoneNumbers?
-                .Select(p => new CustomerPhoneNumber
+            entity.Phones = dto.Phones?
+                .Select(p => new KhachHangPhone
                 {
                     Id = Guid.NewGuid(),
                     IdKhachHang = entity.Id,
@@ -57,11 +57,11 @@ public class KhachHangService : IKhachHangService
                     IsDefault = p.IsDefault
                 }).ToList() ?? new();
 
-            if (entity.PhoneNumbers.Count(p => p.IsDefault) > 1)
+            if (entity.Phones.Count(p => p.IsDefault) > 1)
                 throw new Exception("Chỉ được chọn một số điện thoại mặc định.");
 
-            entity.ShippingAddresses = dto.ShippingAddresses?
-                .Select(d => new ShippingAddress
+            entity.Addresss = dto.Addresses?
+                .Select(d => new KhachHangAddress
                 {
                     Id = Guid.NewGuid(),
                     IdKhachHang = entity.Id,
@@ -69,7 +69,7 @@ public class KhachHangService : IKhachHangService
                     IsDefault = d.IsDefault
                 }).ToList() ?? new();
 
-            if (entity.ShippingAddresses.Count(d => d.IsDefault) > 1)
+            if (entity.Addresss.Count(d => d.IsDefault) > 1)
                 throw new Exception("Chỉ được chọn một địa chỉ mặc định.");
 
             _context.KhachHangs.Add(entity);
@@ -88,8 +88,8 @@ public class KhachHangService : IKhachHangService
         try
         {
             var entity = await _context.KhachHangs
-                .Include(kh => kh.PhoneNumbers)
-                .Include(kh => kh.ShippingAddresses)
+                .Include(kh => kh.Phones)
+                .Include(kh => kh.Addresss)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
@@ -97,9 +97,9 @@ public class KhachHangService : IKhachHangService
 
             _mapper.Map(dto, entity);
 
-            _context.CustomerPhoneNumbers.RemoveRange(entity.PhoneNumbers);
-            entity.PhoneNumbers = dto.PhoneNumbers?
-                .Select(p => new CustomerPhoneNumber
+            _context.KhachHangPhones.RemoveRange(entity.Phones);
+            entity.Phones = dto.Phones?
+                .Select(p => new KhachHangPhone
                 {
                     Id = Guid.NewGuid(),
                     IdKhachHang = id,
@@ -107,12 +107,12 @@ public class KhachHangService : IKhachHangService
                     IsDefault = p.IsDefault
                 }).ToList() ?? new();
 
-            if (entity.PhoneNumbers.Count(p => p.IsDefault) > 1)
+            if (entity.Phones.Count(p => p.IsDefault) > 1)
                 return new Result { IsSuccess = false, Message = "Chỉ được chọn một số điện thoại mặc định." };
 
-            _context.ShippingAddresses.RemoveRange(entity.ShippingAddresses);
-            entity.ShippingAddresses = dto.ShippingAddresses?
-                .Select(d => new ShippingAddress
+            _context.KhachHangAddresses.RemoveRange(entity.Addresss);
+            entity.Addresss = dto.Addresses?
+                .Select(d => new KhachHangAddress
                 {
                     Id = Guid.NewGuid(),
                     IdKhachHang = id,
@@ -120,7 +120,7 @@ public class KhachHangService : IKhachHangService
                     IsDefault = d.IsDefault
                 }).ToList() ?? new();
 
-            if (entity.ShippingAddresses.Count(d => d.IsDefault) > 1)
+            if (entity.Addresss.Count(d => d.IsDefault) > 1)
                 return new Result { IsSuccess = false, Message = "Chỉ được chọn một địa chỉ mặc định." };
 
             await _context.SaveChangesAsync();
@@ -135,15 +135,15 @@ public class KhachHangService : IKhachHangService
     public async Task<Result> DeleteAsync(Guid id)
     {
         var entity = await _context.KhachHangs
-            .Include(kh => kh.PhoneNumbers)
-            .Include(kh => kh.ShippingAddresses)
+            .Include(kh => kh.Phones)
+            .Include(kh => kh.Addresss)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null)
             return new Result { IsSuccess = false, Message = "Không tìm thấy khách hàng." };
 
-        _context.CustomerPhoneNumbers.RemoveRange(entity.PhoneNumbers);
-        _context.ShippingAddresses.RemoveRange(entity.ShippingAddresses);
+        _context.KhachHangPhones.RemoveRange(entity.Phones);
+        _context.KhachHangAddresses.RemoveRange(entity.Addresss);
         _context.KhachHangs.Remove(entity);
 
         await _context.SaveChangesAsync();

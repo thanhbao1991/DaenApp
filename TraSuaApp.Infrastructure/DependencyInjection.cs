@@ -14,8 +14,12 @@ namespace TraSuaApp.Infrastructure
             services.AddScoped<INhomSanPhamService, NhomSanPhamService>();
             services.AddScoped<ISanPhamService, SanPhamService>();
             services.AddScoped<IToppingService, ToppingService>();
+            services.AddScoped<IKhachHangService, KhachHangService>();
+
 
             // Nếu có các service khác, thêm tiếp ở đây
+            services.AddScoped<ILogService, LogService>();
+
 
             return services;
         }

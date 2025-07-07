@@ -35,29 +35,9 @@
                 Content="Bot"
                 Style="{StaticResource DeleteButtonStyle}"
                 Tag="CodeGeneratorWindow" />
-            <Button
-                x:Name="BtnTaiKhoan"
-                Click="MenuButton_Click"
-                Content="Tài khoản"
-                Style="{StaticResource DeleteButtonStyle}"
-                Tag="TaiKhoanList" />
-            <Button
-                Click="MenuButton_Click"
-                Content="Nhóm sản phẩm"
-                Style="{StaticResource DeleteButtonStyle}"
-                Tag="NhomSanPhamList" />
-            <Button
-                Click="MenuButton_Click"
-                Content="Sản phẩm"
-                Style="{StaticResource DeleteButtonStyle}"
-                Tag="SanPhamList" />
-            <Button
-                Click="MenuButton_Click"
-                Content="Topping"
-                Style="{StaticResource DeleteButtonStyle}"
-                Tag="ToppingList" />
-
-
+            <StackPanel Name="xxx">
+                
+            </StackPanel>
             <!--  Thêm nút khác nếu cần  -->
 
             <Button

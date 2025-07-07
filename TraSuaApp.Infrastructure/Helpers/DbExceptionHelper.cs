@@ -14,7 +14,7 @@ namespace TraSuaApp.Infrastructure.Helpers
                     var messages = new Dictionary<string, string>
                     {
                         ["IX_CustomerPhoneNumber_Default"] = "Chỉ một dòng được đánh dấu là mặc định.",
-                        ["IX_ShippingAddress_Default"] = "Chỉ một dòng được đánh dấu là mặc định.",
+                        ["IX_KhachHangAddressDto_Default"] = "Chỉ một dòng được đánh dấu là mặc định.",
                         ["IX_SanPham_Ten"] = "Tên sản phẩm đã tồn tại.",
                         ["IX_BienThe_Ten_IdSanPham"] = "Tên size đã tồn tại.",
                         ["IX_BienThe_MacDinh"] = "Chỉ một dòng được đánh dấu là mặc định.",

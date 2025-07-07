@@ -8,6 +8,6 @@ public class KhachHang
     public string? GioiTinh { get; set; }
     public bool DuocNhanVoucher { get; set; } = true;
 
-    public ICollection<ShippingAddress> ShippingAddresses { get; set; }
-    public ICollection<CustomerPhoneNumber> PhoneNumbers { get; set; }
+    public ICollection<KhachHangAddress> Addresss { get; set; }
+    public ICollection<KhachHangPhone> Phones { get; set; }
 }

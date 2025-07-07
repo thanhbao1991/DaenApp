@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Reflection;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace TraSuaApp.WpfClient.Views
@@ -12,19 +13,35 @@ namespace TraSuaApp.WpfClient.Views
         public MainWindow()
         {
             InitializeComponent();
+            GenerateMenuButtons();
+        }
+        private void GenerateMenuButtons()
+        {
+            var buttonsContainer = xxx; // StackPanel chứa nút
+            var viewType = typeof(Window);
+            var views = Assembly.GetExecutingAssembly()
+                .GetTypes()
+                .Where(t => t.IsSubclassOf(viewType) && t.Name.EndsWith("List"))
+                .OrderBy(t => t.Name);
+
+            foreach (var view in views)
+            {
+                var btn = new Button
+                {
+                    Content = (view.Name),
+                    Tag = view.Name,
+                    Style = (Style)FindResource("AddButtonStyle"),
+                    Margin = new Thickness(0, 5, 0, 0)
+                };
+                btn.Click += MenuButton_Click;
+                buttonsContainer.Children.Add(btn);
+            }
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            if (VaiTro != "Admin")
-            {
-                BtnTaiKhoan.Visibility = Visibility.Collapsed;
-                //  BtnCodeGenerator.Visibility = Visibility.Collapsed;
-                // Thêm các nút khác nếu cần phân quyền
-            }
 
-            // Ví dụ: hiển thị tên người dùng (nếu có TextBlock)
-            // TenNguoiDungTextBlock.Text = $"Xin chào, {TenHienThi}";
+
         }
 
         private void MenuButton_Click(object sender, RoutedEventArgs e)

@@ -1,0 +1,95 @@
+﻿<Window
+    x:Class="TraSuaApp.WpfClient.Views.KhachHangEdit"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Khách hàng"
+    AllowsTransparency="True"
+    Background="#88000000"
+    PreviewKeyDown="Window_KeyDown"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="None">
+
+    <Border
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        Background="White"
+        BorderBrush="#DDD"
+        BorderThickness="1"
+        CornerRadius="12">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--  Tiêu đề  -->
+            <DockPanel
+                Grid.Row="0"
+                Margin="0,0,0,10"
+                LastChildFill="True">
+                <TextBlock
+                    Margin="10,5"
+                    FontSize="20"
+                    FontWeight="Bold"
+                    Foreground="#333"
+                    Text="Khách hàng" />
+                <Button
+                    Width="28"
+                    Height="28"
+                    Margin="0,5,5,0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="CloseButton_Click"
+                    Content="✖"
+                    Cursor="Hand"
+                    DockPanel.Dock="Right"
+                    FontSize="14"
+                    Foreground="#888" />
+            </DockPanel>
+
+            <!--  Nội dung  -->
+            <StackPanel Grid.Row="1" Orientation="Vertical">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock
+                        Width="120"
+                        VerticalAlignment="Center"
+                        Text="Tên khách hàng:" />
+                    <TextBox x:Name="TenTextBox" Width="300" />
+                </StackPanel>
+
+                <!--  Số điện thoại  -->
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock
+                        Width="120"
+                        VerticalAlignment="Center"
+                        Text="Số điện thoại:" />
+                    <TextBox x:Name="PhoneTextBox" Width="300" />
+                </StackPanel>
+
+                <!--  Địa chỉ  -->
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock
+                        Width="120"
+                        VerticalAlignment="Center"
+                        Text="Địa chỉ:" />
+                    <TextBox x:Name="AddressTextBox" Width="300" />
+                </StackPanel>
+            </StackPanel>
+
+            <!--  Nút và lỗi  -->
+            <StackPanel Grid.Row="2" Margin="0,10,0,0">
+                <TextBlock
+                    x:Name="ErrorTextBlock"
+                    Margin="0,0,0,5"
+                    Foreground="Red" />
+                <Button
+                    x:Name="SaveButton"
+                    Click="SaveButton_Click"
+                    Content="Lưu"
+                    Style="{StaticResource SaveButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
