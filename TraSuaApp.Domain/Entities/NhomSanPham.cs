@@ -1,13 +1,17 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public class NhomSanPham
+namespace TraSuaApp.Domain.Entities;
+
+public partial class NhomSanPham
 {
     public Guid Id { get; set; }
-    public string Ten { get; set; } = string.Empty;
+
+    public string Ten { get; set; } = null!;
+
     public int? IdOld { get; set; }
 
+    public virtual ICollection<SanPham> SanPhams { get; set; } = new List<SanPham>();
 
-    public ICollection<SanPham> SanPhams { get; set; } = new List<SanPham>();
-    public List<ToppingNhomSanPham> DanhSachTopping { get; set; } = new();
-
+    public virtual ICollection<Topping> IdToppings { get; set; } = new List<Topping>();
 }

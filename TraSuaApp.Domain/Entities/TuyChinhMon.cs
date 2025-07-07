@@ -1,10 +1,15 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public class TuyChinhMon
+namespace TraSuaApp.Domain.Entities;
+
+public partial class TuyChinhMon
 {
     public Guid Id { get; set; }
-    public string Ten { get; set; } = string.Empty; // Ví dụ: Đường, Đá, Trà
+
+    public string Ten { get; set; } = null!;
+
     public bool ChoPhepChonNhieuGiaTri { get; set; }
 
-    public ICollection<ChiTietTuyChinhMon> ChiTietTuyChinhMons { get; set; }
+    public virtual ICollection<ChiTietTuyChinhMon> ChiTietTuyChinhMons { get; set; } = new List<ChiTietTuyChinhMon>();
 }

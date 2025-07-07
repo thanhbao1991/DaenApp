@@ -1,10 +1,15 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public class PaymentMethod
+namespace TraSuaApp.Domain.Entities;
+
+public partial class PaymentMethod
 {
     public Guid Id { get; set; }
-    public string Ten { get; set; } = string.Empty;
-    public bool DangSuDung { get; set; } = true;
 
-    public ICollection<Payment> Payments { get; set; }
+    public string Ten { get; set; } = null!;
+
+    public bool DangSuDung { get; set; }
+
+    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }

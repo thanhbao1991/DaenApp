@@ -1,11 +1,19 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public class KhachHangAddress
+namespace TraSuaApp.Domain.Entities;
+
+public partial class KhachHangAddress
 {
     public Guid Id { get; set; }
+
     public Guid IdKhachHang { get; set; }
-    public string DiaChi { get; set; } = string.Empty;
+
+    public string DiaChi { get; set; } = null!;
+
     public bool IsDefault { get; set; }
 
-    public KhachHang KhachHang { get; set; }
+    public Guid KhachHangId { get; set; }
+
+    public virtual KhachHang KhachHang { get; set; } = null!;
 }

@@ -1,14 +1,25 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public class NguyenLieu
+namespace TraSuaApp.Domain.Entities;
+
+public partial class NguyenLieu
 {
     public Guid Id { get; set; }
-    public string Ten { get; set; } = string.Empty;
-    public string? DonViTinh { get; set; }
-    public decimal TonKho { get; set; }
-    public decimal? GiaNhap { get; set; }
-    public bool DangSuDung { get; set; } = true;
 
-    public ICollection<SuDungNguyenLieu> SuDungNguyenLieus { get; set; }
-    public ICollection<ChiTietHoaDonNhap> LichSuNhap { get; set; }
+    public string Ten { get; set; } = null!;
+
+    public string? DonViTinh { get; set; }
+
+    public decimal TonKho { get; set; }
+
+    public decimal? GiaNhap { get; set; }
+
+    public bool DangSuDung { get; set; }
+
+    public virtual ICollection<ChiTietHoaDonNhap> ChiTietHoaDonNhaps { get; set; } = new List<ChiTietHoaDonNhap>();
+
+    public virtual ICollection<LichSuNhapXuatKho> LichSuNhapXuatKhos { get; set; } = new List<LichSuNhapXuatKho>();
+
+    public virtual ICollection<SuDungNguyenLieu> SuDungNguyenLieus { get; set; } = new List<SuDungNguyenLieu>();
 }

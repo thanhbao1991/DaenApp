@@ -1,19 +1,31 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System;
+using System.Collections.Generic;
 
+namespace TraSuaApp.Domain.Entities;
 
-public class TaiKhoan
+public partial class TaiKhoan
 {
     public Guid Id { get; set; }
 
-    public string TenDangNhap { get; set; } = default!;
+    public string TenDangNhap { get; set; } = null!;
 
-    public string MatKhau { get; set; } = default!;
+    public string MatKhau { get; set; } = null!;
+
+    public string? VaiTro { get; set; }
+
+    public bool IsActive { get; set; }
 
     public string? TenHienThi { get; set; }
 
-    public string? VaiTro { get; set; } // ví dụ: Admin, NhanVien
+    public DateTime ThoiGianTao { get; set; }
 
-    public bool IsActive { get; set; } = true;
+    public virtual ICollection<CongViecNoiBo> CongViecNoiBos { get; set; } = new List<CongViecNoiBo>();
 
-    public DateTime ThoiGianTao { get; set; } = DateTime.Now;
+    public virtual ICollection<HoaDonNhap> HoaDonNhaps { get; set; } = new List<HoaDonNhap>();
+
+    public virtual ICollection<HoaDon> HoaDons { get; set; } = new List<HoaDon>();
+
+    public virtual ICollection<LichSuChinhSua> LichSuChinhSuas { get; set; } = new List<LichSuChinhSua>();
+
+    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }
