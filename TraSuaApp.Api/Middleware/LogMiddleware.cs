@@ -101,6 +101,9 @@ public class LogMiddleware
             {
                 responseBodyStream.Seek(0, SeekOrigin.Begin);
                 responseBody = await new StreamReader(responseBodyStream).ReadToEndAsync();
+                _logger.LogInformation("ResponseBody: " + responseBody);
+
+
                 responseBodyStream.Seek(0, SeekOrigin.Begin);
                 await responseBodyStream.CopyToAsync(originalBody);
 

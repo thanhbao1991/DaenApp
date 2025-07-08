@@ -31,13 +31,29 @@ public class ToppingController : BaseApiController
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] ToppingDto dto)
-        => FromResult(await _service.CreateAsync(dto));
+    {
+        var result = await _service.CreateAsync(dto);
+        return result.IsSuccess
+            ? Ok(new { result.Message, Id = dto.Id }) // ✅ Trả về Id để middleware log EntityId
+            : BadRequest(new { result.Message });
+    }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] ToppingDto dto)
-        => FromResult(await _service.UpdateAsync(id, dto));
+    {
+        dto.Id = id;
+        var result = await _service.UpdateAsync(id, dto);
+        return result.IsSuccess
+            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id để middleware log EntityId
+            : BadRequest(new { result.Message });
+    }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
-        => FromResult(await _service.DeleteAsync(id));
+    {
+        var result = await _service.DeleteAsync(id);
+        return result.IsSuccess
+            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id để middleware log EntityId
+            : BadRequest(new { result.Message });
+    }
 }

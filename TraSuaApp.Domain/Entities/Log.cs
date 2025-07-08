@@ -29,4 +29,7 @@ public partial class Log
     public string? ResponseBodyShort { get; set; }
 
     public Guid? EntityId { get; set; }
+
+    public string? BeforeData { get; set; }
+    public string? AfterData { get; set; }
 }

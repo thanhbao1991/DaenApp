@@ -35,16 +35,17 @@ public class NhomSanPhamController : BaseApiController
     {
         var result = await _service.CreateAsync(dto);
         return result.IsSuccess
-            ? Ok(new { result.Message })
+            ? Ok(new { result.Message, Id = dto.Id }) // ✅ Trả về Id để middleware log được EntityId
             : BadRequest(new { result.Message });
     }
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] NhomSanPhamDto dto)
     {
+        dto.Id = id; // Gán lại để đảm bảo ID đúng
         var result = await _service.UpdateAsync(id, dto);
         return result.IsSuccess
-            ? Ok(new { result.Message })
+            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
             : BadRequest(new { result.Message });
     }
 
@@ -53,7 +54,7 @@ public class NhomSanPhamController : BaseApiController
     {
         var result = await _service.DeleteAsync(id);
         return result.IsSuccess
-            ? Ok(new { result.Message })
+            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
             : BadRequest(new { result.Message });
     }
 }

@@ -34,16 +34,17 @@ public class SanPhamController : BaseApiController
     {
         var result = await _service.CreateAsync(dto);
         return result.IsSuccess
-            ? Ok(new { result.Message })
+            ? Ok(new { result.Message, Id = dto.Id }) // ✅ Trả về Id để middleware log EntityId
             : BadRequest(new { result.Message });
     }
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] SanPhamDto dto)
     {
+        dto.Id = id; // ✅ Gán lại id cho chắc chắn
         var result = await _service.UpdateAsync(id, dto);
         return result.IsSuccess
-            ? Ok(new { result.Message })
+            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
             : BadRequest(new { result.Message });
     }
 
@@ -52,7 +53,7 @@ public class SanPhamController : BaseApiController
     {
         var result = await _service.DeleteAsync(id);
         return result.IsSuccess
-            ? Ok(new { result.Message })
+            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
             : BadRequest(new { result.Message });
     }
 }

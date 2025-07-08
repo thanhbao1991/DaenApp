@@ -18,4 +18,15 @@ public abstract class BaseApiController : ControllerBase
 
     protected IActionResult FromResult(Result result)
         => result.IsSuccess ? Ok(new { Message = result.Message }) : BadRequest(new { Message = result.Message });
+
+    // ✅ Trả về kèm Id nếu có
+    protected IActionResult Result(bool success, string message, Guid id)
+        => success
+            ? Ok(new { Message = message, Id = id })
+            : BadRequest(new { Message = message });
+
+    protected IActionResult FromResult(Result result, Guid id)
+        => result.IsSuccess
+            ? Ok(new { Message = result.Message, Id = id })
+            : BadRequest(new { Message = result.Message });
 }

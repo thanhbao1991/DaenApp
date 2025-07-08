@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Infrastructure.Helpers;
@@ -41,7 +40,7 @@ namespace TraSuaApp.Infrastructure.Services
             return entity == null ? null : _mapper.Map<KhachHangDto>(entity);
         }
 
-        public async Task<KhachHangDto> CreateAsync(KhachHangDto dto)
+        public async Task<Result> CreateAsync(KhachHangDto dto)
         {
             try
             {
@@ -58,7 +57,7 @@ namespace TraSuaApp.Infrastructure.Services
                     }).ToList() ?? new();
 
                 if (entity.KhachHangPhones.Count(p => p.IsDefault) > 1)
-                    throw new Exception("Chỉ được chọn một số điện thoại mặc định.");
+                    return Result.Failure("Chỉ được chọn một số điện thoại mặc định.");
 
                 entity.KhachHangAddresses = dto.Addresses?
                     .Select(d => new KhachHangAddress
@@ -70,12 +69,13 @@ namespace TraSuaApp.Infrastructure.Services
                     }).ToList() ?? new();
 
                 if (entity.KhachHangAddresses.Count(d => d.IsDefault) > 1)
-                    throw new Exception("Chỉ được chọn một địa chỉ mặc định.");
+                    return Result.Failure("Chỉ được chọn một địa chỉ mặc định.");
 
                 _context.KhachHangs.Add(entity);
                 await _context.SaveChangesAsync();
 
-                return _mapper.Map<KhachHangDto>(entity);
+                dto.Id = entity.Id; // Gán lại Id mới để controller dùng
+                return Result.Success("Đã thêm khách hàng.");
             }
             catch (Exception ex)
             {
@@ -93,7 +93,7 @@ namespace TraSuaApp.Infrastructure.Services
                     .FirstOrDefaultAsync(x => x.Id == id);
 
                 if (entity == null)
-                    return new Result { IsSuccess = false, Message = "Không tìm thấy khách hàng." };
+                    return Result.Failure("Không tìm thấy khách hàng.");
 
                 _mapper.Map(dto, entity);
 
@@ -108,7 +108,7 @@ namespace TraSuaApp.Infrastructure.Services
                     }).ToList() ?? new();
 
                 if (entity.KhachHangPhones.Count(p => p.IsDefault) > 1)
-                    return new Result { IsSuccess = false, Message = "Chỉ được chọn một số điện thoại mặc định." };
+                    return Result.Failure("Chỉ được chọn một số điện thoại mặc định.");
 
                 _context.KhachHangAddresses.RemoveRange(entity.KhachHangAddresses);
                 entity.KhachHangAddresses = dto.Addresses?
@@ -121,10 +121,10 @@ namespace TraSuaApp.Infrastructure.Services
                     }).ToList() ?? new();
 
                 if (entity.KhachHangAddresses.Count(d => d.IsDefault) > 1)
-                    return new Result { IsSuccess = false, Message = "Chỉ được chọn một địa chỉ mặc định." };
+                    return Result.Failure("Chỉ được chọn một địa chỉ mặc định.");
 
                 await _context.SaveChangesAsync();
-                return new Result { IsSuccess = true, Message = "Cập nhật thành công." };
+                return Result.Success("Cập nhật thành công.");
             }
             catch (Exception ex)
             {
@@ -140,14 +140,14 @@ namespace TraSuaApp.Infrastructure.Services
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
-                return new Result { IsSuccess = false, Message = "Không tìm thấy khách hàng." };
+                return Result.Failure("Không tìm thấy khách hàng.");
 
             _context.KhachHangPhones.RemoveRange(entity.KhachHangPhones);
             _context.KhachHangAddresses.RemoveRange(entity.KhachHangAddresses);
             _context.KhachHangs.Remove(entity);
 
             await _context.SaveChangesAsync();
-            return new Result { IsSuccess = true, Message = "Xoá thành công." };
+            return Result.Success("Xoá thành công.");
         }
     }
 }

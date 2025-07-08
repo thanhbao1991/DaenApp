@@ -39,7 +39,9 @@ public class KhachHangController : BaseApiController
         try
         {
             var result = await _service.CreateAsync(dto);
-            return Ok(result);
+            return result.IsSuccess
+                ? Ok(new { result.Message, Id = dto.Id }) // ✅ Trả về Id
+                : BadRequest(new { result.Message });
         }
         catch (Exception ex)
         {
@@ -50,9 +52,10 @@ public class KhachHangController : BaseApiController
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] KhachHangDto dto)
     {
+        dto.Id = id; // Đảm bảo đúng Id
         var result = await _service.UpdateAsync(id, dto);
         return result.IsSuccess
-            ? Ok(new { result.Message })
+            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
             : BadRequest(new { result.Message });
     }
 
@@ -61,7 +64,7 @@ public class KhachHangController : BaseApiController
     {
         var result = await _service.DeleteAsync(id);
         return result.IsSuccess
-            ? Ok(new { result.Message })
+            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
             : BadRequest(new { result.Message });
     }
 }
