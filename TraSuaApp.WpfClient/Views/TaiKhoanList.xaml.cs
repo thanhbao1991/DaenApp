@@ -17,11 +17,9 @@ namespace TraSuaApp.WpfClient.Views
         {
             InitializeComponent();
             _ = LoadAccountsAsync();
-
             this.PreviewKeyDown += AccountListWindow_PreviewKeyDown;
         }
 
-        // 🟟 Tách phương thức mở form sửa/thêm
         private async Task OpenEditWindowAsync(TaiKhoanDto? account = null)
         {
             var window = new TaiKhoanEdit(account)
@@ -31,66 +29,59 @@ namespace TraSuaApp.WpfClient.Views
             };
 
             if (window.ShowDialog() == true)
-            {
                 await LoadAccountsAsync();
-            }
         }
 
         private void AccountListWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N)
             {
-                AddButton_Click(null!, null!);
-                e.Handled = true;
+                AddButton_Click(null!, null!); e.Handled = true;
             }
             else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E)
             {
-                EditButton_Click(null!, null!);
-                e.Handled = true;
+                EditButton_Click(null!, null!); e.Handled = true;
             }
             else if (e.Key == Key.Delete)
             {
-                DeleteButton_Click(null!, null!);
-                e.Handled = true;
+                DeleteButton_Click(null!, null!); e.Handled = true;
             }
             else if (e.Key == Key.F5)
             {
-                ReloadButton_Click(null!, null!);
-                e.Handled = true;
+                ReloadButton_Click(null!, null!); e.Handled = true;
             }
         }
+
         private async void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
             await LoadAccountsAsync();
         }
+
         private async Task LoadAccountsAsync()
         {
             Mouse.OverrideCursor = Cursors.Wait;
             try
             {
                 var response = await ApiClient.GetAsync("/api/taikhoan");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var data = await response.Content.ReadFromJsonAsync<List<TaiKhoanDto>>();
-                    if (data != null)
-                    {
-                        _allAccounts = data.OrderBy(x => x.ThoiGianTao).ToList();
-                        foreach (var a in _allAccounts)
-                            a.TenNormalized = TextSearchHelper.NormalizeText(a.TenHienThi ?? "");
-
-                        ApplySearch();
-                    }
-                }
-                else
+                if (!response.IsSuccessStatusCode)
                 {
                     var msg = await response.Content.ReadAsStringAsync();
-                    _errorHandler.Handle(new Exception($"API lỗi {(int)response.StatusCode}: {msg}"), "Tải tài khoản");
+                    throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
                 }
+
+                var result = await response.Content.ReadFromJsonAsync<Result<List<TaiKhoanDto>>>();
+                if (result?.IsSuccess != true || result.Data == null)
+                    throw new Exception(result?.Message ?? "Không thể tải danh sách tài khoản.");
+
+                _allAccounts = result.Data.OrderBy(x => x.ThoiGianTao).ToList();
+                foreach (var a in _allAccounts)
+                    a.TenNormalized = TextSearchHelper.NormalizeText(a.TenHienThi ?? "");
+
+                ApplySearch();
             }
             catch (Exception ex)
             {
-                _errorHandler.Handle(ex, "LoadAccountsAsync");
+                _errorHandler.Handle(ex, "Tải tài khoản");
             }
             finally
             {
@@ -121,7 +112,7 @@ namespace TraSuaApp.WpfClient.Views
 
         private async void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            await OpenEditWindowAsync(); // mở form thêm
+            await OpenEditWindowAsync();
         }
 
         private async void EditButton_Click(object sender, RoutedEventArgs e)
@@ -138,22 +129,18 @@ namespace TraSuaApp.WpfClient.Views
                 if (!response.IsSuccessStatusCode)
                 {
                     var msg = await response.Content.ReadAsStringAsync();
-                    MessageBox.Show($"Không thể tải dữ liệu tài khoản: {msg}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
+                    throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
                 }
 
-                var latest = await response.Content.ReadFromJsonAsync<TaiKhoanDto>();
-                if (latest == null)
-                {
-                    MessageBox.Show("Không tìm thấy dữ liệu tài khoản.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
+                var result = await response.Content.ReadFromJsonAsync<Result<TaiKhoanDto>>();
+                if (result?.IsSuccess != true || result.Data == null)
+                    throw new Exception(result?.Message ?? "Không tìm thấy tài khoản.");
 
-                await OpenEditWindowAsync(latest); // mở form sửa
+                await OpenEditWindowAsync(result.Data);
             }
             catch (Exception ex)
             {
-                _errorHandler.Handle(ex, "EditButton_Click");
+                _errorHandler.Handle(ex, "Sửa tài khoản");
             }
         }
 
@@ -183,7 +170,6 @@ namespace TraSuaApp.WpfClient.Views
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
-
                 var response = await ApiClient.DeleteAsync($"/api/taikhoan/{selected.Id}");
 
                 if (response.IsSuccessStatusCode)
@@ -198,7 +184,7 @@ namespace TraSuaApp.WpfClient.Views
             }
             catch (Exception ex)
             {
-                _errorHandler.Handle(ex, "DeleteButton_Click");
+                _errorHandler.Handle(ex, "Xoá tài khoản");
             }
             finally
             {
@@ -213,13 +199,20 @@ namespace TraSuaApp.WpfClient.Views
 
             if (row.Item is TaiKhoanDto selected)
             {
-                var response = await ApiClient.GetAsync($"/api/taikhoan/{selected.Id}");
-                if (!response.IsSuccessStatusCode) return;
+                try
+                {
+                    var response = await ApiClient.GetAsync($"/api/taikhoan/{selected.Id}");
+                    if (!response.IsSuccessStatusCode) return;
 
-                var latest = await response.Content.ReadFromJsonAsync<TaiKhoanDto>();
-                if (latest == null) return;
+                    var result = await response.Content.ReadFromJsonAsync<Result<TaiKhoanDto>>();
+                    if (result?.IsSuccess != true || result.Data == null) return;
 
-                await OpenEditWindowAsync(latest);
+                    await OpenEditWindowAsync(result.Data);
+                }
+                catch (Exception ex)
+                {
+                    _errorHandler.Handle(ex, "Mở tài khoản");
+                }
             }
         }
     }

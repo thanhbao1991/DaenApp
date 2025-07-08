@@ -1,7 +1,9 @@
 ﻿using System.Net.Http;
+using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
@@ -20,6 +22,7 @@ namespace TraSuaApp.WpfClient.Views
             Data = dto ?? new NhomSanPhamDto();
 
             LoadForm();
+            this.KeyDown += Window_KeyDown;
         }
 
         private void LoadForm()
@@ -44,14 +47,14 @@ namespace TraSuaApp.WpfClient.Views
                     ? await ApiClient.PutAsync($"/api/nhomsanpham/{Data.Id}", Data)
                     : await ApiClient.PostAsync("/api/nhomsanpham", Data);
 
-                if (response.IsSuccessStatusCode)
+                var result = await response.Content.ReadFromJsonAsync<Result<NhomSanPhamDto>>();
+                if (result?.IsSuccess == true)
                 {
                     DialogResult = true;
                 }
                 else
                 {
-                    var msg = await response.Content.ReadAsStringAsync();
-                    throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                    throw new Exception(result?.Message ?? "Lưu nhóm sản phẩm thất bại.");
                 }
             }
             catch (Exception ex)

@@ -5,7 +5,7 @@ public interface ISanPhamService
 {
     Task<List<SanPhamDto>> GetAllAsync();
     Task<SanPhamDto?> GetByIdAsync(Guid id);
-    Task<Result> CreateAsync(SanPhamDto dto);
-    Task<Result> UpdateAsync(Guid id, SanPhamDto dto);
-    Task<Result> DeleteAsync(Guid id);
+    Task<Result<SanPhamDto>> CreateAsync(SanPhamDto dto);
+    Task<Result<SanPhamDto>> UpdateAsync(Guid id, SanPhamDto dto);
+    Task<Result<SanPhamDto>> DeleteAsync(Guid id);
 }

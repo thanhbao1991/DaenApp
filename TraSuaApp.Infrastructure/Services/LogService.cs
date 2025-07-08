@@ -1,12 +1,9 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
-
-namespace TraSuaApp.Infrastructure.Services;
 
 public class LogService : ILogService
 {
@@ -25,7 +22,7 @@ public class LogService : ILogService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<Result> GetLogsAsync(LogFilterDto filter)
+    public async Task<Result<PagedResultDto<LogDto>>> GetLogsAsync(LogFilterDto filter)
     {
         var query = _context.Logs.AsQueryable();
 
@@ -55,16 +52,16 @@ public class LogService : ILogService
         var items = _mapper.Map<List<LogDto>>(logs);
         var resultDto = new PagedResultDto<LogDto>(items, total);
 
-        return Result.Success().WithAfter(resultDto);
+        return Result<PagedResultDto<LogDto>>.Success().WithAfter(resultDto);
     }
 
-    public async Task<Result> GetLogByIdAsync(Guid id)
+    public async Task<Result<LogDto>> GetLogByIdAsync(Guid id)
     {
         var entity = await _context.Logs.FindAsync(id);
         if (entity == null)
-            return Result.Failure("Không tìm thấy log.");
+            return Result<LogDto>.Failure("Không tìm thấy log.");
 
         var dto = _mapper.Map<LogDto>(entity);
-        return Result.Success().WithId(id).WithAfter(dto);
+        return Result<LogDto>.Success().WithId(id).WithAfter(dto);
     }
 }

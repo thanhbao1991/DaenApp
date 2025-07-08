@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TraSuaApp.Api.Controllers;
-using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 
 [Authorize(Roles = "Admin")]
 [ApiController]

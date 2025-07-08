@@ -1,10 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Infrastructure.Data;
+using TraSuaApp.Infrastructure.Services;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
-
-namespace TraSuaApp.Infrastructure.Services;
 
 public class AuthService : IAuthService
 {
@@ -17,25 +15,19 @@ public class AuthService : IAuthService
         _jwtTokenService = jwtTokenService;
     }
 
-    public async Task<Result> LoginAsync(LoginRequest request)
+    public async Task<Result<LoginResponse>> LoginAsync(LoginRequest request)
     {
         var user = await _context.TaiKhoans
             .FirstOrDefaultAsync(x => x.TenDangNhap == request.TaiKhoan);
 
         if (user == null)
-        {
-            return Result.Failure("Tài khoản không tồn tại");
-        }
+            return Result<LoginResponse>.Failure("Tài khoản không tồn tại");
 
         if (!user.IsActive)
-        {
-            return Result.Failure("Tài khoản đã bị khoá");
-        }
+            return Result<LoginResponse>.Failure("Tài khoản đã bị khoá");
 
         if (!PasswordHelper.VerifyPassword(request.MatKhau, user.MatKhau))
-        {
-            return Result.Failure("Mật khẩu không đúng");
-        }
+            return Result<LoginResponse>.Failure("Mật khẩu không đúng");
 
         var token = _jwtTokenService.GenerateToken(user);
 
@@ -48,7 +40,7 @@ public class AuthService : IAuthService
             Token = token
         };
 
-        return Result.Success("Đăng nhập thành công")
+        return Result<LoginResponse>.Success("Đăng nhập thành công", response)
             .WithId(user.Id)
             .WithAfter(response);
     }

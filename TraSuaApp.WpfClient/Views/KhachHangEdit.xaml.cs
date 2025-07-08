@@ -1,7 +1,9 @@
 ﻿using System.Net.Http;
+using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views;
@@ -51,16 +53,13 @@ public partial class KhachHangEdit : Window
             if (string.IsNullOrWhiteSpace(phone))
                 throw new Exception("Số điện thoại không được để trống.");
 
-            if (_khachHang.Phones == null) _khachHang.Phones = new();
-            if (_khachHang.Addresses == null) _khachHang.Addresses = new();
-
             var id = _khachHang.Id == Guid.Empty ? Guid.NewGuid() : _khachHang.Id;
             _khachHang.Id = id;
             _khachHang.Ten = ten;
 
             _khachHang.Phones = new List<KhachHangPhoneDto>
             {
-                new KhachHangPhoneDto
+                new()
                 {
                     Id = Guid.NewGuid(),
                     IdKhachHang = id,
@@ -71,7 +70,7 @@ public partial class KhachHangEdit : Window
 
             _khachHang.Addresses = new List<KhachHangAddressDto>
             {
-                new KhachHangAddressDto
+                new()
                 {
                     Id = Guid.NewGuid(),
                     IdKhachHang = id,
@@ -91,8 +90,8 @@ public partial class KhachHangEdit : Window
             }
             else
             {
-                var msg = await response.Content.ReadAsStringAsync();
-                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                var error = await response.Content.ReadFromJsonAsync<Result<object>>();
+                throw new Exception(error?.Message ?? "Lỗi không xác định.");
             }
         }
         catch (Exception ex)

@@ -19,7 +19,98 @@ public partial class NhomSanPhamList : Window
         _ = LoadAsync();
         this.PreviewKeyDown += NhomSanPhamListWindow_PreviewKeyDown;
     }
+    private async Task LoadAsync()
+    {
+        try
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
 
+            var response = await ApiClient.GetAsync("/api/nhomsanpham");
+            var result = await response.Content.ReadFromJsonAsync<Result<List<NhomSanPhamDto>>>();
+
+            if (result?.IsSuccess != true || result.Data == null)
+            {
+                throw new Exception(result?.Message ?? "Không thể tải danh sách nhóm sản phẩm.");
+            }
+
+            _all = result.Data.OrderBy(x => x.Ten).ToList();
+            foreach (var x in _all)
+                x.TenNormalized = TextSearchHelper.NormalizeText(x.Ten ?? "");
+
+            ApplySearch();
+        }
+        catch (Exception ex)
+        {
+            _errorHandler.Handle(ex, "LoadAsync");
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+    }
+
+    private async void EditButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (NhomSanPhamDataGrid.SelectedItem is not NhomSanPhamDto selected) return;
+
+        var response = await ApiClient.GetAsync($"/api/nhomsanpham/{selected.Id}");
+        var result = await response.Content.ReadFromJsonAsync<Result<NhomSanPhamDto>>();
+
+        if (result?.IsSuccess != true || result.Data == null) return;
+
+        await OpenEditWindowAsync(result.Data);
+    }
+
+    private async void NhomSanPhamDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        var row = ItemsControl.ContainerFromElement(NhomSanPhamDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
+        if (row?.Item is not NhomSanPhamDto selected) return;
+
+        var response = await ApiClient.GetAsync($"/api/nhomsanpham/{selected.Id}");
+        var result = await response.Content.ReadFromJsonAsync<Result<NhomSanPhamDto>>();
+
+        if (result?.IsSuccess != true || result.Data == null) return;
+
+        await OpenEditWindowAsync(result.Data);
+    }
+
+    private async void DeleteButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (NhomSanPhamDataGrid.SelectedItem is not NhomSanPhamDto selected) return;
+
+        var confirm = MessageBox.Show(
+            $"Bạn có chắc chắn muốn xoá nhóm '{selected.Ten}'?",
+            "Xác nhận xoá",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (confirm != MessageBoxResult.Yes) return;
+
+        try
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
+
+            var response = await ApiClient.DeleteAsync($"/api/nhomsanpham/{selected.Id}");
+            var result = await response.Content.ReadFromJsonAsync<Result<bool>>();
+
+            if (result?.IsSuccess == true)
+            {
+                await LoadAsync();
+            }
+            else
+            {
+                throw new Exception(result?.Message ?? "Không thể xoá nhóm sản phẩm.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorHandler.Handle(ex, "DeleteButton_Click");
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+    }
     private async Task OpenEditWindowAsync(NhomSanPhamDto? dto = null)
     {
         var window = new NhomSanPhamEdit(dto)
@@ -56,37 +147,6 @@ public partial class NhomSanPhamList : Window
         await LoadAsync();
     }
 
-    private async Task LoadAsync()
-    {
-        try
-        {
-            Mouse.OverrideCursor = Cursors.Wait;
-            var response = await ApiClient.GetAsync("/api/nhomsanpham");
-            if (!response.IsSuccessStatusCode)
-            {
-                var msg = await response.Content.ReadAsStringAsync();
-                _errorHandler.Handle(new Exception(msg), "Tải nhóm sản phẩm");
-                return;
-            }
-
-            var data = await response.Content.ReadFromJsonAsync<List<NhomSanPhamDto>>();
-            if (data != null)
-            {
-                _all = data.OrderBy(x => x.Ten).ToList();
-                foreach (var x in _all)
-                    x.TenNormalized = TextSearchHelper.NormalizeText(x.Ten ?? "");
-                ApplySearch();
-            }
-        }
-        catch (Exception ex)
-        {
-            _errorHandler.Handle(ex, "LoadAsync");
-        }
-        finally
-        {
-            Mouse.OverrideCursor = null;
-        }
-    }
 
     private void ApplySearch()
     {
@@ -114,66 +174,4 @@ public partial class NhomSanPhamList : Window
         await OpenEditWindowAsync();
     }
 
-    private async void EditButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (NhomSanPhamDataGrid.SelectedItem is not NhomSanPhamDto selected) return;
-
-        var response = await ApiClient.GetAsync($"/api/nhomsanpham/{selected.Id}");
-        if (!response.IsSuccessStatusCode) return;
-
-        var latest = await response.Content.ReadFromJsonAsync<NhomSanPhamDto>();
-        if (latest != null)
-            await OpenEditWindowAsync(latest);
-    }
-
-    private async void DeleteButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (NhomSanPhamDataGrid.SelectedItem is not NhomSanPhamDto selected) return;
-
-        var confirm = MessageBox.Show(
-            $"Bạn có chắc chắn muốn xoá nhóm '{selected.Ten}'?",
-            "Xác nhận xoá",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-
-        if (confirm != MessageBoxResult.Yes) return;
-
-        try
-        {
-            Mouse.OverrideCursor = Cursors.Wait;
-            var response = await ApiClient.DeleteAsync($"/api/nhomsanpham/{selected.Id}");
-
-            if (response.IsSuccessStatusCode)
-            {
-                await LoadAsync();
-            }
-            else
-            {
-                var msg = await response.Content.ReadAsStringAsync();
-                _errorHandler.Handle(new Exception(msg), "Xoá nhóm sản phẩm");
-            }
-        }
-        catch (Exception ex)
-        {
-            _errorHandler.Handle(ex, "DeleteButton_Click");
-        }
-        finally
-        {
-            Mouse.OverrideCursor = null;
-        }
-    }
-
-    private async void NhomSanPhamDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        var row = ItemsControl.ContainerFromElement(NhomSanPhamDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
-        if (row == null) return;
-
-        if (row.Item is NhomSanPhamDto selected)
-        {
-            var response = await ApiClient.GetAsync($"/api/nhomsanpham/{selected.Id}");
-            var latest = await response.Content.ReadFromJsonAsync<NhomSanPhamDto>();
-            if (latest != null)
-                await OpenEditWindowAsync(latest);
-        }
-    }
 }

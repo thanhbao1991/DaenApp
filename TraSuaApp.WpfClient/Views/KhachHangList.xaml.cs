@@ -34,7 +34,7 @@ public partial class KhachHangList : Window
         }
         else if (e.Key == Key.Delete)
         {
-            DeleteSelectedCustomer();
+            _ = DeleteSelectedCustomer();
             e.Handled = true;
         }
         else if (e.Key == Key.F5)
@@ -52,10 +52,11 @@ public partial class KhachHangList : Window
             var response = await ApiClient.GetAsync("/api/khachhang");
             if (response.IsSuccessStatusCode)
             {
-                var data = await response.Content.ReadFromJsonAsync<List<KhachHangDto>>();
-                if (data != null)
+                var result = await response.Content.ReadFromJsonAsync<Result<List<KhachHangDto>>>();
+                if (result?.IsSuccess == true && result.Data != null)
                 {
-                    _allCustomers = data.OrderBy(x => x.Ten).ToList();
+                    _allCustomers = result.Data.OrderBy(x => x.Ten).ToList();
+
                     for (int i = 0; i < _allCustomers.Count; i++)
                     {
                         var kh = _allCustomers[i];
@@ -65,16 +66,20 @@ public partial class KhachHangList : Window
 
                     ApplySearch();
                 }
+                else
+                {
+                    throw new Exception(result?.Message ?? "Không tải được danh sách khách hàng.");
+                }
             }
             else
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                _errorHandler.Handle(new Exception($"API lỗi {(int)response.StatusCode}: {msg}"), "Tải khách hàng");
+                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
             }
         }
         catch (Exception ex)
         {
-            _errorHandler.Handle(ex, "LoadDataAsync");
+            _errorHandler.Handle(ex, "Tải danh sách khách hàng");
         }
         finally
         {
@@ -137,12 +142,30 @@ public partial class KhachHangList : Window
         var selected = GetSelectedCustomer();
         if (selected != null)
         {
-            var response = await ApiClient.GetAsync($"/api/khachhang/{selected.Id}");
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var latest = await response.Content.ReadFromJsonAsync<KhachHangDto>();
-                if (latest != null)
-                    await OpenEditWindowAsync(latest);
+                var response = await ApiClient.GetAsync($"/api/khachhang/{selected.Id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<Result<KhachHangDto>>();
+                    if (result?.IsSuccess == true && result.Data != null)
+                    {
+                        await OpenEditWindowAsync(result.Data);
+                    }
+                    else
+                    {
+                        throw new Exception(result?.Message ?? "Không đọc được thông tin khách hàng.");
+                    }
+                }
+                else
+                {
+                    var msg = await response.Content.ReadAsStringAsync();
+                    throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandler.Handle(ex, "Tải khách hàng");
             }
         }
     }
@@ -176,17 +199,25 @@ public partial class KhachHangList : Window
 
             if (response.IsSuccessStatusCode)
             {
-                await LoadDataAsync();
+                var result = await response.Content.ReadFromJsonAsync<Result<object>>();
+                if (result?.IsSuccess == true)
+                {
+                    await LoadDataAsync();
+                }
+                else
+                {
+                    throw new Exception(result?.Message ?? "Xoá khách hàng thất bại.");
+                }
             }
             else
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                _errorHandler.Handle(new Exception($"API lỗi {(int)response.StatusCode}: {msg}"), "Xoá khách hàng");
+                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
             }
         }
         catch (Exception ex)
         {
-            _errorHandler.Handle(ex, "DeleteSelectedCustomer");
+            _errorHandler.Handle(ex, "Xoá khách hàng");
         }
         finally
         {

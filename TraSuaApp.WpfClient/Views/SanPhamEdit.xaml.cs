@@ -1,12 +1,12 @@
 ﻿using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
@@ -109,19 +109,27 @@ namespace TraSuaApp.WpfClient.Views
 
                 _sanPham.BienThe = bienThes.ToList();
 
-                HttpResponseMessage response = _isEdit
-                    ? await ApiClient.PutAsync($"/api/sanpham/{_sanPham.Id}", _sanPham)
-                    : await ApiClient.PostAsync("/api/sanpham", _sanPham);
+                Result<SanPhamDto>? result;
 
-                if (response.IsSuccessStatusCode)
+                if (_isEdit)
+                {
+                    var response = await ApiClient.PutAsync($"/api/sanpham/{_sanPham.Id}", _sanPham);
+                    result = await response.Content.ReadFromJsonAsync<Result<SanPhamDto>>();
+                }
+                else
+                {
+                    var response = await ApiClient.PostAsync("/api/sanpham", _sanPham);
+                    result = await response.Content.ReadFromJsonAsync<Result<SanPhamDto>>();
+                }
+
+                if (result?.IsSuccess == true)
                 {
                     IsSaved = true;
                     DialogResult = true;
                 }
                 else
                 {
-                    var msg = await response.Content.ReadAsStringAsync();
-                    throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                    throw new Exception(result?.Message ?? "Lưu sản phẩm thất bại.");
                 }
             }
             catch (Exception ex)
@@ -134,7 +142,6 @@ namespace TraSuaApp.WpfClient.Views
                 Mouse.OverrideCursor = null;
             }
         }
-
         private void CloseButton_Click(object sender, RoutedEventArgs e) => DialogResult = false;
 
         private void Window_KeyDown(object sender, KeyEventArgs e)

@@ -50,23 +50,28 @@ public partial class SanPhamList : Window
         try
         {
             var response = await ApiClient.GetAsync("/api/sanpham");
-            if (response.IsSuccessStatusCode)
-            {
-                var data = await response.Content.ReadFromJsonAsync<List<SanPhamDto>>();
-                if (data != null)
-                {
-                    _allProducts = data.OrderBy(x => x.NgungBan).ThenBy(x => x.Ten).ToList();
-                    foreach (var p in _allProducts)
-                        p.TenNormalized = TextSearchHelper.NormalizeText(p.Ten);
-
-                    ApplySearch();
-                }
-            }
-            else
+            if (!response.IsSuccessStatusCode)
             {
                 var msg = await response.Content.ReadAsStringAsync();
                 _errorHandler.Handle(new Exception($"API lỗi {(int)response.StatusCode}: {msg}"), "Tải sản phẩm");
+                return;
             }
+
+            var result = await response.Content.ReadFromJsonAsync<Result<List<SanPhamDto>>>();
+            if (result?.IsSuccess != true)
+            {
+                throw new Exception(result?.Message ?? "Không thể tải sản phẩm.");
+            }
+
+            _allProducts = result.Data
+                .OrderBy(x => x.NgungBan)
+                .ThenBy(x => x.Ten)
+                .ToList();
+
+            foreach (var p in _allProducts)
+                p.TenNormalized = TextSearchHelper.NormalizeText(p.Ten);
+
+            ApplySearch();
         }
         catch (Exception ex)
         {
@@ -131,14 +136,17 @@ public partial class SanPhamList : Window
             return;
         }
 
-        // lấy mới nhất
         var response = await ApiClient.GetAsync($"/api/sanpham/{selected.Id}");
         if (!response.IsSuccessStatusCode) return;
 
-        var latest = await response.Content.ReadFromJsonAsync<SanPhamDto>();
-        if (latest != null)
+        var result = await response.Content.ReadFromJsonAsync<Result<SanPhamDto>>();
+        if (result?.IsSuccess == true && result.Data != null)
         {
-            await OpenEditWindowAsync(latest);
+            await OpenEditWindowAsync(result.Data);
+        }
+        else
+        {
+            MessageBox.Show(result?.Message ?? "Không thể lấy dữ liệu sản phẩm.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -188,7 +196,10 @@ public partial class SanPhamList : Window
         var row = ItemsControl.ContainerFromElement(ProductDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
         if (row?.Item is SanPhamDto selected)
         {
-            await OpenEditWindowAsync(selected);
+            var response = await ApiClient.GetAsync($"/api/sanpham/{selected.Id}");
+            var result = await response.Content.ReadFromJsonAsync<Result<SanPhamDto>>();
+            if (result?.IsSuccess == true && result.Data != null)
+                await OpenEditWindowAsync(result.Data);
         }
     }
 }

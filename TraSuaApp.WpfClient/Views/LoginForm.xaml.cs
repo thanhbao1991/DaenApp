@@ -43,6 +43,7 @@ namespace TraSuaApp.WpfClient.Views
             Close();
         }
 
+
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
             _errorHandler.Clear();
@@ -72,11 +73,14 @@ namespace TraSuaApp.WpfClient.Views
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                    // ✅ SỬA chỗ này: đọc kiểu Result<LoginResponse> thay vì LoginResponse
+                    var result = await response.Content.ReadFromJsonAsync<Result<LoginResponse>>();
 
-                    if (result != null && result.ThanhCong)
+                    if (result != null && result.IsSuccess && result.Data != null)
                     {
-                        ApiClient.SetToken(result.Token);
+                        var login = result.Data;
+
+                        ApiClient.SetToken(login.Token);
 
                         if (RememberMeCheckBox.IsChecked == true)
                         {
@@ -93,14 +97,14 @@ namespace TraSuaApp.WpfClient.Views
 
                         Properties.Settings.Default.Save();
 
-                        var role = JwtHelper.GetRole(result.Token!);
-                        var userId = JwtHelper.GetUserId(result.Token!);
+                        var role = JwtHelper.GetRole(login.Token!);
+                        var userId = JwtHelper.GetUserId(login.Token!);
 
                         var mainWindow = new MainWindow
                         {
                             VaiTro = role ?? "NhanVien",
                             UserId = userId ?? "",
-                            TenHienThi = result.TenHienThi ?? "Người dùng"
+                            TenHienThi = login.TenHienThi ?? "Người dùng"
                         };
 
                         mainWindow.Show();
@@ -127,5 +131,6 @@ namespace TraSuaApp.WpfClient.Views
                 Mouse.OverrideCursor = null;
             }
         }
+
     }
 }

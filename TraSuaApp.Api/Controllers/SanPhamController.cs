@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
 

@@ -61,21 +61,27 @@ public partial class ToppingList : Window
         try
         {
             Mouse.OverrideCursor = Cursors.Wait;
+
             var response = await ApiClient.GetAsync("/api/topping");
-            if (!response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<Result<List<ToppingDto>>>();
+                if (result?.IsSuccess == true && result.Data != null)
+                {
+                    _all = result.Data.OrderBy(x => x.Ten).ToList();
+                    foreach (var x in _all)
+                        x.TenNormalized = TextSearchHelper.NormalizeText(x.Ten ?? "");
+                    ApplySearch();
+                }
+                else
+                {
+                    throw new Exception(result?.Message ?? "Không thể tải danh sách topping.");
+                }
+            }
+            else
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                _errorHandler.Handle(new Exception(msg), "Tải topping");
-                return;
-            }
-
-            var data = await response.Content.ReadFromJsonAsync<List<ToppingDto>>();
-            if (data != null)
-            {
-                _all = data.OrderBy(x => x.Ten).ToList();
-                foreach (var x in _all)
-                    x.TenNormalized = TextSearchHelper.NormalizeText(x.Ten ?? "");
-                ApplySearch();
+                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
             }
         }
         catch (Exception ex)
@@ -118,12 +124,31 @@ public partial class ToppingList : Window
     {
         if (ToppingDataGrid.SelectedItem is not ToppingDto selected) return;
 
-        var response = await ApiClient.GetAsync($"/api/topping/{selected.Id}");
-        if (!response.IsSuccessStatusCode) return;
-
-        var latest = await response.Content.ReadFromJsonAsync<ToppingDto>();
-        if (latest != null)
-            await OpenEditWindowAsync(latest);
+        try
+        {
+            var response = await ApiClient.GetAsync($"/api/topping/{selected.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<Result<ToppingDto>>();
+                if (result?.IsSuccess == true && result.Data != null)
+                {
+                    await OpenEditWindowAsync(result.Data);
+                }
+                else
+                {
+                    throw new Exception(result?.Message ?? "Không đọc được topping.");
+                }
+            }
+            else
+            {
+                var msg = await response.Content.ReadAsStringAsync();
+                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorHandler.Handle(ex, "Xem topping");
+        }
     }
 
     private async void DeleteButton_Click(object sender, RoutedEventArgs e)
@@ -141,21 +166,29 @@ public partial class ToppingList : Window
         try
         {
             Mouse.OverrideCursor = Cursors.Wait;
-            var response = await ApiClient.DeleteAsync($"/api/topping/{selected.Id}");
 
+            var response = await ApiClient.DeleteAsync($"/api/topping/{selected.Id}");
             if (response.IsSuccessStatusCode)
             {
-                await LoadAsync();
+                var result = await response.Content.ReadFromJsonAsync<Result<object>>();
+                if (result?.IsSuccess == true)
+                {
+                    await LoadAsync();
+                }
+                else
+                {
+                    throw new Exception(result?.Message ?? "Xoá topping thất bại.");
+                }
             }
             else
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                _errorHandler.Handle(new Exception(msg), "Xoá topping");
+                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
             }
         }
         catch (Exception ex)
         {
-            _errorHandler.Handle(ex, "Delete topping");
+            _errorHandler.Handle(ex, "Xoá topping");
         }
         finally
         {
@@ -170,10 +203,23 @@ public partial class ToppingList : Window
 
         if (row.Item is ToppingDto selected)
         {
-            var response = await ApiClient.GetAsync($"/api/topping/{selected.Id}");
-            var latest = await response.Content.ReadFromJsonAsync<ToppingDto>();
-            if (latest != null)
-                await OpenEditWindowAsync(latest);
+            try
+            {
+                var response = await ApiClient.GetAsync($"/api/topping/{selected.Id}");
+                var result = await response.Content.ReadFromJsonAsync<Result<ToppingDto>>();
+                if (result?.IsSuccess == true && result.Data != null)
+                {
+                    await OpenEditWindowAsync(result.Data);
+                }
+                else
+                {
+                    throw new Exception(result?.Message ?? "Không đọc được topping.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandler.Handle(ex, "Xem topping");
+            }
         }
     }
 }

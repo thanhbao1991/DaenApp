@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TraSuaApp.Api.Controllers;
+using TraSuaApp.Api.Extensions;
 using TraSuaApp.Shared.Dtos;
-
-namespace TraSuaApp.Api.Controllers;
+using TraSuaApp.Shared.Helpers;
 
 [Authorize]
 [ApiController]
@@ -19,55 +20,37 @@ public class KhachHangController : BaseApiController
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var result = await _service.GetAllAsync();
-        return Result.Success().WithAfter(result).ToActionResult();
+        var list = await _service.GetAllAsync();
+        return Result.Success().WithAfter(list).ToActionResult();
     }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _service.GetByIdAsync(id);
-        return result == null
+        var dto = await _service.GetByIdAsync(id);
+        return dto == null
             ? Result.Failure("Không tìm thấy khách hàng.").ToActionResult()
-            : Result.Success().WithId(id).WithAfter(result).ToActionResult();
+            : Result.Success().WithId(id).WithAfter(dto).ToActionResult();
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] KhachHangDto dto)
     {
-        try
-        {
-            var result = await _service.CreateAsync(dto);
-            return Result.Success("Đã thêm khách hàng.")
-                .WithId(result.Id)
-                .WithAfter(result)
-                .ToActionResult();
-        }
-        catch (Exception ex)
-        {
-            return Result.Failure(ex.Message).ToActionResult();
-        }
+        var result = await _service.CreateAsync(dto);
+        return result.ToActionResult();
     }
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] KhachHangDto dto)
     {
-        var before = await _service.GetByIdAsync(id);
         var result = await _service.UpdateAsync(id, dto);
-
-        return result.IsSuccess
-            ? result.WithId(id).WithBefore(before).WithAfter(dto).ToActionResult()
-            : result.ToActionResult();
+        return result.ToActionResult();
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var before = await _service.GetByIdAsync(id);
         var result = await _service.DeleteAsync(id);
-
-        return result.IsSuccess
-            ? result.WithId(id).WithBefore(before).ToActionResult()
-            : result.ToActionResult();
+        return result.ToActionResult();
     }
 }

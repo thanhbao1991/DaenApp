@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Newtonsoft.Json.Linq;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views;
@@ -56,14 +57,12 @@ public partial class LogList : Window
         {
             Mouse.OverrideCursor = Cursors.Wait;
             var response = await ApiClient.GetAsync($"/api/logs");
-            if (!response.IsSuccessStatusCode)
-            {
-                var msg = await response.Content.ReadAsStringAsync();
-                _errorHandler.Handle(new Exception(msg), "Tải log");
-                return;
-            }
 
-            var paged = await response.Content.ReadFromJsonAsync<PagedResultDto<LogDto>>();
+            var result = await response.Content.ReadFromJsonAsync<Result<PagedResultDto<LogDto>>>();
+            if (result?.IsSuccess != true)
+                throw new Exception(result?.Message ?? "Không thể tải log.");
+
+            var paged = result.Data;
             if (paged?.Items != null)
             {
                 _all = paged.Items.OrderByDescending(x => x.ThoiGian).ToList();
@@ -97,7 +96,39 @@ public partial class LogList : Window
             filtered[i].Message = TryGetMessage(filtered[i].ResponseBodyShort);
             filtered[i].TenDoiTuongChinh = GetTenDoiTuongChinh(filtered[i].RequestBodyShort, filtered[i].ResponseBodyShort);
         }
+
         LogDataGrid.ItemsSource = filtered;
+    }
+
+    private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        ApplySearch();
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private async void LogDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        var row = ItemsControl.ContainerFromElement(LogDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
+        if (row == null) return;
+
+        if (row.Item is LogDto selected)
+        {
+            var response = await ApiClient.GetAsync($"/api/logs/{selected.Id}");
+            var result = await response.Content.ReadFromJsonAsync<Result<LogDto>>();
+
+            if (result?.IsSuccess != true)
+            {
+                MessageBox.Show(result?.Message ?? "Không thể tải chi tiết log.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (result.Data != null)
+                ShowLogDetailPopup(result.Data);
+        }
     }
 
     public static string? GetTenDoiTuongChinh(string? requestBody, string? responseBody)
@@ -158,34 +189,6 @@ public partial class LogList : Window
         }
     }
 
-    private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        ApplySearch();
-    }
-
-    private void CloseButton_Click(object sender, RoutedEventArgs e)
-    {
-        Close();
-    }
-
-    private async void LogDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        var row = ItemsControl.ContainerFromElement(LogDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
-        if (row == null) return;
-
-        if (row.Item is LogDto selected)
-        {
-            var response = await ApiClient.GetAsync($"/api/logs/{selected.Id}");
-            if (!response.IsSuccessStatusCode) return;
-
-            var detail = await response.Content.ReadFromJsonAsync<LogDto>();
-            if (detail != null)
-                ShowLogDetailPopup(detail);
-        }
-    }
-
-    // Các using đã giữ nguyên như cũ...
-
     private void ShowLogDetailPopup(LogDto log)
     {
         var sb = new StringBuilder();
@@ -200,16 +203,14 @@ public partial class LogList : Window
 
         var ignoredFields = new[]
         {
-        "id", "idOld", "idNguoiTao", "idNguoiSua", "ngayTao", "ngaySua",
-        "nguoiTao", "nguoiSua", "stt", "tenNormalized"
-    };
+            "id", "idOld", "idNguoiTao", "idNguoiSua", "ngayTao", "ngaySua",
+            "nguoiTao", "nguoiSua", "stt", "tenNormalized"
+        };
 
         string? tenChinh = null;
 
         try
         {
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
             if (log.Method == "POST")
             {
                 var doc = JsonDocument.Parse(log.RequestBodyShort ?? "{}");
@@ -315,6 +316,7 @@ public partial class LogList : Window
         var parts = path.Split('/');
         return parts.LastOrDefault(p => Guid.TryParse(p, out _)) ?? "";
     }
+
     private string FormatFieldName(string fieldName)
     {
         var result = Regex.Replace(fieldName, "(?<!^)([A-Z])", " $1");

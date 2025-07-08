@@ -1,39 +1,46 @@
-﻿using System.Text.Json;
+﻿namespace TraSuaApp.Shared.Helpers;
 
 public class Result<T>
 {
     public bool IsSuccess { get; set; }
     public string Message { get; set; } = string.Empty;
-    public T? Data { get; set; }
-
-    // Cho middleware log
-    public string? BeforeData { get; set; }
-    public string? AfterData { get; set; }
     public Guid? EntityId { get; set; }
+    public T? Data { get; set; }
+    public object? BeforeData { get; set; }
+    public object? AfterData { get; set; }
 
-    // ✅ Factory methods
-    public static Result<T> Success(string message, T data)
-        => new() { IsSuccess = true, Message = message, Data = data };
+    // ---------- Factory Methods ----------
+    public static Result<T> Success(string message = "", T? data = default) =>
+        new Result<T> { IsSuccess = true, Message = message, Data = data };
 
-    public static Result<T> Failure(string message)
-        => new() { IsSuccess = false, Message = message };
+    public static Result<T> Failure(string message) =>
+        new Result<T> { IsSuccess = false, Message = message };
 
-    // ✅ Fluent chaining
-    public Result<T> WithBefore(object? data)
-    {
-        BeforeData = data == null ? null : JsonSerializer.Serialize(data);
-        return this;
-    }
-
-    public Result<T> WithAfter(object? data)
-    {
-        AfterData = data == null ? null : JsonSerializer.Serialize(data);
-        return this;
-    }
-
+    // ---------- Fluent Chaining ----------
     public Result<T> WithId(Guid id)
     {
         EntityId = id;
         return this;
     }
+
+    public Result<T> WithBefore(object? before)
+    {
+        BeforeData = before;
+        return this;
+    }
+
+    public Result<T> WithAfter(object? after)
+    {
+        AfterData = after;
+        return this;
+    }
+}
+
+public static class Result
+{
+    public static Result<object> Success(string message = "", object? data = null)
+        => Result<object>.Success(message, data);
+
+    public static Result<object> Failure(string message)
+        => Result<object>.Failure(message);
 }

@@ -1,8 +1,10 @@
-﻿using System.Net.Http.Json;
+﻿using System.Net.Http;
+using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views;
@@ -27,18 +29,34 @@ public partial class ToppingEdit : Window
     {
         TenTextBox.Text = Data.Ten;
 
-        var res = await ApiClient.GetAsync("/api/nhomsanpham");
-        if (!res.IsSuccessStatusCode) return;
-
-        var ds = await res.Content.ReadFromJsonAsync<List<NhomSanPhamDto>>() ?? new();
-        _bindingList = ds.Select(x => new NhomSanPhamCheckItem
+        try
         {
-            Id = x.Id,
-            Ten = x.Ten,
-            IsChecked = Data.IdNhomSanPham?.Contains(x.Id) == true
-        }).ToList();
+            var res = await ApiClient.GetAsync("/api/nhomsanpham");
+            if (!res.IsSuccessStatusCode)
+            {
+                var msg = await res.Content.ReadAsStringAsync();
+                throw new Exception($"API lỗi {(int)res.StatusCode}: {msg}");
+            }
 
-        NhomSanPhamListBox.ItemsSource = _bindingList;
+            var result = await res.Content.ReadFromJsonAsync<Result<List<NhomSanPhamDto>>>();
+            if (result?.IsSuccess != true || result.Data == null)
+                throw new Exception(result?.Message ?? "Không thể tải nhóm sản phẩm.");
+
+            var ds = result.Data;
+
+            _bindingList = ds.Select(x => new NhomSanPhamCheckItem
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                IsChecked = Data.IdNhomSanPham?.Contains(x.Id) == true
+            }).ToList();
+
+            NhomSanPhamListBox.ItemsSource = _bindingList;
+        }
+        catch (Exception ex)
+        {
+            _errorHandler.Handle(ex, "Tải nhóm sản phẩm");
+        }
     }
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -58,17 +76,21 @@ public partial class ToppingEdit : Window
                 .Select(x => x.Id)
                 .ToList();
 
-            var response = _isEdit
+            HttpResponseMessage response = _isEdit
                 ? await ApiClient.PutAsync($"/api/topping/{Data.Id}", Data)
                 : await ApiClient.PostAsync("/api/topping", Data);
 
-            if (response.IsSuccessStatusCode)
-                DialogResult = true;
-            else
+            if (!response.IsSuccessStatusCode)
             {
                 var msg = await response.Content.ReadAsStringAsync();
                 throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
             }
+
+            var result = await response.Content.ReadFromJsonAsync<Result<ToppingDto>>();
+            if (result?.IsSuccess != true)
+                throw new Exception(result?.Message ?? "Lưu topping thất bại.");
+
+            DialogResult = true;
         }
         catch (Exception ex)
         {

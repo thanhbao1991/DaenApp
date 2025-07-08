@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Infrastructure.Helpers;
@@ -37,7 +38,7 @@ public class KhachHangService : IKhachHangService
         return entity == null ? null : _mapper.Map<KhachHangDto>(entity);
     }
 
-    public async Task<Result> CreateAsync(KhachHangDto dto)
+    public async Task<Result<KhachHangDto>> CreateAsync(KhachHangDto dto)
     {
         try
         {
@@ -54,7 +55,7 @@ public class KhachHangService : IKhachHangService
                 }).ToList() ?? new();
 
             if (entity.KhachHangPhones.Count(p => p.IsDefault) > 1)
-                return Result.Failure("Chỉ được chọn một số điện thoại mặc định.");
+                return Result<KhachHangDto>.Failure("Chỉ được chọn một số điện thoại mặc định.");
 
             entity.KhachHangAddresses = dto.Addresses?
                 .Select(d => new KhachHangAddress
@@ -66,22 +67,23 @@ public class KhachHangService : IKhachHangService
                 }).ToList() ?? new();
 
             if (entity.KhachHangAddresses.Count(d => d.IsDefault) > 1)
-                return Result.Failure("Chỉ được chọn một địa chỉ mặc định.");
+                return Result<KhachHangDto>.Failure("Chỉ được chọn một địa chỉ mặc định.");
 
             _context.KhachHangs.Add(entity);
             await _context.SaveChangesAsync();
 
-            return Result.Success("Đã thêm khách hàng.")
+            var after = _mapper.Map<KhachHangDto>(entity);
+            return Result<KhachHangDto>.Success("Đã thêm khách hàng.", after)
                 .WithId(entity.Id)
-                .WithAfter(_mapper.Map<KhachHangDto>(entity));
+                .WithAfter(after);
         }
         catch (Exception ex)
         {
-            return Result.Failure(DbExceptionHelper.Handle(ex).Message);
+            return Result<KhachHangDto>.Failure(DbExceptionHelper.Handle(ex).Message);
         }
     }
 
-    public async Task<Result> UpdateAsync(Guid id, KhachHangDto dto)
+    public async Task<Result<KhachHangDto>> UpdateAsync(Guid id, KhachHangDto dto)
     {
         try
         {
@@ -91,7 +93,7 @@ public class KhachHangService : IKhachHangService
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
-                return Result.Failure("Không tìm thấy khách hàng.");
+                return Result<KhachHangDto>.Failure("Không tìm thấy khách hàng.");
 
             var before = _mapper.Map<KhachHangDto>(entity);
 
@@ -108,7 +110,7 @@ public class KhachHangService : IKhachHangService
                 }).ToList() ?? new();
 
             if (entity.KhachHangPhones.Count(p => p.IsDefault) > 1)
-                return Result.Failure("Chỉ được chọn một số điện thoại mặc định.");
+                return Result<KhachHangDto>.Failure("Chỉ được chọn một số điện thoại mặc định.");
 
             _context.KhachHangAddresses.RemoveRange(entity.KhachHangAddresses);
             entity.KhachHangAddresses = dto.Addresses?
@@ -121,24 +123,24 @@ public class KhachHangService : IKhachHangService
                 }).ToList() ?? new();
 
             if (entity.KhachHangAddresses.Count(d => d.IsDefault) > 1)
-                return Result.Failure("Chỉ được chọn một địa chỉ mặc định.");
+                return Result<KhachHangDto>.Failure("Chỉ được chọn một địa chỉ mặc định.");
 
             await _context.SaveChangesAsync();
 
             var after = _mapper.Map<KhachHangDto>(entity);
 
-            return Result.Success("Cập nhật thành công.")
+            return Result<KhachHangDto>.Success("Cập nhật thành công.", after)
                 .WithId(id)
                 .WithBefore(before)
                 .WithAfter(after);
         }
         catch (Exception ex)
         {
-            return Result.Failure(DbExceptionHelper.Handle(ex).Message);
+            return Result<KhachHangDto>.Failure(DbExceptionHelper.Handle(ex).Message);
         }
     }
 
-    public async Task<Result> DeleteAsync(Guid id)
+    public async Task<Result<KhachHangDto>> DeleteAsync(Guid id)
     {
         var entity = await _context.KhachHangs
             .Include(kh => kh.KhachHangPhones)
@@ -146,7 +148,7 @@ public class KhachHangService : IKhachHangService
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null)
-            return Result.Failure("Không tìm thấy khách hàng.");
+            return Result<KhachHangDto>.Failure("Không tìm thấy khách hàng.");
 
         var before = _mapper.Map<KhachHangDto>(entity);
 
@@ -156,7 +158,7 @@ public class KhachHangService : IKhachHangService
 
         await _context.SaveChangesAsync();
 
-        return Result.Success("Xoá thành công.")
+        return Result<KhachHangDto>.Success("Xoá thành công.", before)
             .WithId(id)
             .WithBefore(before);
     }

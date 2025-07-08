@@ -1,8 +1,10 @@
 ﻿using System.Net.Http;
+using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
@@ -22,8 +24,7 @@ namespace TraSuaApp.WpfClient.Views
             Account = taiKhoan ?? new TaiKhoanDto();
 
             LoadForm();
-
-            this.KeyDown += Window_KeyDown; // ⌨️ Bắt phím Enter / Esc
+            this.KeyDown += Window_KeyDown;
         }
 
         private void LoadForm()
@@ -31,7 +32,7 @@ namespace TraSuaApp.WpfClient.Views
             TenDangNhapTextBox.Text = Account.TenDangNhap;
             TenHienThiTextBox.Text = Account.TenHienThi;
             IsActiveCheckBox.IsChecked = Account.IsActive;
-            MatKhauBox.Password = ""; // không hiển thị mật khẩu cũ
+            MatKhauBox.Password = "";
 
             if (!string.IsNullOrWhiteSpace(Account.VaiTro))
             {
@@ -40,7 +41,7 @@ namespace TraSuaApp.WpfClient.Views
                     .FirstOrDefault(x => (string)x.Content == Account.VaiTro);
             }
 
-            TenDangNhapTextBox.IsReadOnly = false; // Có thể đổi lại nếu muốn khoá tên đăng nhập khi sửa
+            TenDangNhapTextBox.IsReadOnly = false;
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -71,15 +72,17 @@ namespace TraSuaApp.WpfClient.Views
                     ? await ApiClient.PutAsync($"/api/taikhoan/{Account.Id}", Account)
                     : await ApiClient.PostAsync("/api/taikhoan", Account);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    DialogResult = true;
-                }
-                else
+                if (!response.IsSuccessStatusCode)
                 {
                     var msg = await response.Content.ReadAsStringAsync();
                     throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
                 }
+
+                var result = await response.Content.ReadFromJsonAsync<Result<TaiKhoanDto>>();
+                if (result?.IsSuccess != true)
+                    throw new Exception(result?.Message ?? "Không thể lưu tài khoản.");
+
+                DialogResult = true;
             }
             catch (Exception ex)
             {
@@ -100,13 +103,9 @@ namespace TraSuaApp.WpfClient.Views
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
-            {
                 SaveButton_Click(SaveButton, new RoutedEventArgs());
-            }
             else if (e.Key == Key.Escape)
-            {
                 DialogResult = false;
-            }
         }
     }
 }
