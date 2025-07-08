@@ -18,42 +18,38 @@ public class TaiKhoanController : BaseApiController
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
-        => Ok(await _service.GetAllAsync());
+    {
+        var data = await _service.GetAllAsync();
+        return FromResult(Result.Success().WithAfter(data));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetByIdAsync(Guid id)
     {
-        var result = await _service.GetByIdAsync(id);
-        return result == null
-            ? NotFound(new { Message = "Không tìm thấy tài khoản." })
-            : Ok(result);
+        var dto = await _service.GetByIdAsync(id);
+        return dto == null
+            ? FromResult(Result.Failure("Không tìm thấy tài khoản."))
+            : FromResult(Result.Success().WithId(id).WithAfter(dto));
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] TaiKhoanDto dto)
     {
         var result = await _service.CreateAsync(dto);
-        return result.IsSuccess
-            ? Ok(new { result.Message, Id = dto.Id }) // ✅ Trả về Id để middleware lấy EntityId
-            : BadRequest(new { result.Message });
+        return FromResult(result);
     }
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] TaiKhoanDto dto)
     {
-        dto.Id = id; // ✅ Đảm bảo dto có Id đúng
         var result = await _service.UpdateAsync(id, dto);
-        return result.IsSuccess
-            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
-            : BadRequest(new { result.Message });
+        return FromResult(result);
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _service.DeleteAsync(id);
-        return result.IsSuccess
-            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
-            : BadRequest(new { result.Message });
+        return FromResult(result);
     }
 }

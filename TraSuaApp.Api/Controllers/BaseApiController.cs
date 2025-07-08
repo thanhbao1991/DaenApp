@@ -13,20 +13,23 @@ public abstract class BaseApiController : ControllerBase
         Guid.TryParse(User?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id)
             ? id : Guid.Empty;
 
-    protected IActionResult Result(bool success, string message)
-        => success ? Ok(new { Message = message }) : BadRequest(new { Message = message });
+    protected IActionResult FromResult(Result result, Guid? id = null)
+    {
+        if (result.IsSuccess)
+            return Ok(id.HasValue
+                ? new { result.Message, Id = id.Value }
+                : new { result.Message });
 
-    protected IActionResult FromResult(Result result)
-        => result.IsSuccess ? Ok(new { Message = result.Message }) : BadRequest(new { Message = result.Message });
+        return BadRequest(new { result.Message });
+    }
 
-    // ✅ Trả về kèm Id nếu có
-    protected IActionResult Result(bool success, string message, Guid id)
-        => success
-            ? Ok(new { Message = message, Id = id })
-            : BadRequest(new { Message = message });
+    protected IActionResult Result(bool success, string message, Guid? id = null)
+    {
+        if (success)
+            return Ok(id.HasValue
+                ? new { Message = message, Id = id.Value }
+                : new { Message = message });
 
-    protected IActionResult FromResult(Result result, Guid id)
-        => result.IsSuccess
-            ? Ok(new { Message = result.Message, Id = id })
-            : BadRequest(new { Message = result.Message });
+        return BadRequest(new { Message = message });
+    }
 }

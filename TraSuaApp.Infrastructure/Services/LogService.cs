@@ -4,6 +4,7 @@ using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Infrastructure.Services;
 
@@ -24,7 +25,7 @@ public class LogService : ILogService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<PagedResultDto<LogDto>> GetLogsAsync(LogFilterDto filter)
+    public async Task<Result> GetLogsAsync(LogFilterDto filter)
     {
         var query = _context.Logs.AsQueryable();
 
@@ -52,12 +53,18 @@ public class LogService : ILogService
             .ToListAsync();
 
         var items = _mapper.Map<List<LogDto>>(logs);
+        var resultDto = new PagedResultDto<LogDto>(items, total);
 
-        return new PagedResultDto<LogDto>(items, total);
+        return Result.Success().WithAfter(resultDto);
     }
 
-    public async Task<Log?> GetLogByIdAsync(Guid id)
+    public async Task<Result> GetLogByIdAsync(Guid id)
     {
-        return await _context.Logs.FindAsync(id);
+        var entity = await _context.Logs.FindAsync(id);
+        if (entity == null)
+            return Result.Failure("Không tìm thấy log.");
+
+        var dto = _mapper.Map<LogDto>(entity);
+        return Result.Success().WithId(id).WithAfter(dto);
     }
 }

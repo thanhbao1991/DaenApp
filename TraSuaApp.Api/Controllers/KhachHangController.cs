@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Shared.Dtos;
 
 namespace TraSuaApp.Api.Controllers;
@@ -21,7 +20,7 @@ public class KhachHangController : BaseApiController
     public async Task<IActionResult> GetAll()
     {
         var result = await _service.GetAllAsync();
-        return Ok(result);
+        return Result.Success().WithAfter(result).ToActionResult();
     }
 
     [HttpGet("{id:guid}")]
@@ -29,8 +28,8 @@ public class KhachHangController : BaseApiController
     {
         var result = await _service.GetByIdAsync(id);
         return result == null
-            ? NotFound(new { Message = "Không tìm thấy khách hàng." })
-            : Ok(result);
+            ? Result.Failure("Không tìm thấy khách hàng.").ToActionResult()
+            : Result.Success().WithId(id).WithAfter(result).ToActionResult();
     }
 
     [HttpPost]
@@ -39,32 +38,36 @@ public class KhachHangController : BaseApiController
         try
         {
             var result = await _service.CreateAsync(dto);
-            return result.IsSuccess
-                ? Ok(new { result.Message, Id = dto.Id }) // ✅ Trả về Id
-                : BadRequest(new { result.Message });
+            return Result.Success("Đã thêm khách hàng.")
+                .WithId(result.Id)
+                .WithAfter(result)
+                .ToActionResult();
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { Message = ex.Message });
+            return Result.Failure(ex.Message).ToActionResult();
         }
     }
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] KhachHangDto dto)
     {
-        dto.Id = id; // Đảm bảo đúng Id
+        var before = await _service.GetByIdAsync(id);
         var result = await _service.UpdateAsync(id, dto);
+
         return result.IsSuccess
-            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
-            : BadRequest(new { result.Message });
+            ? result.WithId(id).WithBefore(before).WithAfter(dto).ToActionResult()
+            : result.ToActionResult();
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
+        var before = await _service.GetByIdAsync(id);
         var result = await _service.DeleteAsync(id);
+
         return result.IsSuccess
-            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
-            : BadRequest(new { result.Message });
+            ? result.WithId(id).WithBefore(before).ToActionResult()
+            : result.ToActionResult();
     }
 }

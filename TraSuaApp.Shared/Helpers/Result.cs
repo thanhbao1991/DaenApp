@@ -1,33 +1,37 @@
-﻿namespace TraSuaApp.Shared.Helpers;
+﻿using System.Text.Json;
 
-public class Result
+public class Result<T>
 {
     public bool IsSuccess { get; set; }
     public string Message { get; set; } = string.Empty;
+    public T? Data { get; set; }
 
-    // ✅ Thêm các trường cho middleware
+    // Cho middleware log
     public string? BeforeData { get; set; }
     public string? AfterData { get; set; }
     public Guid? EntityId { get; set; }
 
     // ✅ Factory methods
-    public static Result Success(string message) => new() { IsSuccess = true, Message = message };
-    public static Result Failure(string message) => new() { IsSuccess = false, Message = message };
+    public static Result<T> Success(string message, T data)
+        => new() { IsSuccess = true, Message = message, Data = data };
+
+    public static Result<T> Failure(string message)
+        => new() { IsSuccess = false, Message = message };
 
     // ✅ Fluent chaining
-    public Result WithBefore(object? data)
+    public Result<T> WithBefore(object? data)
     {
-        BeforeData = data == null ? null : System.Text.Json.JsonSerializer.Serialize(data);
+        BeforeData = data == null ? null : JsonSerializer.Serialize(data);
         return this;
     }
 
-    public Result WithAfter(object? data)
+    public Result<T> WithAfter(object? data)
     {
-        AfterData = data == null ? null : System.Text.Json.JsonSerializer.Serialize(data);
+        AfterData = data == null ? null : JsonSerializer.Serialize(data);
         return this;
     }
 
-    public Result WithId(Guid id)
+    public Result<T> WithId(Guid id)
     {
         EntityId = id;
         return this;

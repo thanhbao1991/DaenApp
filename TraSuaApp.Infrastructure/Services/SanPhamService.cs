@@ -53,7 +53,9 @@ public class SanPhamService : ISanPhamService
             _context.SanPhams.Add(entity);
             await _context.SaveChangesAsync();
 
-            return Result.Success("Đã thêm sản phẩm.");
+            return Result.Success("Đã thêm sản phẩm.")
+                .WithId(entity.Id)
+                .WithAfter(_mapper.Map<SanPhamDto>(entity));
         }
         catch (DbUpdateException ex)
         {
@@ -76,7 +78,7 @@ public class SanPhamService : ISanPhamService
             if (entity == null)
                 return Result.Failure("Không tìm thấy sản phẩm.");
 
-            _mapper.Map(dto, entity);
+            var before = _mapper.Map<SanPhamDto>(entity);
 
             var bienTheMoi = dto.BienThe;
             var bienTheCu = entity.SanPhamBienThes.ToList();
@@ -84,11 +86,15 @@ public class SanPhamService : ISanPhamService
             if (bienTheMoi.Count(bt => bt.MacDinh) > 1)
                 return Result.Failure("Chỉ được chọn một biến thể mặc định.");
 
+            _mapper.Map(dto, entity);
+
+            // Đặt lại tất cả biến thể thành không mặc định
             foreach (var bt in entity.SanPhamBienThes)
                 bt.MacDinh = false;
 
             await _context.SaveChangesAsync();
 
+            // Xoá biến thể cũ không còn tồn tại
             foreach (var btCu in bienTheCu)
             {
                 if (!bienTheMoi.Any(bt => bt.Id == btCu.Id))
@@ -101,6 +107,7 @@ public class SanPhamService : ISanPhamService
                 }
             }
 
+            // Cập nhật hoặc thêm biến thể mới
             foreach (var btMoi in bienTheMoi)
             {
                 var btEntity = entity.SanPhamBienThes.FirstOrDefault(x => x.Id == btMoi.Id);
@@ -120,7 +127,12 @@ public class SanPhamService : ISanPhamService
             }
 
             await _context.SaveChangesAsync();
-            return Result.Success("Đã cập nhật sản phẩm.");
+
+            var after = await GetByIdAsync(id); // Load lại bản ghi để lấy biến thể mới
+            return Result.Success("Đã cập nhật sản phẩm.")
+                .WithId(id)
+                .WithBefore(before)
+                .WithAfter(after!);
         }
         catch (DbUpdateException ex)
         {
@@ -141,9 +153,14 @@ public class SanPhamService : ISanPhamService
         if (entity == null)
             return Result.Failure("Không tìm thấy sản phẩm.");
 
+        var before = _mapper.Map<SanPhamDto>(entity);
+
         _context.SanPhamBienThes.RemoveRange(entity.SanPhamBienThes);
         _context.SanPhams.Remove(entity);
         await _context.SaveChangesAsync();
-        return Result.Success("Đã xoá sản phẩm.");
+
+        return Result.Success("Đã xoá sản phẩm.")
+            .WithId(id)
+            .WithBefore(before);
     }
 }

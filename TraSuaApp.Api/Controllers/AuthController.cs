@@ -20,7 +20,18 @@ public class AuthController : ControllerBase
     {
         var result = await _authService.LoginAsync(request);
 
-        // Trả về 200 OK dù đăng nhập thành công hay thất bại
-        return Ok(result);
+        if (result.IsSuccess)
+        {
+            return Ok(new
+            {
+                Message = result.Message,
+                Data = result.Data // chứa LoginResponse (TenHienThi, VaiTro, Token...)
+            });
+        }
+
+        return Unauthorized(new
+        {
+            Message = result.Message
+        });
     }
 }

@@ -1,13 +1,10 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
-
-namespace TraSuaApp.Infrastructure.Services;
 
 public class NhomSanPhamService : INhomSanPhamService
 {
@@ -49,7 +46,9 @@ public class NhomSanPhamService : INhomSanPhamService
             _context.NhomSanPhams.Add(entity);
             await _context.SaveChangesAsync();
 
-            return Result.Success("Đã thêm nhóm sản phẩm.");
+            return Result.Success("Đã thêm nhóm sản phẩm.")
+                .WithId(entity.Id)
+                .WithAfter(_mapper.Map<NhomSanPhamDto>(entity));
         }
         catch (Exception ex)
         {
@@ -67,13 +66,20 @@ public class NhomSanPhamService : INhomSanPhamService
 
             var trungTen = await _context.NhomSanPhams
                 .AnyAsync(x => x.Ten == dto.Ten && x.Id != id);
-
             if (trungTen)
                 return Result.Failure("Tên nhóm sản phẩm đã tồn tại.");
 
+            var before = _mapper.Map<NhomSanPhamDto>(entity);
+
             _mapper.Map(dto, entity);
             await _context.SaveChangesAsync();
-            return Result.Success("Đã cập nhật nhóm sản phẩm.");
+
+            var after = _mapper.Map<NhomSanPhamDto>(entity);
+
+            return Result.Success("Đã cập nhật nhóm sản phẩm.")
+                .WithId(id)
+                .WithBefore(before)
+                .WithAfter(after);
         }
         catch (Exception ex)
         {
@@ -89,9 +95,14 @@ public class NhomSanPhamService : INhomSanPhamService
             if (entity == null)
                 return Result.Failure("Nhóm sản phẩm không tồn tại.");
 
+            var before = _mapper.Map<NhomSanPhamDto>(entity);
+
             _context.NhomSanPhams.Remove(entity);
             await _context.SaveChangesAsync();
-            return Result.Success("Đã xoá nhóm sản phẩm.");
+
+            return Result.Success("Đã xoá nhóm sản phẩm.")
+                .WithId(id)
+                .WithBefore(before);
         }
         catch (Exception ex)
         {

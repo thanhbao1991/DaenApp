@@ -17,42 +17,29 @@ public class AuthService : IAuthService
         _jwtTokenService = jwtTokenService;
     }
 
-    public async Task<LoginResponse> LoginAsync(LoginRequest request)
+    public async Task<Result> LoginAsync(LoginRequest request)
     {
         var user = await _context.TaiKhoans
             .FirstOrDefaultAsync(x => x.TenDangNhap == request.TaiKhoan);
 
         if (user == null)
         {
-            return new LoginResponse
-            {
-                ThanhCong = false,
-                Message = "Tài khoản không tồn tại"
-            };
+            return Result.Failure("Tài khoản không tồn tại");
         }
 
         if (!user.IsActive)
         {
-            return new LoginResponse
-            {
-                ThanhCong = false,
-                Message = "Tài khoản đã bị khoá"
-            };
+            return Result.Failure("Tài khoản đã bị khoá");
         }
 
-        // ✅ Dùng BCrypt thay vì so sánh chuỗi thuần
         if (!PasswordHelper.VerifyPassword(request.MatKhau, user.MatKhau))
         {
-            return new LoginResponse
-            {
-                ThanhCong = false,
-                Message = "Mật khẩu không đúng"
-            };
+            return Result.Failure("Mật khẩu không đúng");
         }
 
         var token = _jwtTokenService.GenerateToken(user);
 
-        return new LoginResponse
+        var response = new LoginResponse
         {
             ThanhCong = true,
             Message = "Đăng nhập thành công",
@@ -60,5 +47,9 @@ public class AuthService : IAuthService
             VaiTro = user.VaiTro,
             Token = token
         };
+
+        return Result.Success("Đăng nhập thành công")
+            .WithId(user.Id)
+            .WithAfter(response);
     }
 }

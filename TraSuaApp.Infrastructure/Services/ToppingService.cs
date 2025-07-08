@@ -1,12 +1,8 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
-
-namespace TraSuaApp.Infrastructure.Services;
 
 public class ToppingService : IToppingService
 {
@@ -37,73 +33,85 @@ public class ToppingService : IToppingService
         return entity == null ? null : _mapper.Map<ToppingDto>(entity);
     }
 
-    public async Task<Result> CreateAsync(ToppingDto dto)
+    public async Task<Result<ToppingDto>> CreateAsync(ToppingDto dto)
     {
-        var trungTen = await _context.Toppings.AnyAsync(x => x.Ten == dto.Ten);
-        if (trungTen)
-            return Result.Failure("Tên topping đã tồn tại.");
+        if (await _context.Toppings.AnyAsync(x => x.Ten == dto.Ten))
+            return Result<ToppingDto>.Failure("Tên topping đã tồn tại.");
 
         var entity = _mapper.Map<Topping>(dto);
         entity.Id = Guid.NewGuid();
 
-        // Gán quan hệ many-to-many
         if (dto.IdNhomSanPham != null)
         {
             var nhomSanPhams = await _context.NhomSanPhams
                 .Where(n => dto.IdNhomSanPham.Contains(n.Id))
                 .ToListAsync();
+
             entity.IdNhomSanPhams = nhomSanPhams;
         }
 
         _context.Toppings.Add(entity);
         await _context.SaveChangesAsync();
-        return Result.Success("Đã thêm topping.");
+
+        var resultDto = _mapper.Map<ToppingDto>(entity);
+        return Result<ToppingDto>.Success("Đã thêm topping.", resultDto)
+            .WithId(entity.Id)
+            .WithAfter(resultDto);
     }
 
-    public async Task<Result> UpdateAsync(Guid id, ToppingDto dto)
+    public async Task<Result<ToppingDto>> UpdateAsync(Guid id, ToppingDto dto)
     {
         var entity = await _context.Toppings
             .Include(t => t.IdNhomSanPhams)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (entity == null)
-            return Result.Failure("Topping không tồn tại.");
+            return Result<ToppingDto>.Failure("Topping không tồn tại.");
 
-        var trungTen = await _context.Toppings
-            .AnyAsync(x => x.Ten == dto.Ten && x.Id != id);
+        if (await _context.Toppings.AnyAsync(x => x.Ten == dto.Ten && x.Id != id))
+            return Result<ToppingDto>.Failure("Tên topping đã tồn tại.");
 
-        if (trungTen)
-            return Result.Failure("Tên topping đã tồn tại.");
+        var before = _mapper.Map<ToppingDto>(entity);
 
         _mapper.Map(dto, entity);
 
-        // Cập nhật quan hệ many-to-many
         entity.IdNhomSanPhams.Clear();
         if (dto.IdNhomSanPham != null)
         {
             var nhomSanPhams = await _context.NhomSanPhams
                 .Where(n => dto.IdNhomSanPham.Contains(n.Id))
                 .ToListAsync();
+
             entity.IdNhomSanPhams = nhomSanPhams;
         }
 
         await _context.SaveChangesAsync();
-        return Result.Success("Đã cập nhật topping.");
+
+        var resultDto = _mapper.Map<ToppingDto>(entity);
+        return Result<ToppingDto>.Success("Đã cập nhật topping.", resultDto)
+            .WithId(id)
+            .WithBefore(before)
+            .WithAfter(resultDto);
     }
 
-    public async Task<Result> DeleteAsync(Guid id)
+    public async Task<Result<ToppingDto>> DeleteAsync(Guid id)
     {
         var entity = await _context.Toppings
             .Include(t => t.IdNhomSanPhams)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (entity == null)
-            return Result.Failure("Topping không tồn tại.");
+            return Result<ToppingDto>.Failure("Topping không tồn tại.");
+
+        var before = _mapper.Map<ToppingDto>(entity);
 
         entity.IdNhomSanPhams.Clear();
         _context.Toppings.Remove(entity);
 
         await _context.SaveChangesAsync();
-        return Result.Success("Đã xoá topping.");
+
+        return Result<ToppingDto>.Success("Đã xoá topping.", before)
+            .WithId(id)
+            .WithBefore(before);
     }
 }

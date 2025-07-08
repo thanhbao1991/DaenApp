@@ -48,7 +48,9 @@ public class TaiKhoanService : ITaiKhoanService
         _context.TaiKhoans.Add(entity);
         await _context.SaveChangesAsync();
 
-        return Result.Success("Đã thêm tài khoản.");
+        return Result.Success("Đã thêm tài khoản.")
+            .WithId(entity.Id)
+            .WithAfter(dto with { MatKhau = null }); // Ẩn mật khẩu khỏi log
     }
 
     public async Task<Result> UpdateAsync(Guid id, TaiKhoanDto dto)
@@ -62,9 +64,9 @@ public class TaiKhoanService : ITaiKhoanService
         if (trungTen)
             return Result.Failure("Tên đăng nhập đã tồn tại.");
 
-        // Giữ lại mật khẩu cũ nếu không truyền
-        var oldPassword = entity.MatKhau;
+        var before = _mapper.Map<TaiKhoanDto>(entity);
 
+        var oldPassword = entity.MatKhau;
         _mapper.Map(dto, entity);
 
         entity.MatKhau = string.IsNullOrWhiteSpace(dto.MatKhau)
@@ -72,7 +74,14 @@ public class TaiKhoanService : ITaiKhoanService
             : PasswordHelper.HashPassword(dto.MatKhau);
 
         await _context.SaveChangesAsync();
-        return Result.Success("Đã cập nhật tài khoản.");
+
+        var after = _mapper.Map<TaiKhoanDto>(entity);
+        after.MatKhau = null; // Không log mật khẩu
+
+        return Result.Success("Đã cập nhật tài khoản.")
+            .WithId(id)
+            .WithBefore(before with { MatKhau = null })
+            .WithAfter(after);
     }
 
     public async Task<Result> DeleteAsync(Guid id)
@@ -81,8 +90,14 @@ public class TaiKhoanService : ITaiKhoanService
         if (entity == null)
             return Result.Failure("Tài khoản không tồn tại.");
 
+        var before = _mapper.Map<TaiKhoanDto>(entity);
+        before.MatKhau = null;
+
         _context.TaiKhoans.Remove(entity);
         await _context.SaveChangesAsync();
-        return Result.Success("Đã xoá tài khoản.");
+
+        return Result.Success("Đã xoá tài khoản.")
+            .WithId(id)
+            .WithBefore(before);
     }
 }

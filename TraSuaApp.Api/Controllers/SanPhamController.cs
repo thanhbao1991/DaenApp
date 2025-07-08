@@ -18,42 +18,29 @@ public class SanPhamController : BaseApiController
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
-        => Ok(await _service.GetAllAsync());
+    {
+        var list = await _service.GetAllAsync();
+        return FromResult(Result.Success().WithAfter(list));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _service.GetByIdAsync(id);
-        return result == null
-            ? NotFound(new { Message = "Không tìm thấy sản phẩm." })
-            : Ok(result);
+        var dto = await _service.GetByIdAsync(id);
+        return dto == null
+            ? FromResult(Result.Failure("Không tìm thấy sản phẩm."))
+            : FromResult(Result.Success().WithId(id).WithAfter(dto));
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] SanPhamDto dto)
-    {
-        var result = await _service.CreateAsync(dto);
-        return result.IsSuccess
-            ? Ok(new { result.Message, Id = dto.Id }) // ✅ Trả về Id để middleware log EntityId
-            : BadRequest(new { result.Message });
-    }
+        => FromResult(await _service.CreateAsync(dto));
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] SanPhamDto dto)
-    {
-        dto.Id = id; // ✅ Gán lại id cho chắc chắn
-        var result = await _service.UpdateAsync(id, dto);
-        return result.IsSuccess
-            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
-            : BadRequest(new { result.Message });
-    }
+        => FromResult(await _service.UpdateAsync(id, dto));
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
-    {
-        var result = await _service.DeleteAsync(id);
-        return result.IsSuccess
-            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id
-            : BadRequest(new { result.Message });
-    }
+        => FromResult(await _service.DeleteAsync(id));
 }

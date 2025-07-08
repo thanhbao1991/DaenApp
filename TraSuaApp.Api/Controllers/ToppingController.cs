@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TraSuaApp.Api.Controllers;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Shared.Dtos;
-
-namespace TraSuaApp.Api.Controllers;
 
 [Authorize]
 [Route("api/[controller]")]
@@ -18,42 +17,38 @@ public class ToppingController : BaseApiController
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
-        => Ok(await _service.GetAllAsync());
+    {
+        var data = await _service.GetAllAsync();
+        return FromResult(Result<List<ToppingDto>>.Success("Danh sách topping", data).WithAfter(data));
+    }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _service.GetByIdAsync(id);
-        return result == null
-            ? NotFound(new { Message = "Không tìm thấy topping." })
-            : Ok(result);
+        var dto = await _service.GetByIdAsync(id);
+        return dto == null
+            ? FromResult(Result<ToppingDto>.Failure("Không tìm thấy topping."))
+            : FromResult(Result<ToppingDto>.Success("Chi tiết topping", dto).WithId(id).WithAfter(dto));
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] ToppingDto dto)
     {
         var result = await _service.CreateAsync(dto);
-        return result.IsSuccess
-            ? Ok(new { result.Message, Id = dto.Id }) // ✅ Trả về Id để middleware log EntityId
-            : BadRequest(new { result.Message });
+        return FromResult(result);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] ToppingDto dto)
     {
-        dto.Id = id;
         var result = await _service.UpdateAsync(id, dto);
-        return result.IsSuccess
-            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id để middleware log EntityId
-            : BadRequest(new { result.Message });
+        return FromResult(result);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _service.DeleteAsync(id);
-        return result.IsSuccess
-            ? Ok(new { result.Message, Id = id }) // ✅ Trả về Id để middleware log EntityId
-            : BadRequest(new { result.Message });
+        return FromResult(result);
     }
 }
