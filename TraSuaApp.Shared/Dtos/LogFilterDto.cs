@@ -2,6 +2,7 @@
 {
     public class LogFilterDto
     {
+
         public string? UserName { get; set; }
         public string? Path { get; set; }
         public int? StatusCode { get; set; }

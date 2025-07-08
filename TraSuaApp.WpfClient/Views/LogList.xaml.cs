@@ -1,7 +1,11 @@
 ﻿using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Newtonsoft.Json.Linq;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.WpfClient.Helpers;
 
@@ -88,9 +92,70 @@ public partial class LogList : Window
             .ToList();
 
         for (int i = 0; i < filtered.Count; i++)
+        {
             filtered[i].STT = i + 1;
-
+            filtered[i].Message = TryGetMessage(filtered[i].ResponseBodyShort);
+            filtered[i].TenDoiTuongChinh = GetTenDoiTuongChinh(filtered[i].RequestBodyShort, filtered[i].ResponseBodyShort);
+        }
         LogDataGrid.ItemsSource = filtered;
+    }
+
+    public static string? GetTenDoiTuongChinh(string? requestBody, string? responseBody)
+    {
+        var ten = TryGetTen(requestBody);
+        if (!string.IsNullOrWhiteSpace(ten)) return ten;
+
+        ten = TryGetTen(responseBody);
+        return ten;
+    }
+
+    private static string? TryGetTen(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+
+        try
+        {
+            var obj = JObject.Parse(json);
+            var tenProps = new[] { "ten", "Ten", "tenDangNhap" };
+
+            foreach (var prop in tenProps)
+            {
+                if (obj.TryGetValue(prop, StringComparison.OrdinalIgnoreCase, out var token))
+                {
+                    var val = token?.ToString()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(val))
+                        return val;
+                }
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? TryGetMessage(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+
+        try
+        {
+            var obj = JObject.Parse(json);
+            if (obj.TryGetValue("message", out var token))
+            {
+                var msg = token?.ToString()?.Trim();
+                if (!string.IsNullOrWhiteSpace(msg))
+                    return msg;
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -119,19 +184,148 @@ public partial class LogList : Window
         }
     }
 
+    // Các using đã giữ nguyên như cũ...
+
     private void ShowLogDetailPopup(LogDto log)
     {
-        MessageBox.Show(
-            $"🟟 {log.ThoiGian:yyyy-MM-dd HH:mm:ss}\n\n" +
-            $"🟟 User: {log.UserName}\n" +
-            $"🟟 Path: {log.Method} {log.Path}\n" +
-            $"🟟 IP: {log.IP}\n" +
-            $"🟟 Request:\n{log.RequestBody}\n\n" +
-            $"🟟 Response:\n{log.ResponseBody}\n\n" +
-            $"⏱ Duration: {log.DurationMs}ms\n" +
-            (string.IsNullOrEmpty(log.ExceptionMessage) ? "" : $"\n❗ Exception:\n{log.ExceptionMessage}"),
-            "Chi tiết log",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        var sb = new StringBuilder();
+
+        string action = log.Method switch
+        {
+            "POST" => "➕ Thêm mới",
+            "PUT" => "✏️ Chỉnh sửa",
+            "DELETE" => "🟟️ Xoá",
+            _ => $"{log.Method}"
+        };
+
+        var ignoredFields = new[]
+        {
+        "id", "idOld", "idNguoiTao", "idNguoiSua", "ngayTao", "ngaySua",
+        "nguoiTao", "nguoiSua", "stt", "tenNormalized"
+    };
+
+        string? tenChinh = null;
+
+        try
+        {
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            if (log.Method == "POST")
+            {
+                var doc = JsonDocument.Parse(log.RequestBodyShort ?? "{}");
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    if (!ignoredFields.Contains(prop.Name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        var label = FormatFieldName(prop.Name);
+                        var value = prop.Value.ToString();
+                        if (tenChinh == null && IsTenChinhField(prop.Name)) tenChinh = value;
+                        sb.AppendLine($"• {label}: {value}");
+                    }
+                }
+            }
+            else if (log.Method == "DELETE")
+            {
+                var id = TryExtractIdFromPath(log.Path);
+                var beforeLog = _all
+                    .Where(x => x.Path.Contains(id, StringComparison.OrdinalIgnoreCase)
+                                && (x.Method == "POST" || x.Method == "PUT")
+                                && x.ThoiGian < log.ThoiGian)
+                    .OrderByDescending(x => x.ThoiGian)
+                    .FirstOrDefault();
+
+                if (beforeLog != null)
+                {
+                    var doc = JsonDocument.Parse(beforeLog.RequestBodyShort ?? "{}");
+                    foreach (var prop in doc.RootElement.EnumerateObject())
+                    {
+                        if (!ignoredFields.Contains(prop.Name, StringComparer.OrdinalIgnoreCase))
+                        {
+                            var label = FormatFieldName(prop.Name);
+                            var value = prop.Value.ToString();
+                            if (tenChinh == null && IsTenChinhField(prop.Name)) tenChinh = value;
+                            sb.AppendLine($"• {label}: {value}");
+                        }
+                    }
+                }
+                else
+                {
+                    sb.AppendLine("⚠️ Không tìm thấy log cũ để truy vết thông tin đã xoá.");
+                }
+            }
+            else if (log.Method == "PUT")
+            {
+                var id = TryExtractIdFromPath(log.Path);
+                var oldLog = _all
+                    .Where(x => x.Path.Contains(id, StringComparison.OrdinalIgnoreCase)
+                                && (x.Method == "POST" || x.Method == "PUT")
+                                && x.ThoiGian < log.ThoiGian)
+                    .OrderByDescending(x => x.ThoiGian)
+                    .FirstOrDefault();
+
+                var beforeDict = new Dictionary<string, string>();
+                if (oldLog != null)
+                {
+                    var beforeDoc = JsonDocument.Parse(oldLog.RequestBodyShort ?? "{}");
+                    beforeDict = beforeDoc.RootElement.EnumerateObject()
+                        .Where(p => !ignoredFields.Contains(p.Name, StringComparer.OrdinalIgnoreCase))
+                        .ToDictionary(p => p.Name, p => p.Value.ToString());
+                }
+
+                var afterDoc = JsonDocument.Parse(log.RequestBodyShort ?? "{}");
+                var afterDict = afterDoc.RootElement.EnumerateObject()
+                    .Where(p => !ignoredFields.Contains(p.Name, StringComparer.OrdinalIgnoreCase))
+                    .ToDictionary(p => p.Name, p => p.Value.ToString());
+
+                foreach (var key in afterDict.Keys)
+                {
+                    beforeDict.TryGetValue(key, out var oldVal);
+                    var newVal = afterDict[key];
+
+                    if (key.Contains("ten", StringComparison.OrdinalIgnoreCase) && tenChinh == null)
+                        tenChinh = newVal;
+
+                    if (oldVal != newVal)
+                    {
+                        sb.AppendLine($"• {FormatFieldName(key)}: \"{oldVal}\" → \"{newVal}\"");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            sb.AppendLine("⚠️ Không thể phân tích nội dung.");
+            sb.AppendLine(ex.Message);
+        }
+
+        if (!string.IsNullOrWhiteSpace(log.ExceptionMessage))
+        {
+            sb.AppendLine();
+            sb.AppendLine("❗ Lỗi hệ thống:");
+            sb.AppendLine(log.ExceptionMessage);
+        }
+
+        var title = $"{action}" + (tenChinh != null ? $": {tenChinh}" : "");
+        MessageBox.Show(sb.ToString(), title, MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private static string TryExtractIdFromPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "";
+        var parts = path.Split('/');
+        return parts.LastOrDefault(p => Guid.TryParse(p, out _)) ?? "";
+    }
+    private string FormatFieldName(string fieldName)
+    {
+        var result = Regex.Replace(fieldName, "(?<!^)([A-Z])", " $1");
+        return char.ToUpper(result[0]) + result.Substring(1);
+    }
+
+    private bool IsTenChinhField(string name)
+    {
+        var tenProps = new[] {
+            "ten", "tenSanPham", "tenNhom", "tenKhachHang", "tenTopping", "tenNguyenLieu", "tenHienThi"
+        };
+        return tenProps.Contains(name, StringComparer.OrdinalIgnoreCase);
     }
 }

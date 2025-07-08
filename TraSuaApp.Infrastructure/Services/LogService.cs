@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
@@ -9,10 +10,12 @@ namespace TraSuaApp.Infrastructure.Services;
 public class LogService : ILogService
 {
     private readonly AppDbContext _context;
+    private readonly IMapper _mapper;
 
-    public LogService(AppDbContext context)
+    public LogService(AppDbContext context, IMapper mapper)
     {
         _context = context;
+        _mapper = mapper;
     }
 
     public async Task LogAsync(Log log)
@@ -41,21 +44,14 @@ public class LogService : ILogService
             query = query.Where(x => x.ThoiGian <= filter.DenNgay);
 
         var total = await query.CountAsync();
-        var items = await query
+
+        var logs = await query
             .OrderByDescending(x => x.ThoiGian)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
-            .Select(x => new LogDto
-            {
-                Id = x.Id,
-                ThoiGian = x.ThoiGian,
-                UserName = x.UserName,
-                Method = x.Method,
-                Path = x.Path,
-                StatusCode = x.StatusCode,
-                DurationMs = x.DurationMs
-            })
             .ToListAsync();
+
+        var items = _mapper.Map<List<LogDto>>(logs);
 
         return new PagedResultDto<LogDto>(items, total);
     }

@@ -1,129 +1,427 @@
-﻿//using Microsoft.EntityFrameworkCore;
-//using TraSuaApp.Domain.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using TraSuaApp.Domain.Entities;
 
-//namespace TraSuaApp.Infrastructure.Data;
+namespace TraSuaApp.Infrastructure.Data;
 
-//public class AppDbContext : DbContext
-//{
-//    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-//    {
-//    }
-//    protected override void OnModelCreating(ModelBuilder modelBuilder)
-//    {
-//        base.OnModelCreating(modelBuilder);
-//        modelBuilder.Entity<Log>(entity =>
-//        {
-//            entity.Property(e => e.RequestBodyShort).HasColumnType("nvarchar(max)");
-//            entity.Property(e => e.ResponseBodyShort).HasColumnType("nvarchar(max)");
-//        });
+public partial class AppDbContext : DbContext
+{
+    public AppDbContext()
+    {
+    }
 
-//        //ToppingNhomSanPham
-//        //       modelBuilder.Entity<KhachHangAddress>()
-//        //.ToTable("KhachHangAddresses");
-//        //    modelBuilder.Entity<ToppingNhomSanPham>()
-//        //.ToTable("ToppingNhomSanPhams");
+    public AppDbContext(DbContextOptions<AppDbContext> options)
+        : base(options)
+    {
+    }
 
+    public virtual DbSet<ChiTietHoaDon> ChiTietHoaDons { get; set; }
 
+    public virtual DbSet<ChiTietHoaDonNhap> ChiTietHoaDonNhaps { get; set; }
 
-//        modelBuilder.Entity<ToppingNhomSanPham>()
-//    .HasKey(x => new { x.IdTopping, x.IdNhomSanPham });
-//        modelBuilder.Entity<ToppingNhomSanPham>()
-//            .HasOne(x => x.Topping)
-//            .WithMany(x => x.DanhSachNhomSanPham)
-//            .HasForeignKey(x => x.IdTopping)
-//            .OnDelete(DeleteBehavior.Cascade);
-//        modelBuilder.Entity<ToppingNhomSanPham>()
-//            .HasOne(x => x.NhomSanPham)
-//            .WithMany(x => x.DanhSachTopping)
-//            .HasForeignKey(x => x.IdNhomSanPham)
-//            .OnDelete(DeleteBehavior.Cascade);
+    public virtual DbSet<ChiTietHoaDonTopping> ChiTietHoaDonToppings { get; set; }
 
-//        NewMethod(modelBuilder);
-//    }
+    public virtual DbSet<ChiTietTuyChinhMon> ChiTietTuyChinhMons { get; set; }
 
-//    private static void NewMethod(ModelBuilder modelBuilder)
-//    {
-//        // Topping
-//        modelBuilder.Entity<Topping>().Property(x => x.Gia).HasPrecision(18, 2);
+    public virtual DbSet<CongThuc> CongThucs { get; set; }
 
-//        // Voucher
-//        modelBuilder.Entity<Voucher>().Property(x => x.GiaTri).HasPrecision(18, 2);
+    public virtual DbSet<CongViecNoiBo> CongViecNoiBos { get; set; }
 
-//        // VoucherLog
-//        modelBuilder.Entity<VoucherLog>().Property(x => x.GiaTriApDung).HasPrecision(18, 2);
-//        // ChiTietHoaDon
-//        modelBuilder.Entity<ChiTietHoaDon>().Property(x => x.DonGia).HasPrecision(18, 2);
-//        modelBuilder.Entity<ChiTietHoaDon>().Property(x => x.ThanhTien).HasPrecision(18, 2);
+    public virtual DbSet<CustomerPoint> CustomerPoints { get; set; }
 
-//        // ChiTietHoaDonNhap
-//        modelBuilder.Entity<ChiTietHoaDonNhap>().Property(x => x.DonGia).HasPrecision(18, 2);
-//        modelBuilder.Entity<ChiTietHoaDonNhap>().Property(x => x.SoLuong).HasPrecision(18, 2);
+    public virtual DbSet<CustomerPointLog> CustomerPointLogs { get; set; }
 
-//        // ChiTietHoaDonTopping
-//        modelBuilder.Entity<ChiTietHoaDonTopping>().Property(x => x.Gia).HasPrecision(18, 2);
+    public virtual DbSet<HoaDon> HoaDons { get; set; }
 
-//        // HoaDon
-//        modelBuilder.Entity<HoaDon>().Property(x => x.GiamGia).HasPrecision(18, 2);
-//        modelBuilder.Entity<HoaDon>().Property(x => x.ThanhTien).HasPrecision(18, 2);
-//        modelBuilder.Entity<HoaDon>().Property(x => x.TongTien).HasPrecision(18, 2);
+    public virtual DbSet<HoaDonNhap> HoaDonNhaps { get; set; }
 
-//        // LichSuNhapXuatKho
-//        modelBuilder.Entity<LichSuNhapXuatKho>().Property(x => x.SoLuong).HasPrecision(18, 2);
+    public virtual DbSet<KhachHang> KhachHangs { get; set; }
 
-//        // NguyenLieu
-//        modelBuilder.Entity<NguyenLieu>().Property(x => x.GiaNhap).HasPrecision(18, 2);
-//        modelBuilder.Entity<NguyenLieu>().Property(x => x.TonKho).HasPrecision(18, 2);
+    public virtual DbSet<KhachHangAddress> KhachHangAddresses { get; set; }
 
-//        // NoHoaDon
-//        modelBuilder.Entity<NoHoaDon>().Property(x => x.SoTienNo).HasPrecision(18, 2);
-//        modelBuilder.Entity<NoHoaDon>().Property(x => x.SoTienDaTra).HasPrecision(18, 2);
+    public virtual DbSet<KhachHangPhone> KhachHangPhones { get; set; }
 
-//        // Payment
-//        modelBuilder.Entity<Payment>().Property(x => x.SoTien).HasPrecision(18, 2);
+    public virtual DbSet<LichSuChinhSua> LichSuChinhSuas { get; set; }
 
-//        // SanPhamBienThe
-//        modelBuilder.Entity<SanPhamBienThe>().Property(x => x.GiaBan).HasPrecision(18, 2);
+    public virtual DbSet<LichSuNhapXuatKho> LichSuNhapXuatKhos { get; set; }
 
-//        // SuDungNguyenLieu
-//        modelBuilder.Entity<SuDungNguyenLieu>().Property(x => x.SoLuong).HasPrecision(18, 2);
-//    }
+    public virtual DbSet<Log> Logs { get; set; }
 
-//    // DbSet cho toàn bộ entity đã khai báo
-//    public DbSet<Log> Logs => Set<Log>();
-//    public DbSet<ToppingNhomSanPham> ToppingNhomSanPhams => Set<ToppingNhomSanPham>();
-//    public DbSet<KhachHang> KhachHangs => Set<KhachHang>();
-//    public DbSet<KhachHangAddress> KhachHangAddresses => Set<KhachHangAddress>();
-//    public DbSet<KhachHangPhone> KhachHangPhones => Set<KhachHangPhone>();
-//    public DbSet<TaiKhoan> TaiKhoans => Set<TaiKhoan>();
-//    public DbSet<NhomSanPham> NhomSanPhams { get; set; }
-//    public DbSet<SanPham> SanPhams => Set<SanPham>();
-//    public DbSet<SanPhamBienThe> SanPhamBienThes => Set<SanPhamBienThe>();
-//    public DbSet<Topping> Toppings => Set<Topping>();
-//    public DbSet<TuyChinhMon> TuyChinhMons => Set<TuyChinhMon>();
-//    public DbSet<ChiTietTuyChinhMon> ChiTietTuyChinhMons => Set<ChiTietTuyChinhMon>();
+    public virtual DbSet<NguyenLieu> NguyenLieus { get; set; }
 
-//    public DbSet<HoaDon> HoaDons => Set<HoaDon>();
-//    public DbSet<ChiTietHoaDon> ChiTietHoaDons => Set<ChiTietHoaDon>();
-//    public DbSet<ChiTietHoaDonTopping> ChiTietHoaDonToppings => Set<ChiTietHoaDonTopping>();
+    public virtual DbSet<NhomSanPham> NhomSanPhams { get; set; }
 
-//    public DbSet<NguyenLieu> NguyenLieus => Set<NguyenLieu>();
-//    public DbSet<CongThuc> CongThucs => Set<CongThuc>();
-//    public DbSet<SuDungNguyenLieu> SuDungNguyenLieus => Set<SuDungNguyenLieu>();
-//    public DbSet<HoaDonNhap> HoaDonNhaps => Set<HoaDonNhap>();
-//    public DbSet<ChiTietHoaDonNhap> ChiTietHoaDonNhaps => Set<ChiTietHoaDonNhap>();
-//    public DbSet<LichSuNhapXuatKho> LichSuNhapXuatKhos => Set<LichSuNhapXuatKho>();
+    public virtual DbSet<NoHoaDon> NoHoaDons { get; set; }
 
-//    public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
-//    public DbSet<Payment> Payments => Set<Payment>();
-//    public DbSet<NoHoaDon> NoHoaDons => Set<NoHoaDon>();
+    public virtual DbSet<Payment> Payments { get; set; }
 
-//    public DbSet<CustomerPoint> CustomerPoints => Set<CustomerPoint>();
-//    public DbSet<CustomerPointLog> CustomerPointLogs => Set<CustomerPointLog>();
-//    public DbSet<Voucher> Vouchers => Set<Voucher>();
-//    public DbSet<VoucherLog> VoucherLogs => Set<VoucherLog>();
+    public virtual DbSet<PaymentMethod> PaymentMethods { get; set; }
 
-//    public DbSet<CongViecNoiBo> CongViecNoiBos => Set<CongViecNoiBo>();
-//    public DbSet<LichSuChinhSua> LichSuChinhSuas => Set<LichSuChinhSua>();
+    public virtual DbSet<SanPham> SanPhams { get; set; }
 
+    public virtual DbSet<SanPhamBienThe> SanPhamBienThes { get; set; }
 
-//}
+    public virtual DbSet<SuDungNguyenLieu> SuDungNguyenLieus { get; set; }
+
+    public virtual DbSet<TaiKhoan> TaiKhoans { get; set; }
+
+    public virtual DbSet<Topping> Toppings { get; set; }
+
+    public virtual DbSet<TuyChinhMon> TuyChinhMons { get; set; }
+
+    public virtual DbSet<Voucher> Vouchers { get; set; }
+
+    public virtual DbSet<VoucherLog> VoucherLogs { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        => optionsBuilder.UseSqlServer("Server=.;Database=TraSuaAppDb;Trusted_Connection=True;TrustServerCertificate=True");
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<ChiTietHoaDon>(entity =>
+        {
+            entity.HasIndex(e => e.HoaDonId, "IX_ChiTietHoaDons_HoaDonId");
+
+            entity.HasIndex(e => e.SanPhamBienTheId, "IX_ChiTietHoaDons_SanPhamBienTheId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.DonGia).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.ThanhTien).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.HoaDon).WithMany(p => p.ChiTietHoaDons).HasForeignKey(d => d.HoaDonId);
+
+            entity.HasOne(d => d.SanPhamBienThe).WithMany(p => p.ChiTietHoaDons).HasForeignKey(d => d.SanPhamBienTheId);
+        });
+
+        modelBuilder.Entity<ChiTietHoaDonNhap>(entity =>
+        {
+            entity.HasIndex(e => e.HoaDonNhapId, "IX_ChiTietHoaDonNhaps_HoaDonNhapId");
+
+            entity.HasIndex(e => e.NguyenLieuId, "IX_ChiTietHoaDonNhaps_NguyenLieuId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.DonGia).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.SoLuong).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.HoaDonNhap).WithMany(p => p.ChiTietHoaDonNhaps).HasForeignKey(d => d.HoaDonNhapId);
+
+            entity.HasOne(d => d.NguyenLieu).WithMany(p => p.ChiTietHoaDonNhaps).HasForeignKey(d => d.NguyenLieuId);
+        });
+
+        modelBuilder.Entity<ChiTietHoaDonTopping>(entity =>
+        {
+            entity.HasIndex(e => e.HoaDonId, "IX_ChiTietHoaDonToppings_HoaDonId");
+
+            entity.HasIndex(e => e.ToppingId, "IX_ChiTietHoaDonToppings_ToppingId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Gia).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.HoaDon).WithMany(p => p.ChiTietHoaDonToppings).HasForeignKey(d => d.HoaDonId);
+
+            entity.HasOne(d => d.Topping).WithMany(p => p.ChiTietHoaDonToppings).HasForeignKey(d => d.ToppingId);
+        });
+
+        modelBuilder.Entity<ChiTietTuyChinhMon>(entity =>
+        {
+            entity.HasIndex(e => e.TuyChinhMonId, "IX_ChiTietTuyChinhMons_TuyChinhMonId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.HasOne(d => d.TuyChinhMon).WithMany(p => p.ChiTietTuyChinhMons).HasForeignKey(d => d.TuyChinhMonId);
+        });
+
+        modelBuilder.Entity<CongThuc>(entity =>
+        {
+            entity.HasIndex(e => e.SanPhamBienTheId, "IX_CongThucs_SanPhamBienTheId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.HasOne(d => d.SanPhamBienThe).WithMany(p => p.CongThucs).HasForeignKey(d => d.SanPhamBienTheId);
+        });
+
+        modelBuilder.Entity<CongViecNoiBo>(entity =>
+        {
+            entity.HasIndex(e => e.NguoiTaoId, "IX_CongViecNoiBos_NguoiTaoId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.HasOne(d => d.NguoiTao).WithMany(p => p.CongViecNoiBos).HasForeignKey(d => d.NguoiTaoId);
+        });
+
+        modelBuilder.Entity<CustomerPoint>(entity =>
+        {
+            entity.HasIndex(e => e.KhachHangId, "IX_CustomerPoints_KhachHangId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.HasOne(d => d.KhachHang).WithMany(p => p.CustomerPoints).HasForeignKey(d => d.KhachHangId);
+        });
+
+        modelBuilder.Entity<CustomerPointLog>(entity =>
+        {
+            entity.HasIndex(e => e.KhachHangId, "IX_CustomerPointLogs_KhachHangId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.HasOne(d => d.KhachHang).WithMany(p => p.CustomerPointLogs).HasForeignKey(d => d.KhachHangId);
+        });
+
+        modelBuilder.Entity<HoaDon>(entity =>
+        {
+            entity.HasIndex(e => e.KhachHangId, "IX_HoaDons_KhachHangId");
+
+            entity.HasIndex(e => e.TaiKhoanId, "IX_HoaDons_TaiKhoanId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.GiamGia).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.ThanhTien).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.TongTien).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.KhachHang).WithMany(p => p.HoaDons).HasForeignKey(d => d.KhachHangId);
+
+            entity.HasOne(d => d.TaiKhoan).WithMany(p => p.HoaDons).HasForeignKey(d => d.TaiKhoanId);
+        });
+
+        modelBuilder.Entity<HoaDonNhap>(entity =>
+        {
+            entity.HasIndex(e => e.TaiKhoanId, "IX_HoaDonNhaps_TaiKhoanId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.HasOne(d => d.TaiKhoan).WithMany(p => p.HoaDonNhaps).HasForeignKey(d => d.TaiKhoanId);
+        });
+
+        modelBuilder.Entity<KhachHang>(entity =>
+        {
+            entity.Property(e => e.Id).ValueGeneratedNever();
+        });
+
+        modelBuilder.Entity<KhachHangAddress>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_ShippingAddresses");
+
+            entity.HasIndex(e => e.IdKhachHang, "IX_ShippingAddress_Default")
+                .IsUnique()
+                .HasFilter("([IsDefault]=(1))");
+
+            entity.HasIndex(e => e.KhachHangId, "IX_ShippingAddresses_KhachHangId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.HasOne(d => d.KhachHang).WithMany(p => p.KhachHangAddresses)
+                .HasForeignKey(d => d.KhachHangId)
+                .HasConstraintName("FK_ShippingAddresses_KhachHangs_KhachHangId");
+        });
+
+        modelBuilder.Entity<KhachHangPhone>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_CustomerPhoneNumbers");
+
+            entity.HasIndex(e => e.IdKhachHang, "IX_CustomerPhoneNumber_Default")
+                .IsUnique()
+                .HasFilter("([IsDefault]=(1))");
+
+            entity.HasIndex(e => e.KhachHangId, "IX_CustomerPhoneNumbers_KhachHangId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.HasOne(d => d.KhachHang).WithMany(p => p.KhachHangPhones)
+                .HasForeignKey(d => d.KhachHangId)
+                .HasConstraintName("FK_CustomerPhoneNumbers_KhachHangs_KhachHangId");
+        });
+
+        modelBuilder.Entity<LichSuChinhSua>(entity =>
+        {
+            entity.HasIndex(e => e.TaiKhoanId, "IX_LichSuChinhSuas_TaiKhoanId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.HasOne(d => d.TaiKhoan).WithMany(p => p.LichSuChinhSuas).HasForeignKey(d => d.TaiKhoanId);
+        });
+
+        modelBuilder.Entity<LichSuNhapXuatKho>(entity =>
+        {
+            entity.HasIndex(e => e.NguyenLieuId, "IX_LichSuNhapXuatKhos_NguyenLieuId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.SoLuong).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.NguyenLieu).WithMany(p => p.LichSuNhapXuatKhos).HasForeignKey(d => d.NguyenLieuId);
+        });
+
+        modelBuilder.Entity<Log>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Logs__3214EC07710A63D8");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.ExceptionMessage).HasMaxLength(1000);
+            entity.Property(e => e.Ip)
+                .HasMaxLength(100)
+                .HasColumnName("IP");
+            entity.Property(e => e.Method).HasMaxLength(10);
+            entity.Property(e => e.Path).HasMaxLength(500);
+            entity.Property(e => e.QueryString).HasMaxLength(1000);
+            entity.Property(e => e.UserId).HasMaxLength(100);
+            entity.Property(e => e.UserName).HasMaxLength(200);
+        });
+
+        modelBuilder.Entity<NguyenLieu>(entity =>
+        {
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.GiaNhap).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.TonKho).HasColumnType("decimal(18, 2)");
+        });
+
+        modelBuilder.Entity<NhomSanPham>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__NhomSanP__3214EC07C10A2B21");
+
+            entity.HasIndex(e => e.Ten, "IX_NhomSanPham_Ten").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Ten).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<NoHoaDon>(entity =>
+        {
+            entity.HasIndex(e => e.HoaDonId, "IX_NoHoaDons_HoaDonId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.SoTienDaTra).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.SoTienNo).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.HoaDon).WithMany(p => p.NoHoaDons).HasForeignKey(d => d.HoaDonId);
+        });
+
+        modelBuilder.Entity<Payment>(entity =>
+        {
+            entity.HasIndex(e => e.HoaDonId, "IX_Payments_HoaDonId");
+
+            entity.HasIndex(e => e.PaymentMethodId, "IX_Payments_PaymentMethodId");
+
+            entity.HasIndex(e => e.TaiKhoanThucHienId, "IX_Payments_TaiKhoanThucHienId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.SoTien).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.HoaDon).WithMany(p => p.Payments).HasForeignKey(d => d.HoaDonId);
+
+            entity.HasOne(d => d.PaymentMethod).WithMany(p => p.Payments).HasForeignKey(d => d.PaymentMethodId);
+
+            entity.HasOne(d => d.TaiKhoanThucHien).WithMany(p => p.Payments).HasForeignKey(d => d.TaiKhoanThucHienId);
+        });
+
+        modelBuilder.Entity<PaymentMethod>(entity =>
+        {
+            entity.Property(e => e.Id).ValueGeneratedNever();
+        });
+
+        modelBuilder.Entity<SanPham>(entity =>
+        {
+            entity.HasIndex(e => e.Ten, "IX_SanPham_Ten").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.IdOld).HasColumnName("IdOLD");
+            entity.Property(e => e.Ten).HasMaxLength(255);
+            entity.Property(e => e.TichDiem).HasDefaultValue(true);
+
+            entity.HasOne(d => d.IdNhomNavigation).WithMany(p => p.SanPhams)
+                .HasForeignKey(d => d.IdNhom)
+                .HasConstraintName("FK_SanPhams_NhomSanPhams");
+        });
+
+        modelBuilder.Entity<SanPhamBienThe>(entity =>
+        {
+            entity.HasIndex(e => e.IdSanPham, "IX_BienThe_MacDinh")
+                .IsUnique()
+                .HasFilter("([MacDinh]=(1))");
+
+            entity.HasIndex(e => new { e.TenBienThe, e.IdSanPham }, "IX_BienThe_Ten_IdSanPham").IsUnique();
+
+            entity.HasIndex(e => e.SanPhamId, "IX_SanPhamBienThes_SanPhamId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.GiaBan).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.TenBienThe).HasMaxLength(255);
+
+            entity.HasOne(d => d.SanPham).WithMany(p => p.SanPhamBienThes).HasForeignKey(d => d.SanPhamId);
+        });
+
+        modelBuilder.Entity<SuDungNguyenLieu>(entity =>
+        {
+            entity.HasIndex(e => e.CongThucId, "IX_SuDungNguyenLieus_CongThucId");
+
+            entity.HasIndex(e => e.NguyenLieuId, "IX_SuDungNguyenLieus_NguyenLieuId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.SoLuong).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.CongThuc).WithMany(p => p.SuDungNguyenLieus).HasForeignKey(d => d.CongThucId);
+
+            entity.HasOne(d => d.NguyenLieu).WithMany(p => p.SuDungNguyenLieus).HasForeignKey(d => d.NguyenLieuId);
+        });
+
+        modelBuilder.Entity<TaiKhoan>(entity =>
+        {
+            entity.HasIndex(e => e.TenDangNhap, "IX_TaiKhoan_TenDangNhap").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.TenDangNhap).HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<Topping>(entity =>
+        {
+            entity.HasIndex(e => e.Ten, "IX_Topping_Ten").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Gia).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Ten).HasMaxLength(100);
+
+            entity.HasMany(d => d.IdNhomSanPhams).WithMany(p => p.IdToppings)
+                .UsingEntity<Dictionary<string, object>>(
+                    "ToppingNhomSanPham",
+                    r => r.HasOne<NhomSanPham>().WithMany()
+                        .HasForeignKey("IdNhomSanPham")
+                        .HasConstraintName("FK_ToppingNhomSanPham_NhomSanPham"),
+                    l => l.HasOne<Topping>().WithMany()
+                        .HasForeignKey("IdTopping")
+                        .HasConstraintName("FK_ToppingNhomSanPham_Topping"),
+                    j =>
+                    {
+                        j.HasKey("IdTopping", "IdNhomSanPham").HasName("PK_ToppingNhomSanPham");
+                        j.ToTable("ToppingNhomSanPhams");
+                    });
+        });
+
+        modelBuilder.Entity<TuyChinhMon>(entity =>
+        {
+            entity.Property(e => e.Id).ValueGeneratedNever();
+        });
+
+        modelBuilder.Entity<Voucher>(entity =>
+        {
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.GiaTri).HasColumnType("decimal(18, 2)");
+        });
+
+        modelBuilder.Entity<VoucherLog>(entity =>
+        {
+            entity.HasIndex(e => e.HoaDonId, "IX_VoucherLogs_HoaDonId");
+
+            entity.HasIndex(e => e.VoucherId, "IX_VoucherLogs_VoucherId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.GiaTriApDung).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.HoaDon).WithMany(p => p.VoucherLogs).HasForeignKey(d => d.HoaDonId);
+
+            entity.HasOne(d => d.Voucher).WithMany(p => p.VoucherLogs).HasForeignKey(d => d.VoucherId);
+        });
+
+        OnModelCreatingPartial(modelBuilder);
+    }
+
+    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+}

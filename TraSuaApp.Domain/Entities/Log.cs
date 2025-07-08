@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace TraSuaApp.Domain.Entities;
+﻿namespace TraSuaApp.Domain.Entities;
 
 public partial class Log
 {
@@ -30,4 +27,6 @@ public partial class Log
     public string? RequestBodyShort { get; set; }
 
     public string? ResponseBodyShort { get; set; }
+
+    public Guid? EntityId { get; set; }
 }

@@ -7,6 +7,9 @@
 
         public string? UserId { get; set; }
         public string? UserName { get; set; }
+        public string? Message { get; set; }
+        public string? TableReadable { get; set; }
+        public string? TenDoiTuongChinh { get; set; }
 
         public string? Method { get; set; }
         public string? Path { get; set; }
@@ -17,8 +20,8 @@
         public int STT { get; set; }
 
 
-        public string? RequestBody { get; set; }
-        public string? ResponseBody { get; set; }
+        public string? RequestBodyShort { get; set; }
+        public string? ResponseBodyShort { get; set; }
 
         public long? DurationMs { get; set; }
         public string? ExceptionMessage { get; set; }

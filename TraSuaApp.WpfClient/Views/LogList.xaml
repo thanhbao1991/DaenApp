@@ -110,15 +110,16 @@
                         ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="Người dùng" />
                     <DataGridTextColumn
-                        Width="80"
-                        Binding="{Binding Method}"
+                        Width="200"
+                        Binding="{Binding Message}"
                         ElementStyle="{StaticResource CenterTextCellStyle}"
-                        Header="Method" />
+                        Header="Thao tác" />
+
                     <DataGridTextColumn
                         Width="*"
-                        Binding="{Binding Path}"
-                        ElementStyle="{StaticResource LeftTextCellStyle}"
-                        Header="Path" />
+                        Binding="{Binding TenDoiTuongChinh}"
+                        ElementStyle="{StaticResource CenterTextCellStyle}"
+                        Header="Đối tượng" />
                     <DataGridTextColumn
                         Width="80"
                         Binding="{Binding StatusCode}"
@@ -131,6 +132,7 @@
                         Header="Thời gian (ms)" />
                 </DataGrid.Columns>
             </DataGrid>
+
         </Grid>
     </Border>
 </Window>
