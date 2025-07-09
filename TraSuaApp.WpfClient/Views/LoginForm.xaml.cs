@@ -118,7 +118,7 @@ namespace TraSuaApp.WpfClient.Views
                 else
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    _errorHandler.Handle(new Exception($"API lỗi {(int)response.StatusCode}: {content}"), "Đăng nhập");
+                    _errorHandler.Handle(new Exception($"{content}"), "Đăng nhập");
                 }
             }
             catch (Exception ex)

@@ -11,7 +11,7 @@ namespace TraSuaApp.WpfClient.Views;
 public partial class SanPhamList : Window
 {
     private List<SanPhamDto> _allProducts = new();
-    private readonly ErrorHandler _errorHandler = new WpfErrorHandler();
+    private readonly UIExceptionHelper _errorHandler = new WpfErrorHandler();
 
     public SanPhamList()
     {
@@ -53,7 +53,7 @@ public partial class SanPhamList : Window
             if (!response.IsSuccessStatusCode)
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                _errorHandler.Handle(new Exception($"API lỗi {(int)response.StatusCode}: {msg}"), "Tải sản phẩm");
+                _errorHandler.Handle(new Exception($"{msg}"), "Tải sản phẩm");
                 return;
             }
 
@@ -178,7 +178,7 @@ public partial class SanPhamList : Window
             else
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                _errorHandler.Handle(new Exception($"API lỗi {(int)response.StatusCode}: {msg}"), "Xoá sản phẩm");
+                _errorHandler.Handle(new Exception($"{msg}"), "Xoá sản phẩm");
             }
         }
         catch (Exception ex)

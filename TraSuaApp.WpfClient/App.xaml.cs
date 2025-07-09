@@ -9,6 +9,7 @@ namespace TraSuaApp.WpfClient
         protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            //Clipboard.SetText(PasswordHelper.HashPassword("123456"));
 
             ApiClient.OnTokenExpired += () =>
             {

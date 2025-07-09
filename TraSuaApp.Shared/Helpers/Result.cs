@@ -36,11 +36,3 @@ public class Result<T>
     }
 }
 
-public static class Result
-{
-    public static Result<object> Success(string message = "", object? data = null)
-        => Result<object>.Success(message, data);
-
-    public static Result<object> Failure(string message)
-        => Result<object>.Failure(message);
-}

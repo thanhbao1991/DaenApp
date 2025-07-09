@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TraSuaApp.Api.Controllers;
 using TraSuaApp.Shared.Dtos;
@@ -17,39 +18,47 @@ public class TaiKhoanController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<Result<List<TaiKhoanDto>>>> GetAll()
     {
         var data = await _service.GetAllAsync();
-        return FromResult(Result.Success().WithAfter(data));
+        return Result<List<TaiKhoanDto>>.Success("Danh sách tài khoản", data).WithAfter(data);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetByIdAsync(Guid id)
+    public async Task<ActionResult<Result<TaiKhoanDto>>> GetByIdAsync(Guid id)
     {
         var dto = await _service.GetByIdAsync(id);
         return dto == null
-            ? FromResult(Result.Failure("Không tìm thấy tài khoản."))
-            : FromResult(Result.Success().WithId(id).WithAfter(dto));
+            ? Result<TaiKhoanDto>.Failure("Không tìm thấy tài khoản.")
+            : Result<TaiKhoanDto>.Success("Chi tiết tài khoản", dto).WithId(id).WithAfter(dto);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] TaiKhoanDto dto)
+    public async Task<ActionResult<Result<TaiKhoanDto>>> Create([FromBody] TaiKhoanDto dto)
     {
         var result = await _service.CreateAsync(dto);
-        return FromResult(result);
+        return result;
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] TaiKhoanDto dto)
+    public async Task<ActionResult<Result<TaiKhoanDto>>> Update(Guid id, [FromBody] TaiKhoanDto dto)
     {
         var result = await _service.UpdateAsync(id, dto);
-        return FromResult(result);
+        return result;
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<ActionResult<Result<TaiKhoanDto>>> Delete(Guid id)
     {
+        var response = new
+        {
+            status = 403,
+            success = false,
+            message = "Tính năng này bị khoá."
+        };
+        return StatusCode(StatusCodes.Status403Forbidden, response);
+
         var result = await _service.DeleteAsync(id);
-        return FromResult(result);
+        return result;
     }
 }

@@ -9,7 +9,7 @@ namespace TraSuaApp.WpfClient.Tools
 {
     public partial class ImportSanPhamWindow : Window
     {
-        private readonly ErrorHandler _errorHandler = new WpfErrorHandler();
+        private readonly UIExceptionHelper _errorHandler = new WpfErrorHandler();
 
         public ImportSanPhamWindow()
         {

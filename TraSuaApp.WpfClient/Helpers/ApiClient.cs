@@ -80,7 +80,7 @@ namespace TraSuaApp.WpfClient.Helpers
             }
 
             var msg = await response.Content.ReadAsStringAsync();
-            throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+            throw new Exception($"{msg}");
         }
 
         public static Task<HttpResponseMessage> GetAsync(string uri, bool includeToken = true)

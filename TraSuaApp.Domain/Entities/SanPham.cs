@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace TraSuaApp.Domain.Entities;
+﻿namespace TraSuaApp.Domain.Entities;
 
 public partial class SanPham
 {
@@ -15,7 +12,6 @@ public partial class SanPham
 
     public int? DaBan { get; set; }
 
-    public Guid? IdNhomSanPham { get; set; }
 
     public bool NgungBan { get; set; }
 
@@ -23,9 +19,8 @@ public partial class SanPham
 
     public int IdOld { get; set; }
 
-    public Guid? IdNhom { get; set; }
+    public Guid? IdNhomSanPham { get; set; }
 
-    public virtual NhomSanPham? IdNhomNavigation { get; set; }
-
+    public virtual NhomSanPham? IdNhomSanPhamNavigation { get; set; }
     public virtual ICollection<SanPhamBienThe> SanPhamBienThes { get; set; } = new List<SanPhamBienThe>();
 }

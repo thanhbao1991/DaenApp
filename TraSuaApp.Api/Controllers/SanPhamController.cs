@@ -18,30 +18,39 @@ public class SanPhamController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<Result<List<SanPhamDto>>>> GetAll()
     {
         var list = await _service.GetAllAsync();
-        return FromResult(Result.Success().WithAfter(list));
+        return Result<List<SanPhamDto>>.Success("Danh sách sản phẩm", list).WithAfter(list);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<Result<SanPhamDto>>> GetById(Guid id)
     {
         var dto = await _service.GetByIdAsync(id);
         return dto == null
-            ? FromResult(Result.Failure("Không tìm thấy sản phẩm."))
-            : FromResult(Result.Success().WithId(id).WithAfter(dto));
+            ? Result<SanPhamDto>.Failure("Không tìm thấy sản phẩm.")
+            : Result<SanPhamDto>.Success("Chi tiết sản phẩm", dto).WithId(id).WithAfter(dto);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] SanPhamDto dto)
-        => FromResult(await _service.CreateAsync(dto));
+    public async Task<ActionResult<Result<SanPhamDto>>> Create([FromBody] SanPhamDto dto)
+    {
+        var result = await _service.CreateAsync(dto);
+        return result;
+    }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] SanPhamDto dto)
-        => FromResult(await _service.UpdateAsync(id, dto));
+    public async Task<ActionResult<Result<SanPhamDto>>> Update(Guid id, [FromBody] SanPhamDto dto)
+    {
+        var result = await _service.UpdateAsync(id, dto);
+        return result;
+    }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
-        => FromResult(await _service.DeleteAsync(id));
+    public async Task<ActionResult<Result<SanPhamDto>>> Delete(Guid id)
+    {
+        var result = await _service.DeleteAsync(id);
+        return result;
+    }
 }

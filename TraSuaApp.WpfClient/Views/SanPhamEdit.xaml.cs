@@ -61,7 +61,8 @@ namespace TraSuaApp.WpfClient.Views
                 var response = await ApiClient.GetAsync("/api/nhomsanpham");
                 if (response.IsSuccessStatusCode)
                 {
-                    var data = await response.Content.ReadFromJsonAsync<List<NhomSanPhamDto>>();
+                    var result = await response.Content.ReadFromJsonAsync<Result<List<NhomSanPhamDto>>>();
+                    var data = result?.Data ?? new List<NhomSanPhamDto>();
                     _dsNhomSanPham = data ?? new();
                     NhomSanPhamComboBox.ItemsSource = _dsNhomSanPham;
                     NhomSanPhamComboBox.SelectedValue = _sanPham.IdNhomSanPham;

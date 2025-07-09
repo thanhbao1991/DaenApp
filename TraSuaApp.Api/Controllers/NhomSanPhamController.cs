@@ -18,30 +18,39 @@ public class NhomSanPhamController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<Result<List<NhomSanPhamDto>>>> GetAll()
     {
         var list = await _service.GetAllAsync();
-        return FromResult(Result.Success().WithAfter(list));
+        return Result<List<NhomSanPhamDto>>.Success("Danh sách nhóm sản phẩm", list).WithAfter(list);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<Result<NhomSanPhamDto>>> GetById(Guid id)
     {
         var dto = await _service.GetByIdAsync(id);
         return dto == null
-            ? FromResult(Result.Failure("Không tìm thấy nhóm sản phẩm."))
-            : FromResult(Result.Success().WithId(id).WithAfter(dto));
+            ? Result<NhomSanPhamDto>.Failure("Không tìm thấy nhóm sản phẩm.")
+            : Result<NhomSanPhamDto>.Success("Chi tiết nhóm sản phẩm", dto).WithId(id).WithAfter(dto);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] NhomSanPhamDto dto)
-        => FromResult(await _service.CreateAsync(dto));
+    public async Task<ActionResult<Result<NhomSanPhamDto>>> Create([FromBody] NhomSanPhamDto dto)
+    {
+        var result = await _service.CreateAsync(dto);
+        return result;
+    }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] NhomSanPhamDto dto)
-        => FromResult(await _service.UpdateAsync(id, dto));
+    public async Task<ActionResult<Result<NhomSanPhamDto>>> Update(Guid id, [FromBody] NhomSanPhamDto dto)
+    {
+        var result = await _service.UpdateAsync(id, dto);
+        return result;
+    }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
-        => FromResult(await _service.DeleteAsync(id));
+    public async Task<ActionResult<Result<NhomSanPhamDto>>> Delete(Guid id)
+    {
+        var result = await _service.DeleteAsync(id);
+        return result;
+    }
 }

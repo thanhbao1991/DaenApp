@@ -14,7 +14,6 @@ public partial class Log
 
     public string? Path { get; set; }
 
-    public string? QueryString { get; set; }
 
     public int StatusCode { get; set; }
 
@@ -22,7 +21,6 @@ public partial class Log
 
     public long? DurationMs { get; set; }
 
-    public string? ExceptionMessage { get; set; }
 
     public string? RequestBodyShort { get; set; }
 
@@ -30,6 +28,4 @@ public partial class Log
 
     public Guid? EntityId { get; set; }
 
-    public string? BeforeData { get; set; }
-    public string? AfterData { get; set; }
 }

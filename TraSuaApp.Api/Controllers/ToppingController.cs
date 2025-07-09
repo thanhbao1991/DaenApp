@@ -17,39 +17,39 @@ public class ToppingController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<Result<List<ToppingDto>>>> GetAll()
     {
         var data = await _service.GetAllAsync();
-        return FromResult(Result<List<ToppingDto>>.Success("Danh sách topping", data).WithAfter(data));
+        return Result<List<ToppingDto>>.Success("Danh sách topping", data).WithAfter(data);
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<Result<ToppingDto>>> GetById(Guid id)
     {
         var dto = await _service.GetByIdAsync(id);
         return dto == null
-            ? FromResult(Result<ToppingDto>.Failure("Không tìm thấy topping."))
-            : FromResult(Result<ToppingDto>.Success("Chi tiết topping", dto).WithId(id).WithAfter(dto));
+            ? Result<ToppingDto>.Failure("Không tìm thấy topping.")
+            : Result<ToppingDto>.Success("Chi tiết topping", dto).WithId(id).WithAfter(dto);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] ToppingDto dto)
+    public async Task<ActionResult<Result<ToppingDto>>> Create([FromBody] ToppingDto dto)
     {
         var result = await _service.CreateAsync(dto);
-        return FromResult(result);
+        return result;
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] ToppingDto dto)
+    public async Task<ActionResult<Result<ToppingDto>>> Update(Guid id, [FromBody] ToppingDto dto)
     {
         var result = await _service.UpdateAsync(id, dto);
-        return FromResult(result);
+        return result;
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<ActionResult<Result<ToppingDto>>> Delete(Guid id)
     {
         var result = await _service.DeleteAsync(id);
-        return FromResult(result);
+        return result;
     }
 }

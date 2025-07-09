@@ -11,7 +11,7 @@ namespace TraSuaApp.WpfClient.Views
     public partial class TaiKhoanList : Window
     {
         private List<TaiKhoanDto> _allAccounts = new();
-        private readonly ErrorHandler _errorHandler = new WpfErrorHandler();
+        private readonly UIExceptionHelper _errorHandler = new WpfErrorHandler();
 
         public TaiKhoanList()
         {
@@ -66,7 +66,7 @@ namespace TraSuaApp.WpfClient.Views
                 if (!response.IsSuccessStatusCode)
                 {
                     var msg = await response.Content.ReadAsStringAsync();
-                    throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                    throw new Exception($"{msg}");
                 }
 
                 var result = await response.Content.ReadFromJsonAsync<Result<List<TaiKhoanDto>>>();
@@ -129,7 +129,7 @@ namespace TraSuaApp.WpfClient.Views
                 if (!response.IsSuccessStatusCode)
                 {
                     var msg = await response.Content.ReadAsStringAsync();
-                    throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                    throw new Exception($"{msg}");
                 }
 
                 var result = await response.Content.ReadFromJsonAsync<Result<TaiKhoanDto>>();
@@ -178,8 +178,11 @@ namespace TraSuaApp.WpfClient.Views
                 }
                 else
                 {
+
                     var content = await response.Content.ReadAsStringAsync();
-                    _errorHandler.Handle(new Exception($"API lỗi {(int)response.StatusCode}: {content}"), "Xoá tài khoản");
+                    _errorHandler.Handle(new Exception($"{content}"), "Xoá tài khoản");
+
+
                 }
             }
             catch (Exception ex)

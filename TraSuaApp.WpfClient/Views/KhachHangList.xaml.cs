@@ -11,7 +11,7 @@ namespace TraSuaApp.WpfClient.Views;
 public partial class KhachHangList : Window
 {
     private List<KhachHangDto> _allCustomers = new();
-    private readonly ErrorHandler _errorHandler = new WpfErrorHandler();
+    private readonly UIExceptionHelper _errorHandler = new WpfErrorHandler();
 
     public KhachHangList()
     {
@@ -74,7 +74,7 @@ public partial class KhachHangList : Window
             else
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                throw new Exception($"{msg}");
             }
         }
         catch (Exception ex)
@@ -160,7 +160,7 @@ public partial class KhachHangList : Window
                 else
                 {
                     var msg = await response.Content.ReadAsStringAsync();
-                    throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                    throw new Exception($"{msg}");
                 }
             }
             catch (Exception ex)
@@ -212,7 +212,7 @@ public partial class KhachHangList : Window
             else
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                throw new Exception($"{msg}");
             }
         }
         catch (Exception ex)

@@ -1,10 +1,11 @@
-﻿using System.Windows;
+﻿using System.Text.Json;
+using System.Windows;
 using System.Windows.Controls;
 using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.WpfClient.Helpers
 {
-    public class WpfErrorHandler : ErrorHandler
+    public class WpfErrorHandler : UIExceptionHelper
     {
         private readonly TextBlock? _errorTextBlock;
 
@@ -20,10 +21,17 @@ namespace TraSuaApp.WpfClient.Helpers
         public override void Handle(Exception ex, string context = "")
         {
             base.Handle(ex, context); // Ghi log ở lớp cha
+            string message;
+            if (ex.Message.TrimStart().StartsWith("{"))
+            {
+                using var doc = JsonDocument.Parse(ex.Message);
+                message = doc.RootElement.GetProperty("message").GetString();
+            }
+            else
+            {
+                message = ex.Message;
+            }
 
-            var message = string.IsNullOrEmpty(context)
-                ? ex.Message
-                : $"{ex.Message}";
 
             if (_errorTextBlock != null)
             {
@@ -31,7 +39,7 @@ namespace TraSuaApp.WpfClient.Helpers
             }
             else
             {
-                MessageBox.Show(message, "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(message, context, MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
             Clipboard.SetText(message);

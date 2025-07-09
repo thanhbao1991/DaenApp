@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TraSuaApp.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using TraSuaApp.Infrastructure.Data;
 namespace TraSuaApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250708191228_RemoveBeforeAfterFromLog")]
+    partial class RemoveBeforeAfterFromLog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -477,11 +480,21 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AfterData")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BeforeData")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<long?>("DurationMs")
                         .HasColumnType("bigint");
 
                     b.Property<Guid?>("EntityId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ExceptionMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("Ip")
                         .HasMaxLength(100)
@@ -495,6 +508,10 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<string>("Path")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("QueryString")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("RequestBodyShort")
                         .HasColumnType("nvarchar(max)");

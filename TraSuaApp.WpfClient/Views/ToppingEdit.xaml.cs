@@ -83,7 +83,7 @@ public partial class ToppingEdit : Window
             if (!response.IsSuccessStatusCode)
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                throw new Exception($"{msg}");
             }
 
             var result = await response.Content.ReadFromJsonAsync<Result<ToppingDto>>();

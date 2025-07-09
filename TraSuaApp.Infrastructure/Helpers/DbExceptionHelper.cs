@@ -21,8 +21,6 @@ namespace TraSuaApp.Infrastructure.Helpers
                         ["IX_TaiKhoan_TenDangNhap"] = "Tên đăng nhập đã tồn tại.",
                         ["IX_NhomSanPham_Ten"] = "Tên nhóm đã tồn tại.",
                         ["IX_Topping_Ten"] = "Tên topping đã tồn tại."
-
-
                     };
 
                     foreach (var pair in messages)

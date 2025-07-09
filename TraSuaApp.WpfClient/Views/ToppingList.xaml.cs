@@ -81,7 +81,7 @@ public partial class ToppingList : Window
             else
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                throw new Exception($"{msg}");
             }
         }
         catch (Exception ex)
@@ -142,7 +142,7 @@ public partial class ToppingList : Window
             else
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                throw new Exception($"{msg}");
             }
         }
         catch (Exception ex)
@@ -183,7 +183,7 @@ public partial class ToppingList : Window
             else
             {
                 var msg = await response.Content.ReadAsStringAsync();
-                throw new Exception($"API lỗi {(int)response.StatusCode}: {msg}");
+                throw new Exception($"{msg}");
             }
         }
         catch (Exception ex)

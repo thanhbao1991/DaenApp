@@ -16,7 +16,7 @@ namespace TraSuaApp.Api.Helpers
             CreateMap<KhachHangPhone, KhachHangPhoneDto>().ReverseMap();
             CreateMap<KhachHangAddress, KhachHangAddressDto>().ReverseMap();
             CreateMap<SanPham, SanPhamDto>()
-                .ForMember(dest => dest.TenNhomSanPham, opt => opt.MapFrom(src => src.IdNhomNavigation != null ? src.IdNhomNavigation.Ten : null))
+                .ForMember(dest => dest.TenNhomSanPham, opt => opt.MapFrom(src => src.IdNhomSanPham != null ? src.IdNhomSanPham : null))
                 .ReverseMap();
             CreateMap<SanPhamBienThe, SanPhamBienTheDto>().ReverseMap();
             CreateMap<Topping, ToppingDto>()

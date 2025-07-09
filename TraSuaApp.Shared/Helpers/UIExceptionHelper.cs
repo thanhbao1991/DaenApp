@@ -1,14 +1,14 @@
 ﻿namespace TraSuaApp.Shared.Helpers
 {
-    public class ErrorHandler
+    public class UIExceptionHelper
     {
 
 
         public virtual void Handle(Exception ex, string context = "")
         {
-            var message = $"Lỗi: {ex.Message}";
+            var message = $"{ex.Message}";
             if (!string.IsNullOrEmpty(context))
-                message += $"\nNgữ cảnh: {context}";
+                message = $"{context}\n{message}";
 
             // TODO: Ghi log vào file, DB, hoặc gửi Discord
             Console.WriteLine(message);

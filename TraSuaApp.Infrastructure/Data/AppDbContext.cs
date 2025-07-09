@@ -256,13 +256,11 @@ public partial class AppDbContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK__Logs__3214EC07710A63D8");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.ExceptionMessage).HasMaxLength(1000);
             entity.Property(e => e.Ip)
                 .HasMaxLength(100)
                 .HasColumnName("IP");
             entity.Property(e => e.Method).HasMaxLength(10);
             entity.Property(e => e.Path).HasMaxLength(500);
-            entity.Property(e => e.QueryString).HasMaxLength(1000);
             entity.Property(e => e.UserId).HasMaxLength(100);
             entity.Property(e => e.UserName).HasMaxLength(200);
         });
@@ -327,9 +325,10 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Ten).HasMaxLength(255);
             entity.Property(e => e.TichDiem).HasDefaultValue(true);
 
-            entity.HasOne(d => d.IdNhomNavigation).WithMany(p => p.SanPhams)
-                .HasForeignKey(d => d.IdNhom)
-                .HasConstraintName("FK_SanPhams_NhomSanPhams");
+            entity.HasOne(sp => sp.IdNhomSanPhamNavigation)
+         .WithMany(nsp => nsp.SanPhams)
+         .HasForeignKey(sp => sp.IdNhomSanPham)
+         .HasConstraintName("FK_SanPhams_NhomSanPhams");
         });
 
         modelBuilder.Entity<SanPhamBienThe>(entity =>

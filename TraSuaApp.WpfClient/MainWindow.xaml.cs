@@ -46,6 +46,8 @@ namespace TraSuaApp.WpfClient.Views
 
         private void MenuButton_Click(object sender, RoutedEventArgs e)
         {
+
+
             if (sender is not Button btn || btn.Tag is not string tag) return;
 
             try

@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
-using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 
 namespace TraSuaApp.Api.Middleware;
@@ -38,15 +37,13 @@ public class LogMiddleware
             ThoiGian = DateTime.Now,
             Method = request.Method,
             Path = request.Path,
-            QueryString = request.QueryString.ToString(),
             Ip = context.Connection.RemoteIpAddress?.ToString()
         };
 
-        // Đọc request body
+        // Ghi request body ngắn gọn
         try
         {
             request.EnableBuffering();
-
             request.Body.Seek(0, SeekOrigin.Begin);
             using var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true);
             var requestBody = await reader.ReadToEndAsync();
@@ -56,36 +53,14 @@ public class LogMiddleware
                 ? requestBody.Substring(0, 1000) + "... [truncated]"
                 : requestBody;
 
-            // ✅ Gán EntityId từ body nếu có
-            try
-            {
-                var json = JsonDocument.Parse(logEntry.RequestBodyShort ?? "{}");
-                if (json.RootElement.TryGetProperty("id", out var idProp) &&
-                    Guid.TryParse(idProp.ToString(), out var entityGuid))
-                {
-                    logEntry.EntityId = entityGuid;
-                }
-            }
-            catch { }
-
-            _logger.LogInformation($"[LogMiddleware] Method: {request.Method}, Body: {logEntry.RequestBodyShort}");
+            _logger.LogInformation($"[LogMiddleware] {request.Method} {request.Path} Body: {logEntry.RequestBodyShort}");
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Không thể đọc request body");
         }
 
-        // Nếu chưa có EntityId từ body, thử lấy từ URL
-        if (logEntry.EntityId == Guid.Empty)
-        {
-            var lastSegment = request.Path.Value?.Split('/').LastOrDefault();
-            if (Guid.TryParse(lastSegment, out var urlId))
-            {
-                logEntry.EntityId = urlId;
-            }
-        }
-
-        // Ghi response body nếu không phải GET
+        // Ghi response body
         var originalBody = context.Response.Body;
         await using var responseBodyStream = new MemoryStream();
         context.Response.Body = responseBodyStream;
@@ -97,61 +72,43 @@ public class LogMiddleware
             await _next(context);
             logEntry.StatusCode = context.Response.StatusCode;
 
-            if (request.Method != HttpMethods.Get)
+            responseBodyStream.Seek(0, SeekOrigin.Begin);
+            responseBody = await new StreamReader(responseBodyStream).ReadToEndAsync();
+            responseBodyStream.Seek(0, SeekOrigin.Begin);
+            await responseBodyStream.CopyToAsync(originalBody);
+
+            logEntry.ResponseBodyShort = responseBody.Length > 1000
+                ? responseBody.Substring(0, 1000) + "... [truncated]"
+                : responseBody;
+
+            // ✅ Gán EntityId theo yêu cầu:
+            if (request.Method == HttpMethods.Put || request.Method == HttpMethods.Delete)
             {
-                responseBodyStream.Seek(0, SeekOrigin.Begin);
-                responseBody = await new StreamReader(responseBodyStream).ReadToEndAsync();
-                _logger.LogInformation("ResponseBody: " + responseBody);
-
-
-                responseBodyStream.Seek(0, SeekOrigin.Begin);
-                await responseBodyStream.CopyToAsync(originalBody);
-
-                if (responseBody.StartsWith("["))
+                // Lấy từ URL
+                var lastSegment = request.Path.Value?.Split('/').LastOrDefault();
+                if (Guid.TryParse(lastSegment, out var idFromPath))
                 {
-                    try
-                    {
-                        var array = JsonDocument.Parse(responseBody).RootElement;
-                        logEntry.ResponseBodyShort = $"[{array.GetArrayLength()} dòng]";
-                    }
-                    catch
-                    {
-                        logEntry.ResponseBodyShort = responseBody;
-                    }
-                }
-                else
-                {
-                    logEntry.ResponseBodyShort = responseBody.Length > 1000
-                        ? responseBody.Substring(0, 1000) + "... [truncated]"
-                        : responseBody;
-                }
-
-                // ✅ Nếu là POST và chưa có EntityId, lấy từ response
-                if (logEntry.Method == HttpMethods.Post && logEntry.EntityId == Guid.Empty)
-                {
-                    try
-                    {
-                        var json = JsonDocument.Parse(responseBody);
-                        if (json.RootElement.TryGetProperty("id", out var idProp) &&
-                            Guid.TryParse(idProp.ToString(), out var responseGuid))
-                        {
-                            logEntry.EntityId = responseGuid;
-                        }
-                    }
-                    catch { }
+                    logEntry.EntityId = idFromPath;
                 }
             }
-            else
+            else if (request.Method == HttpMethods.Post)
             {
-                // Nếu là GET, vẫn copy body ra ngoài
-                responseBodyStream.Seek(0, SeekOrigin.Begin);
-                await responseBodyStream.CopyToAsync(originalBody);
+                // Lấy từ response body: entityId
+                try
+                {
+                    var json = JsonDocument.Parse(responseBody);
+                    if (json.RootElement.TryGetProperty("entityId", out var idProp) &&
+                        Guid.TryParse(idProp.ToString(), out var idFromResponse))
+                    {
+                        logEntry.EntityId = idFromResponse;
+                    }
+                }
+                catch { }
             }
         }
         catch (Exception ex)
         {
             logEntry.StatusCode = 500;
-            logEntry.ExceptionMessage = ex.ToString();
             throw;
         }
         finally
@@ -163,8 +120,10 @@ public class LogMiddleware
             if (context.User.Identity?.IsAuthenticated == true)
             {
                 logEntry.UserName = context.User.Identity.Name;
-                logEntry.UserId = context.User.Claims.FirstOrDefault(c =>
-                    c.Type == "sub" || c.Type.EndsWith("nameidentifier"))?.Value;
+                logEntry.UserId = context.User.Claims
+    .FirstOrDefault(c =>
+    c.Type == "Id")
+    ?.Value;
             }
 
             try
