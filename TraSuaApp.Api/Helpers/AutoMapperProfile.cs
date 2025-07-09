@@ -8,7 +8,7 @@ namespace TraSuaApp.Api.Helpers
     {
         public AutoMapperProfile()
         {
-            CreateMap<Log, LogDto>();
+            CreateMap<Log, LogDto>().ReverseMap();
             CreateMap<KhachHang, KhachHangDto>()
                 .ForMember(dest => dest.Phones, opt => opt.MapFrom(src => src.KhachHangPhones))
                 .ForMember(dest => dest.Addresses, opt => opt.MapFrom(src => src.KhachHangAddresses))

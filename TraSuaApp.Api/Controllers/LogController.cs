@@ -21,7 +21,7 @@ public class LogController : BaseApiController
     public async Task<ActionResult<Result<List<LogDto>>>> GetAll()
     {
         var list = await _service.GetAllAsync();
-        return Result<List<LogDto>>.Success("Danh sách nhóm sản phẩm", list).WithAfter(list);
+        return Result<List<LogDto>>.Success("Danh sách Log", list).WithAfter(list);
     }
 
     [HttpGet("{id:guid}")]
@@ -29,8 +29,8 @@ public class LogController : BaseApiController
     {
         var dto = await _service.GetByIdAsync(id);
         return dto == null
-            ? Result<LogDto>.Failure("Không tìm thấy nhóm sản phẩm.")
-            : Result<LogDto>.Success("Chi tiết nhóm sản phẩm", dto).WithId(id).WithAfter(dto);
+            ? Result<LogDto>.Failure("Không tìm thấy Log.")
+            : Result<LogDto>.Success("Chi tiết Log", dto).WithId(id).WithAfter(dto);
     }
 
     [HttpPost]
