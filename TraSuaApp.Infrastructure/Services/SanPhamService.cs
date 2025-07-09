@@ -21,7 +21,7 @@ public class SanPhamService : ISanPhamService
     {
         var list = await _context.SanPhams
             .Include(sp => sp.SanPhamBienThes)
-            .Include(sp => sp.IdNhomSanPham)
+            .Include(sp => sp.IdNhomSanPhamNavigation)
             .ToListAsync();
 
         return _mapper.Map<List<SanPhamDto>>(list);
