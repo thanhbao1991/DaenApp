@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
-using TraSuaApp.Domain.Entities;
+using TraSuaApp.Shared.Dtos;
 
 namespace TraSuaApp.Api.Middleware;
 
@@ -31,7 +31,7 @@ public class LogMiddleware
 
         var stopwatch = Stopwatch.StartNew();
 
-        var logEntry = new Log
+        var logEntry = new LogDto
         {
             Id = Guid.NewGuid(),
             ThoiGian = DateTime.Now,
@@ -128,7 +128,7 @@ public class LogMiddleware
 
             try
             {
-                await logService.LogAsync(logEntry);
+                await logService.CreateAsync(logEntry);
             }
             catch (Exception ex)
             {

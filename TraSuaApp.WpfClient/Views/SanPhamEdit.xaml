@@ -188,7 +188,8 @@
                 <TextBlock
                     x:Name="ErrorTextBlock"
                     Margin="0,0,0,5"
-                    Foreground="Red" />
+                    Foreground="Red"
+                    Style="{StaticResource ErrorTextBlock}" />
                 <Button
                     x:Name="SaveButton"
                     Click="SaveButton_Click"

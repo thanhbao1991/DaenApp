@@ -1,48 +1,56 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using TraSuaApp.Api.Extensions;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 
-[ApiController]
-[Route("api/logs")]
-public class LogController : ControllerBase
-{
-    private readonly ILogService _logService;
+namespace TraSuaApp.Api.Controllers;
 
-    public LogController(ILogService logService)
+[Authorize]
+[ApiController]
+[Route("api/[controller]")]
+public class LogController : BaseApiController
+{
+    private readonly ILogService _service;
+
+    public LogController(ILogService service)
     {
-        _logService = logService;
+        _service = service;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetLogs([FromQuery] LogFilterDto filter)
+    public async Task<ActionResult<Result<List<LogDto>>>> GetAll()
     {
-        // Gọi service trả về kết quả
-        var resultData = await _logService.GetLogsAsync(filter);
-
-        // Trả về kết quả gói trong Result<T>
-        return Result<PagedResultDto<LogDto>>
-            .Success("Danh sách log", null)
-            .WithAfter(resultData)
-            .ToActionResult();
+        var list = await _service.GetAllAsync();
+        return Result<List<LogDto>>.Success("Danh sách nhóm sản phẩm", list).WithAfter(list);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetLogDetail(Guid id)
+    public async Task<ActionResult<Result<LogDto>>> GetById(Guid id)
     {
-        var logData = await _logService.GetLogByIdAsync(id);
+        var dto = await _service.GetByIdAsync(id);
+        return dto == null
+            ? Result<LogDto>.Failure("Không tìm thấy nhóm sản phẩm.")
+            : Result<LogDto>.Success("Chi tiết nhóm sản phẩm", dto).WithId(id).WithAfter(dto);
+    }
 
-        if (logData == null)
-        {
+    [HttpPost]
+    public async Task<ActionResult<Result<LogDto>>> Create([FromBody] LogDto dto)
+    {
+        var result = await _service.CreateAsync(dto);
+        return result;
+    }
 
-            return Result<LogDto>.Failure("Không tìm thấy log.")
-                .ToActionResult();
-        }
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<Result<LogDto>>> Update(Guid id, [FromBody] LogDto dto)
+    {
+        var result = await _service.UpdateAsync(id, dto);
+        return result;
+    }
 
-        return Result<LogDto>
-            .Success("Chi tiết log", null)
-            .WithId(id)
-            .WithAfter(logData)
-            .ToActionResult();
+    [HttpDelete("{id:guid}")]
+    public async Task<ActionResult<Result<LogDto>>> Delete(Guid id)
+    {
+        var result = await _service.DeleteAsync(id);
+        return result;
     }
 }

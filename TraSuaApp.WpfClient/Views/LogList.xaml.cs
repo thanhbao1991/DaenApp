@@ -56,18 +56,20 @@ public partial class LogList : Window
         try
         {
             Mouse.OverrideCursor = Cursors.Wait;
-            var response = await ApiClient.GetAsync($"/api/logs");
 
-            var result = await response.Content.ReadFromJsonAsync<Result<PagedResultDto<LogDto>>>();
-            if (result?.IsSuccess != true)
-                throw new Exception(result?.Message ?? "Không thể tải log.");
+            var response = await ApiClient.GetAsync("/api/Log");
+            var result = await response.Content.ReadFromJsonAsync<Result<List<LogDto>>>();
 
-            var paged = result.Data;
-            if (paged?.Items != null)
+            if (result?.IsSuccess != true || result.Data == null)
             {
-                _all = paged.Items.OrderByDescending(x => x.ThoiGian).ToList();
-                ApplySearch();
+                throw new Exception(result?.Message ?? "Không thể tải danh sách Log.");
             }
+
+            _all = result.Data.OrderByDescending(x => x.ThoiGian).ToList();
+            //foreach (var x in _all)
+            //    x.TenNormalized = TextSearchHelper.NormalizeText(x.Ten ?? "");
+
+            ApplySearch();
         }
         catch (Exception ex)
         {
@@ -78,6 +80,7 @@ public partial class LogList : Window
             Mouse.OverrideCursor = null;
         }
     }
+
 
     private void ApplySearch()
     {

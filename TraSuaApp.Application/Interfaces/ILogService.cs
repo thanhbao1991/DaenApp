@@ -1,10 +1,11 @@
-﻿using TraSuaApp.Domain.Entities;
-using TraSuaApp.Shared.Dtos;
+﻿using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 
 public interface ILogService
 {
-    Task LogAsync(Log log); // Ghi log
-    Task<Result<PagedResultDto<LogDto>>> GetLogsAsync(LogFilterDto filter); // Truy vấn danh sách
-    Task<Result<LogDto>> GetLogByIdAsync(Guid id); // Xem chi tiết
+    Task<List<LogDto>> GetAllAsync();
+    Task<LogDto?> GetByIdAsync(Guid id);
+    Task<Result<LogDto>> CreateAsync(LogDto dto);
+    Task<Result<LogDto>> UpdateAsync(Guid id, LogDto dto);
+    Task<Result<LogDto>> DeleteAsync(Guid id);
 }

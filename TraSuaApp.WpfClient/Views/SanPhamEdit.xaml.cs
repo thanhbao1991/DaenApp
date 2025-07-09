@@ -79,6 +79,7 @@ namespace TraSuaApp.WpfClient.Views
             }
         }
 
+
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             SaveButton.IsEnabled = false;
@@ -88,6 +89,51 @@ namespace TraSuaApp.WpfClient.Views
             {
                 _errorHandler.Clear();
 
+                // === TỰ THÊM HOẶC CẬP NHẬT BIẾN THỂ NẾU CÓ DỮ LIỆU NHẬP TRƯỚC ===
+                var ten = TenBienTheTextBox.Text.Trim();
+                var giaText = Regex.Replace(GiaBanTextBox.Text, @"[^\d]", "");
+                var coTen = !string.IsNullOrWhiteSpace(ten);
+                var coGia = decimal.TryParse(giaText, out var gia);
+                var isMacDinh = MacDinhCheckBox.IsChecked == true;
+
+                if (coTen || coGia)
+                {
+                    var bienThes = (ObservableCollection<SanPhamBienTheDto>)BienTheListBox.ItemsSource!;
+                    if (_bienTheDangChon != null)
+                    {
+                        if (coTen) _bienTheDangChon.TenBienThe = ten;
+                        if (coGia) _bienTheDangChon.GiaBan = gia;
+                        if (isMacDinh)
+                        {
+                            foreach (var b in bienThes)
+                                b.MacDinh = false;
+                            _bienTheDangChon.MacDinh = true;
+                        }
+                    }
+                    else if (coTen && coGia)
+                    {
+                        if (isMacDinh)
+                        {
+                            foreach (var b in bienThes)
+                                b.MacDinh = false;
+                        }
+
+                        bienThes.Add(new SanPhamBienTheDto
+                        {
+                            TenBienThe = ten,
+                            GiaBan = gia,
+                            IdSanPham = _sanPham.Id,
+                            MacDinh = isMacDinh
+                        });
+                    }
+
+                    TenBienTheTextBox.Text = "";
+                    GiaBanTextBox.Text = "";
+                    MacDinhCheckBox.IsChecked = false;
+                    _bienTheDangChon = null;
+                }
+
+                // === CÁC DÒNG CODE CŨ ===
                 _sanPham.Ten = TenTextBox.Text.Trim();
                 _sanPham.VietTat = VietTatTextBox.Text.Trim();
                 _sanPham.DinhLuong = MoTaTextBox.Text.Trim();
@@ -98,17 +144,17 @@ namespace TraSuaApp.WpfClient.Views
                 if (string.IsNullOrWhiteSpace(_sanPham.Ten))
                     throw new Exception("Tên sản phẩm không được để trống.");
 
-                var bienThes = (BienTheListBox.ItemsSource as ObservableCollection<SanPhamBienTheDto>) ?? new();
-                foreach (var bt in bienThes)
+                var bienThesFinal = (BienTheListBox.ItemsSource as ObservableCollection<SanPhamBienTheDto>) ?? new();
+                foreach (var bt in bienThesFinal)
                     bt.IdSanPham = _sanPham.Id;
 
-                var macDinhs = bienThes.Where(x => x.MacDinh).ToList();
+                var macDinhs = bienThesFinal.Where(x => x.MacDinh).ToList();
                 if (macDinhs.Count > 1)
                     throw new Exception("Chỉ được chọn một biến thể mặc định.");
-                if (macDinhs.Count == 0 && bienThes.Count > 0)
-                    bienThes[0].MacDinh = true;
+                if (macDinhs.Count == 0 && bienThesFinal.Count > 0)
+                    bienThesFinal[0].MacDinh = true;
 
-                _sanPham.BienThe = bienThes.ToList();
+                _sanPham.BienThe = bienThesFinal.ToList();
 
                 Result<SanPhamDto>? result;
 
@@ -143,6 +189,72 @@ namespace TraSuaApp.WpfClient.Views
                 Mouse.OverrideCursor = null;
             }
         }
+        //private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        //{
+        //    SaveButton.IsEnabled = false;
+        //    Mouse.OverrideCursor = Cursors.Wait;
+
+        //    try
+        //    {
+        //        _errorHandler.Clear();
+
+        //        _sanPham.Ten = TenTextBox.Text.Trim();
+        //        _sanPham.VietTat = VietTatTextBox.Text.Trim();
+        //        _sanPham.DinhLuong = MoTaTextBox.Text.Trim();
+        //        _sanPham.NgungBan = NgungBanCheckBox.IsChecked == true;
+        //        _sanPham.TichDiem = TichDiemCheckBox.IsChecked == true;
+        //        _sanPham.IdNhomSanPham = NhomSanPhamComboBox.SelectedValue as Guid?;
+
+        //        if (string.IsNullOrWhiteSpace(_sanPham.Ten))
+        //            throw new Exception("Tên sản phẩm không được để trống.");
+
+        //        var bienThes = (BienTheListBox.ItemsSource as ObservableCollection<SanPhamBienTheDto>) ?? new();
+        //        foreach (var bt in bienThes)
+        //            bt.IdSanPham = _sanPham.Id;
+
+        //        var macDinhs = bienThes.Where(x => x.MacDinh).ToList();
+        //        if (macDinhs.Count > 1)
+        //            throw new Exception("Chỉ được chọn một biến thể mặc định.");
+        //        if (macDinhs.Count == 0 && bienThes.Count > 0)
+        //            bienThes[0].MacDinh = true;
+
+        //        _sanPham.BienThe = bienThes.ToList();
+
+        //        Result<SanPhamDto>? result;
+
+        //        if (_isEdit)
+        //        {
+        //            var response = await ApiClient.PutAsync($"/api/sanpham/{_sanPham.Id}", _sanPham);
+        //            result = await response.Content.ReadFromJsonAsync<Result<SanPhamDto>>();
+        //        }
+        //        else
+        //        {
+        //            var response = await ApiClient.PostAsync("/api/sanpham", _sanPham);
+        //            result = await response.Content.ReadFromJsonAsync<Result<SanPhamDto>>();
+        //        }
+
+        //        if (result?.IsSuccess == true)
+        //        {
+        //            IsSaved = true;
+        //            DialogResult = true;
+        //        }
+        //        else
+        //        {
+        //            throw new Exception(result?.Message ?? "Lưu sản phẩm thất bại.");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _errorHandler.Handle(ex, "Lưu sản phẩm");
+        //    }
+        //    finally
+        //    {
+        //        SaveButton.IsEnabled = true;
+        //        Mouse.OverrideCursor = null;
+        //    }
+        //}
+
+
         private void CloseButton_Click(object sender, RoutedEventArgs e) => DialogResult = false;
 
         private void Window_KeyDown(object sender, KeyEventArgs e)

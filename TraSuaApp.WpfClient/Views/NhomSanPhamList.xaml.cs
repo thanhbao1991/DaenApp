@@ -30,7 +30,7 @@ public partial class NhomSanPhamList : Window
 
             if (result?.IsSuccess != true || result.Data == null)
             {
-                throw new Exception(result?.Message ?? "Không thể tải danh sách nhóm sản phẩm.");
+                throw new Exception(result?.Message ?? "Không thể tải danh sách Log.");
             }
 
             _all = result.Data.OrderBy(x => x.Ten).ToList();
@@ -91,15 +91,14 @@ public partial class NhomSanPhamList : Window
             Mouse.OverrideCursor = Cursors.Wait;
 
             var response = await ApiClient.DeleteAsync($"/api/nhomsanpham/{selected.Id}");
-            var result = await response.Content.ReadFromJsonAsync<Result<bool>>();
-
+            var result = await response.Content.ReadFromJsonAsync<Result<NhomSanPhamDto>>();
             if (result?.IsSuccess == true)
             {
                 await LoadAsync();
             }
             else
             {
-                throw new Exception(result?.Message ?? "Không thể xoá nhóm sản phẩm.");
+                throw new Exception(result?.Message ?? "Không thể xoá Log.");
             }
         }
         catch (Exception ex)
