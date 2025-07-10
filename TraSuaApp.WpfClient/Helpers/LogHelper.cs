@@ -1,9 +1,105 @@
 ﻿using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Enums;
+
+namespace TraSuaApp.Shared.Helpers;
 
 public static class LogHelper
 {
+    public static string ChiTietLog(LogDto log)
+    {
+        var sb = new StringBuilder();
+
+        try
+        {
+            var json = JsonDocument.Parse(log.ResponseBodyShort);
+            var root = json.RootElement;
+
+            JsonElement beforeData = default;
+            JsonElement afterData = default;
+
+            bool hasBefore = root.TryGetProperty("beforeData", out beforeData);
+            bool hasAfter = root.TryGetProperty("afterData", out afterData);
+
+            if (!hasBefore && !hasAfter)
+            {
+                sb.AppendLine("⚠️ (không có hoặc không xác định)");
+                return sb.ToString();
+            }
+
+            // XÓA
+            if (hasBefore && (!hasAfter || afterData.ValueKind == JsonValueKind.Null))
+            {
+                sb.AppendLine("✘ Đã xoá bản ghi:");
+                foreach (var prop in beforeData.EnumerateObject())
+                {
+                    sb.AppendLine($"  ▸ {prop.Name}: {FormatValue(prop.Value)}");
+                }
+                return sb.ToString();
+            }
+
+            // THÊM (đã sửa điều kiện)
+            if ((!hasBefore || beforeData.ValueKind == JsonValueKind.Null)
+                && hasAfter && afterData.ValueKind != JsonValueKind.Null)
+            {
+                sb.AppendLine("+ Đã thêm bản ghi:");
+                foreach (var prop in afterData.EnumerateObject())
+                {
+                    sb.AppendLine($"  ▸ {prop.Name}: {FormatValue(prop.Value)}");
+                }
+                return sb.ToString();
+            }
+
+            // SỬA
+            if (hasBefore && hasAfter && beforeData.ValueKind != JsonValueKind.Null && afterData.ValueKind != JsonValueKind.Null)
+            {
+                sb.AppendLine("✓ Cập nhật:");
+                bool coThayDoi = false;
+
+                foreach (var prop in afterData.EnumerateObject())
+                {
+                    if (beforeData.TryGetProperty(prop.Name, out var beforeProp))
+                    {
+                        if (!JsonElement.DeepEquals(beforeProp, prop.Value))
+                        {
+                            sb.AppendLine($"  ▸ {prop.Name}: \"{FormatValue(beforeProp)}\" → \"{FormatValue(prop.Value)}\"");
+                            coThayDoi = true;
+                        }
+                    }
+                }
+
+                if (!coThayDoi)
+                {
+                    sb.AppendLine("⚠️ Không có thay đổi nào");
+                }
+
+                return sb.ToString();
+            }
+
+            sb.AppendLine("⚠️ Không rõ loại thao tác");
+        }
+        catch (Exception ex)
+        {
+            sb.AppendLine($"❌ Lỗi phân tích JSON: {ex.Message}");
+        }
+
+        return sb.ToString();
+    }
+    private static string FormatValue(JsonElement value)
+    {
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString() ?? "null",
+            JsonValueKind.Number => value.ToString(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            JsonValueKind.Null => "null",
+            _ => value.ToString()
+        };
+    }
+
     public static string RutGonLog(LogDto log)
     {
         string doiTuong = GetTenDoiTuong(log.Path);
@@ -18,81 +114,15 @@ public static class LogHelper
 
         return $"{log.UserName} đã {hanhDong} {doiTuong.ToLower()}{(string.IsNullOrEmpty(tenChinh) ? "" : $": {tenChinh}")}";
     }
-
-    public static string ChiTietLog(LogDto log)
-    {
-        try
-        {
-            var sb = new StringBuilder();
-
-            JsonElement? before = TryGetJsonProperty(log.ResponseBodyShort, "beforeData");
-            JsonElement? after = TryGetJsonProperty(log.ResponseBodyShort, "afterData");
-            JsonElement? data = TryGetJsonProperty(log.ResponseBodyShort, "data");
-
-            string method = log.Method?.ToUpper() ?? "";
-
-            if (method == "POST")
-            {
-                sb.AppendLine("➕ Đã thêm:");
-                sb.AppendLine(FormatObject(after ?? data));
-            }
-            else if (method == "PUT")
-            {
-                sb.AppendLine("🟟 Trước khi cập nhật:");
-                sb.AppendLine(FormatObject(before));
-                sb.AppendLine();
-                sb.AppendLine("✅ Sau khi cập nhật:");
-                sb.AppendLine(FormatObject(after ?? data));
-            }
-            else if (method == "DELETE")
-            {
-                sb.AppendLine("🟟️ Đã xoá:");
-                sb.AppendLine(FormatObject(data ?? before));
-            }
-            else
-            {
-                sb.AppendLine("🟟 Thao tác:");
-                sb.AppendLine(FormatObject(data ?? after ?? before));
-            }
-
-            return sb.ToString();
-        }
-        catch (Exception ex)
-        {
-            return $"Không thể phân tích chi tiết log. Lỗi: {ex.Message}";
-        }
-    }
-
-    private static JsonElement? TryGetJsonProperty(string? json, string propertyName)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return null;
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty(propertyName, out var prop))
-                return prop;
-        }
-        catch { }
-        return null;
-    }
-
-    private static string FormatObject(JsonElement? element)
-    {
-        if (element == null || element.Value.ValueKind == JsonValueKind.Null) return "(không có dữ liệu)";
-        return JsonSerializer.Serialize(element.Value, new JsonSerializerOptions { WriteIndented = true });
-    }
-
     private static string GetTenDoiTuong(string? path)
     {
         if (string.IsNullOrWhiteSpace(path)) return "(không rõ đối tượng)";
-        var match = System.Text.RegularExpressions.Regex.Match(path.ToLower(), @"\/?api\/?([a-zA-Z0-9]+)");
+        var match = Regex.Match(path.ToLower(), @"\/?api\/?([a-zA-Z0-9]+)");
         if (!match.Success) return "(không rõ đối tượng)";
         var key = match.Groups[1].Value.ToLower();
-        return TraSuaApp.Shared.Enums.TuDien._tableFriendlyNames.TryGetValue(key, out var name)
-            ? name
-            : key;
-    }
 
+        return TuDien._tableFriendlyNames.TryGetValue(key, out var name) ? name : key;
+    }
     private static string? LayTenChinh(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
@@ -101,18 +131,33 @@ public static class LogHelper
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            // Nếu có trường `data` hoặc `afterData`, lấy nó
-            if (root.TryGetProperty("data", out var data)) root = data;
-            else if (root.TryGetProperty("afterData", out var after)) root = after;
+            // Ưu tiên lấy trong afterData nếu có (cho thêm/sửa)
+            if (root.TryGetProperty("afterData", out var after) && after.ValueKind == JsonValueKind.Object)
+                return LayTenTuObject(after);
 
-            string[] fields = { "ten", "Ten", "title", "Title", "name", "Name" };
-            foreach (var field in fields)
-            {
-                if (root.TryGetProperty(field, out var value))
-                    return value.GetString();
-            }
+            // Nếu là xoá thì thử from beforeData
+            if (root.TryGetProperty("beforeData", out var before) && before.ValueKind == JsonValueKind.Object)
+                return LayTenTuObject(before);
+
+            // Nếu không có thì thử toàn bộ object (fallback)
+            return LayTenTuObject(root);
         }
-        catch { }
+        catch
+        {
+            return null;
+        }
+    }
+    private static string? LayTenTuObject(JsonElement element)
+    {
+        string[] fields = { "ten", "Ten", "title", "Title", "name", "Name" };
+
+        foreach (var field in fields)
+        {
+            if (element.TryGetProperty(field, out var value) && value.ValueKind == JsonValueKind.String)
+                return value.GetString();
+        }
+
         return null;
     }
+
 }

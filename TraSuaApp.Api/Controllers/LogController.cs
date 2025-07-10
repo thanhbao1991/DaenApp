@@ -50,6 +50,15 @@ public class LogController : BaseApiController
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult<Result<LogDto>>> Delete(Guid id)
     {
+        var response = new
+        {
+            status = 403,
+            success = false,
+            message = "Tính năng này bị khoá."
+        };
+        return StatusCode(StatusCodes.Status403Forbidden, response);
+
+
         var result = await _service.DeleteAsync(id);
         return result;
     }

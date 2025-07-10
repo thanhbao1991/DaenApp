@@ -150,7 +150,7 @@ public partial class LogList : Window
     private void ApplySearch()
     {
         var keyword = SearchTextBox.Text.Trim();
-        var filtered = TextSearchHelper.FilterByTen(_all, keyword, x => x.UserName);
+        var filtered = TextSearchHelper.FilterByTen(_all, keyword, x => x.KetQua);
 
         for (int i = 0; i < filtered.Count; i++)
             filtered[i].STT = i + 1;
@@ -170,6 +170,7 @@ public partial class LogList : Window
 
     private async void AddButton_Click(object sender, RoutedEventArgs e)
     {
+
         await OpenEditWindowAsync();
     }
 
