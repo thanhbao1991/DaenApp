@@ -24,7 +24,6 @@
             </Grid.RowDefinitions>
 
             <!--  Tiêu đề  -->
-            <!--  Tiêu đề  -->
             <DockPanel
                 Grid.Row="0"
                 Margin="0,0,0,10"
@@ -52,6 +51,7 @@
                     FontSize="14"
                     Foreground="#888" />
             </DockPanel>
+
             <!--  Thanh công cụ  -->
             <Grid Grid.Row="1" Margin="10,0,10,10">
                 <Grid.ColumnDefinitions>
@@ -85,16 +85,19 @@
                     <Button
                         Width="80"
                         Margin="0,0,4,0"
+                        Click="TraceButton_Click"
                         Content="Truy vết"
                         Style="{StaticResource AddButtonStyle}" />
                     <Button
                         Width="80"
                         Margin="0,0,4,0"
+                        Click="PreviousDayButton_Click"
                         Content="Ngày trước"
                         Style="{StaticResource EditButtonStyle}" />
                     <Button
                         Width="80"
                         Margin="0,0,4,0"
+                        Click="NextDayButton_Click"
                         Content="Ngày sau"
                         Style="{StaticResource DeleteButtonStyle}" />
                     <Button
@@ -105,7 +108,7 @@
                 </StackPanel>
             </Grid>
 
-            <!--  Danh sách nhóm  -->
+            <!--  Danh sách log  -->
             <DataGrid
                 x:Name="LogDataGrid"
                 Grid.Row="2"
@@ -116,28 +119,22 @@
                     <DataGridTextColumn
                         Width="50"
                         Binding="{Binding STT}"
-                        ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="STT" />
                     <DataGridTextColumn
                         Width="120"
                         Binding="{Binding ThoiGian}"
-                        ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="Time" />
                     <DataGridTextColumn
                         Width="*"
                         Binding="{Binding KetQua}"
-                        ElementStyle="{StaticResource LeftTextCellStyle}"
                         Header="Thao tác" />
-
                     <DataGridTextColumn
                         Width="80"
                         Binding="{Binding StatusCode}"
-                        ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="Status" />
                     <DataGridTextColumn
                         Width="80"
                         Binding="{Binding DurationMs}"
-                        ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="Thời gian (ms)" />
                 </DataGrid.Columns>
             </DataGrid>

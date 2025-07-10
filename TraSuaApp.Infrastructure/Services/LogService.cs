@@ -2,9 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
-using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
+
+namespace TraSuaApp.Infrastructure.Services;
 
 public class LogService : ILogService
 {
@@ -19,7 +20,24 @@ public class LogService : ILogService
 
     public async Task<List<LogDto>> GetAllAsync()
     {
+        var list = await _context.Logs.OrderByDescending(x => x.ThoiGian).ToListAsync();
+        return _mapper.Map<List<LogDto>>(list);
+    }
+
+    public async Task<List<LogDto>> GetByDateAsync(DateTime date)
+    {
         var list = await _context.Logs
+            .Where(x => x.ThoiGian.Date == date.Date)
+            .OrderByDescending(x => x.ThoiGian)
+            .ToListAsync();
+
+        return _mapper.Map<List<LogDto>>(list);
+    }
+
+    public async Task<List<LogDto>> GetByEntityIdAsync(Guid entityId)
+    {
+        var list = await _context.Logs
+            .Where(x => x.EntityId == entityId)
             .OrderByDescending(x => x.ThoiGian)
             .ToListAsync();
 
@@ -28,86 +46,45 @@ public class LogService : ILogService
 
     public async Task<LogDto?> GetByIdAsync(Guid id)
     {
-        var entity = await _context.Logs.FindAsync(id);
-        return entity == null ? null : _mapper.Map<LogDto>(entity);
+        var log = await _context.Logs.FindAsync(id);
+        return _mapper.Map<LogDto>(log);
     }
 
     public async Task<Result<LogDto>> CreateAsync(LogDto dto)
     {
-        try
-        {
-            //var trungTen = await _context.Logs.AnyAsync(x => x.Ten == dto.Ten);
-            //if (trungTen)
-            //    return Result<LogDto>.Failure("Tên Log đã tồn tại.");
+        var entity = _mapper.Map<Log>(dto);
+        entity.Id = Guid.NewGuid();
+        entity.ThoiGian = DateTime.Now;
 
-            var entity = _mapper.Map<Log>(dto);
-            entity.Id = Guid.NewGuid();
+        await _context.Logs.AddAsync(entity);
+        await _context.SaveChangesAsync();
 
-            _context.Logs.Add(entity);
-            await _context.SaveChangesAsync();
-
-            var resultDto = _mapper.Map<LogDto>(entity);
-            return Result<LogDto>.Success("Đã thêm Log.", resultDto)
-                .WithId(entity.Id)
-                .WithAfter(resultDto);
-        }
-        catch (Exception ex)
-        {
-            return Result<LogDto>.Failure(DbExceptionHelper.Handle(ex).Message);
-        }
+        var createdDto = _mapper.Map<LogDto>(entity);
+        return Result<LogDto>.Success("Đã ghi log", createdDto).WithId(entity.Id);
     }
 
     public async Task<Result<LogDto>> UpdateAsync(Guid id, LogDto dto)
     {
-        try
-        {
-            var entity = await _context.Logs.FindAsync(id);
-            if (entity == null)
-                return Result<LogDto>.Failure("Log không tồn tại.");
+        var log = await _context.Logs.FindAsync(id);
+        if (log == null)
+            return Result<LogDto>.Failure("Không tìm thấy log");
 
-            //var trungTen = await _context.Logs
-            //    .AnyAsync(x => x.Ten == dto.Ten && x.Id != id);
-            //if (trungTen)
-            //    return Result<LogDto>.Failure("Tên Log đã tồn tại.");
+        _mapper.Map(dto, log);
+        await _context.SaveChangesAsync();
 
-            var before = _mapper.Map<LogDto>(entity);
-
-            _mapper.Map(dto, entity);
-            await _context.SaveChangesAsync();
-
-            var after = _mapper.Map<LogDto>(entity);
-
-            return Result<LogDto>.Success("Đã cập nhật Log.", after)
-                .WithId(id)
-                .WithBefore(before)
-                .WithAfter(after);
-        }
-        catch (Exception ex)
-        {
-            return Result<LogDto>.Failure(DbExceptionHelper.Handle(ex).Message);
-        }
+        var updatedDto = _mapper.Map<LogDto>(log);
+        return Result<LogDto>.Success("Đã cập nhật log", updatedDto).WithId(id);
     }
 
     public async Task<Result<LogDto>> DeleteAsync(Guid id)
     {
-        try
-        {
-            var entity = await _context.Logs.FindAsync(id);
-            if (entity == null)
-                return Result<LogDto>.Failure("Log không tồn tại.");
+        var log = await _context.Logs.FindAsync(id);
+        if (log == null)
+            return Result<LogDto>.Failure("Không tìm thấy log");
 
-            var before = _mapper.Map<LogDto>(entity);
+        _context.Logs.Remove(log);
+        await _context.SaveChangesAsync();
 
-            _context.Logs.Remove(entity);
-            await _context.SaveChangesAsync();
-
-            return Result<LogDto>.Success("Đã xoá Log.", before)
-                .WithId(id)
-                .WithBefore(before);
-        }
-        catch (Exception ex)
-        {
-            return Result<LogDto>.Failure(DbExceptionHelper.Handle(ex).Message);
-        }
+        return Result<LogDto>.Success("Đã xoá log", _mapper.Map<LogDto>(log)).WithId(id);
     }
 }

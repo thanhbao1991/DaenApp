@@ -24,6 +24,20 @@ public class LogController : BaseApiController
         return Result<List<LogDto>>.Success("Danh sách Log", list).WithAfter(list);
     }
 
+    [HttpGet("by-date")]
+    public async Task<ActionResult<Result<List<LogDto>>>> GetByDate([FromQuery] DateTime ngay)
+    {
+        var list = await _service.GetByDateAsync(ngay.Date);
+        return Result<List<LogDto>>.Success($"Log ngày {ngay:dd/MM/yyyy}", list).WithAfter(list);
+    }
+
+    [HttpGet("by-entity")]
+    public async Task<ActionResult<Result<List<LogDto>>>> GetByEntity([FromQuery] Guid entityId)
+    {
+        var list = await _service.GetByEntityIdAsync(entityId);
+        return Result<List<LogDto>>.Success($"Log của entity {entityId}", list).WithAfter(list);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<Result<LogDto>>> GetById(Guid id)
     {
@@ -50,6 +64,7 @@ public class LogController : BaseApiController
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult<Result<LogDto>>> Delete(Guid id)
     {
+        // Không cho xoá log
         var response = new
         {
             status = 403,
@@ -57,9 +72,5 @@ public class LogController : BaseApiController
             message = "Tính năng này bị khoá."
         };
         return StatusCode(StatusCodes.Status403Forbidden, response);
-
-
-        var result = await _service.DeleteAsync(id);
-        return result;
     }
 }
