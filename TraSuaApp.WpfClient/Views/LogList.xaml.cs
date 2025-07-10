@@ -28,7 +28,8 @@ public partial class LogList : Window
         {
             Mouse.OverrideCursor = Cursors.Wait;
 
-            var url = $"/api/log/date/{date:yyyy-MM-dd}";
+            //var url = $"/api/log/date/{date:yyyy-MM-dd}";
+            var url = $"/api/log/by-date?ngay={date:yyyy-MM-dd}";
             var response = await ApiClient.GetAsync(url);
             var result = await response.Content.ReadFromJsonAsync<Result<List<LogDto>>>();
 
@@ -58,7 +59,7 @@ public partial class LogList : Window
         {
             Mouse.OverrideCursor = Cursors.Wait;
 
-            var response = await ApiClient.GetAsync($"/api/log/entity/{entityId}");
+            var response = await ApiClient.GetAsync($"/api/log/by-entity?entityId={entityId}");
             var result = await response.Content.ReadFromJsonAsync<Result<List<LogDto>>>();
 
             if (result?.IsSuccess != true || result.Data == null)

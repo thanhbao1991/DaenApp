@@ -119,22 +119,22 @@
                     <DataGridTextColumn
                         Width="50"
                         Binding="{Binding STT}"
+                        ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="STT" />
                     <DataGridTextColumn
                         Width="120"
                         Binding="{Binding ThoiGian}"
+                        ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="Time" />
                     <DataGridTextColumn
                         Width="*"
                         Binding="{Binding KetQua}"
+                        ElementStyle="{StaticResource LeftTextCellStyle}"
                         Header="Thao tác" />
                     <DataGridTextColumn
-                        Width="80"
-                        Binding="{Binding StatusCode}"
-                        Header="Status" />
-                    <DataGridTextColumn
-                        Width="80"
+                        Width="50"
                         Binding="{Binding DurationMs}"
+                        ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="Thời gian (ms)" />
                 </DataGrid.Columns>
             </DataGrid>
