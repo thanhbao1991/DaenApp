@@ -100,6 +100,7 @@ namespace TraSuaApp.WpfClient.Views
                         var role = JwtHelper.GetRole(login.Token!);
                         var userId = JwtHelper.GetUserId(login.Token!);
 
+
                         var mainWindow = new MainWindow
                         {
                             VaiTro = role ?? "NhanVien",
@@ -108,6 +109,7 @@ namespace TraSuaApp.WpfClient.Views
                         };
 
                         mainWindow.Show();
+                        this.DialogResult = true; // ✅ báo là login thành công
                         this.Close();
                     }
                     else

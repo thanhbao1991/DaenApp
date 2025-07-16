@@ -12,16 +12,9 @@ namespace TraSuaApp.WpfClient.Helpers
             BaseAddress = new Uri("http://localhost:5093") // ✅ Đổi lại theo cấu hình thực tế nếu cần
         };
 
+        public static string? ConnectionId { get; set; }
+        public static Uri BaseAddress => _httpClient.BaseAddress!;
         public static event Action? OnTokenExpired;
-
-        //public static HttpClient Instance
-        //{
-        //    get
-        //    {
-        //        AddAuthorizationHeader();
-        //        return _httpClient;
-        //    }
-        //}
 
         static ApiClient()
         {
@@ -43,6 +36,17 @@ namespace TraSuaApp.WpfClient.Helpers
             }
         }
 
+        private static void AddConnectionIdHeader(HttpRequestMessage request)
+        {
+            if (!string.IsNullOrWhiteSpace(ConnectionId))
+            {
+                if (request.Headers.Contains("X-Connection-Id"))
+                    request.Headers.Remove("X-Connection-Id");
+
+                request.Headers.Add("X-Connection-Id", ConnectionId);
+            }
+        }
+
         public static void SetToken(string token)
         {
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -50,12 +54,16 @@ namespace TraSuaApp.WpfClient.Helpers
             Properties.Settings.Default.Save();
         }
 
-        // ✅ Hàm xử lý chung để phát hiện lỗi token
-        private static async Task<HttpResponseMessage> SendAsync(Func<Task<HttpResponseMessage>> apiCall)
+        private static async Task<HttpResponseMessage> SendAsync(Func<HttpRequestMessage> createRequest, bool includeToken)
         {
             try
             {
-                var response = await apiCall();
+                var request = createRequest();
+
+                if (includeToken) AddAuthorizationHeader();
+                AddConnectionIdHeader(request);
+
+                var response = await _httpClient.SendAsync(request);
 
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
@@ -66,11 +74,10 @@ namespace TraSuaApp.WpfClient.Helpers
             }
             catch
             {
-                throw; // để nơi gọi tự xử lý
+                throw;
             }
         }
 
-        // ✅ Các phương thức API
         public static async Task<T?> Get<T>(string uri, bool includeToken = true)
         {
             var response = await GetAsync(uri, includeToken);
@@ -85,26 +92,36 @@ namespace TraSuaApp.WpfClient.Helpers
 
         public static Task<HttpResponseMessage> GetAsync(string uri, bool includeToken = true)
         {
-            if (includeToken) AddAuthorizationHeader();
-            return SendAsync(() => _httpClient.GetAsync(uri));
+            return SendAsync(() => new HttpRequestMessage(HttpMethod.Get, uri), includeToken);
         }
 
         public static Task<HttpResponseMessage> PostAsync<T>(string uri, T content, bool includeToken = true)
         {
-            if (includeToken) AddAuthorizationHeader();
-            return SendAsync(() => _httpClient.PostAsJsonAsync(uri, content));
+            return SendAsync(() =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, uri)
+                {
+                    Content = JsonContent.Create(content)
+                };
+                return request;
+            }, includeToken);
         }
 
         public static Task<HttpResponseMessage> PutAsync<T>(string uri, T content, bool includeToken = true)
         {
-            if (includeToken) AddAuthorizationHeader();
-            return SendAsync(() => _httpClient.PutAsJsonAsync(uri, content));
+            return SendAsync(() =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Put, uri)
+                {
+                    Content = JsonContent.Create(content)
+                };
+                return request;
+            }, includeToken);
         }
 
         public static Task<HttpResponseMessage> DeleteAsync(string uri, bool includeToken = true)
         {
-            if (includeToken) AddAuthorizationHeader();
-            return SendAsync(() => _httpClient.DeleteAsync(uri));
+            return SendAsync(() => new HttpRequestMessage(HttpMethod.Delete, uri), includeToken);
         }
     }
 }

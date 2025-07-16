@@ -1,14 +1,17 @@
+using TraSuaApp.WpfClient.Providers;
 
 namespace TraSuaApp.Shared.Dtos;
 
-public class NhomSanPhamDto
+public class NhomSanPhamDto : IHasId, IHasRoute
 {
-    public int STT { get; set; }
-    public string? TenNormalized { get; set; }
-
-
     public Guid Id { get; set; }
     public string Ten { get; set; } = string.Empty;
-    public string? MoTa { get; set; }
-    public int? IdOld { get; set; }
+    public int STT { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastModified { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+
+    public string ApiRoute => "nhomsanpham";
 }

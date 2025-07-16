@@ -2,6 +2,12 @@
 
 public partial class SanPham
 {
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastModified { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+
     public Guid Id { get; set; }
 
     public string Ten { get; set; } = null!;

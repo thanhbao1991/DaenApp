@@ -3,32 +3,55 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="File Viewer"
-    Width="400"
-    Height="400">
+    Width="600"
+    Height="600"
+    PreviewKeyDown="Window_PreviewKeyDown"
+    WindowStartupLocation="CenterScreen">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
+        <StackPanel>
 
-        <TextBox
-            x:Name="txtFilter"
-            Margin="0,0,0,10"
-            TextChanged="txtFilter_TextChanged" />
+            <TextBox
+                x:Name="txtFilter"
+                Margin="0,0,0,10"
+                TextChanged="txtFilter_TextChanged" />
+            <TextBox
+                x:Name="txtFilter2"
+                Margin="0,0,0,10"
+                TextChanged="txtFilter_TextChanged" />
+        </StackPanel>
 
-        <ListBox
-            x:Name="lstFiles"
-            Grid.Row="1"
-            DisplayMemberPath="Name"
-            SelectionMode="Multiple" />
+        <Grid Grid.Row="1">
 
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+
+            <ListBox
+                x:Name="lstFiles"
+                Grid.Column="0"
+                DisplayMemberPath="Name"
+                SelectionMode="Multiple" />
+            <TextBox
+                x:Name="txt"
+                Grid.Column="1"
+                Height="300"
+                Margin="0,0,0,10"
+                VerticalAlignment="Stretch"
+                VerticalContentAlignment="Stretch"
+                AcceptsReturn="True" />
+        </Grid>
         <Button
             Grid.Row="2"
             Height="40"
             Margin="0,10,0,0"
-            HorizontalAlignment="Right"
-            Click="btnCopy_Click"
-            Content="🟟 Copy nội dung đã chọn vào clipboard" />
+            HorizontalAlignment="Left"
+            Click="btnCopyAndSend_Click"
+            Content="🟟 Copy to clipboard" />
     </Grid>
 </Window>

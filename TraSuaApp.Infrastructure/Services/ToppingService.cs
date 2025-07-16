@@ -5,6 +5,7 @@ using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
+namespace TraSuaApp.Infrastructure.Services;
 
 public class ToppingService : IToppingService
 {

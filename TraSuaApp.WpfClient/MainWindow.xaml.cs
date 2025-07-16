@@ -14,6 +14,7 @@ namespace TraSuaApp.WpfClient.Views
         {
             InitializeComponent();
             GenerateMenuButtons();
+
         }
         private void GenerateMenuButtons()
         {

@@ -1,165 +1,323 @@
-﻿using AutoMapper;
+﻿#pragma warning disable CS8618
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
-using TraSuaApp.Infrastructure.Helpers;
-using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
+
+namespace TraSuaApp.Infrastructure.Services;
+
 
 public class KhachHangService : IKhachHangService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
-
-    public KhachHangService(AppDbContext context, IMapper mapper)
+    private readonly string _friendlyName = TuDien._tableFriendlyNames["khachhang"];
+    public KhachHangService(AppDbContext context)
     {
         _context = context;
-        _mapper = mapper;
+    }
+
+    private string NormalizePhone(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return "";
+
+        input = input.Trim();
+        input = Regex.Replace(input, @"[^\d+]", "");
+
+        if (input.StartsWith("+84"))
+            input = "0" + input[3..];
+        else if (input.StartsWith("84"))
+            input = "0" + input[2..];
+
+        return input;
+    }
+
+    private KhachHangDto ToDto(KhachHang entity)
+    {
+        return new KhachHangDto
+        {
+            Id = entity.Id,
+            Ten = entity.Ten,
+            IsDeleted = entity.IsDeleted,
+            LastModified = entity.LastModified,
+            CreatedAt = entity.CreatedAt,
+            DeletedAt = entity.DeletedAt,
+
+            DuocNhanVoucher = entity.DuocNhanVoucher,
+            Phones = entity.KhachHangPhones.Select(p => new KhachHangPhoneDto
+            {
+                Id = p.Id,
+                SoDienThoai = p.SoDienThoai,
+                IsDefault = p.IsDefault
+            }).OrderByDescending(x => x.IsDefault).ToList(),
+            Addresses = entity.KhachHangAddresses.Select(a => new KhachHangAddressDto
+            {
+                Id = a.Id,
+                DiaChi = a.DiaChi,
+                IsDefault = a.IsDefault
+            }).OrderByDescending(x => x.IsDefault).ToList()
+        };
+    }
+
+    private void EnsureOneDefault<T>(List<T> list, Action<T, bool> setDefault, Func<T, bool> isDefault)
+    {
+        if (!list.Any()) return;
+
+        var last = list.Last();
+
+        if (!list.Any(isDefault))
+        {
+            setDefault(last, true);
+        }
+        else
+        {
+            var defaults = list.Where(isDefault).ToList();
+            foreach (var item in defaults)
+                setDefault(item, false);
+
+            setDefault(defaults.Last(), true);
+        }
+    }
+
+    private Result<KhachHangDto> ValidateAndNormalize(KhachHangDto dto)
+    {
+        dto.Ten = StringHelper.NormalizeString(dto.Ten);
+        foreach (var a in dto.Addresses)
+            a.DiaChi = StringHelper.NormalizeString(a.DiaChi);
+        foreach (var p in dto.Phones)
+            p.SoDienThoai = NormalizePhone(p.SoDienThoai);
+
+        EnsureOneDefault(dto.Phones, (p, val) => p.IsDefault = val, p => p.IsDefault);
+        EnsureOneDefault(dto.Addresses, (a, val) => a.IsDefault = val, a => a.IsDefault);
+
+        if (dto.Phones.Any(p => string.IsNullOrWhiteSpace(p.SoDienThoai)))
+            return Result<KhachHangDto>.Failure("Số điện thoại không được để trống.");
+
+        if (dto.Phones.GroupBy(p => p.SoDienThoai).Any(g => g.Count() > 1))
+            return Result<KhachHangDto>.Failure($"Không được trùng số trong cùng một {_friendlyName}.");
+
+        if (dto.Addresses.Any(a => string.IsNullOrWhiteSpace(a.DiaChi)))
+            return Result<KhachHangDto>.Failure("Địa chỉ không được để trống.");
+
+        return Result<KhachHangDto>.Success(dto);
     }
 
     public async Task<List<KhachHangDto>> GetAllAsync()
     {
         var list = await _context.KhachHangs
-            .Include(kh => kh.KhachHangPhones)
-            .Include(kh => kh.KhachHangAddresses)
-            .OrderBy(kh => kh.Ten)
+            .Include(x => x.KhachHangPhones)
+            .Include(x => x.KhachHangAddresses)
+            .Where(x => !x.IsDeleted)
+            .OrderByDescending(x => x.LastModified)
             .ToListAsync();
 
-        return _mapper.Map<List<KhachHangDto>>(list);
+        return list.Select(ToDto).ToList();
     }
 
     public async Task<KhachHangDto?> GetByIdAsync(Guid id)
     {
         var entity = await _context.KhachHangs
-            .Include(kh => kh.KhachHangPhones)
-            .Include(kh => kh.KhachHangAddresses)
-            .FirstOrDefaultAsync(x => x.Id == id);
+            .Include(x => x.KhachHangPhones)
+            .Include(x => x.KhachHangAddresses)
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
-        return entity == null ? null : _mapper.Map<KhachHangDto>(entity);
+        return entity == null ? null : ToDto(entity);
     }
 
     public async Task<Result<KhachHangDto>> CreateAsync(KhachHangDto dto)
     {
-        try
+        var validation = ValidateAndNormalize(dto);
+        if (!validation.IsSuccess)
+            return validation;
+
+        bool trung = await _context.KhachHangPhones
+            .AnyAsync(p => dto.Phones.Select(x => x.SoDienThoai).Contains(p.SoDienThoai));
+
+        if (trung)
+            return Result<KhachHangDto>.Failure($"Số điện thoại đã tồn tại ở {_friendlyName} khác.");
+
+        var entity = new KhachHang
         {
-            var entity = _mapper.Map<KhachHang>(dto);
-            entity.Id = Guid.NewGuid();
+            Id = Guid.NewGuid(),
+            Ten = dto.Ten,
+            IsDeleted = false,
+            LastModified = DateTime.Now,
+            CreatedAt = DateTime.Now,
+            DuocNhanVoucher = dto.DuocNhanVoucher,
+            KhachHangPhones = dto.Phones.Select(p => new KhachHangPhone
+            {
+                Id = Guid.NewGuid(),
+                SoDienThoai = p.SoDienThoai,
+                IsDefault = p.IsDefault
+            }).ToList(),
+            KhachHangAddresses = dto.Addresses.Select(a => new KhachHangAddress
+            {
+                Id = Guid.NewGuid(),
+                DiaChi = a.DiaChi,
+                IsDefault = a.IsDefault
+            }).ToList()
+        };
 
-            entity.KhachHangPhones = dto.Phones?
-                .Select(p => new KhachHangPhone
-                {
-                    Id = Guid.NewGuid(),
-                    IdKhachHang = entity.Id,
-                    SoDienThoai = p.SoDienThoai,
-                    IsDefault = p.IsDefault
-                }).ToList() ?? new();
+        foreach (var p in entity.KhachHangPhones)
+            p.IdKhachHang = entity.Id;
+        foreach (var a in entity.KhachHangAddresses)
+            a.IdKhachHang = entity.Id;
 
-            if (entity.KhachHangPhones.Count(p => p.IsDefault) > 1)
-                return Result<KhachHangDto>.Failure("Chỉ được chọn một số điện thoại mặc định.");
+        _context.KhachHangs.Add(entity);
+        await _context.SaveChangesAsync();
 
-            entity.KhachHangAddresses = dto.Addresses?
-                .Select(d => new KhachHangAddress
-                {
-                    Id = Guid.NewGuid(),
-                    IdKhachHang = entity.Id,
-                    DiaChi = d.DiaChi,
-                    IsDefault = d.IsDefault
-                }).ToList() ?? new();
-
-            if (entity.KhachHangAddresses.Count(d => d.IsDefault) > 1)
-                return Result<KhachHangDto>.Failure("Chỉ được chọn một địa chỉ mặc định.");
-
-            _context.KhachHangs.Add(entity);
-            await _context.SaveChangesAsync();
-
-            var after = _mapper.Map<KhachHangDto>(entity);
-            return Result<KhachHangDto>.Success("Đã thêm khách hàng.", after)
-                .WithId(entity.Id)
-                .WithAfter(after);
-        }
-        catch (Exception ex)
-        {
-            return Result<KhachHangDto>.Failure(DbExceptionHelper.Handle(ex).Message);
-        }
+        var after = ToDto(entity);
+        return Result<KhachHangDto>.Success(after, "Thêm thành công.")
+            .WithId(after.Id)
+            .WithAfter(after);
     }
 
     public async Task<Result<KhachHangDto>> UpdateAsync(Guid id, KhachHangDto dto)
     {
-        try
+        var entity = await _context.KhachHangs
+            .Include(x => x.KhachHangPhones)
+            .Include(x => x.KhachHangAddresses)
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+        if (entity == null)
+            return Result<KhachHangDto>.Failure($"Không tìm thấy {_friendlyName}.");
+
+        if (dto.LastModified < entity.LastModified)
+            return Result<KhachHangDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+
+        var validation = ValidateAndNormalize(dto);
+        if (!validation.IsSuccess)
+            return validation;
+
+        bool trung = await _context.KhachHangPhones
+            .AnyAsync(p => dto.Phones.Select(x => x.SoDienThoai).Contains(p.SoDienThoai) && p.IdKhachHang != id);
+
+        if (trung)
+            return Result<KhachHangDto>.Failure($"Số điện thoại đã tồn tại ở {_friendlyName} khác.");
+
+        var before = ToDto(entity);
+
+        entity.Ten = dto.Ten;
+        entity.LastModified = DateTime.Now;
+        entity.DuocNhanVoucher = dto.DuocNhanVoucher;
+
+        // Xoá cũ
+        var phonesToRemove = entity.KhachHangPhones
+            .Where(p => !dto.Phones.Any(dtoP => dtoP.Id == p.Id)).ToList();
+        var addressesToRemove = entity.KhachHangAddresses
+            .Where(a => !dto.Addresses.Any(dtoA => dtoA.Id == a.Id)).ToList();
+        phonesToRemove.ForEach(p => entity.KhachHangPhones.Remove(p));
+        addressesToRemove.ForEach(a => entity.KhachHangAddresses.Remove(a));
+
+        // Cập nhật hoặc thêm mới
+        foreach (var phoneDto in dto.Phones)
         {
-            var entity = await _context.KhachHangs
-                .Include(kh => kh.KhachHangPhones)
-                .Include(kh => kh.KhachHangAddresses)
-                .FirstOrDefaultAsync(x => x.Id == id);
-
-            if (entity == null)
-                return Result<KhachHangDto>.Failure("Không tìm thấy khách hàng.");
-
-            var before = _mapper.Map<KhachHangDto>(entity);
-
-            _mapper.Map(dto, entity);
-
-            _context.KhachHangPhones.RemoveRange(entity.KhachHangPhones);
-            entity.KhachHangPhones = dto.Phones?
-                .Select(p => new KhachHangPhone
+            var phone = entity.KhachHangPhones.FirstOrDefault(p => p.Id == phoneDto.Id);
+            if (phone != null)
+            {
+                phone.SoDienThoai = phoneDto.SoDienThoai;
+                phone.IsDefault = phoneDto.IsDefault;
+            }
+            else
+            {
+                entity.KhachHangPhones.Add(new KhachHangPhone
                 {
                     Id = Guid.NewGuid(),
-                    IdKhachHang = id,
-                    SoDienThoai = p.SoDienThoai,
-                    IsDefault = p.IsDefault
-                }).ToList() ?? new();
+                    SoDienThoai = phoneDto.SoDienThoai,
+                    IsDefault = phoneDto.IsDefault,
+                    IdKhachHang = entity.Id
+                });
+            }
+        }
 
-            if (entity.KhachHangPhones.Count(p => p.IsDefault) > 1)
-                return Result<KhachHangDto>.Failure("Chỉ được chọn một số điện thoại mặc định.");
-
-            _context.KhachHangAddresses.RemoveRange(entity.KhachHangAddresses);
-            entity.KhachHangAddresses = dto.Addresses?
-                .Select(d => new KhachHangAddress
+        foreach (var addrDto in dto.Addresses)
+        {
+            var addr = entity.KhachHangAddresses.FirstOrDefault(a => a.Id == addrDto.Id);
+            if (addr != null)
+            {
+                addr.DiaChi = addrDto.DiaChi;
+                addr.IsDefault = addrDto.IsDefault;
+            }
+            else
+            {
+                entity.KhachHangAddresses.Add(new KhachHangAddress
                 {
                     Id = Guid.NewGuid(),
-                    IdKhachHang = id,
-                    DiaChi = d.DiaChi,
-                    IsDefault = d.IsDefault
-                }).ToList() ?? new();
-
-            if (entity.KhachHangAddresses.Count(d => d.IsDefault) > 1)
-                return Result<KhachHangDto>.Failure("Chỉ được chọn một địa chỉ mặc định.");
-
-            await _context.SaveChangesAsync();
-
-            var after = _mapper.Map<KhachHangDto>(entity);
-
-            return Result<KhachHangDto>.Success("Cập nhật thành công.", after)
-                .WithId(id)
-                .WithBefore(before)
-                .WithAfter(after);
+                    DiaChi = addrDto.DiaChi,
+                    IsDefault = addrDto.IsDefault,
+                    IdKhachHang = entity.Id
+                });
+            }
         }
-        catch (Exception ex)
-        {
-            return Result<KhachHangDto>.Failure(DbExceptionHelper.Handle(ex).Message);
-        }
+
+        await _context.SaveChangesAsync();
+
+        var after = await GetByIdAsync(id);
+        return Result<KhachHangDto>.Success(after!, "Cập nhật thành công.")
+            .WithId(id)
+            .WithBefore(before)
+            .WithAfter(after);
     }
 
     public async Task<Result<KhachHangDto>> DeleteAsync(Guid id)
     {
         var entity = await _context.KhachHangs
-            .Include(kh => kh.KhachHangPhones)
-            .Include(kh => kh.KhachHangAddresses)
+            .Include(x => x.KhachHangPhones)
+            .Include(x => x.KhachHangAddresses)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (entity == null || entity.IsDeleted)
+            return Result<KhachHangDto>.Failure($"Không tìm thấy {_friendlyName}.");
+
+        var before = ToDto(entity);
+
+        entity.IsDeleted = true;
+        entity.DeletedAt = DateTime.Now;
+        entity.LastModified = DateTime.Now;
+        await _context.SaveChangesAsync();
+
+        return Result<KhachHangDto>.Success(before, "Xoá thành công.")
+            .WithId(before.Id)
+            .WithBefore(before);
+    }
+
+    public async Task<Result<KhachHangDto>> RestoreAsync(Guid id)
+    {
+        var entity = await _context.KhachHangs
+            .Include(x => x.KhachHangPhones)
+            .Include(x => x.KhachHangAddresses)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null)
-            return Result<KhachHangDto>.Failure("Không tìm thấy khách hàng.");
+            return Result<KhachHangDto>.Failure($"Không tìm thấy {_friendlyName}.");
 
-        var before = _mapper.Map<KhachHangDto>(entity);
+        if (!entity.IsDeleted)
+            return Result<KhachHangDto>.Failure($"{_friendlyName} này chưa bị xoá.");
 
-        _context.KhachHangPhones.RemoveRange(entity.KhachHangPhones);
-        _context.KhachHangAddresses.RemoveRange(entity.KhachHangAddresses);
-        _context.KhachHangs.Remove(entity);
+        entity.IsDeleted = false;
+        entity.LastModified = DateTime.Now;
+        entity.DeletedAt = null;
 
         await _context.SaveChangesAsync();
 
-        return Result<KhachHangDto>.Success("Xoá thành công.", before)
-            .WithId(id)
-            .WithBefore(before);
+        var after = ToDto(entity);
+        return Result<KhachHangDto>.Success(after, "Khôi phục thành công.")
+            .WithId(after.Id)
+            .WithAfter(after);
+    }
+
+    public async Task<List<KhachHangDto>> GetUpdatedSince(DateTime lastSync)
+    {
+        var list = await _context.KhachHangs
+            .Include(x => x.KhachHangPhones)
+            .Include(x => x.KhachHangAddresses)
+            .Where(x => x.LastModified > lastSync)
+            .OrderByDescending(x => x.LastModified)
+            .ToListAsync();
+
+        return list.Select(ToDto).ToList();
     }
 }

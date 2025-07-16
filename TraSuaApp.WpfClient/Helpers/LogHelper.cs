@@ -14,7 +14,7 @@ public static class LogHelper
 
         try
         {
-            var json = JsonDocument.Parse(log.ResponseBodyShort);
+            var json = JsonDocument.Parse(log.ResponseBodyShort ?? "");
             var root = json.RootElement;
 
             JsonElement beforeData = default;

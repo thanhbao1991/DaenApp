@@ -12,7 +12,8 @@ public abstract class BaseApiController : ControllerBase
     protected Guid UserId =>
         Guid.TryParse(User?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id)
             ? id : Guid.Empty;
-
+    protected string? ConnectionId =>
+      HttpContext.Request.Headers["X-Connection-Id"].FirstOrDefault();
     protected IActionResult FromResult<T>(Result<T> result)
     {
         if (result.IsSuccess)

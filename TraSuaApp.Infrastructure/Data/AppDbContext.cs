@@ -78,6 +78,25 @@ public partial class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<KhachHangPhone>(entity =>
+        {
+            entity.HasOne(p => p.KhachHang)
+                .WithMany(k => k.KhachHangPhones)
+                .HasForeignKey(p => p.IdKhachHang)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<KhachHangAddress>(entity =>
+        {
+            entity.HasOne(p => p.KhachHang)
+                .WithMany(k => k.KhachHangAddresses)
+                .HasForeignKey(p => p.IdKhachHang)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+
+
+
 
         modelBuilder.Entity<ChiTietHoaDon>(entity =>
         {
@@ -202,16 +221,13 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK_ShippingAddresses");
 
-            entity.HasIndex(e => e.IdKhachHang, "IX_ShippingAddress_Default")
-                .IsUnique()
-                .HasFilter("([IsDefault]=(1))");
 
-            entity.HasIndex(e => e.KhachHangId, "IX_ShippingAddresses_KhachHangId");
+            entity.HasIndex(e => e.IdKhachHang, "IX_ShippingAddresses_KhachHangId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
 
             entity.HasOne(d => d.KhachHang).WithMany(p => p.KhachHangAddresses)
-                .HasForeignKey(d => d.KhachHangId)
+                .HasForeignKey(d => d.IdKhachHang)
                 .HasConstraintName("FK_ShippingAddresses_KhachHangs_KhachHangId");
         });
 
@@ -219,16 +235,12 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK_CustomerPhoneNumbers");
 
-            entity.HasIndex(e => e.IdKhachHang, "IX_CustomerPhoneNumber_Default")
-                .IsUnique()
-                .HasFilter("([IsDefault]=(1))");
-
-            entity.HasIndex(e => e.KhachHangId, "IX_CustomerPhoneNumbers_KhachHangId");
+            entity.HasIndex(e => e.IdKhachHang, "IX_CustomerPhoneNumbers_KhachHangId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
 
             entity.HasOne(d => d.KhachHang).WithMany(p => p.KhachHangPhones)
-                .HasForeignKey(d => d.KhachHangId)
+                .HasForeignKey(d => d.IdKhachHang)
                 .HasConstraintName("FK_CustomerPhoneNumbers_KhachHangs_KhachHangId");
         });
 

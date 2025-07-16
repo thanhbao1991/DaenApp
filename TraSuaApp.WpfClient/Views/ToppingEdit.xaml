@@ -88,9 +88,10 @@
             <!--  Nút và lỗi  -->
             <StackPanel Grid.Row="3" Orientation="Vertical">
                 <TextBlock
-                                        x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}"
+                    x:Name="ErrorTextBlock"
                     Margin="0,0,0,5"
-                    Foreground="Red" />
+                    Foreground="Red"
+                    Style="{StaticResource ErrorTextBlock}" />
                 <Button
                     x:Name="SaveButton"
                     Click="SaveButton_Click"

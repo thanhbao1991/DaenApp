@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TraSuaApp.Api.Extensions;
-using TraSuaApp.Shared.Dtos;
+using Microsoft.AspNetCore.SignalR;
+using TraSuaApp.Api.Hubs;
+using TraSuaApp.Application.Interfaces;
+using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
@@ -12,60 +14,79 @@ namespace TraSuaApp.Api.Controllers;
 public class KhachHangController : BaseApiController
 {
     private readonly IKhachHangService _service;
+    private readonly IHubContext<SignalRHub> _hub;
+    string _friendlyName = TuDien._tableFriendlyNames["KhachHang".ToLower()];
 
-    public KhachHangController(IKhachHangService service)
+    public KhachHangController(IKhachHangService service, IHubContext<SignalRHub> hub)
     {
         _service = service;
+        _hub = hub;
+    }
+    private async Task NotifyClients(string action, Guid id)
+    {
+        if (!string.IsNullOrEmpty(ConnectionId))
+        {
+            await _hub.Clients
+                .AllExcept(ConnectionId)
+                .SendAsync("EntityChanged", "khachhang", action, id.ToString(), ConnectionId ?? "");
+        }
+        else
+        {
+            await _hub.Clients.All.SendAsync("EntityChanged", "khachhang", action, id.ToString(), ConnectionId ?? "");
+        }
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        var result = await _service.GetAllAsync();
-        return Result<List<KhachHangDto>>.Success("Danh sách khách hàng", result)
-            .WithAfter(result)
-            .ToActionResult();
-    }
-
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<Result<List<KhachHangDto>>>> GetAll()
+        => Result<List<KhachHangDto>>.Success(data: await _service.GetAllAsync());
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Result<KhachHangDto?>>> GetById(Guid id)
     {
         var result = await _service.GetByIdAsync(id);
-
         return result == null
-            ? Result<KhachHangDto>.Failure("Không tìm thấy khách hàng.").ToActionResult()
-            : Result<KhachHangDto>.Success("Chi tiết khách hàng", result)
-                .WithId(id)
-                .WithAfter(result)
-                .ToActionResult();
+            ? Result<KhachHangDto?>.Failure($"Không tìm thấy {_friendlyName}.")
+            : Result<KhachHangDto?>.Success(data: result);
     }
-
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] KhachHangDto dto)
+    public async Task<ActionResult<Result<KhachHangDto>>> Create(KhachHangDto dto)
     {
         var result = await _service.CreateAsync(dto);
-        return result.ToActionResult();
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("created", result.Data.Id);
+        return result;
     }
 
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] KhachHangDto dto)
+    [HttpPut("{id}")]
+    public async Task<ActionResult<Result<KhachHangDto>>> Update(Guid id, KhachHangDto dto)
     {
-        var beforeResult = await _service.GetByIdAsync(id);
         var result = await _service.UpdateAsync(id, dto);
-
-        return result.IsSuccess
-            ? result.WithId(id).WithBefore(beforeResult).WithAfter(result.Data).ToActionResult()
-            : result.ToActionResult();
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("updated", result.Data.Id);
+        return result;
     }
 
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
+    [HttpDelete("{id}")]
+    public async Task<ActionResult<Result<KhachHangDto>>> Delete(Guid id)
     {
-        var beforeResult = await _service.GetByIdAsync(id);
         var result = await _service.DeleteAsync(id);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("deleted", result.Data.Id);
+        return result;
+    }
 
-        return result.IsSuccess
-            ? result.WithId(id).WithBefore(beforeResult).ToActionResult()
-            : result.ToActionResult();
+    [HttpPut("{id}/restore")]
+    public async Task<ActionResult<Result<KhachHangDto>>> Restore(Guid id)
+    {
+        var result = await _service.RestoreAsync(id);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("restored", result.Data.Id);
+        return result;
+    }
+
+    [HttpGet("sync")]
+    public async Task<ActionResult<Result<List<KhachHangDto>>>> Sync(DateTime lastSync)
+    {
+        var data = await _service.GetUpdatedSince(lastSync);
+        return Result<List<KhachHangDto>>.Success(data);
     }
 }

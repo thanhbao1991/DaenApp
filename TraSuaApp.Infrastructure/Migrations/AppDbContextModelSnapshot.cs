@@ -335,11 +335,23 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("DuocNhanVoucher")
                         .HasColumnType("bit");
 
                     b.Property<string>("GioiTinh")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModified")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("NgaySinh")
                         .HasColumnType("datetime2");
@@ -368,17 +380,10 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<bool>("IsDefault")
                         .HasColumnType("bit");
 
-                    b.Property<Guid>("KhachHangId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id")
                         .HasName("PK_ShippingAddresses");
 
-                    b.HasIndex(new[] { "IdKhachHang" }, "IX_ShippingAddress_Default")
-                        .IsUnique()
-                        .HasFilter("([IsDefault]=(1))");
-
-                    b.HasIndex(new[] { "KhachHangId" }, "IX_ShippingAddresses_KhachHangId");
+                    b.HasIndex(new[] { "IdKhachHang" }, "IX_ShippingAddresses_KhachHangId");
 
                     b.ToTable("KhachHangAddresses");
                 });
@@ -394,9 +399,6 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<bool>("IsDefault")
                         .HasColumnType("bit");
 
-                    b.Property<Guid>("KhachHangId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("SoDienThoai")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -404,11 +406,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("PK_CustomerPhoneNumbers");
 
-                    b.HasIndex(new[] { "IdKhachHang" }, "IX_CustomerPhoneNumber_Default")
-                        .IsUnique()
-                        .HasFilter("([IsDefault]=(1))");
-
-                    b.HasIndex(new[] { "KhachHangId" }, "IX_CustomerPhoneNumbers_KhachHangId");
+                    b.HasIndex(new[] { "IdKhachHang" }, "IX_CustomerPhoneNumbers_KhachHangId");
 
                     b.ToTable("KhachHangPhones");
                 });
@@ -553,7 +551,19 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("IdOld")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("STT")
                         .HasColumnType("int");
 
                     b.Property<string>("Ten")
@@ -659,14 +669,17 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("DaBan")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("DinhLuong")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("IdNhom")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("IdNhomSanPham")
                         .HasColumnType("uniqueidentifier");
@@ -674,6 +687,12 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<int>("IdOld")
                         .HasColumnType("int")
                         .HasColumnName("IdOLD");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModified")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("NgungBan")
                         .HasColumnType("bit");
@@ -693,7 +712,7 @@ namespace TraSuaApp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IdNhom");
+                    b.HasIndex("IdNhomSanPham");
 
                     b.HasIndex(new[] { "Ten" }, "IX_SanPham_Ten")
                         .IsUnique();
@@ -771,8 +790,20 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModified")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("MatKhau")
                         .IsRequired()
@@ -805,8 +836,20 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal>("Gia")
                         .HasColumnType("decimal(18, 2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModified")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("NgungBan")
                         .HasColumnType("bit");
@@ -1053,7 +1096,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                 {
                     b.HasOne("TraSuaApp.Domain.Entities.KhachHang", "KhachHang")
                         .WithMany("KhachHangAddresses")
-                        .HasForeignKey("KhachHangId")
+                        .HasForeignKey("IdKhachHang")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_ShippingAddresses_KhachHangs_KhachHangId");
@@ -1065,7 +1108,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                 {
                     b.HasOne("TraSuaApp.Domain.Entities.KhachHang", "KhachHang")
                         .WithMany("KhachHangPhones")
-                        .HasForeignKey("KhachHangId")
+                        .HasForeignKey("IdKhachHang")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_CustomerPhoneNumbers_KhachHangs_KhachHangId");
@@ -1133,12 +1176,12 @@ namespace TraSuaApp.Infrastructure.Migrations
 
             modelBuilder.Entity("TraSuaApp.Domain.Entities.SanPham", b =>
                 {
-                    b.HasOne("TraSuaApp.Domain.Entities.NhomSanPham", "IdNhomNavigation")
+                    b.HasOne("TraSuaApp.Domain.Entities.NhomSanPham", "IdNhomSanPhamNavigation")
                         .WithMany("SanPhams")
-                        .HasForeignKey("IdNhom")
+                        .HasForeignKey("IdNhomSanPham")
                         .HasConstraintName("FK_SanPhams_NhomSanPhams");
 
-                    b.Navigation("IdNhomNavigation");
+                    b.Navigation("IdNhomSanPhamNavigation");
                 });
 
             modelBuilder.Entity("TraSuaApp.Domain.Entities.SanPhamBienThe", b =>

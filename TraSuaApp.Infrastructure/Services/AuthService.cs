@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Infrastructure.Data;
-using TraSuaApp.Infrastructure.Services;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
+namespace TraSuaApp.Infrastructure.Services;
 
 public class AuthService : IAuthService
 {

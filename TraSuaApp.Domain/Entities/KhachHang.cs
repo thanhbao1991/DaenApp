@@ -1,10 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace TraSuaApp.Domain.Entities;
+﻿namespace TraSuaApp.Domain.Entities;
 
 public partial class KhachHang
 {
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastModified { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+
     public Guid Id { get; set; }
 
     public string Ten { get; set; } = null!;

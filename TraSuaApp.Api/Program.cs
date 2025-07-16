@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using TraSuaApp.Api.Hubs;
 using TraSuaApp.Api.Middleware;
 using TraSuaApp.Infrastructure;
 using TraSuaApp.Infrastructure.Data;
@@ -17,8 +18,8 @@ builder.Services.AddControllers()
     });
 
 // 🟟 Add Swagger
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+//builder.Services.AddEndpointsApiExplorer();
+//builder.Services.AddSwaggerGen();
 
 // 🟟 Add DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -51,16 +52,17 @@ builder.Services.AddAuthentication(opt =>
 });
 
 builder.Services.AddAuthorization();
-
+builder.Services.AddSignalR();
 var app = builder.Build();
+app.MapHub<SignalRHub>("/hub/entity");
 app.UseMiddleware<LogMiddleware>(); // 🟟 Gọi Middleware tại đây
 
 // 🟟 Swagger for development
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment())
+//{
+//    app.UseSwagger();
+//    app.UseSwaggerUI();
+//}
 
 // 🟟 Middleware pipeline
 app.UseRouting();

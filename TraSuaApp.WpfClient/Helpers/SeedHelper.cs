@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Domain.Entities;
-using TraSuaApp.Infrastructure.Data;
+﻿using TraSuaApp.Infrastructure.Data;
 
 namespace TraSuaApp.WpfClient.Helpers
 {
@@ -21,15 +19,14 @@ namespace TraSuaApp.WpfClient.Helpers
 
             foreach (var (idOld, ten) in danhSachCu)
             {
-                if (!await context.NhomSanPhams.AnyAsync(x => x.IdOld == idOld))
-                {
-                    context.NhomSanPhams.Add(new NhomSanPham
-                    {
-                        Id = Guid.NewGuid(),
-                        IdOld = idOld,
-                        Ten = ten
-                    });
-                }
+                //if (!await context.NhomSanPhams.AnyAsync(x => x.IdOld == idOld))
+                //{
+                //    context.NhomSanPhams.Add(new NhomSanPham
+                //    {
+                //        Id = Guid.NewGuid(),
+                //        Ten = ten
+                //    });
+                //}
             }
 
             await context.SaveChangesAsync();

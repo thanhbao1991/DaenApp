@@ -1,84 +1,97 @@
-﻿using System.Net.Http;
-using System.Net.Http.Json;
-using System.Windows;
+﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Helpers;
+using TraSuaApp.WpfClient.Apis;
+using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.Views
 {
     public partial class NhomSanPhamEdit : Window
     {
-        public NhomSanPhamDto Data { get; private set; }
-        private readonly bool _isEdit;
-        private readonly WpfErrorHandler _errorHandler;
+        public NhomSanPhamDto Model { get; set; } = new();
+        private readonly INhomSanPhamApi _api;
+        string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham".ToLower()];
 
         public NhomSanPhamEdit(NhomSanPhamDto? dto = null)
         {
             InitializeComponent();
-            _errorHandler = new WpfErrorHandler(ErrorTextBlock);
-            _isEdit = dto != null;
-            Data = dto ?? new NhomSanPhamDto();
-
-            LoadForm();
             this.KeyDown += Window_KeyDown;
-        }
+            this.Title = _friendlyName;
+            TieuDeTextBlock.Text = _friendlyName;
 
-        private void LoadForm()
-        {
-            TenTextBox.Text = Data.Ten;
+
+            _api = new NhomSanPhamApi();
+
+            if (dto != null)
+            {
+                Model = dto;
+                TenTextBox.Text = dto.Ten;
+            }
+            else
+            {
+                TenTextBox.Focus();
+            }
+
+            if (Model.IsDeleted)
+            {
+                TenTextBox.IsEnabled = false;
+                SaveButton.Content = "Khôi phục";
+            }
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            _errorHandler.Clear();
-            SaveButton.IsEnabled = false;
-            Mouse.OverrideCursor = Cursors.Wait;
+            ErrorTextBlock.Text = "";
 
-            try
+            Model.Ten = TenTextBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(Model.Ten))
             {
-                if (string.IsNullOrWhiteSpace(TenTextBox.Text))
-                    throw new Exception("Tên nhóm là bắt buộc.");
-
-                Data.Ten = TenTextBox.Text.Trim();
-
-                HttpResponseMessage response = _isEdit
-                    ? await ApiClient.PutAsync($"/api/nhomsanpham/{Data.Id}", Data)
-                    : await ApiClient.PostAsync("/api/nhomsanpham", Data);
-
-                var result = await response.Content.ReadFromJsonAsync<Result<NhomSanPhamDto>>();
-                if (result?.IsSuccess == true)
-                {
-                    DialogResult = true;
-                }
-                else
-                {
-                    throw new Exception(result?.Message ?? "Lưu nhóm sản phẩm thất bại.");
-                }
+                ErrorTextBlock.Text = $"Tên {_friendlyName} không được để trống.";
+                TenTextBox.Focus();
+                return;
             }
-            catch (Exception ex)
+
+            Result<NhomSanPhamDto> result;
+            if (Model.Id == Guid.Empty)
+                result = await _api.CreateAsync(Model);
+            else if (Model.IsDeleted)
+                result = await _api.RestoreAsync(Model.Id);
+            else
+                result = await _api.UpdateAsync(Model.Id, Model);
+            if (!result.IsSuccess)
             {
-                _errorHandler.Handle(ex, "Lưu nhóm sản phẩm");
+                ErrorTextBlock.Text = result.Message;
+                return;
             }
-            finally
-            {
-                SaveButton.IsEnabled = true;
-                Mouse.OverrideCursor = null;
-            }
+
+            DialogResult = true;
+            Close();
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            DialogResult = false;
-        }
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.Escape)
+            {
+                CloseButton_Click(null!, null!);
+                return;
+            }
+
             if (e.Key == Key.Enter)
-                SaveButton_Click(SaveButton, new RoutedEventArgs());
-            else if (e.Key == Key.Escape)
-                DialogResult = false;
+            {
+                if (Keyboard.FocusedElement is Button) return;
+
+                var request = new TraversalRequest(FocusNavigationDirection.Next);
+                if (Keyboard.FocusedElement is UIElement element)
+                {
+                    element.MoveFocus(request);
+                    e.Handled = true;
+                }
+            }
         }
     }
 }

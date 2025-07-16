@@ -24,11 +24,11 @@ public class JwtTokenService
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
-        {
-            new Claim(ClaimTypes.Name, user.TenDangNhap),
-            new Claim("Id", user.Id.ToString()),
-            new Claim(ClaimTypes.Role, user.VaiTro ?? "NhanVien")
-        };
+     {
+    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), // ✅ Thêm dòng này
+    new Claim(ClaimTypes.Name, user.TenDangNhap),
+    new Claim(ClaimTypes.Role, user.VaiTro ?? "NhanVien")
+};
 
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],

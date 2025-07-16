@@ -59,6 +59,7 @@ namespace TraSuaApp.Shared.Helpers
                     (!string.IsNullOrEmpty(x.VietTat) && NormalizeText(x.VietTat).Contains(NormalizeText(keyword)))
             ).ToList();
         }
+
         public static List<TaiKhoanDto> FilterTaiKhoans(List<TaiKhoanDto> allAccounts, string keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword))
