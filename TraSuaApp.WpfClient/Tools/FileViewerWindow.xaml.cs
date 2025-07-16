@@ -1,18 +1,16 @@
 ﻿using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace TraSuaApp.WpfClient.Views
 {
     public partial class FileViewerWindow : Window
     {
         private List<FileInfo> allFiles = new();
-
-        private readonly string webhookUrl = "https://discord.com/api/webhooks/1385632148387533011/MmRNpkKCoslZwNO2F9uJd_ZCjiaSvXMKeIpQlDP7gpDBwk1HZt1g2nonmEUiOVITaK0H";
 
         public FileViewerWindow()
         {
@@ -23,121 +21,135 @@ namespace TraSuaApp.WpfClient.Views
         private void LoadFiles()
         {
             string projectRoot = @"D:\New folder";
-            string[] extensions = [".cs", ".xaml"];
-
             if (!Directory.Exists(projectRoot))
             {
-                MessageBox.Show("Không tìm thấy thư mục: " + projectRoot);
+                MessageBox.Show("Thư mục không tồn tại.");
                 return;
             }
 
-            allFiles = Directory.GetFiles(projectRoot, "*.*", SearchOption.AllDirectories)
-                .Where(f =>
-                {
-                    string ext = Path.GetExtension(f);
-                    string fileName = Path.GetFileName(f).ToLower();
-
-                    if (!extensions.Contains(ext, StringComparer.OrdinalIgnoreCase))
-                        return false;
-
-                    if (fileName.EndsWith(".g.cs") ||
-                        fileName.EndsWith(".g.i.cs") ||
-                        fileName.Contains("copy") ||
-                        fileName.Contains("_"))
-                        return false;
-
-                    return true;
-                })
+            var files = Directory.GetFiles(projectRoot, "*.*", SearchOption.AllDirectories)
+                .Where(f => f.EndsWith(".cs") || f.EndsWith(".xaml"))
                 .Select(f => new FileInfo(f))
                 .ToList();
 
-            lstFiles.ItemsSource = allFiles;
+            allFiles = files;
+            FilterFiles();
         }
 
-        private void txtFilter_TextChanged(object sender, TextChangedEventArgs e)
+        private void FilterFiles()
         {
-            string keyword = txtFilter.Text.Trim().ToLower();
-            string keyword2 = txtFilter2.Text.Trim().ToLower();
-
-            lstFiles.ItemsSource = allFiles
-                .Where(f =>
-                f.Name.ToLower().Contains(keyword)
-                ||
-                f.Name.ToLower().Contains(keyword2)
-
-                )
+            var keywords = txtSearch.Text
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Select(k => k.ToLowerInvariant())
                 .ToList();
+
+            var filtered = allFiles
+                .Where(f => keywords.Count == 0 || keywords.Any(k => f.Name.ToLowerInvariant().Contains(k)))
+                .ToList();
+
+            lstFiles.ItemsSource = filtered;
         }
 
-        private async void btnCopyAndSend_Click(object sender, RoutedEventArgs e)
+        private void txtSearch_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (txt.Text.Length > 0)
-            {
-                await SendToDiscordSmart(txt.Text);
-                txt.Text = "";
-            }
-            else
-            {
-                var selected = lstFiles.SelectedItems.Cast<FileInfo>().ToList();
-
-                if (selected.Count == 0)
-                {
-                    MessageBox.Show("Vui lòng chọn ít nhất một file.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                try
-                {
-                    var combined = string.Join("\n\n", selected.Select(f =>
-                    {
-                        string content = File.ReadAllText(f.FullName);
-                        return $"----- {f.Name} -----\n{content}";
-                    }));
-                    //Clipboard.SetText(combined);
-
-                    // ✅ Gửi lên Discord
-                    await SendToDiscordSmart(combined);
-
-                    //MessageBox.Show("✅ Đã copy vào clipboard và gửi lên Discord.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("❌ Lỗi khi thực hiện: " + ex.Message, "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+            FilterFiles();
         }
-        private async Task SendToDiscordSmart(string message)
-        {
-            using HttpClient client = new();
 
-            if (message.Length < 1900)
+        private void btnReload_Click(object sender, RoutedEventArgs e)
+        {
+            LoadFiles();
+        }
+
+        private void btnExit_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void btnCloneWithReplace_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = lstFiles.SelectedItems.Cast<FileInfo>().ToList();
+            if (selected.Count == 0)
             {
-                var payload = new { content = message };
+                MessageBox.Show("Vui lòng chọn ít nhất một file.");
+                return;
+            }
+
+            string fromText = txtFrom.Text.Trim();
+            string toText = txtTo.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(fromText) || string.IsNullOrWhiteSpace(toText))
+            {
+                MessageBox.Show("Vui lòng nhập cả 'Từ gốc' và 'Thay bằng'.");
+                return;
+            }
+
+            foreach (var file in selected)
+            {
+                string oldContent = File.ReadAllText(file.FullName);
+                string oldName = file.Name;
+
+                string newFileName = oldName.Replace(fromText, toText);
+                string newContent = oldContent.Replace(fromText, toText);
+                string newPath = Path.Combine(file.DirectoryName!, newFileName);
+
+                File.WriteAllText(newPath, newContent, Encoding.UTF8);
+            }
+
+            MessageBox.Show("✅ Đã tạo bản sao với tên mới!", "Hoàn tất", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private async void btnSendToDiscord_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = lstFiles.SelectedItems.Cast<FileInfo>().ToList();
+            if (selected.Count == 0)
+            {
+                MessageBox.Show("Chọn ít nhất 1 file để gửi.");
+                return;
+            }
+
+            string webhookUrl =
+        "https://discord.com/api/webhooks/1385632148387533011/MmRNpkKCoslZwNO2F9uJd_ZCjiaSvXMKeIpQlDP7gpDBwk1HZt1g2nonmEUiOVITaK0H";
+            string combined = "";
+            foreach (var file in selected)
+            {
+                string content = File.ReadAllText(file.FullName);
+                string fileName = file.Name;
+
+                combined += $"🟟 `{fileName}`\n";
+                combined += "```csharp\n" + content.Trim() + "\n```\n\n";
+            }
+
+            using var client = new HttpClient();
+
+            if (combined.Length < 1900)
+            {
+                var payload = new
+                {
+                    content = combined
+                };
+
                 var json = JsonSerializer.Serialize(payload);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-                await client.PostAsync(webhookUrl, content);
+                var response = await client.PostAsync(webhookUrl,
+                    new StringContent(json, Encoding.UTF8, "application/json"));
+
+                if (!response.IsSuccessStatusCode)
+                    MessageBox.Show("❌ Gửi thất bại!");
             }
             else
             {
-                var fileBytes = Encoding.UTF8.GetBytes(message);
-                var fileContent = new ByteArrayContent(fileBytes);
-                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain");
+                var contentToSend = new MultipartFormDataContent();
+                var bytes = Encoding.UTF8.GetBytes(combined);
+                var fileContent = new ByteArrayContent(bytes);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+                contentToSend.Add(fileContent, "file", "AllFiles.txt");
 
-                using var form = new MultipartFormDataContent();
-                form.Add(fileContent, "file", "code.txt");
+                var response = await client.PostAsync(webhookUrl, contentToSend);
 
-                await client.PostAsync(webhookUrl, form);
+                if (!response.IsSuccessStatusCode)
+                    MessageBox.Show("❌ Gửi file thất bại!");
             }
-        }
 
-        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.C)
-            {
-                // Hành động khi Ctrl + C được nhấn
-                btnCopyAndSend_Click(null!, null!);
-                e.Handled = true; // Ngăn không cho hệ thống xử lý thêm
-            }
+            //MessageBox.Show("✅ Đã gửi toàn bộ nội dung lên Discord!");
         }
     }
 }

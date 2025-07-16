@@ -37,9 +37,9 @@ namespace TraSuaApp.WpfClient
                 new RoutedEventHandler(PasswordBox_SelectAll));
 
             base.OnStartup(e);
-            //FileViewerWindow a = new FileViewerWindow();
-            //a.Show();
-            //return;
+            FileViewerWindow a = new FileViewerWindow();
+            a.Show();
+            return;
             ApiClient.OnTokenExpired += () =>
             {
                 Current.Dispatcher.Invoke(() =>

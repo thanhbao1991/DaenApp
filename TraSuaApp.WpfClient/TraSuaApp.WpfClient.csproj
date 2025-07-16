@@ -21,9 +21,6 @@
     <Compile Update="Tools\FileViewerWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Tools\CodeGeneratorWindow.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Update="Views\KhachHangList.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
