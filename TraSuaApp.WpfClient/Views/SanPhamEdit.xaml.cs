@@ -58,7 +58,7 @@ namespace TraSuaApp.WpfClient.Views
         {
             try
             {
-                var response = await ApiClient.GetAsync("/api/nhomsanpham");
+                var response = await ApiClient.GetAsync("/api/NhomSanPham");
                 if (response.IsSuccessStatusCode)
                 {
                     var result = await response.Content.ReadFromJsonAsync<Result<List<NhomSanPhamDto>>>();

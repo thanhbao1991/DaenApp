@@ -1,145 +1,126 @@
-﻿using System.Net.Http;
-using System.Net.Http.Json;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Helpers;
+using TraSuaApp.WpfClient.Apis;
+using TraSuaApp.WpfClient.Models;
+using TraSuaApp.WpfClient.Services;
 
-namespace TraSuaApp.WpfClient.Views;
-
-public partial class ToppingEdit : Window
+namespace TraSuaApp.WpfClient.Views
 {
-    public ToppingDto Data { get; private set; }
-    private readonly bool _isEdit;
-    private readonly WpfErrorHandler _errorHandler;
-    private List<NhomSanPhamCheckItem> _bindingList = new();
-
-    public ToppingEdit(ToppingDto? dto = null)
+    public partial class ToppingEdit : Window
     {
-        InitializeComponent();
-        _errorHandler = new WpfErrorHandler(ErrorTextBlock);
-        _isEdit = dto != null;
-        Data = dto ?? new ToppingDto();
-        _ = LoadFormAsync();
-    }
+        public ToppingDto Model { get; set; } = new();
+        private readonly IToppingApi _api;
+        private readonly string _friendlyName = TuDien._tableFriendlyNames["Topping"];
+        private List<NhomSanPhamCheckItem> _bindingList = new();
 
-    private async Task LoadFormAsync()
-    {
-        TenTextBox.Text = Data.Ten;
-
-        try
+        public ToppingEdit(ToppingDto? dto = null)
         {
-            var res = await ApiClient.GetAsync("/api/nhomsanpham");
-            if (!res.IsSuccessStatusCode)
+            InitializeComponent();
+            this.KeyDown += Window_KeyDown;
+            this.Title = _friendlyName;
+            TieuDeTextBlock.Text = _friendlyName;
+
+            _api = new ToppingApi();
+
+            if (dto != null)
             {
-                var msg = await res.Content.ReadAsStringAsync();
-                throw new Exception($"API lỗi {(int)res.StatusCode}: {msg}");
+                Model = dto;
+                TenTextBox.Text = dto.Ten;
+            }
+            else
+            {
+                TenTextBox.Focus();
             }
 
-            var result = await res.Content.ReadFromJsonAsync<Result<List<NhomSanPhamDto>>>();
-            if (result?.IsSuccess != true || result.Data == null)
-                throw new Exception(result?.Message ?? "Không thể tải nhóm sản phẩm.");
-
-            var ds = result.Data;
-
-            _bindingList = ds.Select(x => new NhomSanPhamCheckItem
+            if (Model.IsDeleted)
             {
-                Id = x.Id,
-                Ten = x.Ten,
-                IsChecked = Data.IdNhomSanPham?.Contains(x.Id) == true
+                TenTextBox.IsEnabled = false;
+                SaveButton.Content = "Khôi phục";
+            }
+
+            LoadGroupsFromProvider();
+        }
+
+        private void LoadGroupsFromProvider()
+        {
+            // Lấy danh sách nhóm sản phẩm đã được nạp sẵn
+            var groups = AppProviders.NhomSanPhams.Items;
+            _bindingList = groups.Select(g => new NhomSanPhamCheckItem
+            {
+                Id = g.Id,
+                Ten = g.Ten,
+                IsChecked = Model.IdNhomSanPhams?.Contains(g.Id) == true
             }).ToList();
 
             NhomSanPhamListBox.ItemsSource = _bindingList;
         }
-        catch (Exception ex)
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            _errorHandler.Handle(ex, "Tải nhóm sản phẩm");
-        }
-    }
+            ErrorTextBlock.Text = "";
 
-    private async void SaveButton_Click(object sender, RoutedEventArgs e)
-    {
-        _errorHandler.Clear();
-        SaveButton.IsEnabled = false;
-        Mouse.OverrideCursor = Cursors.Wait;
+            Model.Ten = TenTextBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(Model.Ten))
+            {
+                ErrorTextBlock.Text = $"Tên {_friendlyName} không được để trống.";
+                TenTextBox.Focus();
+                return;
+            }
 
-        try
-        {
-            if (string.IsNullOrWhiteSpace(TenTextBox.Text))
-                throw new Exception("Tên topping là bắt buộc.");
-
-            Data.Ten = TenTextBox.Text.Trim();
-            Data.IdNhomSanPham = _bindingList
+            // Cập nhật danh sách IdNhomSanPhams từ checkbox
+            Model.IdNhomSanPhams = _bindingList
                 .Where(x => x.IsChecked)
                 .Select(x => x.Id)
                 .ToList();
 
-            HttpResponseMessage response = _isEdit
-                ? await ApiClient.PutAsync($"/api/topping/{Data.Id}", Data)
-                : await ApiClient.PostAsync("/api/topping", Data);
+            Result<ToppingDto> result;
+            if (Model.Id == Guid.Empty)
+                result = await _api.CreateAsync(Model);
+            else if (Model.IsDeleted)
+                result = await _api.RestoreAsync(Model.Id);
+            else
+                result = await _api.UpdateAsync(Model.Id, Model);
 
-            if (!response.IsSuccessStatusCode)
+            if (!result.IsSuccess)
             {
-                var msg = await response.Content.ReadAsStringAsync();
-                throw new Exception($"{msg}");
+                ErrorTextBlock.Text = result.Message;
+                return;
             }
-
-            var result = await response.Content.ReadFromJsonAsync<Result<ToppingDto>>();
-            if (result?.IsSuccess != true)
-                throw new Exception(result?.Message ?? "Lưu topping thất bại.");
 
             DialogResult = true;
+            Close();
         }
-        catch (Exception ex)
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            _errorHandler.Handle(ex, "Lưu topping");
-        }
-        finally
-        {
-            SaveButton.IsEnabled = true;
-            Mouse.OverrideCursor = null;
-        }
-    }
-
-    private void CloseButton_Click(object sender, RoutedEventArgs e)
-    {
-        DialogResult = false;
-    }
-
-    private void Window_KeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-            SaveButton_Click(SaveButton, new RoutedEventArgs());
-        else if (e.Key == Key.Escape)
-            DialogResult = false;
-    }
-
-    private void NhomSanPhamListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        // Ngăn việc chọn dòng
-        NhomSanPhamListBox.SelectedIndex = -1;
-    }
-
-    private void NhomSanPhamListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        if (e.OriginalSource is FrameworkElement element && element.DataContext is object item)
-        {
-            var type = item.GetType();
-            var prop = type.GetProperty("IsChecked");
-            if (prop != null && prop.PropertyType == typeof(bool))
+            if (e.Key == Key.Escape)
             {
-                bool current = (bool)(prop.GetValue(item) ?? false);
-                prop.SetValue(item, !current);
+                CloseButton_Click(null!, null!);
+                return;
+            }
+
+            if (e.Key == Key.Enter)
+            {
+                if (Keyboard.FocusedElement is Button) return;
+
+                var request = new TraversalRequest(FocusNavigationDirection.Next);
+                if (Keyboard.FocusedElement is UIElement element)
+                {
+                    element.MoveFocus(request);
+                    e.Handled = true;
+                }
             }
         }
-    }
-}
 
-public class NhomSanPhamCheckItem
-{
-    public Guid Id { get; set; }
-    public string Ten { get; set; } = string.Empty;
-    public bool IsChecked { get; set; }
+        // Giữ event handler để tránh cảnh báo XAML
+        private void NhomSanPhamListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+        }
+    }
 }

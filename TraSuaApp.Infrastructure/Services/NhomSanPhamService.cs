@@ -11,7 +11,7 @@ namespace TraSuaApp.Infrastructure.Services;
 public class NhomSanPhamService : INhomSanPhamService
 {
     private readonly AppDbContext _context;
-    private readonly string _friendlyName = TuDien._tableFriendlyNames[("NhomSanPham").ToLower()];
+    private readonly string _friendlyName = TuDien._tableFriendlyNames[("NhomSanPham")];
 
     public NhomSanPhamService(AppDbContext context)
     {

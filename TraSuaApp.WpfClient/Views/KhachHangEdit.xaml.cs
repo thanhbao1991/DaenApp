@@ -14,7 +14,7 @@ namespace TraSuaApp.WpfClient.Views
     {
         public KhachHangDto Model { get; set; } = new();
         private readonly IKhachHangApi _api;
-        string _friendlyName = TuDien._tableFriendlyNames["KhachHang".ToLower()];
+        string _friendlyName = TuDien._tableFriendlyNames["KhachHang"];
 
         private ObservableCollection<KhachHangPhoneDto> _phones = new();
         private ObservableCollection<KhachHangAddressDto> _addresses = new();
@@ -425,6 +425,27 @@ namespace TraSuaApp.WpfClient.Views
         {
             if (e.Key == Key.Space)
                 e.Handled = true;
+            else
+                            if (e.Key == Key.Down)
+            {
+                if (PhoneListBox.SelectedIndex < PhoneListBox.Items.Count - 1)
+                {
+                    PhoneListBox.SelectedIndex++;
+                    PhoneListBox.ScrollIntoView(PhoneListBox.SelectedItem);
+                    e.Handled = true;
+                }
+            }
+            else
+            if (e.Key == Key.Up)
+            {
+                if (PhoneListBox.SelectedIndex > 0)
+                {
+                    PhoneListBox.SelectedIndex--;
+                    PhoneListBox.ScrollIntoView(PhoneListBox.SelectedItem);
+                    e.Handled = true;
+                }
+            }
+            PhoneTextBox.SelectAll();
         }
 
         private void PhoneTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
@@ -474,7 +495,28 @@ namespace TraSuaApp.WpfClient.Views
             }
         }
 
-
-
+        private void DiaChiTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Down)
+            {
+                if (DiaChiListBox.SelectedIndex < DiaChiListBox.Items.Count - 1)
+                {
+                    DiaChiListBox.SelectedIndex++;
+                    DiaChiListBox.ScrollIntoView(DiaChiListBox.SelectedItem);
+                    e.Handled = true;
+                }
+            }
+            else
+            if (e.Key == Key.Up)
+            {
+                if (DiaChiListBox.SelectedIndex > 0)
+                {
+                    DiaChiListBox.SelectedIndex--;
+                    DiaChiListBox.ScrollIntoView(DiaChiListBox.SelectedItem);
+                    e.Handled = true;
+                }
+            }
+            DiaChiTextBox.SelectAll();
+        }
     }
 }

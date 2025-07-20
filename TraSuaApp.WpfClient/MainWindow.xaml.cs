@@ -1,6 +1,8 @@
 ﻿using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using TraSuaApp.WpfClient.Apis;
+using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.Views
 {
@@ -78,5 +80,17 @@ namespace TraSuaApp.WpfClient.Views
         {
             this.Close();
         }
+        private IKhachHangApi _api;
+        private async void click1(object sender, RoutedEventArgs e)
+        {
+            _api = new KhachHangApi();
+            var oldConn =
+"Server=.;Database=DennCoffee;Trusted_Connection=True;TrustServerCertificate=True";
+
+            var importer = new KhachHangImporter(oldConn, _api);
+            await importer.ImportAsync();
+        }
+
+
     }
 }

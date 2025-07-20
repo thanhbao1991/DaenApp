@@ -68,8 +68,6 @@ public partial class SanPhamList : Window
                 .ThenBy(x => x.Ten)
                 .ToList();
 
-            foreach (var p in _allProducts)
-                p.TenNormalized = TextSearchHelper.NormalizeText(p.Ten);
 
             ApplySearch();
         }

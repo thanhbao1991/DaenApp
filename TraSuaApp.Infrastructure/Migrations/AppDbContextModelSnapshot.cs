@@ -344,17 +344,14 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<bool>("DuocNhanVoucher")
                         .HasColumnType("bit");
 
-                    b.Property<string>("GioiTinh")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModified")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("NgaySinh")
-                        .HasColumnType("datetime2");
+                    b.Property<int?>("OldId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Ten")
                         .IsRequired()

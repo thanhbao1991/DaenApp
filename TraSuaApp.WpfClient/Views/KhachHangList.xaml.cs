@@ -14,7 +14,7 @@ namespace TraSuaApp.WpfClient.Views
     {
         private readonly CollectionViewSource _viewSource = new();
         private readonly WpfErrorHandler _errorHandler = new();
-        string _friendlyName = TuDien._tableFriendlyNames["KhachHang".ToLower()];
+        string _friendlyName = TuDien._tableFriendlyNames["KhachHang"];
 
         public KhachHangList()
         {
@@ -37,7 +37,7 @@ namespace TraSuaApp.WpfClient.Views
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            throw new NotImplementedException();
+            //0throw new NotImplementedException();
         }
 
         private void ApplySearch()
@@ -68,9 +68,7 @@ namespace TraSuaApp.WpfClient.Views
             }
 
             bool match =
-                (!string.IsNullOrEmpty(item.TenNormalized) && item.TenNormalized.Contains(keyword)) ||
-                (!string.IsNullOrEmpty(item.DefaultPhone) && item.DefaultPhone.Contains(keyword)) ||
-                (!string.IsNullOrEmpty(item.DefaultAddressNormalized) && item.DefaultAddressNormalized.Contains(keyword));
+                (!string.IsNullOrEmpty(item.TimKiem) && item.TimKiem.Contains(keyword));
 
             e.Accepted = match;
         }

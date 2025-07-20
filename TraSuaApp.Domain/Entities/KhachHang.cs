@@ -1,20 +1,10 @@
 ﻿namespace TraSuaApp.Domain.Entities;
 
-public partial class KhachHang
+public partial class KhachHang : EntityBase
 {
-
-    public DateTime CreatedAt { get; set; }
-    public DateTime? LastModified { get; set; }
-    public bool IsDeleted { get; set; }
-    public DateTime? DeletedAt { get; set; }
-
-    public Guid Id { get; set; }
+    public int? OldId { get; set; }
 
     public string Ten { get; set; } = null!;
-
-    public DateTime? NgaySinh { get; set; }
-
-    public string? GioiTinh { get; set; }
 
     public bool DuocNhanVoucher { get; set; }
 

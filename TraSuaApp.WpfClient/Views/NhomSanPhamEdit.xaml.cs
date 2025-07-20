@@ -13,7 +13,7 @@ namespace TraSuaApp.WpfClient.Views
     {
         public NhomSanPhamDto Model { get; set; } = new();
         private readonly INhomSanPhamApi _api;
-        string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham".ToLower()];
+        string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham"];
 
         public NhomSanPhamEdit(NhomSanPhamDto? dto = null)
         {

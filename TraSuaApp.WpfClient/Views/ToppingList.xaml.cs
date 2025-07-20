@@ -1,225 +1,151 @@
-﻿using System.Net.Http.Json;
+﻿using System.ComponentModel;
+using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
-namespace TraSuaApp.WpfClient.Views;
-
-public partial class ToppingList : Window
+namespace TraSuaApp.WpfClient.Views
 {
-    private List<ToppingDto> _all = new();
-    private readonly WpfErrorHandler _errorHandler = new();
-
-    public ToppingList()
+    public partial class ToppingList : Window
     {
-        InitializeComponent();
-        _ = LoadAsync();
-        this.PreviewKeyDown += ToppingListWindow_PreviewKeyDown;
-    }
+        private readonly CollectionViewSource _viewSource = new();
+        private readonly WpfErrorHandler _errorHandler = new();
+        string _friendlyName = TuDien._tableFriendlyNames["Topping"];
 
-    private async Task OpenEditWindowAsync(ToppingDto? dto = null)
-    {
-        var window = new ToppingEdit(dto)
+        public ToppingList()
         {
-            Width = this.ActualWidth,
-            Height = this.ActualHeight
-        };
-        if (window.ShowDialog() == true)
-            await LoadAsync();
-    }
+            InitializeComponent();
 
-    private void ToppingListWindow_PreviewKeyDown(object sender, KeyEventArgs e)
-    {
-        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N)
-        {
-            AddButton_Click(null!, null!); e.Handled = true;
+            this.Title = _friendlyName;
+            TieuDeTextBlock.Text = _friendlyName;
+
+            _viewSource.Source = AppProviders.Toppings.Items;
+            _viewSource.Filter += ViewSource_Filter;
+            ToppingDataGrid.ItemsSource = _viewSource.View;
+
+            this.PreviewKeyDown += ToppingList_PreviewKeyDown;
+
+            AppProviders.Toppings.OnChanged += () => ApplySearch();
+
+            _ = AppProviders.Toppings.ReloadAsync();
         }
-        else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E)
-        {
-            EditButton_Click(null!, null!); e.Handled = true;
-        }
-        else if (e.Key == Key.Delete)
-        {
-            DeleteButton_Click(null!, null!); e.Handled = true;
-        }
-        else if (e.Key == Key.F5)
-        {
-            ReloadButton_Click(null!, null!); e.Handled = true;
-        }
-    }
 
-    private async void ReloadButton_Click(object sender, RoutedEventArgs e)
-    {
-        await LoadAsync();
-    }
-
-    private async Task LoadAsync()
-    {
-        try
+        private void ApplySearch()
         {
-            Mouse.OverrideCursor = Cursors.Wait;
+            _viewSource.View.Refresh();
 
-            var response = await ApiClient.GetAsync("/api/topping");
-            if (response.IsSuccessStatusCode)
+            _viewSource.View.SortDescriptions.Clear();
+            _viewSource.View.SortDescriptions.Add(new SortDescription(nameof(ToppingDto.LastModified), ListSortDirection.Descending));
+
+            var view = _viewSource.View.Cast<ToppingDto>().ToList();
+            for (int i = 0; i < view.Count; i++)
+                view[i].STT = i + 1;
+        }
+
+        private void ViewSource_Filter(object sender, FilterEventArgs e)
+        {
+            if (e.Item is not ToppingDto item)
             {
-                var result = await response.Content.ReadFromJsonAsync<Result<List<ToppingDto>>>();
-                if (result?.IsSuccess == true && result.Data != null)
-                {
-                    _all = result.Data.OrderBy(x => x.Ten).ToList();
-                    foreach (var x in _all)
-                        x.TenNormalized = TextSearchHelper.NormalizeText(x.Ten ?? "");
-                    ApplySearch();
-                }
-                else
-                {
-                    throw new Exception(result?.Message ?? "Không thể tải danh sách topping.");
-                }
+                e.Accepted = false;
+                return;
             }
-            else
+
+            var keyword = TextSearchHelper.NormalizeText(SearchTextBox.Text.Trim());
+            e.Accepted = string.IsNullOrEmpty(keyword) || (item.TimKiem?.Contains(keyword) ?? false);
+        }
+        private async void ReloadButton_Click(object sender, RoutedEventArgs e)
+        {
+            await AppProviders.Toppings.ReloadAsync();
+        }
+
+        private async void AddButton_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new ToppingEdit()
             {
-                var msg = await response.Content.ReadAsStringAsync();
-                throw new Exception($"{msg}");
-            }
+                Width = this.ActualWidth,
+                Height = this.ActualHeight
+            };
+            if (window.ShowDialog() == true)
+                await AppProviders.Toppings.ReloadAsync();
         }
-        catch (Exception ex)
+
+        private async void EditButton_Click(object sender, RoutedEventArgs e)
         {
-            _errorHandler.Handle(ex, "Load topping");
-        }
-        finally
-        {
-            Mouse.OverrideCursor = null;
-        }
-    }
-
-    private void ApplySearch()
-    {
-        var keyword = SearchTextBox.Text.Trim();
-        var filtered = TextSearchHelper.FilterByTen(_all, keyword, x => x.Ten);
-
-        for (int i = 0; i < filtered.Count; i++)
-            filtered[i].STT = i + 1;
-
-        ToppingDataGrid.ItemsSource = filtered;
-    }
-
-    private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        ApplySearch();
-    }
-
-    private void CloseButton_Click(object sender, RoutedEventArgs e)
-    {
-        Close();
-    }
-
-    private async void AddButton_Click(object sender, RoutedEventArgs e)
-    {
-        await OpenEditWindowAsync();
-    }
-
-    private async void EditButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (ToppingDataGrid.SelectedItem is not ToppingDto selected) return;
-
-        try
-        {
-            var response = await ApiClient.GetAsync($"/api/topping/{selected.Id}");
-            if (response.IsSuccessStatusCode)
+            if (ToppingDataGrid.SelectedItem is not ToppingDto selected)
             {
-                var result = await response.Content.ReadFromJsonAsync<Result<ToppingDto>>();
-                if (result?.IsSuccess == true && result.Data != null)
-                {
-                    await OpenEditWindowAsync(result.Data);
-                }
-                else
-                {
-                    throw new Exception(result?.Message ?? "Không đọc được topping.");
-                }
+                MessageBox.Show("Vui lòng chọn dòng cần sửa.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
             }
-            else
+
+
+            var window = new ToppingEdit(selected)
             {
-                var msg = await response.Content.ReadAsStringAsync();
-                throw new Exception($"{msg}");
-            }
+                Width = this.ActualWidth,
+                Height = this.ActualHeight
+            };
+            if (window.ShowDialog() == true)
+                await AppProviders.Toppings.ReloadAsync();
         }
-        catch (Exception ex)
+
+        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            _errorHandler.Handle(ex, "Xem topping");
-        }
-    }
-
-    private async void DeleteButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (ToppingDataGrid.SelectedItem is not ToppingDto selected) return;
-
-        var confirm = MessageBox.Show(
-            $"Bạn có chắc chắn muốn xoá topping '{selected.Ten}'?",
-            "Xác nhận xoá",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-
-        if (confirm != MessageBoxResult.Yes) return;
-
-        try
-        {
-            Mouse.OverrideCursor = Cursors.Wait;
-
-            var response = await ApiClient.DeleteAsync($"/api/topping/{selected.Id}");
-            if (response.IsSuccessStatusCode)
+            if (ToppingDataGrid.SelectedItem is not ToppingDto selected)
             {
-                var result = await response.Content.ReadFromJsonAsync<Result<object>>();
-                if (result?.IsSuccess == true)
-                {
-                    await LoadAsync();
-                }
-                else
-                {
-                    throw new Exception(result?.Message ?? "Xoá topping thất bại.");
-                }
+                MessageBox.Show("Vui lòng chọn dòng cần xoá.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
             }
-            else
-            {
-                var msg = await response.Content.ReadAsStringAsync();
-                throw new Exception($"{msg}");
-            }
-        }
-        catch (Exception ex)
-        {
-            _errorHandler.Handle(ex, "Xoá topping");
-        }
-        finally
-        {
-            Mouse.OverrideCursor = null;
-        }
-    }
 
-    private async void ToppingDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        var row = ItemsControl.ContainerFromElement(ToppingDataGrid, e.OriginalSource as DependencyObject) as DataGridRow;
-        if (row == null) return;
+            var confirm = MessageBox.Show(
+                $"Bạn có chắc chắn muốn xoá {_friendlyName} '{selected.Ten}'?",
+                "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
-        if (row.Item is ToppingDto selected)
-        {
+            if (confirm != MessageBoxResult.Yes) return;
+
             try
             {
-                var response = await ApiClient.GetAsync($"/api/topping/{selected.Id}");
+                Mouse.OverrideCursor = Cursors.Wait;
+                var response = await ApiClient.DeleteAsync($"/api/Topping/{selected.Id}");
                 var result = await response.Content.ReadFromJsonAsync<Result<ToppingDto>>();
-                if (result?.IsSuccess == true && result.Data != null)
-                {
-                    await OpenEditWindowAsync(result.Data);
-                }
+                if (result?.IsSuccess == true)
+                    AppProviders.Toppings.Remove(selected.Id);
                 else
-                {
-                    throw new Exception(result?.Message ?? "Không đọc được topping.");
-                }
+                    throw new Exception(result?.Message ?? "Không thể xoá.");
             }
             catch (Exception ex)
             {
-                _errorHandler.Handle(ex, "Xem topping");
+                _errorHandler.Handle(ex, "Delete");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
             }
         }
+
+        private async void ToppingDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (ToppingDataGrid.SelectedItem is not ToppingDto selected) return;
+            var window = new ToppingEdit(selected);
+            if (window.ShowDialog() == true)
+                await AppProviders.Toppings.ReloadAsync();
+        }
+
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e) => ApplySearch();
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+        private void ToppingList_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N) { AddButton_Click(null!, null!); e.Handled = true; }
+            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E) { EditButton_Click(null!, null!); e.Handled = true; }
+            else if (e.Key == Key.Delete) { DeleteButton_Click(null!, null!); e.Handled = true; }
+            else if (e.Key == Key.F5) { ReloadButton_Click(null!, null!); e.Handled = true; }
+        }
+
+
     }
 }

@@ -1,14 +1,7 @@
 ﻿namespace TraSuaApp.Domain.Entities;
 
-public partial class TaiKhoan
+public partial class TaiKhoan : EntityBase
 {
-
-    public DateTime CreatedAt { get; set; }
-    public DateTime? LastModified { get; set; }
-    public bool IsDeleted { get; set; }
-    public DateTime? DeletedAt { get; set; }
-
-    public Guid Id { get; set; }
 
     public string TenDangNhap { get; set; } = null!;
 

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TraSuaApp.Api.Hubs;
 using TraSuaApp.Api.Middleware;
+using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Infrastructure;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Infrastructure.Services;
@@ -17,9 +18,10 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
     });
 
-// 🟟 Add Swagger
-//builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<TraSuaApp.Api.Filters.ApiExceptionFilter>();
+});
 
 // 🟟 Add DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -29,6 +31,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddInfrastructureServices();
 builder.Services.AddScoped<JwtTokenService>();
+builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
 // 🟟 Add Authentication & JWT
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? "");
@@ -50,7 +53,6 @@ builder.Services.AddAuthentication(opt =>
         ClockSkew = TimeSpan.Zero
     };
 });
-
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
 var app = builder.Build();

@@ -25,7 +25,31 @@ namespace TraSuaApp.Shared.Helpers
                 .ToLowerInvariant()
                 .Replace("đ", "d");
         }
+        public static string GetShortName(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
 
+            string normalized = NormalizeText(input);
+            var words = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            var shortName = new StringBuilder();
+
+            foreach (var word in words)
+            {
+                if (char.IsDigit(word[0]))
+                {
+                    // Nếu là số đầu tiên → giữ toàn bộ cụm số (vd: "02")
+                    shortName.Append(word.TakeWhile(char.IsDigit).ToArray());
+                }
+                else
+                {
+                    shortName.Append(word[0]); // Lấy chữ cái đầu
+                }
+            }
+
+            return shortName.ToString();
+        }
         public static string GetAcronym(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return "";

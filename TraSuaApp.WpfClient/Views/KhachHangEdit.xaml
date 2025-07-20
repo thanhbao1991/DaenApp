@@ -126,6 +126,7 @@
                             <TextBox
                                 x:Name="DiaChiTextBox"
                                 Width="200"
+                                PreviewKeyDown="DiaChiTextBox_PreviewKeyDown"
                                 TextChanged="DiaChiTextBox_TextChanged" />
                             <TextBlock
                                 x:Name="DiaChiModeTextBlock"

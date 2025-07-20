@@ -1,11 +1,11 @@
 namespace TraSuaApp.Shared.Dtos;
 
-public class ToppingDto
+public class ToppingDto : DtoBase
 {
-    public Guid Id { get; set; }
-    public string Ten { get; set; } = string.Empty;
+    public override string ApiRoute => "Topping";
+    public decimal Gia { get; set; }
+    public bool NgungBan { get; set; }
 
-    public int STT { get; set; }
-    public string? TenNormalized { get; set; }
-    public List<Guid> IdNhomSanPham { get; set; } = new();
+    public List<Guid> IdNhomSanPhams { get; set; } = new();
+
 }

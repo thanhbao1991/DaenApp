@@ -103,8 +103,13 @@ public partial class LogList : Window
     {
         if (LogDataGrid.SelectedItem is not LogDto selected) return;
 
-        string chiTiet = LogHelper.ChiTietLog(selected);
-        MessageBox.Show(chiTiet, "Chi tiết log");
+
+        var dlg = new LogDetailWindow(selected)
+        {
+            Height = this.Height,
+            Width = this.Width,
+        };
+        dlg.ShowDialog();
     }
 
     private void ReloadButton_Click(object sender, RoutedEventArgs e)

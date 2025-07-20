@@ -4,160 +4,160 @@ using System.Text.RegularExpressions;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 
-namespace TraSuaApp.Shared.Helpers;
-
-public static class LogHelper
+namespace TraSuaApp.Shared.Helpers
 {
-    public static string ChiTietLog(LogDto log)
+    public static class LogHelper
     {
-        var sb = new StringBuilder();
-
-        try
+        /// <summary>
+        /// Sinh phần chi tiết (before/after) của log, bỏ marker truncated, không ném exception.
+        /// </summary>
+        public static string ChiTietLog(LogDto log)
         {
-            var json = JsonDocument.Parse(log.ResponseBodyShort ?? "");
-            var root = json.RootElement;
+            var sb = new StringBuilder();
 
-            JsonElement beforeData = default;
-            JsonElement afterData = default;
+            // Lấy raw response, cắt marker nếu có
+            var raw = log.ResponseBodyShort ?? "";
+            const string truncMarker = "... [truncated]";
+            if (raw.EndsWith(truncMarker, StringComparison.Ordinal))
+                raw = raw.Substring(0, raw.Length - truncMarker.Length);
 
-            bool hasBefore = root.TryGetProperty("beforeData", out beforeData);
-            bool hasAfter = root.TryGetProperty("afterData", out afterData);
-
-            if (!hasBefore && !hasAfter)
+            try
             {
-                sb.AppendLine("⚠️ (không có hoặc không xác định)");
-                return sb.ToString();
-            }
+                // Parse JSON sau khi đã loại bỏ marker
+                using var json = JsonDocument.Parse(raw);
+                var root = json.RootElement;
 
-            // XÓA
-            if (hasBefore && (!hasAfter || afterData.ValueKind == JsonValueKind.Null))
-            {
-                sb.AppendLine("✘ Đã xoá bản ghi:");
-                foreach (var prop in beforeData.EnumerateObject())
+                bool hasBefore = root.TryGetProperty("beforeData", out var beforeData);
+                bool hasAfter = root.TryGetProperty("afterData", out var afterData);
+
+                if (!hasBefore && !hasAfter)
                 {
-                    sb.AppendLine($"  ▸ {prop.Name}: {FormatValue(prop.Value)}");
+                    sb.AppendLine("⚠️ (không có dữ liệu trước/sau)");
+                    return sb.ToString();
                 }
-                return sb.ToString();
-            }
 
-            // THÊM (đã sửa điều kiện)
-            if ((!hasBefore || beforeData.ValueKind == JsonValueKind.Null)
-                && hasAfter && afterData.ValueKind != JsonValueKind.Null)
-            {
-                sb.AppendLine("+ Đã thêm bản ghi:");
-                foreach (var prop in afterData.EnumerateObject())
+                // XÓA
+                if (hasBefore && (!hasAfter || afterData.ValueKind == JsonValueKind.Null))
                 {
-                    sb.AppendLine($"  ▸ {prop.Name}: {FormatValue(prop.Value)}");
+                    sb.AppendLine("✘ Đã xoá bản ghi:");
+                    foreach (var prop in beforeData.EnumerateObject())
+                        sb.AppendLine($"  ▸ {prop.Name}: {FormatValue(prop.Value)}");
+                    return sb.ToString();
                 }
-                return sb.ToString();
-            }
 
-            // SỬA
-            if (hasBefore && hasAfter && beforeData.ValueKind != JsonValueKind.Null && afterData.ValueKind != JsonValueKind.Null)
-            {
-                sb.AppendLine("✓ Cập nhật:");
-                bool coThayDoi = false;
-
-                foreach (var prop in afterData.EnumerateObject())
+                // THÊM
+                if ((!hasBefore || beforeData.ValueKind == JsonValueKind.Null)
+                    && hasAfter && afterData.ValueKind != JsonValueKind.Null)
                 {
-                    if (beforeData.TryGetProperty(prop.Name, out var beforeProp))
+                    sb.AppendLine("+ Đã thêm bản ghi:");
+                    foreach (var prop in afterData.EnumerateObject())
+                        sb.AppendLine($"  ▸ {prop.Name}: {FormatValue(prop.Value)}");
+                    return sb.ToString();
+                }
+
+                // SỬA
+                if (hasBefore && hasAfter
+                    && beforeData.ValueKind != JsonValueKind.Null
+                    && afterData.ValueKind != JsonValueKind.Null)
+                {
+                    sb.AppendLine("✓ Cập nhật:");
+                    bool changed = false;
+
+                    foreach (var prop in afterData.EnumerateObject())
                     {
-                        if (!JsonElement.DeepEquals(beforeProp, prop.Value))
+                        if (beforeData.TryGetProperty(prop.Name, out var beforeProp)
+                            && !JsonElement.DeepEquals(beforeProp, prop.Value))
                         {
-                            sb.AppendLine($"  ▸ {prop.Name}: \"{FormatValue(beforeProp)}\" → \"{FormatValue(prop.Value)}\"");
-                            coThayDoi = true;
+                            sb.AppendLine(
+                              $"  ▸ {prop.Name}: “{FormatValue(beforeProp)}” → “{FormatValue(prop.Value)}”");
+                            changed = true;
                         }
                     }
+
+                    if (!changed)
+                        sb.AppendLine("⚠️ Không có thay đổi");
+
+                    return sb.ToString();
                 }
 
-                if (!coThayDoi)
-                {
-                    sb.AppendLine("⚠️ Không có thay đổi nào");
-                }
-
-                return sb.ToString();
+                sb.AppendLine("⚠️ Không xác định thao tác");
+            }
+            catch (JsonException)
+            {
+                // Nếu parse lỗi, in raw để debug
+                sb.Clear();
+                sb.AppendLine("❌ Không parse được JSON, in raw:");
+                sb.AppendLine(raw);
             }
 
-            sb.AppendLine("⚠️ Không rõ loại thao tác");
-        }
-        catch (Exception ex)
-        {
-            sb.AppendLine($"❌ Lỗi phân tích JSON: {ex.Message}");
+            return sb.ToString();
         }
 
-        return sb.ToString();
-    }
-    private static string FormatValue(JsonElement value)
-    {
-        return value.ValueKind switch
+        /// <summary>
+        /// Tạo câu tóm tắt ngắn gọn (MessageBox-friendly).
+        /// Ví dụ: "Nguyễn Văn A đã cập nhật Topping: 33334"
+        /// </summary>
+        public static string RutGonLog(LogDto log)
         {
-            JsonValueKind.String => value.GetString() ?? "null",
-            JsonValueKind.Number => value.ToString(),
+            var entityName = GetTenDoiTuong(log.Path);
+            var mainValue = LayTenChinh(log.ResponseBodyShort ?? log.RequestBodyShort);
+            var action = log.Method?.ToUpper() switch
+            {
+                "POST" => "thêm",
+                "PUT" => "cập nhật",
+                "DELETE" => "xoá",
+                _ => "thao tác"
+            };
+
+            var result = $"{log.UserName} đã {action} {entityName.ToLower()}";
+            if (!string.IsNullOrEmpty(mainValue))
+                result += $": {mainValue}";
+            return result;
+        }
+
+        private static string GetTenDoiTuong(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return "(không rõ)";
+            var m = Regex.Match(path.ToLower(), @"\/?api\/?([a-z0-9]+)");
+            if (!m.Success) return "(không rõ)";
+            var key = m.Groups[1].Value;
+            return TuDien._tableFriendlyNames.TryGetValue(key, out var n) ? n : key;
+        }
+
+        private static string? LayTenChinh(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("afterData", out var after) && after.ValueKind == JsonValueKind.Object)
+                    return LayTenTuObject(after);
+                if (root.TryGetProperty("beforeData", out var before) && before.ValueKind == JsonValueKind.Object)
+                    return LayTenTuObject(before);
+                return LayTenTuObject(root);
+            }
+            catch { return null; }
+        }
+
+        private static string? LayTenTuObject(JsonElement el)
+        {
+            foreach (var field in new[] { "ten", "title", "name" })
+            {
+                if (el.TryGetProperty(field, out var v) && v.ValueKind == JsonValueKind.String)
+                    return v.GetString();
+            }
+            return null;
+        }
+
+        private static string FormatValue(JsonElement v) => v.ValueKind switch
+        {
+            JsonValueKind.String => v.GetString() ?? "",
+            JsonValueKind.Number => v.ToString(),
             JsonValueKind.True => "true",
             JsonValueKind.False => "false",
             JsonValueKind.Null => "null",
-            _ => value.ToString()
+            _ => v.ToString()
         };
     }
-
-    public static string RutGonLog(LogDto log)
-    {
-        string doiTuong = GetTenDoiTuong(log.Path);
-        string? tenChinh = LayTenChinh(log.ResponseBodyShort ?? log.RequestBodyShort);
-        string hanhDong = log.Method?.ToUpper() switch
-        {
-            "POST" => "thêm",
-            "PUT" => "cập nhật",
-            "DELETE" => "xoá",
-            _ => "thao tác"
-        };
-
-        return $"{log.UserName} đã {hanhDong} {doiTuong.ToLower()}{(string.IsNullOrEmpty(tenChinh) ? "" : $": {tenChinh}")}";
-    }
-    private static string GetTenDoiTuong(string? path)
-    {
-        if (string.IsNullOrWhiteSpace(path)) return "(không rõ đối tượng)";
-        var match = Regex.Match(path.ToLower(), @"\/?api\/?([a-zA-Z0-9]+)");
-        if (!match.Success) return "(không rõ đối tượng)";
-        var key = match.Groups[1].Value.ToLower();
-
-        return TuDien._tableFriendlyNames.TryGetValue(key, out var name) ? name : key;
-    }
-    private static string? LayTenChinh(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return null;
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            // Ưu tiên lấy trong afterData nếu có (cho thêm/sửa)
-            if (root.TryGetProperty("afterData", out var after) && after.ValueKind == JsonValueKind.Object)
-                return LayTenTuObject(after);
-
-            // Nếu là xoá thì thử from beforeData
-            if (root.TryGetProperty("beforeData", out var before) && before.ValueKind == JsonValueKind.Object)
-                return LayTenTuObject(before);
-
-            // Nếu không có thì thử toàn bộ object (fallback)
-            return LayTenTuObject(root);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-    private static string? LayTenTuObject(JsonElement element)
-    {
-        string[] fields = { "ten", "Ten", "title", "Title", "name", "Name" };
-
-        foreach (var field in fields)
-        {
-            if (element.TryGetProperty(field, out var value) && value.ValueKind == JsonValueKind.String)
-                return value.GetString();
-        }
-
-        return null;
-    }
-
 }

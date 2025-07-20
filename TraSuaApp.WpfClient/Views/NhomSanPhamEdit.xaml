@@ -52,7 +52,7 @@
 
             <!--  Nội dung  -->
             <StackPanel Grid.Row="1">
-                <GroupBox Margin="0,0,0,5" Header="Tên sản phẩm">
+                <GroupBox Margin="0,0,0,5" Header="Tên nhóm sản phẩm">
                     <StackPanel Orientation="Horizontal">
                         <TextBox
                             x:Name="TenTextBox"

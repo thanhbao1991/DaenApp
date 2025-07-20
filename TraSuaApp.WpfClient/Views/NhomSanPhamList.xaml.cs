@@ -15,7 +15,7 @@ namespace TraSuaApp.WpfClient.Views
     {
         private readonly CollectionViewSource _viewSource = new();
         private readonly WpfErrorHandler _errorHandler = new();
-        string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham".ToLower()];
+        string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham"];
 
         public NhomSanPhamList()
         {
@@ -56,9 +56,8 @@ namespace TraSuaApp.WpfClient.Views
             }
 
             var keyword = TextSearchHelper.NormalizeText(SearchTextBox.Text.Trim());
-            e.Accepted = string.IsNullOrEmpty(keyword) || TextSearchHelper.IsMatch(keyword, item.Ten ?? "");
+            e.Accepted = string.IsNullOrEmpty(keyword) || (item.TimKiem?.Contains(keyword) ?? false);
         }
-
         private async void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
             await AppProviders.NhomSanPhams.ReloadAsync();
@@ -66,7 +65,11 @@ namespace TraSuaApp.WpfClient.Views
 
         private async void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            var window = new NhomSanPhamEdit();
+            var window = new NhomSanPhamEdit()
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight
+            };
             if (window.ShowDialog() == true)
                 await AppProviders.NhomSanPhams.ReloadAsync();
         }
@@ -79,7 +82,12 @@ namespace TraSuaApp.WpfClient.Views
                 return;
             }
 
-            var window = new NhomSanPhamEdit(selected);
+            var window = new NhomSanPhamEdit(selected)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight
+            };
+
             if (window.ShowDialog() == true)
                 await AppProviders.NhomSanPhams.ReloadAsync();
         }
@@ -101,7 +109,7 @@ namespace TraSuaApp.WpfClient.Views
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
-                var response = await ApiClient.DeleteAsync($"/api/nhomsanpham/{selected.Id}");
+                var response = await ApiClient.DeleteAsync($"/api/NhomSanPham/{selected.Id}");
                 var result = await response.Content.ReadFromJsonAsync<Result<NhomSanPhamDto>>();
                 if (result?.IsSuccess == true)
                     AppProviders.NhomSanPhams.Remove(selected.Id);

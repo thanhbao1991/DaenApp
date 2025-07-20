@@ -15,7 +15,7 @@ public class KhachHangController : BaseApiController
 {
     private readonly IKhachHangService _service;
     private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["KhachHang".ToLower()];
+    string _friendlyName = TuDien._tableFriendlyNames["KhachHang"];
 
     public KhachHangController(IKhachHangService service, IHubContext<SignalRHub> hub)
     {

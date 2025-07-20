@@ -1,64 +1,104 @@
-﻿
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TraSuaApp.Api.Controllers;
+using Microsoft.AspNetCore.SignalR;
+using TraSuaApp.Api.Hubs;
+using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 
-[Authorize(Roles = "Admin")]
+namespace TraSuaApp.Api.Controllers;
+
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class TaiKhoanController : BaseApiController
 {
     private readonly ITaiKhoanService _service;
+    private readonly IHubContext<SignalRHub> _hub;
+    string _friendlyName = TuDien._tableFriendlyNames["TaiKhoan"];
 
-    public TaiKhoanController(ITaiKhoanService service)
+    public TaiKhoanController(ITaiKhoanService service, IHubContext<SignalRHub> hub)
     {
         _service = service;
+        _hub = hub;
+    }
+
+    private async Task NotifyClients(string action, Guid id)
+    {
+        if (!string.IsNullOrEmpty(ConnectionId))
+        {
+            await _hub.Clients
+                .AllExcept(ConnectionId)
+                .SendAsync("EntityChanged", "TaiKhoan", action, id.ToString(), ConnectionId ?? "");
+        }
+        else
+        {
+            await _hub.Clients.All.SendAsync("EntityChanged", "TaiKhoan", action, id.ToString(), ConnectionId ?? "");
+        }
     }
 
     [HttpGet]
     public async Task<ActionResult<Result<List<TaiKhoanDto>>>> GetAll()
     {
-        var data = await _service.GetAllAsync();
-        return Result<List<TaiKhoanDto>>.Success("Danh sách tài khoản", data).WithAfter(data);
+        var list = await _service.GetAllAsync();
+        return Result<List<TaiKhoanDto>>.Success(list);
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<Result<TaiKhoanDto>>> GetByIdAsync(Guid id)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Result<TaiKhoanDto>>> GetById(Guid id)
     {
         var dto = await _service.GetByIdAsync(id);
-        return dto == null
-            ? Result<TaiKhoanDto>.Failure("Không tìm thấy tài khoản.")
-            : Result<TaiKhoanDto>.Success("Chi tiết tài khoản", dto).WithId(id).WithAfter(dto);
+        if (dto == null)
+            return Result<TaiKhoanDto>.Failure($"Không tìm thấy {_friendlyName}.");
+
+        return Result<TaiKhoanDto>.Success(dto);
     }
 
     [HttpPost]
-    public async Task<ActionResult<Result<TaiKhoanDto>>> Create([FromBody] TaiKhoanDto dto)
+    public async Task<ActionResult<Result<TaiKhoanDto>>> Create(TaiKhoanDto dto)
     {
         var result = await _service.CreateAsync(dto);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("created", result.Data.Id);
+
         return result;
     }
 
-    [HttpPut("{id:guid}")]
-    public async Task<ActionResult<Result<TaiKhoanDto>>> Update(Guid id, [FromBody] TaiKhoanDto dto)
+    [HttpPut("{id}")]
+    public async Task<ActionResult<Result<TaiKhoanDto>>> Update(Guid id, TaiKhoanDto dto)
     {
         var result = await _service.UpdateAsync(id, dto);
+        if (result.IsSuccess)
+            await NotifyClients("updated", id);
+
         return result;
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{id}")]
     public async Task<ActionResult<Result<TaiKhoanDto>>> Delete(Guid id)
     {
-        var response = new
-        {
-            status = 403,
-            success = false,
-            message = "Tính năng này bị khoá."
-        };
-        return StatusCode(StatusCodes.Status403Forbidden, response);
-
         var result = await _service.DeleteAsync(id);
+        if (result.IsSuccess)
+            await NotifyClients("deleted", id);
+
         return result;
+    }
+
+    [HttpPut("{id}/restore")]
+    public async Task<ActionResult<Result<TaiKhoanDto>>> Restore(Guid id)
+    {
+        var result = await _service.RestoreAsync(id);
+        if (result.IsSuccess)
+            await NotifyClients("restored", id);
+
+        return result;
+    }
+
+    [HttpGet("sync")]
+    public async Task<ActionResult<Result<List<TaiKhoanDto>>>> Sync(DateTime lastSync)
+    {
+        var list = await _service.GetUpdatedSince(lastSync);
+        return Result<List<TaiKhoanDto>>.Success(list);
     }
 }

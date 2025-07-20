@@ -13,7 +13,7 @@ namespace TraSuaApp.Infrastructure.Services;
 public class KhachHangService : IKhachHangService
 {
     private readonly AppDbContext _context;
-    private readonly string _friendlyName = TuDien._tableFriendlyNames["khachhang"];
+    private readonly string _friendlyName = TuDien._tableFriendlyNames["KhachHang"];
     public KhachHangService(AppDbContext context)
     {
         _context = context;
@@ -126,12 +126,34 @@ public class KhachHangService : IKhachHangService
 
         return entity == null ? null : ToDto(entity);
     }
+    private string GenerateNameFromAddress(string address)
+    {
+        var parts = address
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 2)
+            return address;
 
+        var house = parts[0];         // "02"
+        var initials = string.Concat(
+            parts.Skip(1)
+                 .Select(w => char.ToUpperInvariant(w[0]))
+        );                            // "LTK"
+        return house + initials;      // "02LTK"
+    }
     public async Task<Result<KhachHangDto>> CreateAsync(KhachHangDto dto)
     {
         var validation = ValidateAndNormalize(dto);
         if (!validation.IsSuccess)
             return validation;
+
+        var defaultPhone = dto.Phones.FirstOrDefault(p => p.IsDefault)?.SoDienThoai;
+        if (defaultPhone != null && dto.Ten.Trim() == defaultPhone)
+        {
+            var defaultAddress = dto.Addresses
+                .FirstOrDefault(a => a.IsDefault)?.DiaChi
+                ?? dto.Addresses.First().DiaChi;
+            dto.Ten = GenerateNameFromAddress(defaultAddress);
+        }
 
         bool trung = await _context.KhachHangPhones
             .AnyAsync(p => dto.Phones.Select(x => x.SoDienThoai).Contains(p.SoDienThoai));
@@ -143,6 +165,7 @@ public class KhachHangService : IKhachHangService
         {
             Id = Guid.NewGuid(),
             Ten = dto.Ten,
+            OldId = dto.OldId,
             IsDeleted = false,
             LastModified = DateTime.Now,
             CreatedAt = DateTime.Now,

@@ -28,6 +28,9 @@ namespace TraSuaApp.WpfClient.Views
             }
 
             var files = Directory.GetFiles(projectRoot, "*.*", SearchOption.AllDirectories)
+                .Where(f => !f.Contains(".g.i.cs"))
+                .Where(f => !f.Contains(".g.cs"))
+                .Where(f => !f.Contains("2025"))
                 .Where(f => f.EndsWith(".cs") || f.EndsWith(".xaml"))
                 .Select(f => new FileInfo(f))
                 .ToList();
@@ -57,7 +60,8 @@ namespace TraSuaApp.WpfClient.Views
 
         private void btnReload_Click(object sender, RoutedEventArgs e)
         {
-            LoadFiles();
+            lstFiles.SelectAll();
+            //LoadFiles();
         }
 
         private void btnExit_Click(object sender, RoutedEventArgs e)

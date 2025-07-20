@@ -14,7 +14,6 @@ public class SanPhamDto
     public Guid? IdNhomSanPham { get; set; }
     public string? TenNhomSanPham { get; set; }
     public int IdOld { get; set; }
-    public string? TenNormalized { get; set; }
 
 
     public List<SanPhamBienTheDto> BienThe { get; set; } = new();

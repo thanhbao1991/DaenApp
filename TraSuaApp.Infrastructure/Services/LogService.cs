@@ -1,27 +1,24 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Domain.Entities;
+﻿using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Shared.Mappings;
 
 namespace TraSuaApp.Infrastructure.Services;
 
 public class LogService : ILogService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
 
-    public LogService(AppDbContext context, IMapper mapper)
+    public LogService(AppDbContext context)
     {
         _context = context;
-        _mapper = mapper;
     }
 
     public async Task<List<LogDto>> GetAllAsync()
     {
         var list = await _context.Logs.OrderByDescending(x => x.ThoiGian).ToListAsync();
-        return _mapper.Map<List<LogDto>>(list);
+        return list.Select(x => x.ToDto()).ToList();
     }
 
     public async Task<List<LogDto>> GetByDateAsync(DateTime date)
@@ -31,7 +28,7 @@ public class LogService : ILogService
             .OrderByDescending(x => x.ThoiGian)
             .ToListAsync();
 
-        return _mapper.Map<List<LogDto>>(list);
+        return list.Select(x => x.ToDto()).ToList();
     }
 
     public async Task<List<LogDto>> GetByEntityIdAsync(Guid entityId)
@@ -41,26 +38,25 @@ public class LogService : ILogService
             .OrderByDescending(x => x.ThoiGian)
             .ToListAsync();
 
-        return _mapper.Map<List<LogDto>>(list);
+        return list.Select(x => x.ToDto()).ToList();
     }
 
     public async Task<LogDto?> GetByIdAsync(Guid id)
     {
         var log = await _context.Logs.FindAsync(id);
-        return _mapper.Map<LogDto>(log);
+        return log?.ToDto();
     }
 
     public async Task<Result<LogDto>> CreateAsync(LogDto dto)
     {
-        var entity = _mapper.Map<Log>(dto);
+        var entity = dto.ToEntity();
         entity.Id = Guid.NewGuid();
         entity.ThoiGian = DateTime.Now;
 
         await _context.Logs.AddAsync(entity);
         await _context.SaveChangesAsync();
 
-        var createdDto = _mapper.Map<LogDto>(entity);
-        return Result<LogDto>.Success("Đã ghi log", createdDto).WithId(entity.Id);
+        return Result<LogDto>.Success("Đã ghi log", entity.ToDto()).WithId(entity.Id);
     }
 
     public async Task<Result<LogDto>> UpdateAsync(Guid id, LogDto dto)
@@ -69,11 +65,10 @@ public class LogService : ILogService
         if (log == null)
             return Result<LogDto>.Failure("Không tìm thấy log");
 
-        _mapper.Map(dto, log);
+        dto.UpdateEntity(log);
         await _context.SaveChangesAsync();
 
-        var updatedDto = _mapper.Map<LogDto>(log);
-        return Result<LogDto>.Success("Đã cập nhật log", updatedDto).WithId(id);
+        return Result<LogDto>.Success("Đã cập nhật log", log.ToDto()).WithId(id);
     }
 
     public async Task<Result<LogDto>> DeleteAsync(Guid id)
@@ -85,6 +80,6 @@ public class LogService : ILogService
         _context.Logs.Remove(log);
         await _context.SaveChangesAsync();
 
-        return Result<LogDto>.Success("Đã xoá log", _mapper.Map<LogDto>(log)).WithId(id);
+        return Result<LogDto>.Success("Đã xoá log", log.ToDto()).WithId(id);
     }
 }

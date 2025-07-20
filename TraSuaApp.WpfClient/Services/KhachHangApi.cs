@@ -8,8 +8,8 @@ namespace TraSuaApp.WpfClient.Services;
 
 public class KhachHangApi : IKhachHangApi
 {
-    private const string BASE_URL = "/api/khachhang";
-    string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham".ToLower()];
+    private const string BASE_URL = "/api/KhachHang";
+    string _friendlyName = TuDien._tableFriendlyNames["KhachHang"];
 
     public async Task<Result<List<KhachHangDto>>> GetAllAsync()
     {

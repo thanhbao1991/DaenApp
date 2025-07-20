@@ -1,13 +1,22 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
+using TraSuaApp.Domain.Interfaces;
+using TraSuaApp.Infrastructure.Repositories;
 
 namespace TraSuaApp.Infrastructure.Data;
 
-public partial class AppDbContext : DbContext
+public partial class AppDbContext : DbContext, IAppDbContext
 {
     public AppDbContext()
     {
     }
+    // ✅ Hàm bắt buộc để implement IAppDbContext
+    public IRepository<T> GetRepository<T>() where T : class
+    {
+        return new EfRepository<T>(this);
+    }
+
 
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)

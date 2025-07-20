@@ -36,10 +36,10 @@
                 Style="{StaticResource DeleteButtonStyle}"
                 Tag="FileViewerWindow" />
             <Button
-                Click="MenuButton_Click"
+                Click="click1"
                 Content="api"
                 Style="{StaticResource DeleteButtonStyle}"
-                Tag="CodeGeneratorWindow" />
+                />
             <StackPanel Name="xxx" />
             <!--  Thêm nút khác nếu cần  -->
 

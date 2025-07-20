@@ -16,7 +16,7 @@ public class NhomSanPhamController : BaseApiController
 {
     private readonly INhomSanPhamService _service;
     private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham".ToLower()];
+    string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham"];
 
     public NhomSanPhamController(INhomSanPhamService service, IHubContext<SignalRHub> hub)
     {
@@ -30,11 +30,11 @@ public class NhomSanPhamController : BaseApiController
         {
             await _hub.Clients
                 .AllExcept(ConnectionId)
-                .SendAsync("EntityChanged", "nhomsanpham", action, id.ToString(), ConnectionId ?? "");
+                .SendAsync("EntityChanged", "NhomSanPham", action, id.ToString(), ConnectionId ?? "");
         }
         else
         {
-            await _hub.Clients.All.SendAsync("EntityChanged", "nhomsanpham", action, id.ToString(), ConnectionId ?? "");
+            await _hub.Clients.All.SendAsync("EntityChanged", "NhomSanPham", action, id.ToString(), ConnectionId ?? "");
         }
     }
 

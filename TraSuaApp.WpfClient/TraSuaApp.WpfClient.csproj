@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
@@ -19,6 +20,9 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Update="Tools\FileViewerWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\LogDetailWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\KhachHangList.xaml.cs">

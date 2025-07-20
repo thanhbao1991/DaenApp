@@ -10,7 +10,7 @@ namespace TraSuaApp.WpfClient.Services;
 public class NhomSanPhamApi : INhomSanPhamApi
 {
     private const string BASE_URL = "/api/NhomSanPham";
-    string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham".ToLower()];
+    string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham"];
 
     public async Task<Result<List<NhomSanPhamDto>>> GetAllAsync()
     {
