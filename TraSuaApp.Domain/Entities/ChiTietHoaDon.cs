@@ -1,12 +1,9 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
-public partial class ChiTietHoaDon
+namespace TraSuaApp.Domain.Entities;
+
+public partial class ChiTietHoaDon : EntityBase
 {
-    public Guid Id { get; set; }
-
-    public Guid IdHoaDon { get; set; }
-
-    public Guid IdSanPhamBienThe { get; set; }
 
     public int SoLuong { get; set; }
 
@@ -14,13 +11,26 @@ public partial class ChiTietHoaDon
 
     public decimal ThanhTien { get; set; }
 
-    public int TichDiem { get; set; }
 
+    [NotMapped]
+    public int OldId { get; set; }
     public Guid HoaDonId { get; set; }
 
     public Guid SanPhamBienTheId { get; set; }
 
-    public virtual HoaDon HoaDon { get; set; } = null!;
 
-    public virtual SanPhamBienThe SanPhamBienThe { get; set; } = null!;
+
+
+    public virtual HoaDon? HoaDon { get; set; }
+
+    public virtual SanPhamBienThe? SanPhamBienThe { get; set; }
+    public string TenSanPham { get; set; } = "";
+    public string TenBienThe { get; set; } = "";
+    public string? ToppingText { get; set; }
+    public string? NoteText { get; set; }
+
 }
+
+
+
+

@@ -25,7 +25,7 @@ namespace TraSuaApp.WpfClient.Helpers
             if (ex.Message.TrimStart().StartsWith("{"))
             {
                 using var doc = JsonDocument.Parse(ex.Message);
-                message = doc.RootElement.GetProperty("message").GetString();
+                message = doc.RootElement.GetProperty("message").GetString() ?? string.Empty;
             }
             else
             {

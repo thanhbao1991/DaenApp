@@ -64,6 +64,7 @@ public class LogController : BaseApiController
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult<Result<LogDto>>> Delete(Guid id)
     {
+        await Task.CompletedTask;
         // Không cho xoá log
         var response = new
         {

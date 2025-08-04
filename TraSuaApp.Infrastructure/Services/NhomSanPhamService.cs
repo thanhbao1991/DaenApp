@@ -33,7 +33,7 @@ public class NhomSanPhamService : INhomSanPhamService
 
     public async Task<List<NhomSanPhamDto>> GetAllAsync()
     {
-        var list = await _context.NhomSanPhams
+        var list = await _context.NhomSanPhams.AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.LastModified)
             .ToListAsync();
@@ -53,7 +53,7 @@ public class NhomSanPhamService : INhomSanPhamService
         var entity = new NhomSanPham
         {
             Id = Guid.NewGuid(),
-            Ten = StringHelper.NormalizeString(dto.Ten).Trim(),
+            Ten = (dto.Ten).Trim(),
             LastModified = DateTime.Now,
             CreatedAt = DateTime.Now,
             IsDeleted = false
@@ -79,7 +79,7 @@ public class NhomSanPhamService : INhomSanPhamService
 
         var before = ToDto(entity);
 
-        entity.Ten = StringHelper.NormalizeString(dto.Ten).Trim();
+        entity.Ten = (dto.Ten).Trim();
         entity.LastModified = DateTime.Now;
 
         await _context.SaveChangesAsync();
@@ -133,7 +133,7 @@ public class NhomSanPhamService : INhomSanPhamService
 
     public async Task<List<NhomSanPhamDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.NhomSanPhams
+        var list = await _context.NhomSanPhams.AsNoTracking()
             .Where(x => x.LastModified > lastSync)
             .OrderByDescending(x => x.LastModified)
             .ToListAsync();

@@ -1,19 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace TraSuaApp.Domain.Entities;
 
-namespace TraSuaApp.Domain.Entities;
-
-public partial class SanPhamBienThe
+public partial class SanPhamBienThe : EntityBase
 {
-    public Guid Id { get; set; }
 
-    public Guid IdSanPham { get; set; }
+    public Guid SanPhamId { get; set; }
 
     public string TenBienThe { get; set; } = null!;
 
     public decimal GiaBan { get; set; }
 
-    public Guid SanPhamId { get; set; }
 
     public bool MacDinh { get; set; }
 
@@ -21,5 +16,10 @@ public partial class SanPhamBienThe
 
     public virtual ICollection<CongThuc> CongThucs { get; set; } = new List<CongThuc>();
 
-    public virtual SanPham SanPham { get; set; } = null!;
+    public virtual SanPham? SanPham { get; set; }
 }
+
+
+
+
+

@@ -1,6 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using TraSuaApp.Api.Hubs;
+using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
@@ -11,46 +15,79 @@ namespace TraSuaApp.Api.Controllers;
 public class SanPhamController : BaseApiController
 {
     private readonly ISanPhamService _service;
+    private readonly IHubContext<SignalRHub> _hub;
+    string _friendlyName = TuDien._tableFriendlyNames["SanPham"];
 
-    public SanPhamController(ISanPhamService service)
+    public SanPhamController(ISanPhamService service, IHubContext<SignalRHub> hub)
     {
         _service = service;
+        _hub = hub;
+    }
+    private async Task NotifyClients(string action, Guid id)
+    {
+        if (!string.IsNullOrEmpty(ConnectionId))
+        {
+            await _hub.Clients
+                .AllExcept(ConnectionId)
+                .SendAsync("EntityChanged", "SanPham", action, id.ToString(), ConnectionId ?? "");
+        }
+        else
+        {
+            await _hub.Clients.All.SendAsync("EntityChanged", "SanPham", action, id.ToString(), ConnectionId ?? "");
+        }
     }
 
     [HttpGet]
     public async Task<ActionResult<Result<List<SanPhamDto>>>> GetAll()
+        => Result<List<SanPhamDto>>.Success(data: await _service.GetAllAsync());
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Result<SanPhamDto?>>> GetById(Guid id)
     {
-        var list = await _service.GetAllAsync();
-        return Result<List<SanPhamDto>>.Success("Danh sách sản phẩm", list).WithAfter(list);
+        var result = await _service.GetByIdAsync(id);
+        return result == null
+            ? Result<SanPhamDto?>.Failure($"Không tìm thấy {_friendlyName}.")
+            : Result<SanPhamDto?>.Success(data: result);
     }
-
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<Result<SanPhamDto>>> GetById(Guid id)
-    {
-        var dto = await _service.GetByIdAsync(id);
-        return dto == null
-            ? Result<SanPhamDto>.Failure("Không tìm thấy sản phẩm.")
-            : Result<SanPhamDto>.Success("Chi tiết sản phẩm", dto).WithId(id).WithAfter(dto);
-    }
-
     [HttpPost]
-    public async Task<ActionResult<Result<SanPhamDto>>> Create([FromBody] SanPhamDto dto)
+    public async Task<ActionResult<Result<SanPhamDto>>> Create(SanPhamDto dto)
     {
         var result = await _service.CreateAsync(dto);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("created", result.Data.Id);
         return result;
     }
 
-    [HttpPut("{id:guid}")]
-    public async Task<ActionResult<Result<SanPhamDto>>> Update(Guid id, [FromBody] SanPhamDto dto)
+    [HttpPut("{id}")]
+    public async Task<ActionResult<Result<SanPhamDto>>> Update(Guid id, SanPhamDto dto)
     {
         var result = await _service.UpdateAsync(id, dto);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("updated", result.Data.Id);
         return result;
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{id}")]
     public async Task<ActionResult<Result<SanPhamDto>>> Delete(Guid id)
     {
         var result = await _service.DeleteAsync(id);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("deleted", result.Data.Id);
         return result;
+    }
+
+    [HttpPut("{id}/restore")]
+    public async Task<ActionResult<Result<SanPhamDto>>> Restore(Guid id)
+    {
+        var result = await _service.RestoreAsync(id);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("restored", result.Data.Id);
+        return result;
+    }
+
+    [HttpGet("sync")]
+    public async Task<ActionResult<Result<List<SanPhamDto>>>> Sync(DateTime lastSync)
+    {
+        var data = await _service.GetUpdatedSince(lastSync);
+        return Result<List<SanPhamDto>>.Success(data);
     }
 }

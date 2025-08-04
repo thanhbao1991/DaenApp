@@ -23,7 +23,7 @@ public static class DtoExtensions
             toppingDto.Ten = topping.Ten;
             toppingDto.Gia = topping.Gia;
             toppingDto.NgungBan = topping.NgungBan;
-            toppingDto.IdNhomSanPhams = topping.IdNhomSanPhams.Select(x => x.Id).ToList();
+            toppingDto.NhomSanPhams = topping.NhomSanPhams.Select(x => x.Id).ToList();
         }
 
         return dto;
@@ -58,7 +58,7 @@ public static class DtoExtensions
 
         if (dto is ToppingDto toppingDto && entity is Topping topping)
         {
-            topping.Ten = StringHelper.NormalizeString(toppingDto.Ten);
+            topping.Ten = TextSearchHelper.NormalizeText(toppingDto.Ten);
             topping.Gia = toppingDto.Gia;
             topping.NgungBan = toppingDto.NgungBan;
         }
@@ -72,8 +72,8 @@ public static class DtoExtensions
 
         if (allNhom != null)
         {
-            entity.IdNhomSanPhams = allNhom
-                .Where(x => dto.IdNhomSanPhams.Contains(x.Id))
+            entity.NhomSanPhams = allNhom
+                .Where(x => dto.NhomSanPhams.Contains(x.Id))
                 .ToList();
         }
 

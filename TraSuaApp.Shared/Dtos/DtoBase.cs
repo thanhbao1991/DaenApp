@@ -5,13 +5,14 @@ namespace TraSuaApp.Shared.Dtos;
 public abstract class DtoBase
 {
     public Guid Id { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime? LastModified { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
 
     public virtual string Ten { get; set; } = string.Empty;
-    public int STT { get; set; }
+    public int? Stt { get; set; }
 
     // ✅ Route API dùng cho BaseDataProvider, BaseEditForm...
     public abstract string ApiRoute { get; }

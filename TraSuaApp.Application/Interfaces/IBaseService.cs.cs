@@ -1,4 +1,4 @@
-using TraSuaApp.Shared.Helpers;
+﻿using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Application.Interfaces;
 

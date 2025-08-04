@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace TraSuaApp.Domain.Entities;
 
-namespace TraSuaApp.Domain.Entities;
-
-public partial class LichSuNhapXuatKho
+public partial class LichSuNhapXuatKho : EntityBase
 {
-    public Guid Id { get; set; }
 
     public DateTime ThoiGian { get; set; }
 
-    public Guid IdNguyenLieu { get; set; }
 
     public decimal SoLuong { get; set; }
 
@@ -19,5 +14,9 @@ public partial class LichSuNhapXuatKho
 
     public Guid NguyenLieuId { get; set; }
 
-    public virtual NguyenLieu NguyenLieu { get; set; } = null!;
+    public virtual NguyenLieu? NguyenLieu { get; set; }
 }
+
+
+
+

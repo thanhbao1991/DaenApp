@@ -1,8 +1,9 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
-public partial class Log
+namespace TraSuaApp.Domain.Entities;
+
+public partial class Log : EntityBase
 {
-    public Guid Id { get; set; }
 
     public DateTime ThoiGian { get; set; }
 
@@ -26,6 +27,10 @@ public partial class Log
 
     public string? ResponseBodyShort { get; set; }
 
+    [NotMapped]
     public Guid? EntityId { get; set; }
-
 }
+
+
+
+

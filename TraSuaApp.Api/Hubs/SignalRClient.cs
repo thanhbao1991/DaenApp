@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.SignalR.Client;
+﻿using Microsoft.AspNetCore.SignalR.Client;
 namespace TraSuaApp.Api.Hubs
 {
     public class SignalRClient : ISignalRClient

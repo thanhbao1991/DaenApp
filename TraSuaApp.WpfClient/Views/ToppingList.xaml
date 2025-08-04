@@ -5,8 +5,9 @@
     Width="800"
     Height="600"
     AllowsTransparency="True"
-    Background="Transparent"
+    Background="#99000000"
     ResizeMode="NoResize"
+    SizeToContent="Manual"
     WindowStartupLocation="CenterScreen"
     WindowStyle="None">
 

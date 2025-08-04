@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
@@ -19,21 +20,32 @@ namespace TraSuaApp.WpfClient.Views
         public KhachHangList()
         {
             InitializeComponent();
-            this.KeyDown += Window_KeyDown;
             this.Title = _friendlyName;
-            TieuDeTextBlock.Text = _friendlyName;
+            this.TieuDeTextBlock.Text = _friendlyName;
+            this.PreviewKeyDown += KhachHangList_PreviewKeyDown;
 
+            while (AppProviders.KhachHangs?.Items == null)
+            {
+                Task.Delay(100); // chờ 100ms rồi kiểm tra lại
+            }
+
+
+            // 1. Gán Source ngay
             _viewSource.Source = AppProviders.KhachHangs.Items;
             _viewSource.Filter += ViewSource_Filter;
             KhachHangDataGrid.ItemsSource = _viewSource.View;
 
-            this.PreviewKeyDown += KhachHangListWindow_PreviewKeyDown;
+            // 2. Subscribe OnChanged (sau khi Source đã có)
+            AppProviders.KhachHangs.OnChanged += () => ApplySearch();
 
-            // Tự cập nhật khi có thay đổi
-            AppProviders.KhachHangs.OnChanged += ApplySearch;
-
-            _ = AppProviders.KhachHangs.ReloadAsync();
+            // 3. Sau cùng mới reload async
+            Loaded += async (_, __) =>
+            {
+                await AppProviders.KhachHangs.ReloadAsync();
+                ApplySearch();
+            };
         }
+
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
@@ -49,7 +61,7 @@ namespace TraSuaApp.WpfClient.Views
 
             var view = _viewSource.View.Cast<KhachHangDto>().ToList();
             for (int i = 0; i < view.Count; i++)
-                view[i].STT = i + 1;
+                view[i].Stt = i + 1;
         }
 
         private void ViewSource_Filter(object sender, FilterEventArgs e)
@@ -165,7 +177,7 @@ namespace TraSuaApp.WpfClient.Views
             EditButton_Click(null!, null!);
         }
 
-        private void KhachHangListWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void KhachHangList_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N)
             {

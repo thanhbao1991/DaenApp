@@ -35,8 +35,8 @@ public class AuthService : IAuthService
         {
             ThanhCong = true,
             Message = "Đăng nhập thành công",
-            TenHienThi = user.TenHienThi,
-            VaiTro = user.VaiTro,
+            TenHienThi = user.TenHienThi ?? string.Empty,
+            VaiTro = user.VaiTro ?? string.Empty,
             Token = token
         };
 

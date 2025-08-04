@@ -1,13 +1,12 @@
-﻿using System.Linq.Expressions;
+﻿namespace TraSuaApp.Domain.Entities;
 
-namespace TraSuaApp.Domain.Interfaces;
-
-public interface IRepository<T> where T : class
+public abstract class EntityBase
 {
-    IQueryable<T> All();
-    Task<T?> FindAsync(Guid id);
-    void Add(T entity);
-    void Update(T entity);
-    void Remove(T entity);
-    Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
+    //public int? Stt { get; set; }
+
+    public Guid Id { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastModified { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }

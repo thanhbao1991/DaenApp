@@ -1,9 +1,8 @@
-﻿using System.Diagnostics;
+﻿using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using Dapper;
 using Microsoft.Data.SqlClient;
-using TraSuaApp.WpfClient.Apis;
 
 public class OldKhachHang
 {
@@ -14,171 +13,170 @@ public class OldKhachHang
     public bool Voucher { get; set; }
 }
 
-public class OldHoaDon
-{
-    public int IdHoaDon { get; set; }
-    public int IdKhachHang { get; set; }
-    public string DienThoaiGiao { get; set; } = "";
-    public string DiaChiGiaoHang { get; set; } = "";
-}
-
 public class KhachHangImporter
 {
     private readonly string _oldConn;
-    private readonly IKhachHangApi _api;
+    private readonly string _newConn;
+    private int _fakePhoneCounter = 1;
 
-    public KhachHangImporter(string oldConnectionString, IKhachHangApi api)
+    public KhachHangImporter(string oldConnectionString, string newConnectionString)
     {
         _oldConn = oldConnectionString;
-        _api = api;
+        _newConn = newConnectionString;
     }
 
     public async Task ImportAsync()
     {
-        using var db = new SqlConnection(_oldConn);
+        using var oldDb = new SqlConnection(_oldConn);
+        using var newDb = new SqlConnection(_newConn);
 
-        var olds = (await db.QueryAsync<OldKhachHang>(@"
+        // 🟟 Lấy OldId lớn nhất hiện tại
+        var lastOldId = await newDb.ExecuteScalarAsync<int?>(@"
+            SELECT ISNULL(MAX(OldId), 0) FROM KhachHangs
+        ") ?? 0;
+
+        // 🟟 Lấy danh sách KH mới
+        var olds = (await oldDb.QueryAsync<OldKhachHang>(@"
             SELECT IdKhachHang, TenKhachHang, DienThoai, DiaChi, Voucher
             FROM dbo.KhachHang
-            WHERE LEN(DienThoai) > 0
-        ")).ToList();
+            WHERE IdKhachHang > @LastOldId
+        ", new { LastOldId = lastOldId })).ToList();
 
-        var orders = (await db.QueryAsync<OldHoaDon>(@"
-            SELECT IdHoaDon, IdKhachHang, DienThoaiShip AS DienThoaiGiao, DiaChiShip AS DiaChiGiaoHang
-            FROM dbo.HoaDon
-            WHERE LEN(DienThoaiShip) > 0 OR LEN(DiaChiShip) > 0
-        ")).ToList();
+        if (olds.Count == 0)
+        {
+            MessageBox.Show("✅ Không có khách hàng mới để import.");
+            return;
+        }
 
-        var phonesByKh = orders
-            .Where(o => !string.IsNullOrWhiteSpace(o.DienThoaiGiao))
-            .GroupBy(o => o.IdKhachHang)
-            .ToDictionary(
-                g => g.Key,
-                g => g.SelectMany(o => ParsePhones(o.DienThoaiGiao))
-                      .Distinct(StringComparer.OrdinalIgnoreCase)
-                      .ToList()
-            );
+        // 🟟 Lấy số điện thoại đã tồn tại
+        var existPhones = (await newDb.QueryAsync<string>(@"
+            SELECT SoDienThoai FROM KhachHangPhones
+        ")).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var addrsByKh = orders
-            .Where(o => !string.IsNullOrWhiteSpace(o.DiaChiGiaoHang))
-            .GroupBy(o => o.IdKhachHang)
-            .ToDictionary(
-                g => g.Key,
-                g => g.Select(o => o.DiaChiGiaoHang.Trim())
-                      .Distinct(StringComparer.OrdinalIgnoreCase)
-                      .ToList()
-            );
+        int added = 0, skipped = 0;
+        var logMessages = new List<string>();
 
-        var existing = await _api.GetAllAsync();
-        var existPhones = existing.IsSuccess
-            ? existing.Data!.SelectMany(k => k.Phones)
-                             .Select(p => p.SoDienThoai.Trim())
-                             .ToHashSet(StringComparer.OrdinalIgnoreCase)
-            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        string Normalize(string input) =>
-            string.Concat(input.Where(c => !char.IsWhiteSpace(c))).ToLowerInvariant();
-
-        int added = 0;
         foreach (var o in olds)
         {
-            var phoneList = ParsePhones(o.DienThoai);
-            if (phoneList.Count == 0)
-                continue;
-
-            if (existPhones.Contains(phoneList[0]))
-                continue;
-
-            var dto = new KhachHangDto
+            try
             {
-                Ten = o.TenKhachHang.Trim(),
-                DuocNhanVoucher = !o.Voucher,
-                OldId = o.IdKhachHang,
-                Phones = new List<KhachHangPhoneDto>
+                // ✅ Danh sách số điện thoại
+                var phoneList = ParsePhones(o.DienThoai);
+
+                // Nếu không có số hợp lệ -> tạo số ảo
+                if (phoneList.Count == 0)
                 {
-                    new KhachHangPhoneDto {
-                        SoDienThoai = phoneList[0],
-                        IsDefault   = true
-                    }
-                },
-                Addresses = new List<KhachHangAddressDto>
-                {
-                    new KhachHangAddressDto {
-                        DiaChi    = o.DiaChi.Trim(),
-                        IsDefault = true
-                    }
+                    string fakePhone = GenerateFakePhone(existPhones);
+                    phoneList.Add(fakePhone);
                 }
-            };
 
-            // Thêm các số phụ từ chuỗi bị tách
-            foreach (var p in phoneList.Skip(1))
-            {
-                dto.Phones.Add(new KhachHangPhoneDto
+                // Tên khách hàng fallback theo số ĐT
+                string ten = string.IsNullOrWhiteSpace(o.TenKhachHang)
+                    ? phoneList[0]
+                    : o.TenKhachHang.Trim();
+
+                Guid khId = Guid.NewGuid();
+
+                // ✅ Thêm khách hàng
+                await newDb.ExecuteAsync(@"
+                    INSERT INTO KhachHangs(Id, Ten, DuocNhanVoucher, OldId, IsDeleted, LastModified, CreatedAt)
+                    VALUES (@Id, @Ten, @Voucher, @OldId, 0, GETDATE(), GETDATE())
+                ", new
                 {
-                    SoDienThoai = p,
-                    IsDefault = false
+                    Id = khId,
+                    Ten = ten,
+                    Voucher = !o.Voucher,
+                    OldId = o.IdKhachHang
                 });
-            }
 
-            // Thêm điện thoại phụ từ hóa đơn
-            if (phonesByKh.TryGetValue(o.IdKhachHang, out var extraPhones))
-            {
-                foreach (var p in extraPhones)
+                // ✅ Thêm số điện thoại
+                foreach (var p in phoneList)
                 {
-                    if (!dto.Phones.Any(x => string.Equals(x.SoDienThoai, p, StringComparison.OrdinalIgnoreCase)))
+                    if (!existPhones.Contains(p))
                     {
-                        dto.Phones.Add(new KhachHangPhoneDto
+                        await newDb.ExecuteAsync(@"
+                            INSERT INTO KhachHangPhones(Id, KhachHangId, SoDienThoai, IsDefault)
+                            VALUES (@Id, @KhId, @Phone, @IsDefault)
+                        ", new
                         {
-                            SoDienThoai = p,
-                            IsDefault = false
+                            Id = Guid.NewGuid(),
+                            KhId = khId,
+                            Phone = p,
+                            IsDefault = (p == phoneList[0])
                         });
+                        existPhones.Add(p);
                     }
                 }
-            }
 
-            // Thêm địa chỉ phụ
-            if (addrsByKh.TryGetValue(o.IdKhachHang, out var extraAddrs))
-            {
-                var knownAddrs = dto.Addresses
-                    .Select(a => Normalize(a.DiaChi))
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var a in extraAddrs)
+                // ✅ Thêm địa chỉ (nếu có)
+                if (!string.IsNullOrWhiteSpace(o.DiaChi))
                 {
-                    var norm = Normalize(a);
-                    if (knownAddrs.Contains(norm))
-                        continue;
-
-                    dto.Addresses.Add(new KhachHangAddressDto
+                    string addr = o.DiaChi.Trim();
+                    await newDb.ExecuteAsync(@"
+                        INSERT INTO KhachHangAddresses(Id, KhachHangId, DiaChi, IsDefault)
+                        VALUES (@Id, @KhId, @DiaChi, 1)
+                    ", new
                     {
-                        DiaChi = a,
-                        IsDefault = false
+                        Id = Guid.NewGuid(),
+                        KhId = khId,
+                        DiaChi = addr
                     });
-                    knownAddrs.Add(norm);
                 }
-            }
 
-            var res = await _api.CreateAsync(dto);
-            if (res.IsSuccess)
-            {
                 added++;
-                foreach (var p in dto.Phones)
-                    existPhones.Add(p.SoDienThoai);
             }
-            else
+            catch (Exception ex)
             {
-                Debug.WriteLine($"Import lỗi {dto.Ten}: {res.Message}");
+                skipped++;
+                logMessages.Add($"❌ Lỗi import KH {o.IdKhachHang} ({o.TenKhachHang}): {ex.Message}");
             }
         }
 
-        MessageBox.Show($"Import hoàn thành: tổng {olds.Count} khách, thêm mới {added} khách.");
+        // ✅ Ghi log
+        var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ImportKhachHang_Simple.txt");
+        File.WriteAllLines(logPath, logMessages);
+
+        string report =
+            $"🟟 Kết quả import (chỉ KH mới, có địa chỉ, không xem hóa đơn):\n" +
+            $"- KH mới cần import: {olds.Count}\n" +
+            $"- Thêm mới thành công: {added}\n" +
+            $"- Lỗi/Bỏ qua: {skipped}\n" +
+            $"- Log: {logPath}";
+
+        MessageBox.Show(report);
+    }
+
+    // ==== Helper methods ====
+    private string GenerateFakePhone(HashSet<string> existPhones)
+    {
+        string fake;
+        do
+        {
+            fake = _fakePhoneCounter.ToString("D10");
+            _fakePhoneCounter++;
+        } while (existPhones.Contains(fake));
+
+        return fake;
+    }
+
+    private static string CleanPhone(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return "";
+        var p = input.Trim();
+        p = p.StartsWith("+84") ? "0" + p[3..] :
+            p.StartsWith("84") ? "0" + p[2..] : p;
+        p = Regex.Replace(p, @"[^\d]", "");
+        return p;
     }
 
     private static List<string> ParsePhones(string raw)
     {
+        if (string.IsNullOrWhiteSpace(raw)) return new List<string>();
+
         return Regex.Split(raw, @"[ ,./\\\-]+")
-                    .Select(p => p.Trim())
-                    .Where(p => Regex.IsMatch(p, @"^0\d{8,10}$"))
+                    .Select(CleanPhone)
+                    .Where(p => !string.IsNullOrEmpty(p))
+                    .Where(p => p.StartsWith("0"))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
     }

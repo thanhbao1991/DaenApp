@@ -21,7 +21,11 @@ public partial class TaiKhoan : EntityBase
 
     public virtual ICollection<HoaDon> HoaDons { get; set; } = new List<HoaDon>();
 
-    public virtual ICollection<LichSuChinhSua> LichSuChinhSuas { get; set; } = new List<LichSuChinhSua>();
 
-    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+    public virtual ICollection<ChiTietHoaDonThanhToan> Payments { get; set; } = new List<ChiTietHoaDonThanhToan>();
 }
+
+
+
+
+

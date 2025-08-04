@@ -1,4 +1,4 @@
-namespace TraSuaApp.Shared.Dtos
+﻿namespace TraSuaApp.Shared.Dtos
 {
     public class LoginResponse
     {

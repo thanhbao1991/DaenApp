@@ -72,3 +72,4 @@ namespace TraSuaApp.WpfClient.Properties {
         }
     }
 }
+

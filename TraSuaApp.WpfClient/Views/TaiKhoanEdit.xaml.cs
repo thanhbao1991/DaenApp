@@ -5,7 +5,6 @@ using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Apis;
-using TraSuaApp.WpfClient.Models;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.Views
@@ -15,7 +14,6 @@ namespace TraSuaApp.WpfClient.Views
         public TaiKhoanDto Model { get; set; } = new();
         private readonly ITaiKhoanApi _api;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["TaiKhoan"];
-        private List<NhomSanPhamCheckItem> _bindingList = new();
 
         public TaiKhoanEdit(TaiKhoanDto? dto = null)
         {

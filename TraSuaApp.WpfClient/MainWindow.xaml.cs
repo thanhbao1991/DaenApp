@@ -1,8 +1,7 @@
 ﻿using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using TraSuaApp.WpfClient.Apis;
-using TraSuaApp.WpfClient.Services;
+using TraSuaApp.Shared.Enums;
 
 namespace TraSuaApp.WpfClient.Views
 {
@@ -16,8 +15,9 @@ namespace TraSuaApp.WpfClient.Views
         {
             InitializeComponent();
             GenerateMenuButtons();
-
         }
+
+
         private void GenerateMenuButtons()
         {
             var buttonsContainer = xxx; // StackPanel chứa nút
@@ -31,7 +31,9 @@ namespace TraSuaApp.WpfClient.Views
             {
                 var btn = new Button
                 {
-                    Content = (view.Name),
+                    Content =
+                    TuDien._tableFriendlyNames[view.Name.Replace("List", "")],
+
                     Tag = view.Name,
                     Style = (Style)FindResource("AddButtonStyle"),
                     Margin = new Thickness(0, 5, 0, 0)
@@ -47,10 +49,8 @@ namespace TraSuaApp.WpfClient.Views
 
         }
 
-        private void MenuButton_Click(object sender, RoutedEventArgs e)
+        private async void MenuButton_Click(object sender, RoutedEventArgs e)
         {
-
-
             if (sender is not Button btn || btn.Tag is not string tag) return;
 
             try
@@ -58,11 +58,17 @@ namespace TraSuaApp.WpfClient.Views
                 var namespaceName = "TraSuaApp.WpfClient.Views";
                 var typeName = $"{namespaceName}.{tag}";
                 var type = Type.GetType(typeName);
+
                 if (type == null)
                 {
                     MessageBox.Show($"Không tìm thấy form: {tag}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
+
+                // Hiển thị loading (nếu có custom loading dialog riêng)
+                // LoadingOverlay.Show();
+
+                await Task.Delay(100); // tạo cảm giác phản hồi nhanh hơn
 
                 if (Activator.CreateInstance(type) is Window window)
                 {
@@ -74,22 +80,30 @@ namespace TraSuaApp.WpfClient.Views
             {
                 MessageBox.Show($"Lỗi mở form '{tag}': {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            finally
+            {
+                // LoadingOverlay.Hide();
+            }
         }
 
         private void Thoat_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
         }
-        private IKhachHangApi _api;
+        string oldConn =
+"Server=.;Database=DennCoffee;Trusted_Connection=True;TrustServerCertificate=True";
+        string newConn =
+"Server=.;Database=TraSuaAppDb;Trusted_Connection=True;TrustServerCertificate=True";
+
         private async void click1(object sender, RoutedEventArgs e)
         {
-            _api = new KhachHangApi();
-            var oldConn =
-"Server=.;Database=DennCoffee;Trusted_Connection=True;TrustServerCertificate=True";
-
-            var importer = new KhachHangImporter(oldConn, _api);
+            var importer = new KhachHangImporter(oldConn, newConn);
             await importer.ImportAsync();
+
+            var importer2 = new HoaDonImporter(oldConn, newConn);
+            await importer2.ImportTodayAsync();
         }
+
 
 
     }

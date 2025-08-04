@@ -1,4 +1,4 @@
-namespace TraSuaApp.Api.Hubs
+﻿namespace TraSuaApp.Api.Hubs
 {
     public interface ISignalRClient
     {

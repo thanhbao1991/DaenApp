@@ -2,20 +2,10 @@
     x:Class="TraSuaApp.WpfClient.Views.ToppingEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    AllowsTransparency="True"
-    Background="#88888888"
-    PreviewKeyDown="Window_KeyDown"
-    ResizeMode="NoResize"
-    WindowStartupLocation="CenterScreen"
-    WindowStyle="None">
+    Style="{StaticResource EditWindowStyle}"
+    WindowStartupLocation="CenterScreen">
 
-    <Border
-        HorizontalAlignment="Center"
-        VerticalAlignment="Center"
-        Background="White"
-        BorderBrush="#DDD"
-        BorderThickness="1"
-        CornerRadius="12">
+    <Border Style="{StaticResource EditFormBorderStyle}">
         <Grid Margin="16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -23,35 +13,13 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!--  Tiêu đề  -->
-            <DockPanel
-                Grid.Row="0"
-                Margin="0,0,0,10"
-                LastChildFill="True">
-                <TextBlock
-                    Name="TieuDeTextBlock"
-                    Margin="10,5"
-                    VerticalAlignment="Center"
-                    FontSize="20"
-                    FontWeight="Bold"
-                    Foreground="#333" />
-
+            <DockPanel Grid.Row="0" Style="{StaticResource EditHeaderPanelStyle}">
+                <TextBlock Name="TieuDeTextBlock" Style="{StaticResource EditTitleTextStyle}" />
                 <Button
-                    Width="28"
-                    Height="28"
-                    Margin="0,5,5,0"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Background="Transparent"
-                    BorderThickness="0"
                     Click="CloseButton_Click"
                     Content="✖"
-                    Cursor="Hand"
-                    DockPanel.Dock="Right"
-                    FontSize="14"
-                    Foreground="#888" />
+                    Style="{StaticResource CloseButtonStyle}" />
             </DockPanel>
-
             <!--  Nội dung form  -->
             <StackPanel Grid.Row="1">
                 <GroupBox Margin="0,0,0,5" Header="Tên Topping">
@@ -92,14 +60,10 @@
             </StackPanel>
 
             <!--  Nút và lỗi  -->
-            <StackPanel Grid.Row="2" Orientation="Vertical">
-                <TextBlock
-                    x:Name="ErrorTextBlock"
-                    Margin="0,0,0,5"
-                    Foreground="Red"
-                    Style="{StaticResource ErrorTextBlock}" />
+            <StackPanel Grid.Row="2">
+                <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
                 <Button
-                    x:Name="SaveButton"
+                    Name="SaveButton"
                     Click="SaveButton_Click"
                     Content="Lưu"
                     Style="{StaticResource SaveButtonStyle}" />

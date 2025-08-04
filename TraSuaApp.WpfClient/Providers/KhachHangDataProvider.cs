@@ -1,4 +1,5 @@
-﻿using TraSuaApp.WpfClient.Providers;
+﻿using TraSuaApp.Shared.Dtos;
+using TraSuaApp.WpfClient.Providers;
 
 namespace TraSuaApp.WpfClient.DataProviders
 {

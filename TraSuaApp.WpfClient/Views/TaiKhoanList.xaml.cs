@@ -16,23 +16,33 @@ namespace TraSuaApp.WpfClient.Views
         private readonly CollectionViewSource _viewSource = new();
         private readonly WpfErrorHandler _errorHandler = new();
         string _friendlyName = TuDien._tableFriendlyNames["TaiKhoan"];
-
         public TaiKhoanList()
         {
             InitializeComponent();
-
             this.Title = _friendlyName;
-            TieuDeTextBlock.Text = _friendlyName;
+            this.TieuDeTextBlock.Text = _friendlyName;
+            this.PreviewKeyDown += TaiKhoanList_PreviewKeyDown;
 
+            while (AppProviders.TaiKhoans?.Items == null)
+            {
+                Task.Delay(100); // chờ 100ms rồi kiểm tra lại
+            }
+
+
+            // 1. Gán Source ngay
             _viewSource.Source = AppProviders.TaiKhoans.Items;
             _viewSource.Filter += ViewSource_Filter;
             TaiKhoanDataGrid.ItemsSource = _viewSource.View;
 
-            this.PreviewKeyDown += TaiKhoanList_PreviewKeyDown;
-
+            // 2. Subscribe OnChanged (sau khi Source đã có)
             AppProviders.TaiKhoans.OnChanged += () => ApplySearch();
 
-            _ = AppProviders.TaiKhoans.ReloadAsync();
+            // 3. Sau cùng mới reload async
+            Loaded += async (_, __) =>
+            {
+                await AppProviders.TaiKhoans.ReloadAsync();
+                ApplySearch();
+            };
         }
 
         private void ApplySearch()
@@ -44,7 +54,7 @@ namespace TraSuaApp.WpfClient.Views
 
             var view = _viewSource.View.Cast<TaiKhoanDto>().ToList();
             for (int i = 0; i < view.Count; i++)
-                view[i].STT = i + 1;
+                view[i].Stt = i + 1;
         }
 
         private void ViewSource_Filter(object sender, FilterEventArgs e)

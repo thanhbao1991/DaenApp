@@ -27,7 +27,7 @@ public class SignalRClient : ISignalRClient
 
     public void Subscribe(string eventName, Action<string, string, string, string> handler)
     {
-        _connection.On<string, string, string, string?>(eventName, handler);
+        _connection.On<string, string, string, string>(eventName, handler);
     }
 
     public async Task<string?> GetConnectionId()

@@ -30,16 +30,12 @@
                 Foreground="#333"
                 Text="🟟 TRA SUA APP"
                 TextAlignment="Center" />
-            <Button
-                Click="MenuButton_Click"
-                Content="join"
-                Style="{StaticResource DeleteButtonStyle}"
-                Tag="FileViewerWindow" />
+
             <Button
                 Click="click1"
-                Content="api"
-                Style="{StaticResource DeleteButtonStyle}"
-                />
+                Content="import kh"
+                Style="{StaticResource AddButtonStyle}" />
+
             <StackPanel Name="xxx" />
             <!--  Thêm nút khác nếu cần  -->
 

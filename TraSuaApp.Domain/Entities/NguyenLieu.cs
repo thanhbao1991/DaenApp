@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace TraSuaApp.Domain.Entities;
 
-namespace TraSuaApp.Domain.Entities;
-
-public partial class NguyenLieu
+public partial class NguyenLieu : EntityBase
 {
-    public Guid Id { get; set; }
 
     public string Ten { get; set; } = null!;
 
@@ -23,3 +19,8 @@ public partial class NguyenLieu
 
     public virtual ICollection<SuDungNguyenLieu> SuDungNguyenLieus { get; set; } = new List<SuDungNguyenLieu>();
 }
+
+
+
+
+

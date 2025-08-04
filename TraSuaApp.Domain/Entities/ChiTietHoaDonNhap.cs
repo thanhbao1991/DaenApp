@@ -1,12 +1,11 @@
 ﻿namespace TraSuaApp.Domain.Entities;
 
-public partial class ChiTietHoaDonNhap
+public partial class ChiTietHoaDonNhap : EntityBase
 {
-    public Guid Id { get; set; }
 
-    public Guid IdHoaDonNhap { get; set; }
+    public Guid HoaDonIdNhap { get; set; }
 
-    public Guid IdNguyenLieu { get; set; }
+    public Guid NguyenLieuId { get; set; }
 
     public decimal SoLuong { get; set; }
 
@@ -14,9 +13,12 @@ public partial class ChiTietHoaDonNhap
 
     public Guid HoaDonNhapId { get; set; }
 
-    public Guid NguyenLieuId { get; set; }
 
-    public virtual HoaDonNhap HoaDonNhap { get; set; } = null!;
+    public virtual HoaDonNhap? HoaDonNhap { get; set; }
 
-    public virtual NguyenLieu NguyenLieu { get; set; } = null!;
+    public virtual NguyenLieu? NguyenLieu { get; set; }
 }
+
+
+
+

@@ -1,4 +1,4 @@
-namespace TraSuaApp.Shared.Constants
+﻿namespace TraSuaApp.Shared.Constants
 {
     public static class AppConstants
     {

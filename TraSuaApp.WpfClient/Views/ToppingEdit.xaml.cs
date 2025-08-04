@@ -53,7 +53,7 @@ namespace TraSuaApp.WpfClient.Views
             {
                 Id = g.Id,
                 Ten = g.Ten,
-                IsChecked = Model.IdNhomSanPhams?.Contains(g.Id) == true
+                IsChecked = Model.NhomSanPhams?.Contains(g.Id) == true
             }).ToList();
 
             NhomSanPhamListBox.ItemsSource = _bindingList;
@@ -71,8 +71,8 @@ namespace TraSuaApp.WpfClient.Views
                 return;
             }
 
-            // Cập nhật danh sách IdNhomSanPhams từ checkbox
-            Model.IdNhomSanPhams = _bindingList
+            // Cập nhật danh sách NhomSanPhamIds từ checkbox
+            Model.NhomSanPhams = _bindingList
                 .Where(x => x.IsChecked)
                 .Select(x => x.Id)
                 .ToList();

@@ -43,11 +43,11 @@ namespace TraSuaApp.WpfClient.Views
             Close();
         }
 
-
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
             _errorHandler.Clear();
             LoginButton.IsEnabled = false;
+            LoginProgressBar.Visibility = Visibility.Visible;
             Mouse.OverrideCursor = Cursors.Wait;
 
             var username = UsernameTextBox.Text.Trim();
@@ -57,6 +57,7 @@ namespace TraSuaApp.WpfClient.Views
             {
                 _errorHandler.Handle(new Exception("Vui lòng nhập đầy đủ tài khoản và mật khẩu."), "Đăng nhập");
                 LoginButton.IsEnabled = true;
+                LoginProgressBar.Visibility = Visibility.Collapsed;
                 Mouse.OverrideCursor = null;
                 return;
             }
@@ -73,7 +74,6 @@ namespace TraSuaApp.WpfClient.Views
 
                 if (response.IsSuccessStatusCode)
                 {
-                    // ✅ SỬA chỗ này: đọc kiểu Result<LoginResponse> thay vì LoginResponse
                     var result = await response.Content.ReadFromJsonAsync<Result<LoginResponse>>();
 
                     if (result != null && result.IsSuccess && result.Data != null)
@@ -100,7 +100,6 @@ namespace TraSuaApp.WpfClient.Views
                         var role = JwtHelper.GetRole(login.Token!);
                         var userId = JwtHelper.GetUserId(login.Token!);
 
-
                         var mainWindow = new MainWindow
                         {
                             VaiTro = role ?? "NhanVien",
@@ -109,7 +108,7 @@ namespace TraSuaApp.WpfClient.Views
                         };
 
                         mainWindow.Show();
-                        this.DialogResult = true; // ✅ báo là login thành công
+                        this.DialogResult = true;
                         this.Close();
                     }
                     else
@@ -120,7 +119,7 @@ namespace TraSuaApp.WpfClient.Views
                 else
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    _errorHandler.Handle(new Exception($"{content}"), "Đăng nhập");
+                    _errorHandler.Handle(new Exception(content), "Đăng nhập");
                 }
             }
             catch (Exception ex)
@@ -130,9 +129,16 @@ namespace TraSuaApp.WpfClient.Views
             finally
             {
                 LoginButton.IsEnabled = true;
+                LoginProgressBar.Visibility = Visibility.Collapsed;
                 Mouse.OverrideCursor = null;
             }
         }
 
+        public void SetLoading(bool isLoading)
+        {
+            LoginProgressBar.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
+            LoginButton.IsEnabled = !isLoading;
+            Mouse.OverrideCursor = isLoading ? Cursors.Wait : null;
+        }
     }
 }

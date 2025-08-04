@@ -17,13 +17,14 @@ public class LogService : ILogService
 
     public async Task<List<LogDto>> GetAllAsync()
     {
-        var list = await _context.Logs.OrderByDescending(x => x.ThoiGian).ToListAsync();
+        var list = await _context.Logs.AsNoTracking()
+            .OrderByDescending(x => x.ThoiGian).ToListAsync();
         return list.Select(x => x.ToDto()).ToList();
     }
 
     public async Task<List<LogDto>> GetByDateAsync(DateTime date)
     {
-        var list = await _context.Logs
+        var list = await _context.Logs.AsNoTracking()
             .Where(x => x.ThoiGian.Date == date.Date)
             .OrderByDescending(x => x.ThoiGian)
             .ToListAsync();
@@ -33,7 +34,7 @@ public class LogService : ILogService
 
     public async Task<List<LogDto>> GetByEntityIdAsync(Guid entityId)
     {
-        var list = await _context.Logs
+        var list = await _context.Logs.AsNoTracking()
             .Where(x => x.EntityId == entityId)
             .OrderByDescending(x => x.ThoiGian)
             .ToListAsync();

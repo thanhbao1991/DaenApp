@@ -25,7 +25,8 @@ builder.Services.AddControllers(options =>
 
 // 🟟 Add DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+        opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
 // 🟟 Add AutoMapper & App Services
 builder.Services.AddAutoMapper(typeof(Program));

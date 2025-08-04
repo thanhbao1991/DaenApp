@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using TraSuaApp.Api.Hubs;
 using TraSuaApp.Application.Interfaces;
+using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 
@@ -44,7 +45,7 @@ public class KhachHangController : BaseApiController
     {
         var result = await _service.GetByIdAsync(id);
         return result == null
-            ? Result<KhachHangDto?>.Failure($"Không tìm thấy {_friendlyName}.")
+            ? Result<KhachHangDto?>.Failure($"KhÃ´ng tÃ¬m tháº¥y {_friendlyName}.")
             : Result<KhachHangDto?>.Success(data: result);
     }
     [HttpPost]

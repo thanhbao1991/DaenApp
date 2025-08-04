@@ -20,20 +20,32 @@ namespace TraSuaApp.WpfClient.Views
         public ToppingList()
         {
             InitializeComponent();
-
             this.Title = _friendlyName;
-            TieuDeTextBlock.Text = _friendlyName;
+            this.TieuDeTextBlock.Text = _friendlyName;
+            this.PreviewKeyDown += ToppingList_PreviewKeyDown;
 
+            while (AppProviders.Toppings?.Items == null)
+            {
+                Task.Delay(100); // chờ 100ms rồi kiểm tra lại
+            }
+
+
+            // 1. Gán Source ngay
             _viewSource.Source = AppProviders.Toppings.Items;
             _viewSource.Filter += ViewSource_Filter;
             ToppingDataGrid.ItemsSource = _viewSource.View;
 
-            this.PreviewKeyDown += ToppingList_PreviewKeyDown;
-
+            // 2. Subscribe OnChanged (sau khi Source đã có)
             AppProviders.Toppings.OnChanged += () => ApplySearch();
 
-            _ = AppProviders.Toppings.ReloadAsync();
+            // 3. Sau cùng mới reload async
+            Loaded += async (_, __) =>
+            {
+                await AppProviders.Toppings.ReloadAsync();
+                ApplySearch();
+            };
         }
+
 
         private void ApplySearch()
         {
@@ -44,7 +56,7 @@ namespace TraSuaApp.WpfClient.Views
 
             var view = _viewSource.View.Cast<ToppingDto>().ToList();
             for (int i = 0; i < view.Count; i++)
-                view[i].STT = i + 1;
+                view[i].Stt = i + 1;
         }
 
         private void ViewSource_Filter(object sender, FilterEventArgs e)

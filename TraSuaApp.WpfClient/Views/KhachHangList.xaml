@@ -5,8 +5,9 @@
     Width="800"
     Height="600"
     AllowsTransparency="True"
-    Background="Transparent"
+    Background="#99000000"
     ResizeMode="NoResize"
+    SizeToContent="Manual"
     WindowStartupLocation="CenterScreen"
     WindowStyle="None">
     <Border
@@ -125,18 +126,15 @@
                         Header="Tên KH" />
                     <DataGridTextColumn
                         Width="*"
-                        Binding="{Binding DefaultPhone}"
+                        Binding="{Binding DienThoai}"
                         ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="SĐT" />
                     <DataGridTextColumn
                         Width="*"
-                        Binding="{Binding DefaultAddress}"
+                        Binding="{Binding DiaChi}"
                         ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="Địa chỉ" />
-                    <DataGridTextColumn
-                        Binding="{Binding CreatedAt, StringFormat={}{0:dd/MM/yyyy HH:mm}}"
-                        ElementStyle="{StaticResource CenterTextCellStyle}"
-                        Header="Ngày tạo" />
+
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

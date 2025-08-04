@@ -1,0 +1,20 @@
+﻿namespace TraSuaApp.Domain.Entities;
+
+public partial class DiemKhachHangLog : EntityBase
+{
+
+
+    public DateTime ThoiGian { get; set; }
+
+    public int DiemThayDoi { get; set; }
+
+    public string? GhiChu { get; set; }
+
+    public Guid KhachHangId { get; set; }
+
+    public virtual KhachHang? KhachHang { get; set; }
+}
+
+
+
+

@@ -8,7 +8,7 @@ namespace TraSuaApp.WpfClient.Helpers
         {
             using var context = new AppDbContextFactory().CreateDbContext();
 
-            var danhSachCu = new (int idOld, string ten)[]
+            var danhSachCu = new (int OldId, string ten)[]
             {
                 (1, "Cà Phê"), (2, "Bạc Xỉu"), (3, "Ca Cao"), (4, "Sữa Chua"),
                 (5, "Latte"), (6, "Soda"), (7, "Đá Xay"), (8, "Sinh Tố"),
@@ -17,9 +17,9 @@ namespace TraSuaApp.WpfClient.Helpers
                 (17, "Thuốc"), (18, "Ăn Vặt"), (19, "Khác")
             };
 
-            foreach (var (idOld, ten) in danhSachCu)
+            foreach (var (OldId, ten) in danhSachCu)
             {
-                //if (!await context.NhomSanPhams.AnyAsync(x => x.IdOld == idOld))
+                //if (!await context.NhomSanPhams.AnyAsync(x => x.OldId == OldId))
                 //{
                 //    context.NhomSanPhams.Add(new NhomSanPham
                 //    {

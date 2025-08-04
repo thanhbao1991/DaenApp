@@ -1,240 +1,216 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
-using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-namespace TraSuaApp.Infrastructure.Services;
 
-public class SanPhamService : ISanPhamService
+namespace TraSuaApp.Infrastructure.Services
 {
-    private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
-
-    public SanPhamService(AppDbContext context, IMapper mapper)
+    public class SanPhamService : ISanPhamService
     {
-        _context = context;
-        _mapper = mapper;
-    }
+        private readonly AppDbContext _context;
+        private readonly string _friendlyName = TuDien._tableFriendlyNames["SanPham"];
 
-    public async Task<List<SanPhamDto>> GetAllAsync()
-    {
-        var list = await _context.SanPhams
-            .Include(sp => sp.SanPhamBienThes)
-            .Include(sp => sp.IdNhomSanPhamNavigation)
-            .ToListAsync();
-
-        return _mapper.Map<List<SanPhamDto>>(list);
-    }
-
-    public async Task<SanPhamDto?> GetByIdAsync(Guid id)
-    {
-        var entity = await _context.SanPhams
-            .Include(sp => sp.SanPhamBienThes)
-            .Include(sp => sp.IdNhomSanPhamNavigation)
-            .FirstOrDefaultAsync(x => x.Id == id);
-
-        return entity == null ? null : _mapper.Map<SanPhamDto>(entity);
-    }
-
-    public async Task<Result<SanPhamDto>> CreateAsync(SanPhamDto dto)
-    {
-        try
+        public SanPhamService(AppDbContext context)
         {
-            var entity = _mapper.Map<SanPham>(dto);
-            entity.Id = Guid.NewGuid();
+            _context = context;
+        }
 
-            foreach (var bt in entity.SanPhamBienThes)
+        // Chuyển entity => DTO
+        private SanPhamDto ToDto(SanPham entity)
+        {
+            return new SanPhamDto
             {
-                bt.Id = Guid.NewGuid();
-                bt.IdSanPham = entity.Id;
-            }
+                Id = entity.Id,
+                Ten = entity.Ten,
+                DinhLuong = entity.DinhLuong,
+                VietTat = entity.VietTat,
+                DaBan = entity.DaBan,
+                NgungBan = entity.NgungBan,
+                TichDiem = entity.TichDiem,
+                OldId = entity.OldId,
+                NhomSanPhamId = entity.NhomSanPhamId,
+                TenNhomSanPham = entity.NhomSanPham?.Ten,
+                CreatedAt = entity.CreatedAt,
+                LastModified = entity.LastModified,
+                DeletedAt = entity.DeletedAt,
+                IsDeleted = entity.IsDeleted,
+                BienThe = entity.SanPhamBienThes
+                                    .Select(x => new SanPhamBienTheDto
+                                    {
+                                        Id = x.Id,
+                                        SanPhamId = x.SanPhamId,
+                                        TenBienThe = x.TenBienThe,
+                                        GiaBan = x.GiaBan,
+                                        MacDinh = x.MacDinh
+                                    })
+                                    .ToList()
+            };
+        }
+
+        public async Task<List<SanPhamDto>> GetAllAsync()
+        {
+            var list = await _context.SanPhams.AsNoTracking()
+                .Include(x => x.NhomSanPham)
+                .Include(x => x.SanPhamBienThes)
+                .Where(x => !x.IsDeleted)
+                .OrderByDescending(x => x.LastModified)
+                .ToListAsync();
+
+            return list.Select(ToDto).ToList();
+        }
+        public async Task<SanPhamDto?> GetByIdAsync(Guid id)
+        {
+            var entity = await _context.SanPhams
+                .Include(x => x.NhomSanPham)
+                .Include(x => x.SanPhamBienThes)
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+            return entity == null ? null : ToDto(entity);
+        }
+
+        public async Task<Result<SanPhamDto>> CreateAsync(SanPhamDto dto)
+        {
+            var entity = new SanPham
+            {
+                Id = Guid.NewGuid(),
+                Ten = dto.Ten.Trim(),
+                DinhLuong = dto.DinhLuong?.Trim(),
+                VietTat = dto.VietTat?.Trim(),
+                DaBan = dto.DaBan,
+                NgungBan = dto.NgungBan,
+                TichDiem = dto.TichDiem,
+                OldId = dto.OldId,
+                NhomSanPhamId = dto.NhomSanPhamId,
+                CreatedAt = DateTime.Now,
+                LastModified = DateTime.Now,
+                IsDeleted = false,
+                SanPhamBienThes = dto.BienThe.Select(b => new SanPhamBienThe
+                {
+                    Id = Guid.NewGuid(),
+                    TenBienThe = b.TenBienThe,
+                    GiaBan = b.GiaBan,
+                    MacDinh = b.MacDinh,
+                    SanPhamId = Guid.Empty // sẽ gán bên dưới
+                }).ToList()
+            };
+
+            // Gán khóa ngoại cho biến thể
+            foreach (var bt in entity.SanPhamBienThes)
+                bt.SanPhamId = entity.Id;
 
             _context.SanPhams.Add(entity);
             await _context.SaveChangesAsync();
 
-            var resultDto = await GetByIdAsync(entity.Id);
-            return Result<SanPhamDto>.Success("Đã thêm sản phẩm.", resultDto!)
-                .WithId(entity.Id)
-                .WithAfter(resultDto);
+            var after = ToDto(entity);
+            return Result<SanPhamDto>.Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
+                                     .WithId(after.Id)
+                                     .WithAfter(after);
         }
-        catch (DbUpdateException ex)
-        {
-            return Result<SanPhamDto>.Failure(DbExceptionHelper.Handle(ex).Message);
-        }
-        catch (Exception ex)
-        {
-            return Result<SanPhamDto>.Failure(ex.Message);
-        }
-    }
 
-
-    public async Task<Result<SanPhamDto>> UpdateAsync(Guid id, SanPhamDto dto)
-    {
-        try
+        public async Task<Result<SanPhamDto>> UpdateAsync(Guid id, SanPhamDto dto)
         {
             var entity = await _context.SanPhams
-                .Include(sp => sp.SanPhamBienThes)
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .Include(x => x.SanPhamBienThes)
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
             if (entity == null)
-                return Result<SanPhamDto>.Failure("Không tìm thấy sản phẩm.");
+                return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-            var before = _mapper.Map<SanPhamDto>(entity);
-            var bienTheMoi = dto.BienThe ?? new();
-            var bienTheCu = entity.SanPhamBienThes.ToList();
+            if (dto.LastModified < entity.LastModified)
+                return Result<SanPhamDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
-            if (bienTheMoi.Count(bt => bt.MacDinh) > 1)
-                return Result<SanPhamDto>.Failure("Chỉ được chọn một biến thể mặc định.");
+            var before = ToDto(entity);
 
-            // ✅ Bước 1: Xoá biến thể cũ trước khi map
-            foreach (var btCu in bienTheCu)
+            // Cập nhật các trường
+            entity.Ten = dto.Ten.Trim();
+            entity.DinhLuong = dto.DinhLuong?.Trim();
+            entity.VietTat = dto.VietTat?.Trim();
+            entity.DaBan = dto.DaBan;
+            entity.NgungBan = dto.NgungBan;
+            entity.TichDiem = dto.TichDiem;
+            entity.NhomSanPhamId = dto.NhomSanPhamId;
+            entity.LastModified = DateTime.Now;
+
+            // Cập nhật danh sách biến thể: xóa hết rồi thêm lại
+            entity.SanPhamBienThes.Clear();
+            foreach (var b in dto.BienThe)
             {
-                if (!bienTheMoi.Any(bt => bt.Id == btCu.Id))
+                entity.SanPhamBienThes.Add(new SanPhamBienThe
                 {
-                    bool daSuDung = await _context.ChiTietHoaDons
-                        .AnyAsync(ct => ct.SanPhamBienTheId == btCu.Id);
-
-                    if (!daSuDung)
-                    {
-                        // Đảm bảo tracking từ DbContext
-                        var btTracked = await _context.SanPhamBienThes.FindAsync(btCu.Id);
-                        if (btTracked != null)
-                            _context.SanPhamBienThes.Remove(btTracked);
-                    }
-                }
-            }
-
-            // ✅ Bước 2: map dto vào entity (sau khi đã xử lý xong xoá cũ)
-            _mapper.Map(dto, entity);
-
-            // ✅ Bước 3: Xử lý thêm/sửa biến thể
-            foreach (var btMoi in bienTheMoi)
-            {
-                var btEntity = entity.SanPhamBienThes.FirstOrDefault(x => x.Id == btMoi.Id);
-                if (btEntity != null)
-                {
-                    btEntity.TenBienThe = btMoi.TenBienThe;
-                    btEntity.GiaBan = btMoi.GiaBan;
-                    btEntity.MacDinh = btMoi.MacDinh;
-                }
-                else
-                {
-                    var newBt = _mapper.Map<SanPhamBienThe>(btMoi);
-                    newBt.Id = Guid.NewGuid();
-                    newBt.IdSanPham = entity.Id;
-                    _context.SanPhamBienThes.Add(newBt);
-                }
+                    Id = Guid.NewGuid(),
+                    TenBienThe = b.TenBienThe,
+                    GiaBan = b.GiaBan,
+                    MacDinh = b.MacDinh,
+                    SanPhamId = entity.Id
+                });
             }
 
             await _context.SaveChangesAsync();
 
-            var after = await GetByIdAsync(id);
-            return Result<SanPhamDto>.Success("Đã cập nhật sản phẩm.", after!)
-                .WithId(id)
-                .WithBefore(before)
-                .WithAfter(after);
+            var after = ToDto(entity);
+            return Result<SanPhamDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
+                                     .WithId(id)
+                                     .WithBefore(before)
+                                     .WithAfter(after);
         }
-        catch (DbUpdateException ex)
+
+        public async Task<Result<SanPhamDto>> DeleteAsync(Guid id)
         {
-            return Result<SanPhamDto>.Failure(DbExceptionHelper.Handle(ex).Message);
+            var entity = await _context.SanPhams
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (entity == null || entity.IsDeleted)
+                return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
+
+            var before = ToDto(entity);
+
+            entity.IsDeleted = true;
+            entity.DeletedAt = DateTime.Now;
+            entity.LastModified = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return Result<SanPhamDto>.Success(before, $"Xoá {_friendlyName.ToLower()} thành công.")
+                                     .WithId(before.Id)
+                                     .WithBefore(before);
         }
-        catch (Exception ex)
+
+        public async Task<Result<SanPhamDto>> RestoreAsync(Guid id)
         {
-            return Result<SanPhamDto>.Failure(ex.Message);
+            var entity = await _context.SanPhams
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (entity == null)
+                return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
+
+            if (!entity.IsDeleted)
+                return Result<SanPhamDto>.Failure($"{_friendlyName} này chưa bị xoá.");
+
+            entity.IsDeleted = false;
+            entity.DeletedAt = null;
+            entity.LastModified = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            var after = ToDto(entity);
+            return Result<SanPhamDto>.Success(after, $"Khôi phục {_friendlyName.ToLower()} thành công.")
+                                     .WithId(after.Id)
+                                     .WithAfter(after);
         }
-    }
-    //public async Task<Result<SanPhamDto>> UpdateAsync(Guid id, SanPhamDto dto)
-    //{
-    //    try
-    //    {
-    //        var entity = await _context.SanPhams
-    //            .Include(sp => sp.SanPhamBienThes)
-    //            .FirstOrDefaultAsync(x => x.Id == id);
 
-    //        if (entity == null)
-    //            return Result<SanPhamDto>.Failure("Không tìm thấy sản phẩm.");
+        public async Task<List<SanPhamDto>> GetUpdatedSince(DateTime lastSync)
+        {
+            var list = await _context.SanPhams.AsNoTracking()
+                .Include(x => x.NhomSanPham)
+                .Include(x => x.SanPhamBienThes)
+                .Where(x => x.LastModified > lastSync)
+                .OrderByDescending(x => x.LastModified)
+                .ToListAsync();
 
-    //        var before = _mapper.Map<SanPhamDto>(entity);
-    //        var bienTheMoi = dto.BienThe;
-    //        var bienTheCu = entity.SanPhamBienThes.ToList();
-
-    //        if (bienTheMoi.Count(bt => bt.MacDinh) > 1)
-    //            return Result<SanPhamDto>.Failure("Chỉ được chọn một biến thể mặc định.");
-
-    //        _mapper.Map(dto, entity);
-
-    //        foreach (var bt in entity.SanPhamBienThes)
-    //            bt.MacDinh = false;
-
-    //        await _context.SaveChangesAsync();
-
-    //        foreach (var btCu in bienTheCu)
-    //        {
-    //            if (!bienTheMoi.Any(bt => bt.Id == btCu.Id))
-    //            {
-    //                bool daSuDung = await _context.ChiTietHoaDons
-    //                    .AnyAsync(ct => ct.SanPhamBienTheId == btCu.Id);
-
-    //                if (!daSuDung)
-    //                    _context.SanPhamBienThes.Remove(btCu);
-    //            }
-    //        }
-
-    //        foreach (var btMoi in bienTheMoi)
-    //        {
-    //            var btEntity = entity.SanPhamBienThes.FirstOrDefault(x => x.Id == btMoi.Id);
-    //            if (btEntity != null)
-    //            {
-    //                btEntity.TenBienThe = btMoi.TenBienThe;
-    //                btEntity.GiaBan = btMoi.GiaBan;
-    //                btEntity.MacDinh = btMoi.MacDinh;
-    //            }
-    //            else
-    //            {
-    //                var newBt = _mapper.Map<SanPhamBienThe>(btMoi);
-    //                newBt.Id = Guid.NewGuid();
-    //                newBt.IdSanPham = entity.Id;
-    //                _context.SanPhamBienThes.Add(newBt);
-    //            }
-    //        }
-
-    //        await _context.SaveChangesAsync();
-
-    //        var after = await GetByIdAsync(id);
-    //        return Result<SanPhamDto>.Success("Đã cập nhật sản phẩm.", after!)
-    //            .WithId(id)
-    //            .WithBefore(before)
-    //            .WithAfter(after);
-    //    }
-    //    catch (DbUpdateException ex)
-    //    {
-    //        return Result<SanPhamDto>.Failure(DbExceptionHelper.Handle(ex).Message);
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        return Result<SanPhamDto>.Failure(ex.Message);
-    //    }
-    //}
-
-    public async Task<Result<SanPhamDto>> DeleteAsync(Guid id)
-    {
-        var entity = await _context.SanPhams
-            .Include(sp => sp.SanPhamBienThes)
-            .FirstOrDefaultAsync(x => x.Id == id);
-
-        if (entity == null)
-            return Result<SanPhamDto>.Failure("Không tìm thấy sản phẩm.");
-
-        var before = _mapper.Map<SanPhamDto>(entity);
-
-        _context.SanPhamBienThes.RemoveRange(entity.SanPhamBienThes);
-        _context.SanPhams.Remove(entity);
-        await _context.SaveChangesAsync();
-
-        return Result<SanPhamDto>.Success("Đã xoá sản phẩm.", before)
-            .WithId(id)
-            .WithBefore(before);
+            return list.Select(ToDto).ToList();
+        }
     }
 }

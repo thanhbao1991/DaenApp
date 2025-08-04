@@ -8,9 +8,9 @@ public partial class KhachHang : EntityBase
 
     public bool DuocNhanVoucher { get; set; }
 
-    public virtual ICollection<CustomerPointLog> CustomerPointLogs { get; set; } = new List<CustomerPointLog>();
+    public virtual ICollection<DiemKhachHangLog> DiemKhachHangLogs { get; set; } = new List<DiemKhachHangLog>();
 
-    public virtual ICollection<CustomerPoint> CustomerPoints { get; set; } = new List<CustomerPoint>();
+    public virtual ICollection<DiemKhachHang> DiemKhachHangs { get; set; } = new List<DiemKhachHang>();
 
     public virtual ICollection<HoaDon> HoaDons { get; set; } = new List<HoaDon>();
 
@@ -18,3 +18,8 @@ public partial class KhachHang : EntityBase
 
     public virtual ICollection<KhachHangPhone> KhachHangPhones { get; set; } = new List<KhachHangPhone>();
 }
+
+
+
+
+

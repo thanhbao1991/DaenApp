@@ -4,6 +4,7 @@
     {
         public static readonly Dictionary<string, string> _tableFriendlyNames = new()
         {
+            ["PhuongThucThanhToan"] = "Phương thức thanh toán",
             ["SanPham"] = "Sản phẩm",
             ["SanPhamBienThe"] = "Biến thể sản phẩm",
             ["NhomSanPham"] = "Nhóm sản phẩm",
@@ -27,10 +28,10 @@
             ["SuDungNguyenLieu"] = "Sử dụng nguyên liệu",
             ["Log"] = "Log hệ thống",
             ["LichSuChinhSua"] = "Lịch sử chỉnh sửa",
-            ["CustomerPoint"] = "Điểm khách hàng",
-            ["CustomerPointLog"] = "Lịch sử điểm",
+            ["DiemKhachHang"] = "Điểm khách hàng",
+            ["DiemKhachHangLog"] = "Lịch sử điểm",
             ["Topping"] = "Topping",
-            ["ToppingNhomSanPham"] = "Topping nhóm sản phẩm",
+            ["ToppingNhomSanPhams"] = "Topping nhóm sản phẩm",
             ["TuyChinhMon"] = "Tuỳ chỉnh món",
             ["ChiTietTuyChinhMon"] = "Chi tiết tuỳ chỉnh món",
             ["CongViecNoiBo"] = "Công việc nội bộ",
@@ -40,3 +41,4 @@
 
     }
 }
+

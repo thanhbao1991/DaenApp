@@ -1,5 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Remove="Data\Entities\**" />
+    <EmbeddedResource Remove="Data\Entities\**" />
+    <None Remove="Data\Entities\**" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\TraSuaApp.Application\TraSuaApp.Application.csproj" />
     <ProjectReference Include="..\TraSuaApp.Domain\TraSuaApp.Domain.csproj" />
     <ProjectReference Include="..\TraSuaApp.Shared\TraSuaApp.Shared.csproj" />
@@ -17,6 +22,10 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Helpers\" />
   </ItemGroup>
 
   <PropertyGroup>

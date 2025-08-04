@@ -30,14 +30,14 @@ public class ToppingService : IToppingService
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
-            IdNhomSanPhams = entity.IdNhomSanPhams.Select(x => x.Id).ToList()
+            NhomSanPhams = entity.NhomSanPhams.Select(x => x.Id).ToList()
         };
     }
 
     public async Task<List<ToppingDto>> GetAllAsync()
     {
-        var list = await _context.Toppings
-            .Include(x => x.IdNhomSanPhams)
+        var list = await _context.Toppings.AsNoTracking()
+            .Include(x => x.NhomSanPhams)
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.LastModified)
             .ToListAsync();
@@ -48,7 +48,7 @@ public class ToppingService : IToppingService
     public async Task<ToppingDto?> GetByIdAsync(Guid id)
     {
         var entity = await _context.Toppings
-            .Include(x => x.IdNhomSanPhams)
+            .Include(x => x.NhomSanPhams)
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
         return entity == null ? null : ToDto(entity);
@@ -57,19 +57,19 @@ public class ToppingService : IToppingService
     public async Task<Result<ToppingDto>> CreateAsync(ToppingDto dto)
     {
         var nhoms = await _context.NhomSanPhams
-            .Where(x => dto.IdNhomSanPhams.Contains(x.Id))
+            .Where(x => dto.NhomSanPhams.Contains(x.Id))
             .ToListAsync();
 
         var entity = new Topping
         {
             Id = Guid.NewGuid(),
-            Ten = StringHelper.NormalizeString(dto.Ten).Trim(),
+            Ten = dto.Ten.Trim(),
             Gia = dto.Gia,
             NgungBan = dto.NgungBan,
             CreatedAt = DateTime.Now,
             LastModified = DateTime.Now,
             IsDeleted = false,
-            IdNhomSanPhams = nhoms
+            NhomSanPhams = nhoms
         };
 
         _context.Toppings.Add(entity);
@@ -84,7 +84,7 @@ public class ToppingService : IToppingService
     public async Task<Result<ToppingDto>> UpdateAsync(Guid id, ToppingDto dto)
     {
         var entity = await _context.Toppings
-            .Include(x => x.IdNhomSanPhams)
+            .Include(x => x.NhomSanPhams)
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
         if (entity == null)
@@ -94,16 +94,16 @@ public class ToppingService : IToppingService
             return Result<ToppingDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         var nhoms = await _context.NhomSanPhams
-            .Where(x => dto.IdNhomSanPhams.Contains(x.Id))
+            .Where(x => dto.NhomSanPhams.Contains(x.Id))
             .ToListAsync();
 
         var before = ToDto(entity);
 
-        entity.Ten = StringHelper.NormalizeString(dto.Ten).Trim();
+        entity.Ten = dto.Ten.Trim();
         entity.Gia = dto.Gia;
         entity.NgungBan = dto.NgungBan;
         entity.LastModified = DateTime.Now;
-        entity.IdNhomSanPhams = nhoms;
+        entity.NhomSanPhams = nhoms;
 
         await _context.SaveChangesAsync();
 
@@ -117,7 +117,7 @@ public class ToppingService : IToppingService
     public async Task<Result<ToppingDto>> DeleteAsync(Guid id)
     {
         var entity = await _context.Toppings
-            .Include(x => x.IdNhomSanPhams)
+            .Include(x => x.NhomSanPhams)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null || entity.IsDeleted)
@@ -139,7 +139,7 @@ public class ToppingService : IToppingService
     public async Task<Result<ToppingDto>> RestoreAsync(Guid id)
     {
         var entity = await _context.Toppings
-            .Include(x => x.IdNhomSanPhams)
+            .Include(x => x.NhomSanPhams)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null)
@@ -162,8 +162,8 @@ public class ToppingService : IToppingService
 
     public async Task<List<ToppingDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.Toppings
-            .Include(x => x.IdNhomSanPhams)
+        var list = await _context.Toppings.AsNoTracking()
+            .Include(x => x.NhomSanPhams)
             .Where(x => x.LastModified > lastSync)
                  .OrderByDescending(x => x.LastModified) // ✅ THÊM DÒNG NÀY
             .ToListAsync();

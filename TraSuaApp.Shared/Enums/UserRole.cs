@@ -1,4 +1,4 @@
-namespace TraSuaApp.Shared.Enums
+﻿namespace TraSuaApp.Shared.Enums
 {
     public enum UserRole
     {

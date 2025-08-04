@@ -1,18 +1,22 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using TraSuaApp.Infrastructure.Data;
 
-public partial class NhomSanPham
+namespace TraSuaApp.Domain.Entities;
+
+public partial class NhomSanPham : EntityBase
 {
 
-    public DateTime CreatedAt { get; set; }
-    public DateTime? LastModified { get; set; }
-    public bool IsDeleted { get; set; }
-    public DateTime? DeletedAt { get; set; }
-
-    public Guid Id { get; set; }
     public string Ten { get; set; } = null!;
-    public int STT { get; set; }
+
 
     public virtual ICollection<SanPham> SanPhams { get; set; } = new List<SanPham>();
 
-    public virtual ICollection<Topping> IdToppings { get; set; } = new List<Topping>();
+    public virtual ICollection<ToppingNhomSanPhams> ToppingNhomSanPhams { get; set; } = new List<ToppingNhomSanPhams>();
+
+    public virtual ICollection<Topping> Toppings { get; set; } = new List<Topping>();
+
 }
+
+
+
+
+

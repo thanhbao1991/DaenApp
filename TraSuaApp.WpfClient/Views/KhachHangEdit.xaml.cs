@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Apis;
@@ -395,6 +396,7 @@ namespace TraSuaApp.WpfClient.Views
         {
             if (e.Key == Key.Escape)
                 CloseButton_Click(null!, null!);
+            else
             if (e.Key == Key.Enter)
             {
                 if (Keyboard.FocusedElement is Button
@@ -416,51 +418,6 @@ namespace TraSuaApp.WpfClient.Views
             this.Close();
         }
 
-        private void PhoneTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
-        {
-            e.Handled = !e.Text.All(char.IsDigit);
-        }
-
-        private void PhoneTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Space)
-                e.Handled = true;
-            else
-                            if (e.Key == Key.Down)
-            {
-                if (PhoneListBox.SelectedIndex < PhoneListBox.Items.Count - 1)
-                {
-                    PhoneListBox.SelectedIndex++;
-                    PhoneListBox.ScrollIntoView(PhoneListBox.SelectedItem);
-                    e.Handled = true;
-                }
-            }
-            else
-            if (e.Key == Key.Up)
-            {
-                if (PhoneListBox.SelectedIndex > 0)
-                {
-                    PhoneListBox.SelectedIndex--;
-                    PhoneListBox.ScrollIntoView(PhoneListBox.SelectedItem);
-                    e.Handled = true;
-                }
-            }
-            PhoneTextBox.SelectAll();
-        }
-
-        private void PhoneTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
-        {
-            if (e.DataObject.GetDataPresent(typeof(string)))
-            {
-                var text = (string)e.DataObject.GetData(typeof(string))!;
-                if (!text.All(char.IsDigit))
-                    e.CancelCommand();
-            }
-            else
-            {
-                e.CancelCommand();
-            }
-        }
         private void PhoneListBoxItem_Click(object sender, MouseButtonEventArgs e)
         {
             if (sender is ListBoxItem item && item.DataContext is KhachHangPhoneDto p)
@@ -503,7 +460,9 @@ namespace TraSuaApp.WpfClient.Views
                 {
                     DiaChiListBox.SelectedIndex++;
                     DiaChiListBox.ScrollIntoView(DiaChiListBox.SelectedItem);
+                    DiaChiTextBox.SelectAll();
                     e.Handled = true;
+
                 }
             }
             else
@@ -513,10 +472,10 @@ namespace TraSuaApp.WpfClient.Views
                 {
                     DiaChiListBox.SelectedIndex--;
                     DiaChiListBox.ScrollIntoView(DiaChiListBox.SelectedItem);
+                    DiaChiTextBox.SelectAll();
                     e.Handled = true;
                 }
             }
-            DiaChiTextBox.SelectAll();
         }
     }
 }

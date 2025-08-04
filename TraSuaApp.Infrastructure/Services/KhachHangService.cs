@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Data;
+using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 
@@ -84,9 +85,9 @@ public class KhachHangService : IKhachHangService
 
     private Result<KhachHangDto> ValidateAndNormalize(KhachHangDto dto)
     {
-        dto.Ten = StringHelper.NormalizeString(dto.Ten);
+        dto.Ten = (dto.Ten.Trim());
         foreach (var a in dto.Addresses)
-            a.DiaChi = StringHelper.NormalizeString(a.DiaChi);
+            a.DiaChi = (a.DiaChi.Trim());
         foreach (var p in dto.Phones)
             p.SoDienThoai = NormalizePhone(p.SoDienThoai);
 
@@ -107,7 +108,7 @@ public class KhachHangService : IKhachHangService
 
     public async Task<List<KhachHangDto>> GetAllAsync()
     {
-        var list = await _context.KhachHangs
+        var list = await _context.KhachHangs.AsNoTracking()
             .Include(x => x.KhachHangPhones)
             .Include(x => x.KhachHangAddresses)
             .Where(x => !x.IsDeleted)
@@ -185,9 +186,9 @@ public class KhachHangService : IKhachHangService
         };
 
         foreach (var p in entity.KhachHangPhones)
-            p.IdKhachHang = entity.Id;
+            p.KhachHangId = entity.Id;
         foreach (var a in entity.KhachHangAddresses)
-            a.IdKhachHang = entity.Id;
+            a.KhachHangId = entity.Id;
 
         _context.KhachHangs.Add(entity);
         await _context.SaveChangesAsync();
@@ -216,7 +217,7 @@ public class KhachHangService : IKhachHangService
             return validation;
 
         bool trung = await _context.KhachHangPhones
-            .AnyAsync(p => dto.Phones.Select(x => x.SoDienThoai).Contains(p.SoDienThoai) && p.IdKhachHang != id);
+            .AnyAsync(p => dto.Phones.Select(x => x.SoDienThoai).Contains(p.SoDienThoai) && p.KhachHangId != id);
 
         if (trung)
             return Result<KhachHangDto>.Failure($"Số điện thoại đã tồn tại ở {_friendlyName} khác.");
@@ -251,7 +252,7 @@ public class KhachHangService : IKhachHangService
                     Id = Guid.NewGuid(),
                     SoDienThoai = phoneDto.SoDienThoai,
                     IsDefault = phoneDto.IsDefault,
-                    IdKhachHang = entity.Id
+                    KhachHangId = entity.Id
                 });
             }
         }
@@ -271,7 +272,7 @@ public class KhachHangService : IKhachHangService
                     Id = Guid.NewGuid(),
                     DiaChi = addrDto.DiaChi,
                     IsDefault = addrDto.IsDefault,
-                    IdKhachHang = entity.Id
+                    KhachHangId = entity.Id
                 });
             }
         }
@@ -334,7 +335,7 @@ public class KhachHangService : IKhachHangService
 
     public async Task<List<KhachHangDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.KhachHangs
+        var list = await _context.KhachHangs.AsNoTracking()
             .Include(x => x.KhachHangPhones)
             .Include(x => x.KhachHangAddresses)
             .Where(x => x.LastModified > lastSync)

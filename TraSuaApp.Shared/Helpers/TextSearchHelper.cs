@@ -37,18 +37,21 @@ namespace TraSuaApp.Shared.Helpers
 
             foreach (var word in words)
             {
-                if (char.IsDigit(word[0]))
+                if (string.IsNullOrWhiteSpace(word))
+                    continue;
+
+                // Nếu từ bắt đầu bằng chữ + số (vd: 5b, 3a) → lấy toàn bộ
+                if (char.IsDigit(word[0]) || (word.Length > 1 && char.IsDigit(word[1])))
                 {
-                    // Nếu là số đầu tiên → giữ toàn bộ cụm số (vd: "02")
-                    shortName.Append(word.TakeWhile(char.IsDigit).ToArray());
+                    shortName.Append(word);
                 }
                 else
                 {
-                    shortName.Append(word[0]); // Lấy chữ cái đầu
+                    shortName.Append(word[0]);
                 }
             }
 
-            return shortName.ToString();
+            return shortName.ToString().ToLower();
         }
         public static string GetAcronym(string input)
         {

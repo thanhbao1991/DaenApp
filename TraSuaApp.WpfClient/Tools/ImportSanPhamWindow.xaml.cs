@@ -40,7 +40,7 @@ namespace TraSuaApp.WpfClient.Tools
                     var parts = line.Split('\t');
                     if (parts.Length < 3) continue;
 
-                    var idOld = int.Parse(parts[0]);
+                    var OldId = int.Parse(parts[0]);
                     var ten = parts[1].Trim();
                     if (!decimal.TryParse(parts[2], out var donGia)) continue;
 
@@ -52,7 +52,7 @@ namespace TraSuaApp.WpfClient.Tools
                     var sanPham = new SanPhamDto
                     {
                         Ten = ten,
-                        IdOld = idOld,
+                        OldId = OldId,
                         NgungBan = ngungBan,
                         TichDiem = tichDiem,
                         VietTat = vietTat,
@@ -78,7 +78,7 @@ namespace TraSuaApp.WpfClient.Tools
                     else
                     {
                         var msg = await response.Content.ReadAsStringAsync();
-                        _errorHandler.Handle(new Exception($"Dòng {idOld} - {ten}: {msg}"), "ImportSanPham");
+                        _errorHandler.Handle(new Exception($"Dòng {OldId} - {ten}: {msg}"), "ImportSanPham");
                     }
                 }
 

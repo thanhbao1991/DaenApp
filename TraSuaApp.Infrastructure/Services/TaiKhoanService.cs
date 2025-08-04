@@ -38,7 +38,7 @@ public class TaiKhoanService : ITaiKhoanService
 
     public async Task<List<TaiKhoanDto>> GetAllAsync()
     {
-        var list = await _context.TaiKhoans
+        var list = await _context.TaiKhoans.AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.LastModified)
             .ToListAsync();
@@ -162,7 +162,7 @@ public class TaiKhoanService : ITaiKhoanService
 
     public async Task<List<TaiKhoanDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.TaiKhoans
+        var list = await _context.TaiKhoans.AsNoTracking()
             .Where(x => x.LastModified > lastSync)
                  .OrderByDescending(x => x.LastModified) // ✅ THÊM DÒNG NÀY
             .ToListAsync();

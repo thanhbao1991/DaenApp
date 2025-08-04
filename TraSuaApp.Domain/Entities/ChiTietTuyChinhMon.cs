@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace TraSuaApp.Domain.Entities;
 
-namespace TraSuaApp.Domain.Entities;
-
-public partial class ChiTietTuyChinhMon
+public partial class ChiTietTuyChinhMon : EntityBase
 {
-    public Guid Id { get; set; }
 
     public Guid IdTuyChinhMon { get; set; }
 
@@ -15,3 +11,7 @@ public partial class ChiTietTuyChinhMon
 
     public virtual TuyChinhMon TuyChinhMon { get; set; } = null!;
 }
+
+
+
+

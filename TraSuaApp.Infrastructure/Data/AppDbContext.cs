@@ -3,7 +3,6 @@ using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Domain.Interfaces;
 using TraSuaApp.Infrastructure.Repositories;
-
 namespace TraSuaApp.Infrastructure.Data;
 
 public partial class AppDbContext : DbContext, IAppDbContext
@@ -23,11 +22,18 @@ public partial class AppDbContext : DbContext, IAppDbContext
     {
     }
 
+
     public virtual DbSet<ChiTietHoaDon> ChiTietHoaDons { get; set; }
 
     public virtual DbSet<ChiTietHoaDonNhap> ChiTietHoaDonNhaps { get; set; }
 
+    public virtual DbSet<ChiTietHoaDonNo> ChiTietHoaDonNos { get; set; }
+
+    public virtual DbSet<ChiTietHoaDonThanhToan> ChiTietHoaDonThanhToans { get; set; }
+
     public virtual DbSet<ChiTietHoaDonTopping> ChiTietHoaDonToppings { get; set; }
+
+    public virtual DbSet<ChiTietHoaDonVoucher> ChiTietHoaDonVouchers { get; set; }
 
     public virtual DbSet<ChiTietTuyChinhMon> ChiTietTuyChinhMons { get; set; }
 
@@ -35,9 +41,9 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     public virtual DbSet<CongViecNoiBo> CongViecNoiBos { get; set; }
 
-    public virtual DbSet<CustomerPoint> CustomerPoints { get; set; }
+    public virtual DbSet<DiemKhachHang> DiemKhachHangs { get; set; }
 
-    public virtual DbSet<CustomerPointLog> CustomerPointLogs { get; set; }
+    public virtual DbSet<DiemKhachHangLog> DiemKhachHangLogs { get; set; }
 
     public virtual DbSet<HoaDon> HoaDons { get; set; }
 
@@ -49,8 +55,6 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     public virtual DbSet<KhachHangPhone> KhachHangPhones { get; set; }
 
-    public virtual DbSet<LichSuChinhSua> LichSuChinhSuas { get; set; }
-
     public virtual DbSet<LichSuNhapXuatKho> LichSuNhapXuatKhos { get; set; }
 
     public virtual DbSet<Log> Logs { get; set; }
@@ -59,11 +63,7 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     public virtual DbSet<NhomSanPham> NhomSanPhams { get; set; }
 
-    public virtual DbSet<NoHoaDon> NoHoaDons { get; set; }
-
-    public virtual DbSet<Payment> Payments { get; set; }
-
-    public virtual DbSet<PaymentMethod> PaymentMethods { get; set; }
+    public virtual DbSet<PhuongThucThanhToan> PhuongThucThanhToans { get; set; }
 
     public virtual DbSet<SanPham> SanPhams { get; set; }
 
@@ -79,43 +79,27 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     public virtual DbSet<Voucher> Vouchers { get; set; }
 
-    public virtual DbSet<VoucherLog> VoucherLogs { get; set; }
-
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseSqlServer("Server=.;Database=TraSuaAppDb;Trusted_Connection=True;TrustServerCertificate=True");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<KhachHangPhone>(entity =>
-        {
-            entity.HasOne(p => p.KhachHang)
-                .WithMany(k => k.KhachHangPhones)
-                .HasForeignKey(p => p.IdKhachHang)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<KhachHangAddress>(entity =>
-        {
-            entity.HasOne(p => p.KhachHang)
-                .WithMany(k => k.KhachHangAddresses)
-                .HasForeignKey(p => p.IdKhachHang)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-
-
-
-
         modelBuilder.Entity<ChiTietHoaDon>(entity =>
         {
             entity.HasIndex(e => e.HoaDonId, "IX_ChiTietHoaDons_HoaDonId");
+
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_ChiTietHoaDons_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.HasIndex(e => e.SanPhamBienTheId, "IX_ChiTietHoaDons_SanPhamBienTheId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.DonGia).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.NoteText).HasDefaultValue("");
+            entity.Property(e => e.TenBienThe).HasDefaultValue("");
+            entity.Property(e => e.TenSanPham).HasDefaultValue("");
             entity.Property(e => e.ThanhTien).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.ToppingText).HasDefaultValue("");
 
             entity.HasOne(d => d.HoaDon).WithMany(p => p.ChiTietHoaDons).HasForeignKey(d => d.HoaDonId);
 
@@ -125,6 +109,8 @@ public partial class AppDbContext : DbContext, IAppDbContext
         modelBuilder.Entity<ChiTietHoaDonNhap>(entity =>
         {
             entity.HasIndex(e => e.HoaDonNhapId, "IX_ChiTietHoaDonNhaps_HoaDonNhapId");
+
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_ChiTietHoaDonNhaps_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.HasIndex(e => e.NguyenLieuId, "IX_ChiTietHoaDonNhaps_NguyenLieuId");
 
@@ -137,22 +123,89 @@ public partial class AppDbContext : DbContext, IAppDbContext
             entity.HasOne(d => d.NguyenLieu).WithMany(p => p.ChiTietHoaDonNhaps).HasForeignKey(d => d.NguyenLieuId);
         });
 
+        modelBuilder.Entity<ChiTietHoaDonNo>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_NoHoaDons");
+
+            entity.HasIndex(e => e.HoaDonId, "IX_NoHoaDons_HoaDonId");
+
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_NoHoaDons_IsDeleted_LastModified").IsDescending(false, true);
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.SoTienDaTra).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.SoTienNo).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.HoaDon).WithMany(p => p.ChiTietHoaDonNos)
+                .HasForeignKey(d => d.HoaDonId)
+                .HasConstraintName("FK_NoHoaDons_HoaDons_HoaDonId");
+        });
+
+        modelBuilder.Entity<ChiTietHoaDonThanhToan>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Payments");
+
+            entity.HasIndex(e => e.HoaDonId, "IX_Payments_HoaDonId");
+
+            entity.HasIndex(e => e.PhuongThucThanhToanId, "IX_Payments_PaymentMethodId");
+
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_ThanhToans_IsDeleted_LastModified").IsDescending(false, true);
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.SoTien).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.HoaDon).WithMany(p => p.ChiTietHoaDonThanhToans)
+                .HasForeignKey(d => d.HoaDonId)
+                .HasConstraintName("FK_Payments_HoaDons_HoaDonId");
+
+            entity.HasOne(d => d.PhuongThucThanhToan).WithMany(p => p.ChiTietHoaDonThanhToans)
+                .HasForeignKey(d => d.PhuongThucThanhToanId)
+                .HasConstraintName("FK_Payments_PaymentMethods_PaymentMethodId");
+        });
+
         modelBuilder.Entity<ChiTietHoaDonTopping>(entity =>
         {
             entity.HasIndex(e => e.HoaDonId, "IX_ChiTietHoaDonToppings_HoaDonId");
+
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_ChiTietHoaDonToppings_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.HasIndex(e => e.ToppingId, "IX_ChiTietHoaDonToppings_ToppingId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Gia).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.TenTopping).HasDefaultValue("");
 
             entity.HasOne(d => d.HoaDon).WithMany(p => p.ChiTietHoaDonToppings).HasForeignKey(d => d.HoaDonId);
 
             entity.HasOne(d => d.Topping).WithMany(p => p.ChiTietHoaDonToppings).HasForeignKey(d => d.ToppingId);
         });
 
+        modelBuilder.Entity<ChiTietHoaDonVoucher>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_VoucherLogs");
+
+            entity.HasIndex(e => e.HoaDonId, "IX_VoucherLogs_HoaDonId");
+
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_VoucherLogs_IsDeleted_LastModified").IsDescending(false, true);
+
+            entity.HasIndex(e => e.VoucherId, "IX_VoucherLogs_VoucherId");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.GiaTriApDung).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.TenVoucher).HasDefaultValue("");
+
+            entity.HasOne(d => d.HoaDon).WithMany(p => p.ChiTietHoaDonVouchers)
+                .HasForeignKey(d => d.HoaDonId)
+                .HasConstraintName("FK_VoucherLogs_HoaDons_HoaDonId");
+
+            entity.HasOne(d => d.Voucher).WithMany(p => p.ChiTietHoaDonVouchers)
+                .HasForeignKey(d => d.VoucherId)
+                .HasConstraintName("FK_VoucherLogs_Vouchers_VoucherId");
+        });
+
         modelBuilder.Entity<ChiTietTuyChinhMon>(entity =>
         {
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_ChiTietTuyChinhMons_IsDeleted_LastModified").IsDescending(false, true);
+
             entity.HasIndex(e => e.TuyChinhMonId, "IX_ChiTietTuyChinhMons_TuyChinhMonId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
@@ -162,6 +215,8 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
         modelBuilder.Entity<CongThuc>(entity =>
         {
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_CongThucs_IsDeleted_LastModified").IsDescending(false, true);
+
             entity.HasIndex(e => e.SanPhamBienTheId, "IX_CongThucs_SanPhamBienTheId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
@@ -171,36 +226,46 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
         modelBuilder.Entity<CongViecNoiBo>(entity =>
         {
-            entity.HasIndex(e => e.NguoiTaoId, "IX_CongViecNoiBos_NguoiTaoId");
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_CongViecNoiBos_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.Property(e => e.Id).ValueGeneratedNever();
-
-            entity.HasOne(d => d.NguoiTao).WithMany(p => p.CongViecNoiBos).HasForeignKey(d => d.NguoiTaoId);
         });
 
-        modelBuilder.Entity<CustomerPoint>(entity =>
+        modelBuilder.Entity<DiemKhachHang>(entity =>
         {
+            entity.HasKey(e => e.Id).HasName("PK_CustomerPoints");
+
             entity.HasIndex(e => e.KhachHangId, "IX_CustomerPoints_KhachHangId");
 
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_DiemKhachHangs_IsDeleted_LastModified").IsDescending(false, true);
+
             entity.Property(e => e.Id).ValueGeneratedNever();
 
-            entity.HasOne(d => d.KhachHang).WithMany(p => p.CustomerPoints).HasForeignKey(d => d.KhachHangId);
+            entity.HasOne(d => d.KhachHang).WithMany(p => p.DiemKhachHangs)
+                .HasForeignKey(d => d.KhachHangId)
+                .HasConstraintName("FK_CustomerPoints_KhachHangs_KhachHangId");
         });
 
-        modelBuilder.Entity<CustomerPointLog>(entity =>
+        modelBuilder.Entity<DiemKhachHangLog>(entity =>
         {
+            entity.HasKey(e => e.Id).HasName("PK_CustomerPointLogs");
+
             entity.HasIndex(e => e.KhachHangId, "IX_CustomerPointLogs_KhachHangId");
+
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_DiemKhachHangLogs_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.Property(e => e.Id).ValueGeneratedNever();
 
-            entity.HasOne(d => d.KhachHang).WithMany(p => p.CustomerPointLogs).HasForeignKey(d => d.KhachHangId);
+            entity.HasOne(d => d.KhachHang).WithMany(p => p.DiemKhachHangLogs)
+                .HasForeignKey(d => d.KhachHangId)
+                .HasConstraintName("FK_CustomerPointLogs_KhachHangs_KhachHangId");
         });
 
         modelBuilder.Entity<HoaDon>(entity =>
         {
-            entity.HasIndex(e => e.KhachHangId, "IX_HoaDons_KhachHangId");
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_HoaDons_IsDeleted_LastModified").IsDescending(false, true);
 
-            entity.HasIndex(e => e.TaiKhoanId, "IX_HoaDons_TaiKhoanId");
+            entity.HasIndex(e => e.KhachHangId, "IX_HoaDons_KhachHangId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.GiamGia).HasColumnType("decimal(18, 2)");
@@ -208,21 +273,19 @@ public partial class AppDbContext : DbContext, IAppDbContext
             entity.Property(e => e.TongTien).HasColumnType("decimal(18, 2)");
 
             entity.HasOne(d => d.KhachHang).WithMany(p => p.HoaDons).HasForeignKey(d => d.KhachHangId);
-
-            entity.HasOne(d => d.TaiKhoan).WithMany(p => p.HoaDons).HasForeignKey(d => d.TaiKhoanId);
         });
 
         modelBuilder.Entity<HoaDonNhap>(entity =>
         {
-            entity.HasIndex(e => e.TaiKhoanId, "IX_HoaDonNhaps_TaiKhoanId");
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_HoaDonNhaps_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.Property(e => e.Id).ValueGeneratedNever();
-
-            entity.HasOne(d => d.TaiKhoan).WithMany(p => p.HoaDonNhaps).HasForeignKey(d => d.TaiKhoanId);
         });
 
         modelBuilder.Entity<KhachHang>(entity =>
         {
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_KhachHangs_IsDeleted_LastModified").IsDescending(false, true);
+
             entity.Property(e => e.Id).ValueGeneratedNever();
         });
 
@@ -230,40 +293,43 @@ public partial class AppDbContext : DbContext, IAppDbContext
         {
             entity.HasKey(e => e.Id).HasName("PK_ShippingAddresses");
 
+            entity.HasIndex(e => new { e.KhachHangId, e.DiaChi }, "IX_KhachHangAddresses_IdKhachHang_TenDiaChi").IsUnique();
 
-            entity.HasIndex(e => e.IdKhachHang, "IX_ShippingAddresses_KhachHangId");
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_KhachHangAddresses_IsDeleted_LastModified").IsDescending(false, true);
+
+            entity.HasIndex(e => e.KhachHangId, "IX_ShippingAddresses_KhachHangId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.DiaChi).HasMaxLength(255);
 
             entity.HasOne(d => d.KhachHang).WithMany(p => p.KhachHangAddresses)
-                .HasForeignKey(d => d.IdKhachHang)
-                .HasConstraintName("FK_ShippingAddresses_KhachHangs_KhachHangId");
+                .HasForeignKey(d => d.KhachHangId)
+                .HasConstraintName("FK_KhachHangAddresses_KhachHangs_IdKhachHang");
         });
 
         modelBuilder.Entity<KhachHangPhone>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK_CustomerPhoneNumbers");
 
-            entity.HasIndex(e => e.IdKhachHang, "IX_CustomerPhoneNumbers_KhachHangId");
+            entity.HasIndex(e => e.KhachHangId, "IX_CustomerPhoneNumbers_KhachHangId");
+
+            entity.HasIndex(e => new { e.KhachHangId, e.SoDienThoai }, "IX_KhachHangPhones_IdKhachHang_SoDienThoai").IsUnique();
+
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_KhachHangPhones_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.KhachHangId).HasColumnName("KhachHangID");
+            entity.Property(e => e.SoDienThoai).HasMaxLength(10);
 
             entity.HasOne(d => d.KhachHang).WithMany(p => p.KhachHangPhones)
-                .HasForeignKey(d => d.IdKhachHang)
-                .HasConstraintName("FK_CustomerPhoneNumbers_KhachHangs_KhachHangId");
-        });
-
-        modelBuilder.Entity<LichSuChinhSua>(entity =>
-        {
-            entity.HasIndex(e => e.TaiKhoanId, "IX_LichSuChinhSuas_TaiKhoanId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-
-            entity.HasOne(d => d.TaiKhoan).WithMany(p => p.LichSuChinhSuas).HasForeignKey(d => d.TaiKhoanId);
+                .HasForeignKey(d => d.KhachHangId)
+                .HasConstraintName("FK_KhachHangPhones_KhachHangs_IdKhachHang");
         });
 
         modelBuilder.Entity<LichSuNhapXuatKho>(entity =>
         {
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_LichSuNhapXuatKhos_IsDeleted_LastModified").IsDescending(false, true);
+
             entity.HasIndex(e => e.NguyenLieuId, "IX_LichSuNhapXuatKhos_NguyenLieuId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
@@ -275,6 +341,8 @@ public partial class AppDbContext : DbContext, IAppDbContext
         modelBuilder.Entity<Log>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Logs__3214EC07710A63D8");
+
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_Logs_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Ip)
@@ -288,6 +356,8 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
         modelBuilder.Entity<NguyenLieu>(entity =>
         {
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_NguyenLieus_IsDeleted_LastModified").IsDescending(false, true);
+
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.GiaNhap).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.TonKho).HasColumnType("decimal(18, 2)");
@@ -299,66 +369,44 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
             entity.HasIndex(e => e.Ten, "IX_NhomSanPham_Ten").IsUnique();
 
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_NhomSanPhams_IsDeleted_LastModified").IsDescending(false, true);
+
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Ten).HasMaxLength(100);
         });
 
-        modelBuilder.Entity<NoHoaDon>(entity =>
+        modelBuilder.Entity<PhuongThucThanhToan>(entity =>
         {
-            entity.HasIndex(e => e.HoaDonId, "IX_NoHoaDons_HoaDonId");
+            entity.HasKey(e => e.Id).HasName("PK_PaymentMethods");
+
+            entity.HasIndex(e => e.Ten, "IX_PaymentMethods_Ten").IsUnique();
+
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_PhuongThucThanhToans_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.SoTienDaTra).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.SoTienNo).HasColumnType("decimal(18, 2)");
-
-            entity.HasOne(d => d.HoaDon).WithMany(p => p.NoHoaDons).HasForeignKey(d => d.HoaDonId);
-        });
-
-        modelBuilder.Entity<Payment>(entity =>
-        {
-            entity.HasIndex(e => e.HoaDonId, "IX_Payments_HoaDonId");
-
-            entity.HasIndex(e => e.PaymentMethodId, "IX_Payments_PaymentMethodId");
-
-            entity.HasIndex(e => e.TaiKhoanThucHienId, "IX_Payments_TaiKhoanThucHienId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.SoTien).HasColumnType("decimal(18, 2)");
-
-            entity.HasOne(d => d.HoaDon).WithMany(p => p.Payments).HasForeignKey(d => d.HoaDonId);
-
-            entity.HasOne(d => d.PaymentMethod).WithMany(p => p.Payments).HasForeignKey(d => d.PaymentMethodId);
-
-            entity.HasOne(d => d.TaiKhoanThucHien).WithMany(p => p.Payments).HasForeignKey(d => d.TaiKhoanThucHienId);
-        });
-
-        modelBuilder.Entity<PaymentMethod>(entity =>
-        {
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Ten).HasMaxLength(255);
         });
 
         modelBuilder.Entity<SanPham>(entity =>
         {
             entity.HasIndex(e => e.Ten, "IX_SanPham_Ten").IsUnique();
 
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_SanPhams_IsDeleted_LastModified").IsDescending(false, true);
+
             entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.IdOld).HasColumnName("IdOLD");
+            entity.Property(e => e.NhomSanPhamId).HasColumnName("NhomSanPhamID");
             entity.Property(e => e.Ten).HasMaxLength(255);
             entity.Property(e => e.TichDiem).HasDefaultValue(true);
 
-            entity.HasOne(sp => sp.IdNhomSanPhamNavigation)
-         .WithMany(nsp => nsp.SanPhams)
-         .HasForeignKey(sp => sp.IdNhomSanPham)
-         .HasConstraintName("FK_SanPhams_NhomSanPhams");
+            entity.HasOne(d => d.NhomSanPham).WithMany(p => p.SanPhams)
+                .HasForeignKey(d => d.NhomSanPhamId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_SanPhams_NhomSanPhams_NhomSanPhamId");
         });
 
         modelBuilder.Entity<SanPhamBienThe>(entity =>
         {
-            entity.HasIndex(e => e.IdSanPham, "IX_BienThe_MacDinh")
-                .IsUnique()
-                .HasFilter("([MacDinh]=(1))");
-
-            entity.HasIndex(e => new { e.TenBienThe, e.IdSanPham }, "IX_BienThe_Ten_IdSanPham").IsUnique();
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_SanPhamBienThes_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.HasIndex(e => e.SanPhamId, "IX_SanPhamBienThes_SanPhamId");
 
@@ -372,6 +420,8 @@ public partial class AppDbContext : DbContext, IAppDbContext
         modelBuilder.Entity<SuDungNguyenLieu>(entity =>
         {
             entity.HasIndex(e => e.CongThucId, "IX_SuDungNguyenLieus_CongThucId");
+
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_SuDungNguyenLieus_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.HasIndex(e => e.NguyenLieuId, "IX_SuDungNguyenLieus_NguyenLieuId");
 
@@ -387,6 +437,8 @@ public partial class AppDbContext : DbContext, IAppDbContext
         {
             entity.HasIndex(e => e.TenDangNhap, "IX_TaiKhoan_TenDangNhap").IsUnique();
 
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_TaiKhoans_IsDeleted_LastModified").IsDescending(false, true);
+
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.TenDangNhap).HasMaxLength(255);
         });
@@ -395,49 +447,49 @@ public partial class AppDbContext : DbContext, IAppDbContext
         {
             entity.HasIndex(e => e.Ten, "IX_Topping_Ten").IsUnique();
 
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_Toppings_IsDeleted_LastModified").IsDescending(false, true);
+
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Gia).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Ten).HasMaxLength(100);
 
-            entity.HasMany(d => d.IdNhomSanPhams).WithMany(p => p.IdToppings)
+            entity.HasMany(d => d.NhomSanPhams).WithMany(p => p.Toppings)
                 .UsingEntity<Dictionary<string, object>>(
-                    "ToppingNhomSanPham",
+                    "ToppingNhomSanPhamLink",
                     r => r.HasOne<NhomSanPham>().WithMany()
-                        .HasForeignKey("IdNhomSanPham")
-                        .HasConstraintName("FK_ToppingNhomSanPham_NhomSanPham"),
+                        .HasForeignKey("NhomSanPhamId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK_ToppingNhomSanPhamLinks_NhomSanPham"),
                     l => l.HasOne<Topping>().WithMany()
-                        .HasForeignKey("IdTopping")
-                        .HasConstraintName("FK_ToppingNhomSanPham_Topping"),
+                        .HasForeignKey("ToppingId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK_ToppingNhomSanPhamLinks_Topping"),
                     j =>
                     {
-                        j.HasKey("IdTopping", "IdNhomSanPham").HasName("PK_ToppingNhomSanPham");
-                        j.ToTable("ToppingNhomSanPhams");
+                        j.HasKey("ToppingId", "NhomSanPhamId");
+                        j.ToTable("ToppingNhomSanPhamLinks");
+                        j.IndexerProperty<Guid>("ToppingId").HasColumnName("ToppingID");
+                        j.IndexerProperty<Guid>("NhomSanPhamId").HasColumnName("NhomSanPhamID");
                     });
         });
 
         modelBuilder.Entity<TuyChinhMon>(entity =>
         {
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_TuyChinhMons_IsDeleted_LastModified").IsDescending(false, true);
+
             entity.Property(e => e.Id).ValueGeneratedNever();
         });
 
         modelBuilder.Entity<Voucher>(entity =>
         {
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_Vouchers_IsDeleted_LastModified").IsDescending(false, true);
+
+            entity.HasIndex(e => e.Ten, "IX_Vouchers_Ten").IsUnique();
+
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.DieuKienToiThieu).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.GiaTri).HasColumnType("decimal(18, 2)");
-        });
-
-        modelBuilder.Entity<VoucherLog>(entity =>
-        {
-            entity.HasIndex(e => e.HoaDonId, "IX_VoucherLogs_HoaDonId");
-
-            entity.HasIndex(e => e.VoucherId, "IX_VoucherLogs_VoucherId");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.GiaTriApDung).HasColumnType("decimal(18, 2)");
-
-            entity.HasOne(d => d.HoaDon).WithMany(p => p.VoucherLogs).HasForeignKey(d => d.HoaDonId);
-
-            entity.HasOne(d => d.Voucher).WithMany(p => p.VoucherLogs).HasForeignKey(d => d.VoucherId);
+            entity.Property(e => e.Ten).HasMaxLength(255);
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -1,4 +1,4 @@
-namespace TraSuaApp.Shared.Dtos;
+﻿namespace TraSuaApp.Shared.Dtos;
 
 public class ToppingDto : DtoBase
 {
@@ -6,6 +6,8 @@ public class ToppingDto : DtoBase
     public decimal Gia { get; set; }
     public bool NgungBan { get; set; }
 
-    public List<Guid> IdNhomSanPhams { get; set; } = new();
+    public virtual List<Guid> NhomSanPhams { get; set; } = new List<Guid>();
+    public int SoLuong { get; set; }
 
 }
+

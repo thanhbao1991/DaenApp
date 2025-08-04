@@ -1,4 +1,4 @@
-namespace TraSuaApp.Shared.Config
+﻿namespace TraSuaApp.Shared.Config
 {
     public static class ApiConfig
     {
