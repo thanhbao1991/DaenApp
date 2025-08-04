@@ -1,22 +1,31 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class ChiTietHoaDonNo : EntityBase
+namespace TraSuaApp.Domain.Entities;
+
+public partial class ChiTietHoaDonNo
 {
-    public Guid? KhachHangId { get; set; }
-
-    public Guid HoaDonId { get; set; }
+    public Guid Id { get; set; }
 
     public decimal SoTienNo { get; set; }
 
     public decimal SoTienDaTra { get; set; }
 
-    public DateTime Ngay { get; set; }
-
     public DateTime NgayGio { get; set; }
 
-    public virtual HoaDon? HoaDon { get; set; }
+    public Guid HoaDonId { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
+    public bool IsDeleted { get; set; }
+
+    public DateTime? LastModified { get; set; }
+
+    public DateTime Ngay { get; set; }
+
+    public Guid? KhachHangId { get; set; }
+
+    public virtual HoaDon HoaDon { get; set; } = null!;
 }
-
-
-
-

@@ -1,23 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TraSuaApp.Domain.Entities;
+namespace TraSuaApp.Infrastructure.Data.Entities;
 
-public partial class LichSuNhapXuatKho
+public partial class DiemKhachHangLog
 {
     public Guid Id { get; set; }
 
     public DateTime ThoiGian { get; set; }
 
-    public Guid IdNguyenLieu { get; set; }
-
-    public decimal SoLuong { get; set; }
-
-    public string Loai { get; set; } = null!;
+    public int DiemThayDoi { get; set; }
 
     public string? GhiChu { get; set; }
 
-    public Guid NguyenLieuId { get; set; }
+    public Guid KhachHangId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -27,5 +23,5 @@ public partial class LichSuNhapXuatKho
 
     public DateTime? LastModified { get; set; }
 
-    public virtual NguyenLieu NguyenLieu { get; set; } = null!;
+    public virtual KhachHang KhachHang { get; set; } = null!;
 }

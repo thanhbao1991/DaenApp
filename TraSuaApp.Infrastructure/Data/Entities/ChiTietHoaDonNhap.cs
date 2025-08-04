@@ -1,21 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TraSuaApp.Domain.Entities;
+namespace TraSuaApp.Infrastructure.Data.Entities;
 
-public partial class LichSuNhapXuatKho
+public partial class ChiTietHoaDonNhap
 {
     public Guid Id { get; set; }
 
-    public DateTime ThoiGian { get; set; }
-
-    public Guid IdNguyenLieu { get; set; }
-
     public decimal SoLuong { get; set; }
 
-    public string Loai { get; set; } = null!;
+    public decimal DonGia { get; set; }
 
-    public string? GhiChu { get; set; }
+    public Guid HoaDonNhapId { get; set; }
 
     public Guid NguyenLieuId { get; set; }
 
@@ -26,6 +22,8 @@ public partial class LichSuNhapXuatKho
     public bool IsDeleted { get; set; }
 
     public DateTime? LastModified { get; set; }
+
+    public virtual HoaDonNhap HoaDonNhap { get; set; } = null!;
 
     public virtual NguyenLieu NguyenLieu { get; set; } = null!;
 }

@@ -14,10 +14,8 @@ public abstract class DtoBase
     public virtual string Ten { get; set; } = string.Empty;
     public int? Stt { get; set; }
 
-    // ✅ Route API dùng cho BaseDataProvider, BaseEditForm...
     public abstract string ApiRoute { get; }
 
-    // ✅ Chuỗi tìm kiếm không dấu + tên viết tắt (mặc định: Ten + STT)
     public virtual string TimKiem =>
         TextSearchHelper.NormalizeText($"{Ten}") + " " +
         TextSearchHelper.GetShortName(Ten ?? "");

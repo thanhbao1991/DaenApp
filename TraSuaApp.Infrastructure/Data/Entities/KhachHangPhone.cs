@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TraSuaApp.Domain.Entities;
+namespace TraSuaApp.Infrastructure.Data.Entities;
 
 public partial class KhachHangPhone
 {

@@ -1,19 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TraSuaApp.Domain.Entities;
+namespace TraSuaApp.Infrastructure.Data.Entities;
 
-public partial class ChiTietHoaDonThanhToan
+public partial class ChiTietHoaDonNo
 {
     public Guid Id { get; set; }
 
-    public decimal SoTien { get; set; }
+    public decimal SoTienNo { get; set; }
+
+    public decimal SoTienDaTra { get; set; }
 
     public DateTime NgayGio { get; set; }
 
     public Guid HoaDonId { get; set; }
-
-    public Guid PhuongThucThanhToanId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -25,7 +25,7 @@ public partial class ChiTietHoaDonThanhToan
 
     public DateTime Ngay { get; set; }
 
-    public virtual HoaDon HoaDon { get; set; } = null!;
+    public Guid? KhachHangId { get; set; }
 
-    public virtual PhuongThucThanhToan PhuongThucThanhToan { get; set; } = null!;
+    public virtual HoaDon HoaDon { get; set; } = null!;
 }

@@ -91,6 +91,10 @@ namespace TraSuaApp.WpfClient.Views
                     }
                 }
                 LoadToppingPanel(sp.NhomSanPhamId);
+
+
+
+
             };
             SanPhamSearchBox.SanPhamCleared += () => ResetSanPhamInputs();
 
@@ -333,10 +337,10 @@ namespace TraSuaApp.WpfClient.Views
             SanPhamSearchBox.SearchTextBox.SelectAll();
 
         }
-        private void LoadToppingPanel(Guid nhomSanPhamId)
+        private void LoadToppingPanel(Guid? nhomSanPhamId)
         {
             var dsTopping = _toppingList
-                .Where(t => t.NhomSanPhams.Contains(nhomSanPhamId))
+                .Where(t => t.NhomSanPhams.Contains(nhomSanPhamId ?? Guid.Empty))
                 .ToList().OrderBy(x => x.Ten);
 
             ToppingPanel.Children.Clear();

@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace TraSuaApp.Domain.Entities;
 
-namespace TraSuaApp.Domain.Entities;
-
-public partial class KhachHangPhone
+public partial class DiemKhachHang
 {
     public Guid Id { get; set; }
 
-    public string SoDienThoai { get; set; } = null!;
-
-    public bool IsDefault { get; set; }
+    public int TongDiem { get; set; }
 
     public Guid KhachHangId { get; set; }
 

@@ -12,7 +12,7 @@ public class SanPhamDto : DtoBase
     public int? DaBan { get; set; }
     public bool TichDiem { get; set; }
     public bool NgungBan { get; set; }
-    public Guid NhomSanPhamId { get; set; }
+    public Guid? NhomSanPhamId { get; set; }
     public string? TenNhomSanPham { get; set; }
     [NotMapped]
     public int OldId { get; set; }

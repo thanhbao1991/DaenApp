@@ -1,21 +1,29 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class ChiTietHoaDonVoucher : EntityBase
+namespace TraSuaApp.Domain.Entities;
+
+public partial class ChiTietHoaDonVoucher
 {
+    public Guid Id { get; set; }
+
+    public decimal GiaTriApDung { get; set; }
 
     public Guid VoucherId { get; set; }
 
     public Guid HoaDonId { get; set; }
 
-    public decimal GiaTriApDung { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-    public required string TenVoucher { get; set; }
+    public DateTime? DeletedAt { get; set; }
 
-    public virtual HoaDon? HoaDon { get; set; }
+    public bool IsDeleted { get; set; }
 
-    public virtual Voucher? Voucher { get; set; }
+    public DateTime? LastModified { get; set; }
+
+    public string TenVoucher { get; set; } = null!;
+
+    public virtual HoaDon HoaDon { get; set; } = null!;
+
+    public virtual Voucher Voucher { get; set; } = null!;
 }
-
-
-
-

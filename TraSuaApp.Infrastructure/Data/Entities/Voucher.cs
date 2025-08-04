@@ -1,4 +1,7 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System;
+using System.Collections.Generic;
+
+namespace TraSuaApp.Infrastructure.Data.Entities;
 
 public partial class Voucher
 {
