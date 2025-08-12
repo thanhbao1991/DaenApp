@@ -1,0 +1,48 @@
+﻿using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Enums;
+using TraSuaApp.Shared.Helpers;
+using TraSuaApp.WpfClient.Apis;
+
+namespace TraSuaApp.WpfClient.Services;
+
+public class ChiTieuHangNgayApi : BaseApi, IChiTieuHangNgayApi
+{
+    private const string BASE_URL = "/api/ChiTieuHangNgay";
+
+    public ChiTieuHangNgayApi() : base(TuDien._tableFriendlyNames["ChiTieuHangNgay"]) { }
+
+    public async Task<Result<List<ChiTieuHangNgayDto>>> GetAllAsync()
+    {
+        return await GetAsync<List<ChiTieuHangNgayDto>>(BASE_URL);
+    }
+
+    public async Task<Result<ChiTieuHangNgayDto>> GetByIdAsync(Guid id)
+    {
+        return await GetAsync<ChiTieuHangNgayDto>($"{BASE_URL}/{id}");
+    }
+
+    public async Task<Result<ChiTieuHangNgayDto>> CreateAsync(ChiTieuHangNgayDto dto)
+    {
+        return await PostAsync<ChiTieuHangNgayDto>(BASE_URL, dto);
+    }
+
+    public async Task<Result<ChiTieuHangNgayDto>> UpdateAsync(Guid id, ChiTieuHangNgayDto dto)
+    {
+        return await PutAsync<ChiTieuHangNgayDto>($"{BASE_URL}/{id}", dto);
+    }
+
+    public async Task<Result<ChiTieuHangNgayDto>> DeleteAsync(Guid id)
+    {
+        return await DeleteAsync<ChiTieuHangNgayDto>($"{BASE_URL}/{id}");
+    }
+
+    public async Task<Result<ChiTieuHangNgayDto>> RestoreAsync(Guid id)
+    {
+        return await PostAsync<ChiTieuHangNgayDto>($"{BASE_URL}/{id}/restore", null!);
+    }
+
+    public async Task<Result<List<ChiTieuHangNgayDto>>> GetUpdatedSince(DateTime since)
+    {
+        return await GetAsync<List<ChiTieuHangNgayDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+    }
+}

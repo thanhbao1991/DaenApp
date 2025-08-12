@@ -23,8 +23,11 @@ public class HoaDonService : IHoaDonService
         return new HoaDonDto
         {
             Id = entity.Id,
+            Ten = entity.KhachHang != null ? entity.KhachHang.Ten + " / " + entity.DiaChiText : entity.TenBan,
             MaHoaDon = entity.MaHoaDon,
             TrangThai = entity.TrangThai,
+            Ngay = entity.Ngay,
+            NgayGio = entity.NgayGio,
             TenBan = entity.TenBan,
             DiaChiText = entity.DiaChiText,
             SoDienThoaiText = entity.SoDienThoaiText,
@@ -45,7 +48,7 @@ public class HoaDonService : IHoaDonService
                     SanPhamIdBienThe = ct.SanPhamBienTheId,
                     SoLuong = ct.SoLuong,
                     DonGia = ct.DonGia,
-                    TenSanPham = ct.TenSanPham,
+                    TenSanPham = ct.TenSanPham ?? "",
                     TenBienThe = ct.TenBienThe,
                     ToppingText = ct.ToppingText,
                     NoteText = ct.NoteText,
@@ -89,12 +92,13 @@ public class HoaDonService : IHoaDonService
     public async Task<List<HoaDonDto>> GetAllAsync()
     {
         var list = await _context.HoaDons.AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .Where(x => x.Ngay >= DateTime.Today.AddDays(-1))
+            .Include(h => h.KhachHang)
             .Include(h => h.ChiTietHoaDonThanhToans)
                 .ThenInclude(ct => ct.PhuongThucThanhToan)
-            .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.LastModified)
             .ToListAsync();
-
         return list.Select(ToDto).ToList();
     }
 
@@ -118,13 +122,15 @@ public class HoaDonService : IHoaDonService
         var entity = new HoaDon
         {
             Id = Guid.NewGuid(),
-            MaHoaDon = dto.MaHoaDon,
+            MaHoaDon = MaHoaDonGenerator.Generate(),
             TrangThai = dto.TrangThai,
             TenBan = dto.TenBan,
             DiaChiText = dto.DiaChiText,
             SoDienThoaiText = dto.SoDienThoaiText,
             VoucherId = dto.VoucherId,
             KhachHangId = dto.KhachHangId,
+            Ngay = now.Date,
+            NgayGio = now,
             LastModified = now,
             CreatedAt = now,
             IsDeleted = false
@@ -164,7 +170,7 @@ public class HoaDonService : IHoaDonService
         var khachHang = await GetOrCreateKhachHangAsync(dto, now);
         dto.KhachHangId = khachHang?.Id;
 
-        entity.MaHoaDon = dto.MaHoaDon;
+        // entity.MaHoaDon = dto.MaHoaDon;
         entity.TrangThai = dto.TrangThai;
         entity.TenBan = dto.TenBan;
         entity.DiaChiText = dto.DiaChiText;
@@ -331,7 +337,7 @@ public class HoaDonService : IHoaDonService
 
             tongTien += thanhTienSP + tienToppingSP;
 
-            _context.ChiTietHoaDons.Add(new ChiTietHoaDon
+            _context.ChiTietHoaDons.Add(new ChiTietHoaDonEntity
             {
                 Id = chiTietId,
                 HoaDonId = hoaDonId,
@@ -341,7 +347,7 @@ public class HoaDonService : IHoaDonService
                 ThanhTien = thanhTienSP,
                 TenSanPham = bienThe?.SanPham?.Ten ?? string.Empty,
                 TenBienThe = bienThe?.TenBienThe ?? string.Empty,
-                ToppingText = ct.ToppingText,
+                ToppingText = ct.ToppingText ?? "",
                 NoteText = ct.NoteText,
                 CreatedAt = now,
                 LastModified = now,
@@ -394,27 +400,30 @@ public class HoaDonService : IHoaDonService
 
         int diemTichLuy = (int)Math.Floor(thanhTien * 0.01m);
 
-        _context.DiemKhachHangLogs.Add(new DiemKhachHangLog
+        _context.ChiTietHoaDonPoints.Add(new ChiTietHoaDonPoint
         {
             Id = Guid.NewGuid(),
+            HoaDonId = hoaDonId,
             KhachHangId = khachHangId.Value,
-            ThoiGian = now,
+            Ngay = now.Date,
+            NgayGio = now,
             DiemThayDoi = diemTichLuy,
             GhiChu = $"Tích điểm từ hoá đơn {hoaDonId}",
             CreatedAt = now,
             LastModified = now
         });
 
-        var point = await _context.DiemKhachHangs.FirstOrDefaultAsync(x => x.KhachHangId == khachHangId.Value);
+        var point = await _context.KhachHangPoints.FirstOrDefaultAsync(x => x.KhachHangId == khachHangId.Value);
         if (point == null)
         {
-            _context.DiemKhachHangs.Add(new DiemKhachHang
+            _context.KhachHangPoints.Add(new KhachHangPoint
             {
                 Id = Guid.NewGuid(),
                 KhachHangId = khachHangId.Value,
                 TongDiem = diemTichLuy,
                 CreatedAt = now,
-                LastModified = now
+                LastModified = now,
+
             });
         }
         else
@@ -428,21 +437,21 @@ public class HoaDonService : IHoaDonService
     {
         if (khachHangId == null) return;
 
-        var oldLogs = await _context.DiemKhachHangLogs
+        var oldLogs = await _context.ChiTietHoaDonPoints
             .Where(x => x.GhiChu.Contains(hoaDonId.ToString()))
             .ToListAsync();
 
         if (oldLogs.Any())
         {
             int oldPoints = oldLogs.Sum(l => l.DiemThayDoi);
-            var point = await _context.DiemKhachHangs.FirstOrDefaultAsync(x => x.KhachHangId == khachHangId);
+            var point = await _context.KhachHangPoints.FirstOrDefaultAsync(x => x.KhachHangId == khachHangId);
             if (point != null)
             {
                 point.TongDiem -= oldPoints;
                 if (point.TongDiem < 0) point.TongDiem = 0;
                 point.LastModified = now;
             }
-            _context.DiemKhachHangLogs.RemoveRange(oldLogs);
+            _context.ChiTietHoaDonPoints.RemoveRange(oldLogs);
         }
 
         await AddTichDiemAsync(khachHangId, thanhTien, hoaDonId, now);
@@ -468,21 +477,21 @@ public class HoaDonService : IHoaDonService
         foreach (var v in entity.ChiTietHoaDonVouchers) { v.IsDeleted = true; v.LastModified = now; }
 
         // ✅ Trừ điểm tích lũy
-        var logs = await _context.DiemKhachHangLogs
+        var logs = await _context.ChiTietHoaDonPoints
             .Where(l => l.GhiChu.Contains(id.ToString()))
             .ToListAsync();
 
         if (logs.Any())
         {
             int points = logs.Sum(l => l.DiemThayDoi);
-            var diemKH = await _context.DiemKhachHangs.FirstOrDefaultAsync(x => x.KhachHangId == entity.KhachHangId);
+            var diemKH = await _context.KhachHangPoints.FirstOrDefaultAsync(x => x.KhachHangId == entity.KhachHangId);
             if (diemKH != null)
             {
                 diemKH.TongDiem -= points;
                 if (diemKH.TongDiem < 0) diemKH.TongDiem = 0;
                 diemKH.LastModified = now;
             }
-            _context.DiemKhachHangLogs.RemoveRange(logs);
+            _context.ChiTietHoaDonPoints.RemoveRange(logs);
         }
 
         entity.IsDeleted = true;
@@ -527,23 +536,25 @@ public class HoaDonService : IHoaDonService
         {
             int diemTichLuy = (int)Math.Floor(entity.ThanhTien * 0.01m);
 
-            _context.DiemKhachHangLogs.Add(new DiemKhachHangLog
+            _context.ChiTietHoaDonPoints.Add(new ChiTietHoaDonPoint
             {
                 Id = Guid.NewGuid(),
                 KhachHangId = entity.KhachHangId.Value,
-                ThoiGian = now,
+                Ngay = now.Date,
+                NgayGio = now,
+
                 DiemThayDoi = diemTichLuy,
                 GhiChu = $"Tích điểm từ hoá đơn {entity.Id}",
                 CreatedAt = now,
                 LastModified = now
             });
 
-            var point = await _context.DiemKhachHangs
+            var point = await _context.KhachHangPoints
                 .FirstOrDefaultAsync(x => x.KhachHangId == entity.KhachHangId);
 
             if (point == null)
             {
-                _context.DiemKhachHangs.Add(new DiemKhachHang
+                _context.KhachHangPoints.Add(new KhachHangPoint
                 {
                     Id = Guid.NewGuid(),
                     KhachHangId = entity.KhachHangId.Value,

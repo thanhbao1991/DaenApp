@@ -19,6 +19,11 @@ namespace TraSuaApp.Infrastructure
             services.AddScoped<ILogService, LogService>();
             services.AddScoped<IHoaDonService, HoaDonService>();
             services.AddScoped<IPhuongThucThanhToanService, PhuongThucThanhToanService>();
+            services.AddScoped<ICongViecNoiBoService, CongViecNoiBoService>();
+            services.AddScoped<IChiTietHoaDonNoService, ChiTietHoaDonNoService>();
+            services.AddScoped<IChiTietHoaDonThanhToanService, ChiTietHoaDonThanhToanService>();
+            services.AddScoped<INguyenLieuService, NguyenLieuService>();
+            services.AddScoped<IChiTieuHangNgayService, ChiTieuHangNgayService>();
 
 
 

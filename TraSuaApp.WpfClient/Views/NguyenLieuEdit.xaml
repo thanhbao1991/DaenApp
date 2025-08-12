@@ -1,0 +1,46 @@
+﻿<Window
+    x:Class="TraSuaApp.WpfClient.SettingsViews.NguyenLieuEdit"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Style="{StaticResource EditWindowStyle}"
+    WindowStartupLocation="CenterScreen">
+
+    <Border Style="{StaticResource EditFormBorderStyle}">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Style="{StaticResource EditHeaderPanelStyle}">
+                <TextBlock Name="TieuDeTextBlock" Style="{StaticResource EditTitleTextStyle}" />
+                <Button
+                    Click="CloseButton_Click"
+                    Content="✖"
+                    Style="{StaticResource CloseButtonStyle}" />
+            </DockPanel>
+            <!--  Nội dung form  -->
+            <StackPanel Grid.Row="1">
+                <GroupBox Margin="0,0,0,5" Header="Tên công việc">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox
+                            x:Name="TenTextBox"
+                            Width="200"
+                            Margin="0,0,8,0" />
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+
+            <!--  Nút và lỗi  -->
+            <StackPanel Grid.Row="2">
+                <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
+                <Button
+                    Name="SaveButton"
+                    Click="SaveButton_Click"
+                    Content="Lưu"
+                    Style="{StaticResource SaveButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

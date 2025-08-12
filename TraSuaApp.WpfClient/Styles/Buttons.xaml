@@ -1,0 +1,53 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--  Nút cơ bản  -->
+    <Style x:Key="BaseButtonStyle" TargetType="Button">
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Padding" Value="10,5" />
+        <Setter Property="Margin" Value="5" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--  Các nút màu  -->
+    <Style
+        x:Key="SaveButtonStyle"
+        BasedOn="{StaticResource BaseButtonStyle}"
+        TargetType="Button">
+        <Setter Property="Background" Value="#28a745" />
+    </Style>
+    <Style
+        x:Key="AddButtonStyle"
+        BasedOn="{StaticResource BaseButtonStyle}"
+        TargetType="Button">
+        <Setter Property="Background" Value="#007bff" />
+    </Style>
+    <Style
+        x:Key="EditButtonStyle"
+        BasedOn="{StaticResource BaseButtonStyle}"
+        TargetType="Button">
+        <Setter Property="Background" Value="#ffc107" />
+    </Style>
+    <Style
+        x:Key="DeleteButtonStyle"
+        BasedOn="{StaticResource BaseButtonStyle}"
+        TargetType="Button">
+        <Setter Property="Background" Value="#dc3545" />
+    </Style>
+    <Style
+        x:Key="ReloadButtonStyle"
+        BasedOn="{StaticResource BaseButtonStyle}"
+        TargetType="Button">
+        <Setter Property="Background" Value="#17a2b8" />
+    </Style>
+</ResourceDictionary>

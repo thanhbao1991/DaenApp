@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace TraSuaApp.WpfClient.Views
+namespace TraSuaApp.WpfClient.Tools
 {
     public partial class FileViewerWindow : Window
     {

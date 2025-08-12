@@ -8,7 +8,7 @@ using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Services;
 
-namespace TraSuaApp.WpfClient.Views
+namespace TraSuaApp.WpfClient.SettingsViews
 {
     public partial class SanPhamEdit : Window
     {

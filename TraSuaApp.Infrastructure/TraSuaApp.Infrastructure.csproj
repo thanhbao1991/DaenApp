@@ -1,8 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Remove="Data\Entities\**" />
+    <Compile Remove="TempDbContext\**" />
     <EmbeddedResource Remove="Data\Entities\**" />
+    <EmbeddedResource Remove="TempDbContext\**" />
     <None Remove="Data\Entities\**" />
+    <None Remove="TempDbContext\**" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TraSuaApp.Application\TraSuaApp.Application.csproj" />
@@ -26,7 +29,6 @@
 
   <ItemGroup>
     <Folder Include="Helpers\" />
-    <Folder Include="TempDbContext\" />
   </ItemGroup>
 
   <PropertyGroup>

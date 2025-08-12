@@ -12,6 +12,185 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <conveter:SoDienThoaiConverter x:Key="SoDienThoaiConverter" />
 
+        <Style TargetType="TabItem">
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border
+                            x:Name="Bd"
+                            Margin="4,0,4,0"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8 8 0 0">
+                            <ContentPresenter
+                                
+                                x:Name="ContentSite"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                ContentSource="Header"
+                                RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!--  Hover  -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#EEE" />
+                            </Trigger>
+
+                            <!--  Selected  -->
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#4CAF50" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#4CAF50" />
+                                <Setter Property="Foreground" Value="White" />
+                                <Setter Property="FontWeight" Value="Regular" />
+                            </Trigger>
+
+                            <!--  Disabled  -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="Gray" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="TitleBarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#DEDEDE" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+
+        <Style
+            x:Key="CloseTitleBarButtonStyle"
+            BasedOn="{StaticResource TitleBarButtonStyle}"
+            TargetType="Button">
+
+            <Style.Triggers>
+
+                <Trigger Property="IsMouseOver" Value="True">
+
+                    <Setter Property="Background" Value="#E81123" />
+
+                    <Setter Property="Foreground" Value="White" />
+
+                </Trigger>
+
+            </Style.Triggers>
+
+        </Style>
+
+
+        <Style x:Key="SearchTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+        <Style x:Key="SearchHintTextStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="12,0,0,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="Gray" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
+        <Style x:Key="CloseButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Margin" Value="0,5,5,0" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="#888" />
+            <Setter Property="Content" Value="✖" />
+        </Style>
+        <Style x:Key="TitleTextStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="10,5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="#333" />
+        </Style>
+        <Style x:Key="BasePopupWindowStyle" TargetType="Window">
+            <Setter Property="AllowsTransparency" Value="True" />
+            <Setter Property="Background" Value="#99000000" />
+            <Setter Property="Background" Value="#99000000" />
+            <Setter Property="ResizeMode" Value="NoResize" />
+            <Setter Property="SizeToContent" Value="Manual" />
+            <Setter Property="WindowStyle" Value="None" />
+        </Style>
+        <Style
+            x:Key="PopupWindowWithBorderStyle"
+            BasedOn="{StaticResource BasePopupWindowStyle}"
+            TargetType="Window">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Window">
+                        <Grid Background="#99000000">
+                            <Border
+                                Width="800"
+                                Height="600"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Background="WhiteSmoke"
+                                BorderBrush="#DDD"
+                                BorderThickness="1"
+                                CornerRadius="12">
+                                <ContentPresenter />
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style
+            x:Key="PopupWindowWithBorderStyle2"
+            BasedOn="{StaticResource BasePopupWindowStyle}"
+            TargetType="Window">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Window">
+                        <Grid Background="#99000000">
+                            <Border
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Background="WhiteSmoke"
+                                BorderBrush="#DDD"
+                                BorderThickness="1"
+                                CornerRadius="12">
+                                <ContentPresenter />
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+
         <Style x:Key="HideIfEmptyTextBlockStyle" TargetType="TextBlock">
             <Setter Property="Visibility" Value="Visible" />
             <Style.Triggers>
@@ -60,19 +239,6 @@
             <Setter Property="Foreground" Value="#333" />
         </Style>
 
-        <!--  Nút đóng (✖)  -->
-        <Style x:Key="CloseButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="28" />
-            <Setter Property="Height" Value="28" />
-            <Setter Property="Margin" Value="0,5,5,0" />
-            <Setter Property="HorizontalAlignment" Value="Right" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Foreground" Value="#888" />
-        </Style>
 
         <!--  Nút Lưu  -->
         <Style x:Key="SaveButtonStyle" TargetType="Button">
@@ -221,8 +387,8 @@
         </Style>
 
         <Style TargetType="{x:Type GroupBox}">
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="WhiteSmoke" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
         <!--  Base input style  -->
         <Style x:Key="BaseInputStyle" TargetType="Control">
@@ -296,6 +462,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border
+                            Padding="8,4,8,4"
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
@@ -371,8 +538,8 @@
         <Style x:Key="MiddleCellStyle" TargetType="DataGridCell">
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Padding" Value="4" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Padding" Value="8" />
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="#FFCCE5FF" />
@@ -381,25 +548,22 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        <!--<Style x:Key="ErrorTextBlock" TargetType="TextBlock">
-            <Setter Property="HorizontalAlignment" Value="Left" />
-            <Setter Property="MaxWidth" Value="400" />
-
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>-->
         <Style x:Key="CenterTextCellStyle" TargetType="TextBlock">
+            <Setter Property="Width" Value="Auto" />
             <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Padding" Value="8" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style x:Key="LeftTextCellStyle" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Left" />
-            <Setter Property="Padding" Value="4" />
+            <Setter Property="Padding" Value="8" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style x:Key="RightTextCellStyle" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Right" />
-            <Setter Property="Padding" Value="4" />
             <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Padding" Value="8" />
+
         </Style>
         <Style TargetType="DataGridColumnHeader">
             <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -408,20 +572,24 @@
 
         <Style TargetType="DataGrid">
             <Setter Property="AlternatingRowBackground" Value="#f0f0f0" />
+            <Setter Property="RowBackground" Value="#f6f6f6" />
             <Setter Property="AutoGenerateColumns" Value="False" />
             <Setter Property="BorderBrush" Value="#DDD" />
             <Setter Property="Background" Value="#fff" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CanUserSortColumns" Value="False" />
             <Setter Property="CanUserAddRows" Value="False" />
             <Setter Property="ColumnHeaderHeight" Value="36" />
             <Setter Property="GridLinesVisibility" Value="Horizontal" />
             <Setter Property="HeadersVisibility" Value="Column" />
             <Setter Property="HorizontalGridLinesBrush" Value="Transparent" />
             <Setter Property="IsReadOnly" Value="True" />
-            <Setter Property="RowHeight" Value="32" />
+            <Setter Property="RowHeight" Value="24" />
             <Setter Property="SelectionMode" Value="Single" />
             <Setter Property="SelectionUnit" Value="FullRow" />
             <Setter Property="CellStyle" Value="{StaticResource MiddleCellStyle}" />
         </Style>
     </Application.Resources>
 </Application>
+
+

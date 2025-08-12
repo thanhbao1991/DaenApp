@@ -18,5 +18,6 @@ public abstract class DtoBase
 
     public virtual string TimKiem =>
         TextSearchHelper.NormalizeText($"{Ten}") + " " +
+        TextSearchHelper.NormalizeText($"{Ten.Replace(" ", "")}") + " " +
         TextSearchHelper.GetShortName(Ten ?? "");
 }

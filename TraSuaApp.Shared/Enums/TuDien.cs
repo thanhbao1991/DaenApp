@@ -4,6 +4,12 @@
     {
         public static readonly Dictionary<string, string> _tableFriendlyNames = new()
         {
+            ["Dashboard"] = "Dashboard",
+            ["FileViewerWindow"] = "FileViewerWindow",
+            ["ChiTietHoaDonNo"] = "Chi tiết hoá đơn nợ",
+            ["ChiTietHoaDonThanhToan"] = "Chi tiết hoá đơn thanh toán",
+            ["ChiTieuHangNgay"] = "Chi tiêu hằng ngày",
+
             ["PhuongThucThanhToan"] = "Phương thức thanh toán",
             ["SanPham"] = "Sản phẩm",
             ["SanPhamBienThe"] = "Biến thể sản phẩm",

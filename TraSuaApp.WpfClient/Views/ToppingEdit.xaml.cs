@@ -8,7 +8,7 @@ using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Models;
 using TraSuaApp.WpfClient.Services;
 
-namespace TraSuaApp.WpfClient.Views
+namespace TraSuaApp.WpfClient.SettingsViews
 {
     public partial class ToppingEdit : Window
     {

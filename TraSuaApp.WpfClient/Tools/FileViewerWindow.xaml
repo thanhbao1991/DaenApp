@@ -1,5 +1,5 @@
 ﻿<Window
-    x:Class="TraSuaApp.WpfClient.Views.FileViewerWindow"
+    x:Class="TraSuaApp.WpfClient.Tools.FileViewerWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="File Viewer"

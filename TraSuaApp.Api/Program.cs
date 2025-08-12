@@ -60,14 +60,6 @@ var app = builder.Build();
 app.MapHub<SignalRHub>("/hub/entity");
 app.UseMiddleware<LogMiddleware>(); // 🟟 Gọi Middleware tại đây
 
-// 🟟 Swagger for development
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwagger();
-//    app.UseSwaggerUI();
-//}
-
-// 🟟 Middleware pipeline
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

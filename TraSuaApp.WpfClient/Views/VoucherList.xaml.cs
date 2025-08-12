@@ -9,7 +9,7 @@ using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
-namespace TraSuaApp.WpfClient.Views
+namespace TraSuaApp.WpfClient.AdminViews
 {
     public partial class VoucherList : Window
     {
@@ -77,6 +77,8 @@ namespace TraSuaApp.WpfClient.Views
         private async void AddButton_Click(object sender, RoutedEventArgs e)
         {
             var window = new VoucherEdit();
+            window.Height = Height;
+            window.Width = Width;
             window.Owner = this;
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
@@ -93,6 +95,8 @@ namespace TraSuaApp.WpfClient.Views
             }
 
             var window = new VoucherEdit(selected);
+            window.Height = Height;
+            window.Width = Width;
             window.Owner = this;
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
@@ -138,6 +142,8 @@ namespace TraSuaApp.WpfClient.Views
         {
             if (VoucherDataGrid.SelectedItem is not VoucherDto selected) return;
             var window = new VoucherEdit(selected);
+            window.Height = Height;
+            window.Width = Width;
             if (window.ShowDialog() == true)
                 await AppProviders.Vouchers.ReloadAsync();
         }

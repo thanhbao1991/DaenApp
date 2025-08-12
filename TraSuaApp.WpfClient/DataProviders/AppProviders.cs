@@ -1,4 +1,5 @@
-﻿using TraSuaApp.WpfClient.DataProviders;
+﻿using System.Net.Http.Json;
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
 
 public static class AppProviders
@@ -14,6 +15,17 @@ public static class AppProviders
     public static NhomSanPhamDataProvider? NhomSanPhams { get; private set; }
     public static HoaDonDataProvider? HoaDons { get; private set; }
     public static PhuongThucThanhToanDataProvider? PhuongThucThanhToans { get; private set; }
+    public static CongViecNoiBoDataProvider? CongViecNoiBos { get; private set; }
+    public static ChiTietHoaDonNoDataProvider? ChiTietHoaDonNos { get; private set; }
+    public static ChiTietHoaDonThanhToanDataProvider? ChiTietHoaDonThanhToans { get; private set; }
+    public static ChiTieuHangNgayDataProvider? ChiTieuHangNgays { get; private set; }
+    public static NguyenLieuDataProvider? NguyenLieus { get; private set; }
+
+    public static async Task<DashboardDto?> GetDashboardAsync()
+    {
+        var response = await ApiClient.GetAsync("/api/dashboard/homnay");
+        return await response.Content.ReadFromJsonAsync<DashboardDto>();
+    }
 
     public static async Task InitializeAsync()
     {
@@ -32,6 +44,12 @@ public static class AppProviders
         Vouchers = new VoucherDataProvider(signalR);
         HoaDons = new HoaDonDataProvider(signalR);
         PhuongThucThanhToans = new PhuongThucThanhToanDataProvider(signalR);
+        CongViecNoiBos = new CongViecNoiBoDataProvider(signalR);
+        ChiTietHoaDonNos = new ChiTietHoaDonNoDataProvider(signalR);
+        ChiTietHoaDonThanhToans = new ChiTietHoaDonThanhToanDataProvider(signalR);
+        NguyenLieus = new NguyenLieuDataProvider(signalR);
+        ChiTieuHangNgays = new ChiTieuHangNgayDataProvider(signalR);
+
 
         // Load tuần tự hoặc song song tuỳ bạn
         await Task.WhenAll(
@@ -42,7 +60,12 @@ public static class AppProviders
            SanPhams.InitializeAsync(),
            Vouchers.InitializeAsync(),
            HoaDons.InitializeAsync(),
-           PhuongThucThanhToans.InitializeAsync()
+           PhuongThucThanhToans.InitializeAsync(),
+           CongViecNoiBos.InitializeAsync(),
+           ChiTietHoaDonNos.InitializeAsync(),
+           ChiTietHoaDonThanhToans.InitializeAsync(),
+           NguyenLieus.InitializeAsync(),
+           ChiTieuHangNgays.InitializeAsync()
         );
     }
 }

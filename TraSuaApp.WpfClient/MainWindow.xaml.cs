@@ -24,7 +24,9 @@ namespace TraSuaApp.WpfClient.Views
             var viewType = typeof(Window);
             var views = Assembly.GetExecutingAssembly()
                 .GetTypes()
-                .Where(t => t.IsSubclassOf(viewType) && t.Name.EndsWith("List"))
+                .Where(t => t.IsSubclassOf(viewType)
+                  && t.Name.EndsWith("List")
+                )
                 .OrderBy(t => t.Name);
 
             foreach (var view in views)
@@ -35,7 +37,7 @@ namespace TraSuaApp.WpfClient.Views
                     TuDien._tableFriendlyNames[view.Name.Replace("List", "")],
 
                     Tag = view.Name,
-                    Style = (Style)FindResource("AddButtonStyle"),
+                    //Style = (Style)FindResource("ThemButtonStyle"),
                     Margin = new Thickness(0, 5, 0, 0)
                 };
                 btn.Click += MenuButton_Click;
@@ -88,10 +90,12 @@ namespace TraSuaApp.WpfClient.Views
 
         private void Thoat_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Dashboard d = new Dashboard();
+            d.ShowDialog();
+            // this.Close();
         }
         string oldConn =
-"Server=.;Database=DennCoffee;Trusted_Connection=True;TrustServerCertificate=True";
+"Server=192.168.1.85;Database=DennCoffee;user=sa;password=baothanh1991;TrustServerCertificate=True";
         string newConn =
 "Server=.;Database=TraSuaAppDb;Trusted_Connection=True;TrustServerCertificate=True";
 

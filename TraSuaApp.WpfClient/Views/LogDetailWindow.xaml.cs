@@ -2,7 +2,7 @@
 using System.Windows;
 using TraSuaApp.Shared.Dtos;
 
-namespace TraSuaApp.WpfClient.Views
+namespace TraSuaApp.WpfClient.AdminViews
 {
     public partial class LogDetailWindow : Window
     {

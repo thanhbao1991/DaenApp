@@ -93,6 +93,8 @@ namespace TraSuaApp.WpfClient.Controls
         {
             SearchTextBox.Text = "";
             ClearButton.Visibility = Visibility.Collapsed;
+            SelectedKhachHang = null;
+
             // Bạn có thể raise event để thông báo đã huỷ chọn nếu cần
             KhachHangCleared?.Invoke();
             //
@@ -120,6 +122,8 @@ namespace TraSuaApp.WpfClient.Controls
                 .Where(kh => kh.TimKiem.Contains(keyword)
                              || parts.All(p => kh.TimKiem.Contains(p)))
                 .Take(50)
+                .OrderBy(x => x.Ten)
+
                 .ToList();
 
             ListBoxResults.ItemsSource = result;

@@ -15,6 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Controls\NguyenLieuSearchBox.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Controls\SanPhamSearchBox.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

@@ -10,7 +10,7 @@ using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
-namespace TraSuaApp.WpfClient.Views
+namespace TraSuaApp.WpfClient.SettingsViews
 {
     public partial class SanPhamList : Window
     {

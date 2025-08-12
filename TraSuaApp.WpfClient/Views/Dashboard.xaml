@@ -1,0 +1,371 @@
+﻿<Window
+    x:Class="TraSuaApp.WpfClient.Views.Dashboard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:fa="clr-namespace:FontAwesome.Sharp;assembly=FontAwesome.Sharp"
+    Title="Dashboard"
+    AllowsTransparency="True"
+    Background="Transparent"
+    WindowStartupLocation="CenterScreen"
+    WindowState="Maximized"
+    WindowStyle="None">
+
+    <Border Background="#F5F5F5" CornerRadius="10">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="0" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border
+                Grid.Row="0"
+                Grid.ColumnSpan="3"
+                VerticalAlignment="Center"
+                Background="#2196F3"
+                BorderThickness="0,0,0,1"
+                MouseDown="Border_MouseDown">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="auto" />
+                    </Grid.ColumnDefinitions>
+                    <Menu
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        Background="Transparent"
+                        BorderThickness="0">
+                        <MenuItem
+                            Name="SettingsMenu"
+                            Margin="4"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Header="Cài đặt" />
+                        <MenuItem
+                            Name="HoaDonMenu"
+                            Margin="4"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Header="Hoá đơn" />
+                        <MenuItem
+                            Margin="4"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Click="MenuItem_Click"
+                            Header="Import" />
+                        <MenuItem
+                            Name="AdminMenu"
+                            Margin="4"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Header="Admin" />
+                    </Menu>
+
+                    <TextBlock
+                        Grid.Column="1"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="14"
+                        FontWeight="Bold"
+                        Foreground="White"
+                        Text="Dashboard" />
+                    <StackPanel
+                        Grid.Column="2"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                        <Button
+                            Width="30"
+                            Height="30"
+                            Margin="4"
+                            Padding="8"
+                            Click="MinimizeButton_Click"
+                            Content="—"
+                            Style="{StaticResource TitleBarButtonStyle}" />
+                        <Button
+                            Width="30"
+                            Height="30"
+                            Margin="4"
+                            Padding="8"
+                            Click="MaximizeButton_Click"
+                            Content="◻"
+                            Style="{StaticResource TitleBarButtonStyle}" />
+                        <Button
+                            Width="30"
+                            Height="30"
+                            Margin="4"
+                            Padding="8"
+                            Click="CloseButton_Click"
+                            Content="✕"
+                            Style="{StaticResource CloseTitleBarButtonStyle}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <StackPanel
+                Grid.Row="1"
+                Grid.ColumnSpan="3"
+                VerticalAlignment="Center"
+                Orientation="Horizontal" />
+
+            <TabControl Grid.Row="2" Grid.Column="0">
+                <TabItem Header="Hóa đơn hôm nay">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBox x:Name="SearchHoaDonTextBox" TextChanged="SearchHoaDonTextBox_TextChanged" />
+                        <DataGrid
+                            x:Name="HoaDonDataGrid"
+                            Grid.Row="1"
+                            AutoGenerateColumns="False"
+                            IsReadOnly="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn
+                                    Width="80"
+                                    Binding="{Binding TrangThai}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Trạng thái" />
+                                <DataGridTextColumn
+                                    Width="*"
+                                    Binding="{Binding Ten}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Tên bàn/khách" />
+                                <DataGridTextColumn
+                                    x:Name="TongTienHoaDonTextBlock"
+                                    Width="80"
+                                    Binding="{Binding ThanhTien, StringFormat=N0}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Thành tiền" />
+                                <DataGridTextColumn
+                                    Width="50"
+                                    Binding="{Binding LastModified, StringFormat=HH:mm}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Giờ" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Thống kê hôm nay ">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <TextBlock
+                            Name="DuDoanDoanhThu"
+                            Margin="10"
+                            Text="{Binding DuDoanText}"
+                            TextWrapping="Wrap" />
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="Chi tiêu hôm nay">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBox
+                            x:Name="SearchChiTieuHangNgayTextBox"
+                            Margin="0,-3,0,0"
+                            TextChanged="SearchChiTieuHangNgayTextBox_TextChanged" />
+                        <Button
+                            Margin="0,-3,0,0"
+                            HorizontalAlignment="Right"
+                            Panel.ZIndex="1"
+                            Click="AddChiTieuHangNgayButton_Click"
+                            Content="➕ Add"
+                            Style="{StaticResource ThemButtonStyle}" />
+                        <DataGrid
+                            x:Name="ChiTieuHangNgayDataGrid"
+                            Grid.Row="1"
+                            AutoGenerateColumns="False"
+                            IsReadOnly="True"
+                            MouseDoubleClick="ChiTieuHangNgayDataGrid_MouseDoubleClick">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding BillThang}" Value="True">
+                                            <Setter Property="TextBlock.TextDecorations" Value="Strikethrough" />
+                                            <Setter Property="Foreground" Value="Gray" />
+                                            <Setter Property="Opacity" Value="0.6" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn
+                                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Giờ" />
+                                <DataGridTextColumn
+                                    Binding="{Binding Ten}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Tên nguyên/vật liệu" />
+                                <DataGridTextColumn
+                                    x:Name="TongTienChiTieuTextBlock"
+                                    Binding="{Binding ThanhTien, StringFormat=N0}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Số tiền" />
+                                <DataGridCheckBoxColumn Binding="{Binding BillThang}" Header="Tháng" />
+
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Bán nhiều hôm nay">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBox x:Name="SearchBanNhieuTextBox" Margin="0,-3,0,0" />
+                        <DataGrid
+                            x:Name="BanNhieuGrid"
+                            Grid.Row="1"
+                            AutoGenerateColumns="False"
+                            IsReadOnly="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn
+                                    Binding="{Binding TenSanPham}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Tên món" />
+                                <DataGridTextColumn
+                                    Binding="{Binding SoLuong}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Đã bán" />
+                                <DataGridTextColumn
+                                    Binding="{Binding DoanhThu, StringFormat=N0}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Doanh thu" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Công việc hôm nay">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBox
+                            x:Name="SearchCongViecTextBox"
+                            Margin="0,-3,0,0"
+                            TextChanged="SearchCongViecNoiBoTextBox_TextChanged" />
+                        <DataGrid
+                            x:Name="CongViecNoiBoGrid"
+                            Grid.Row="1"
+                            AutoGenerateColumns="False"
+                            IsReadOnly="True"
+                            MouseDoubleClick="CongViecNoiBoDataGrid_MouseDoubleClick">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DaHoanThanh}" Value="True">
+                                            <Setter Property="TextBlock.TextDecorations" Value="Strikethrough" />
+                                            <Setter Property="Foreground" Value="Gray" />
+                                            <Setter Property="Opacity" Value="0.5" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn
+                                    Width="80"
+                                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Giờ" />
+                                <DataGridTextColumn
+                                    Binding="{Binding Ten}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Tên việc" />
+                                <DataGridCheckBoxColumn Binding="{Binding DaHoanThanh}" Header="Hoàn thành" />
+
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Thanh toán hôm nay">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <TextBox
+                            x:Name="SearchChiTietHoaDonThanhToanTextBox"
+                            Margin="0,-3,0,0"
+                            TextChanged="SearchChiTietHoaDonThanhToanTextBox_TextChanged" />
+                        <DataGrid
+                            x:Name="ChiTietHoaDonThanhToanGrid"
+                            Grid.Row="1"
+                            AutoGenerateColumns="False"
+                            IsReadOnly="True">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding TenPhuongThucThanhToan}" Value="chuyển khoản">
+                                            <Setter Property="Background" Value="LightYellow" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn
+                                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Giờ" />
+                                <DataGridTextColumn
+                                    Binding="{Binding Ten}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Tên bàn/khách" />
+                                <DataGridTextColumn
+                                    Binding="{Binding TenPhuongThucThanhToan, StringFormat=N0}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Phương thức" />
+                                <DataGridTextColumn
+                                    x:Name="TongTienThanhToanTextBlock"
+                                    Binding="{Binding SoTien, StringFormat=N0}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Số tiền" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Công nợ khách hàng">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBox
+                            x:Name="SearchChiTietHoaDonNoTextBox"
+                            Grid.Row="0"
+                            Margin="0,-3,0,0"
+                            TextChanged="SearchChiTietHoaDonNoTextBox_TextChanged" />
+                        <DataGrid
+                            x:Name="ChiTietHoaDonNoGrid"
+                            Grid.Row="1"
+                            AutoGenerateColumns="False"
+                            IsReadOnly="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn
+                                    Binding="{Binding NgayGio, StringFormat=dd/MM HH:mm}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Ngày giờ" />
+                                <DataGridTextColumn
+                                    Binding="{Binding Ten}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Tên khách hàng" />
+                                <DataGridTextColumn
+                                    x:Name="TongTienNoTextBlock"
+                                    Binding="{Binding SoTienConNo, StringFormat=N0}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Số tiền nợ" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </Border>
+</Window>

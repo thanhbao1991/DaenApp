@@ -31,6 +31,7 @@ namespace TraSuaApp.WpfClient.Controls
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
             SearchTextBox.Text = "";
+            SelectedSanPham = null;
             ClearButton.Visibility = Visibility.Collapsed;
             SanPhamCleared?.Invoke();
             SearchTextBox.Focus();
@@ -55,6 +56,8 @@ namespace TraSuaApp.WpfClient.Controls
             var result = SanPhamList
                 .Where(sp => (sp.TimKiem ?? "").Contains(keyword) || parts.All(p => (sp.TimKiem ?? "").Contains(p)))
                 .Take(50)
+                .OrderBy(x => x.Ten)
+
                 .ToList();
 
             ListBoxResults.ItemsSource = result;

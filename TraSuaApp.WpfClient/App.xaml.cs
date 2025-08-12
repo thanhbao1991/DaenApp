@@ -106,7 +106,7 @@ namespace TraSuaApp.WpfClient
                          if (result == true)
                          {
                              AppProviders.InitializeAsync().Wait();
-                             var main = new MainWindow();
+                             var main = new Dashboard();
                              main.Show();
                          }
 

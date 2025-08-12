@@ -10,7 +10,7 @@ using TraSuaApp.WpfClient.Controls;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.Services;
 
-namespace TraSuaApp.WpfClient.Views
+namespace TraSuaApp.WpfClient.HoaDonViews
 {
     public partial class HoaDonEdit : Window
     {

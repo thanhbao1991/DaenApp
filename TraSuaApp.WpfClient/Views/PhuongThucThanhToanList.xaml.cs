@@ -9,7 +9,7 @@ using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
-namespace TraSuaApp.WpfClient.Views
+namespace TraSuaApp.WpfClient.AdminViews
 {
     public partial class PhuongThucThanhToanList : Window
     {

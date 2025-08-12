@@ -11,6 +11,9 @@ namespace TraSuaApp.WpfClient.Controls
         private static readonly Regex _nonDigitRegex = new(@"[^0-9]", RegexOptions.Compiled);
         private bool _isFormatting = false;
 
+        // Lưu giá trị cũ để kiểm tra thay đổi
+        private decimal _oldValue = 0m;
+
         public NumericTextBox()
         {
             PreviewTextInput += OnPreviewTextInput;
@@ -19,6 +22,9 @@ namespace TraSuaApp.WpfClient.Controls
             LostFocus += OnLostFocus;
             DataObject.AddPastingHandler(this, OnPaste);
         }
+
+        // Định nghĩa event ValueChanged
+        public event RoutedPropertyChangedEventHandler<decimal>? ValueChanged;
 
         private void OnPreviewTextInput(object sender, TextCompositionEventArgs e)
         {
@@ -48,18 +54,32 @@ namespace TraSuaApp.WpfClient.Controls
             if (string.IsNullOrEmpty(raw))
             {
                 _isFormatting = false;
+                SetValueAndRaiseEvent(0m);
                 return;
             }
 
             if (long.TryParse(raw, out var number))
             {
+                var newValue = (decimal)number;
                 var formatted = number.ToString("N0", CultureInfo.CurrentCulture);
                 int oldCaret = SelectionStart;
                 Text = formatted;
                 SelectionStart = Math.Min(Text.Length, oldCaret + (Text.Length - raw.Length));
+
+                SetValueAndRaiseEvent(newValue);
             }
 
             _isFormatting = false;
+        }
+
+        private void SetValueAndRaiseEvent(decimal newValue)
+        {
+            if (_oldValue != newValue)
+            {
+                var oldVal = _oldValue;
+                _oldValue = newValue;
+                ValueChanged?.Invoke(this, new RoutedPropertyChangedEventArgs<decimal>(oldVal, newValue));
+            }
         }
 
         private void OnGotFocus(object sender, RoutedEventArgs e)
@@ -86,7 +106,11 @@ namespace TraSuaApp.WpfClient.Controls
             }
             set
             {
-                Text = value == 0 ? "" : value.ToString("N0", CultureInfo.CurrentCulture);
+                if (_oldValue != value)
+                {
+                    Text = value == 0 ? "" : value.ToString("N0", CultureInfo.CurrentCulture);
+                    SetValueAndRaiseEvent(value);
+                }
             }
         }
     }

@@ -6,7 +6,7 @@ using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
-namespace TraSuaApp.WpfClient.Views;
+namespace TraSuaApp.WpfClient.AdminViews;
 
 public partial class LogList : Window
 {

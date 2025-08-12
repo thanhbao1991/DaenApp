@@ -22,10 +22,10 @@ public partial class AppDbContext : DbContext, IAppDbContext
     {
     }
 
+    public virtual DbSet<ChiTieuHangNgay> ChiTieuHangNgays { get; set; }
+    public virtual DbSet<ChiTietHoaDonEntity> ChiTietHoaDons { get; set; }
 
-    public virtual DbSet<ChiTietHoaDon> ChiTietHoaDons { get; set; }
-
-    public virtual DbSet<ChiTietHoaDonNhap> ChiTietHoaDonNhaps { get; set; }
+    public virtual DbSet<ChiTietHoaDonNhapEntity> ChiTietHoaDonNhaps { get; set; }
 
     public virtual DbSet<ChiTietHoaDonNo> ChiTietHoaDonNos { get; set; }
 
@@ -41,9 +41,9 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     public virtual DbSet<CongViecNoiBo> CongViecNoiBos { get; set; }
 
-    public virtual DbSet<DiemKhachHang> DiemKhachHangs { get; set; }
+    public virtual DbSet<KhachHangPoint> KhachHangPoints { get; set; }
 
-    public virtual DbSet<DiemKhachHangLog> DiemKhachHangLogs { get; set; }
+    public virtual DbSet<ChiTietHoaDonPoint> ChiTietHoaDonPoints { get; set; }
 
     public virtual DbSet<HoaDon> HoaDons { get; set; }
 
@@ -80,12 +80,11 @@ public partial class AppDbContext : DbContext, IAppDbContext
     public virtual DbSet<Voucher> Vouchers { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseSqlServer("Server=.;Database=TraSuaAppDb;Trusted_Connection=True;TrustServerCertificate=True");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<ChiTietHoaDon>(entity =>
+        modelBuilder.Entity<ChiTietHoaDonEntity>(entity =>
         {
             entity.HasIndex(e => e.HoaDonId, "IX_ChiTietHoaDons_HoaDonId");
 
@@ -106,7 +105,7 @@ public partial class AppDbContext : DbContext, IAppDbContext
             entity.HasOne(d => d.SanPhamBienThe).WithMany(p => p.ChiTietHoaDons).HasForeignKey(d => d.SanPhamBienTheId);
         });
 
-        modelBuilder.Entity<ChiTietHoaDonNhap>(entity =>
+        modelBuilder.Entity<ChiTietHoaDonNhapEntity>(entity =>
         {
             entity.HasIndex(e => e.HoaDonNhapId, "IX_ChiTietHoaDonNhaps_HoaDonNhapId");
 
@@ -231,7 +230,7 @@ public partial class AppDbContext : DbContext, IAppDbContext
             entity.Property(e => e.Id).ValueGeneratedNever();
         });
 
-        modelBuilder.Entity<DiemKhachHang>(entity =>
+        modelBuilder.Entity<KhachHangPoint>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK_CustomerPoints");
 
@@ -246,17 +245,17 @@ public partial class AppDbContext : DbContext, IAppDbContext
                 .HasConstraintName("FK_CustomerPoints_KhachHangs_KhachHangId");
         });
 
-        modelBuilder.Entity<DiemKhachHangLog>(entity =>
+        modelBuilder.Entity<ChiTietHoaDonPoint>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK_CustomerPointLogs");
 
             entity.HasIndex(e => e.KhachHangId, "IX_CustomerPointLogs_KhachHangId");
 
-            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_DiemKhachHangLogs_IsDeleted_LastModified").IsDescending(false, true);
+            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_ChiTietHoaDonPoints_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.Property(e => e.Id).ValueGeneratedNever();
 
-            entity.HasOne(d => d.KhachHang).WithMany(p => p.DiemKhachHangLogs)
+            entity.HasOne(d => d.KhachHang).WithMany(p => p.ChiTietHoaDonPoints)
                 .HasForeignKey(d => d.KhachHangId)
                 .HasConstraintName("FK_CustomerPointLogs_KhachHangs_KhachHangId");
         });

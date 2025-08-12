@@ -1,0 +1,142 @@
+﻿using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Enums;
+using TraSuaApp.Shared.Helpers;
+using TraSuaApp.WpfClient.Apis;
+using TraSuaApp.WpfClient.Services;
+
+namespace TraSuaApp.WpfClient.HoaDonViews
+{
+    public partial class ChiTieuHangNgayEdit : Window
+    {
+        public ChiTieuHangNgayDto Model { get; set; }
+        private readonly IChiTieuHangNgayApi _api;
+        private readonly string _friendlyName = TuDien._tableFriendlyNames["ChiTieuHangNgay"];
+        private List<NguyenLieuDto> _nguyenLieuList = new();
+
+        public ChiTieuHangNgayEdit(ChiTieuHangNgayDto? dto = null)
+        {
+            InitializeComponent();
+            this.KeyDown += Window_KeyDown;
+            TieuDeTextBlock.Text = _friendlyName;
+            _api = new ChiTieuHangNgayApi();
+            _nguyenLieuList = AppProviders.NguyenLieus.Items.ToList();
+
+            NguyenLieuComboBox.NguyenLieuList = _nguyenLieuList;
+            NguyenLieuComboBox.NguyenLieuSelected += nguyenLieu =>
+            {
+                SoLuongTextBox.Value = 1;
+                DonGiaTextBox.Value = nguyenLieu.GiaNhap;
+                ThanhTienTextBox.Value = SoLuongTextBox.Value * nguyenLieu.GiaNhap;
+            };
+
+            // Đăng ký sự kiện ValueChanged cho SoLuongTextBox và DonGiaTextBox
+            SoLuongTextBox.ValueChanged += (s, e) =>
+            {
+                ThanhTienTextBox.Value = SoLuongTextBox.Value * DonGiaTextBox.Value;
+            };
+            DonGiaTextBox.ValueChanged += (s, e) =>
+            {
+                ThanhTienTextBox.Value = SoLuongTextBox.Value * DonGiaTextBox.Value;
+            };
+            Model = dto != null ? dto : new ChiTieuHangNgayDto();
+
+            if (dto != null)
+            {
+                NguyenLieuComboBox.SetSelectedNguyenLieuByIdWithoutPopup(dto.NguyenLieuId);
+                SoLuongTextBox.Value = dto.SoLuong;
+                DonGiaTextBox.Value = dto.DonGia;
+                ThanhTienTextBox.Value = dto.ThanhTien;
+                BillThangCheckBox.IsChecked = dto.BillThang == true ? true : false;
+            }
+            else
+            {
+                NguyenLieuComboBox.SearchTextBox.Focus();
+            }
+
+            if (Model.IsDeleted)
+            {
+                SaveButton.Content = "Khôi phục";
+                SetControlsEnabled(false);
+            }
+        }
+
+        private void SetControlsEnabled(bool enabled)
+        {
+            DonGiaTextBox.IsEnabled = enabled;
+            SoLuongTextBox.IsEnabled = enabled;
+            ThanhTienTextBox.IsEnabled = enabled;
+            NguyenLieuComboBox.IsEnabled = enabled;
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                Close();
+                return;
+            }
+            if (e.Key == Key.Enter && !(Keyboard.FocusedElement is Button))
+            {
+                var req = new TraversalRequest(FocusNavigationDirection.Next);
+                if (Keyboard.FocusedElement is UIElement el)
+                {
+                    el.MoveFocus(req);
+                    e.Handled = true;
+                }
+            }
+        }
+
+
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+
+            ErrorTextBlock.Text = "";
+            Model.NguyenLieuId = NguyenLieuComboBox.SelectedNguyenLieu?.Id ?? Guid.Empty;
+            if (Model.NguyenLieuId == Guid.Empty || NguyenLieuComboBox.SearchTextBox.Text.Trim() == "")
+            {
+                ErrorTextBlock.Text = "Nguyên liệu không được để trống.";
+                NguyenLieuComboBox.SearchTextBox.Focus();
+                return;
+            }
+            Model.Ten = NguyenLieuComboBox.SearchTextBox.Text;
+            Model.DonGia = DonGiaTextBox.Value;
+            Model.SoLuong = SoLuongTextBox.Value;
+            Model.ThanhTien = ThanhTienTextBox.Value;
+            Model.BillThang = BillThangCheckBox.IsChecked == true ? true : false;
+            Result<ChiTieuHangNgayDto> result;
+            if (Model.Id == Guid.Empty)
+                result = await _api.CreateAsync(Model);
+            else if (Model.IsDeleted)
+                result = await _api.RestoreAsync(Model.Id);
+            else
+                result = await _api.UpdateAsync(Model.Id, Model);
+
+            if (!result.IsSuccess)
+            {
+                ErrorTextBlock.Text = result.Message;
+                return;
+            }
+
+            // Cập nhật giá nhập mới cho nguyên liệu
+            var nguyenLieu = _nguyenLieuList.FirstOrDefault(nl => nl.Id == Model.NguyenLieuId);
+            if (nguyenLieu != null && nguyenLieu.GiaNhap != Model.DonGia)
+            {
+                nguyenLieu.GiaNhap = Model.DonGia;
+
+                // Gọi API cập nhật nguyên liệu (giả sử có API như thế)
+                var nguyenLieuApi = new NguyenLieuApi();
+                var updateResult = await nguyenLieuApi.UpdateAsync(nguyenLieu.Id, nguyenLieu);
+            }
+
+            DialogResult = true;
+            Close();
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+    }
+}

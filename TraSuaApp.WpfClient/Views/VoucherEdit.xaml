@@ -1,92 +1,92 @@
 ﻿<Window
-    x:Class="TraSuaApp.WpfClient.Views.VoucherEdit"
+    x:Class="TraSuaApp.WpfClient.AdminViews.VoucherEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
-    Style="{StaticResource EditWindowStyle}"
+    Style="{StaticResource PopupWindowWithBorderStyle2}"
     WindowStartupLocation="CenterScreen">
 
-    <Border Style="{StaticResource EditFormBorderStyle}">
-        <Grid Margin="16">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-            <DockPanel Grid.Row="0" Style="{StaticResource EditHeaderPanelStyle}">
-                <TextBlock Name="TieuDeTextBlock" Style="{StaticResource EditTitleTextStyle}" />
-                <Button
-                    Click="CloseButton_Click"
-                    Content="✖"
-                    Style="{StaticResource CloseButtonStyle}" />
-            </DockPanel>
-            <!--  Nội dung form  -->
-            <StackPanel Grid.Row="1">
-                <!--  Tên  -->
-                <GroupBox Margin="0,0,0,5" Header="Tên voucher:">
-                    <!--  Đang sử dụng / Ngừng bán  -->
-                    <StackPanel Margin="0,0,0,0" Orientation="Horizontal">
-                        <TextBox
-                            x:Name="TenTextBox"
-                            Width="200"
-                            Margin="0,0,8,0" />
+        <!--  Tiêu đề  -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Name="TieuDeTextBlock" Style="{StaticResource TitleTextStyle}" />
+            <Button
+                Click="CloseButton_Click"
+                DockPanel.Dock="Right"
+                Style="{StaticResource CloseButtonStyle}" />
+        </DockPanel>
 
-                        <CheckBox
-                            x:Name="DangSuDungCheckBox"
-                            Margin="0,0,0,0"
-                            Content="Đang sử dụng" />
-                    </StackPanel>
-                </GroupBox>
+        <!--  Nội dung form  -->
+        <StackPanel Grid.Row="1">
+            <!--  Tên  -->
+            <GroupBox Margin="0,0,0,5" Header="Tên voucher:">
+                <!--  Đang sử dụng / Ngừng bán  -->
+                <StackPanel Margin="0,0,0,0" Orientation="Horizontal">
+                    <TextBox
+                        x:Name="TenTextBox"
+                        Width="200"
+                        Margin="0,0,8,0" />
 
-                <!--  Kiểu giảm  -->
-                <GroupBox Margin="0,0,0,5" Header="Kiểu giảm:">
-                    <StackPanel Orientation="Horizontal">
-                        <ComboBox
-                            x:Name="KieuGiamComboBox"
-                            Width="200"
-                            Margin="0,0,8,0">
-                            <ComboBoxItem Content="Phần trăm" Tag="%" />
-                            <ComboBoxItem Content="Tiền mặt" Tag="$" />
-                        </ComboBox>
-                        <ctrl:NumericTextBox x:Name="GiaTriTextBox" Width="100" />
-                    </StackPanel>
-                </GroupBox>
-
-                <!--  Điều kiện tối thiểu  -->
-                <GroupBox Margin="0,0,0,5" Header="Điều kiện hóa đơn tối thiểu:">
-                    <ctrl:MoneyTextBox x:Name="DieuKienTextBox" Width="200" />
-                </GroupBox>
-
-                <!--  Số lần sử dụng tối đa  -->
-                <GroupBox Margin="0,0,0,5" Header="Số lần sử dụng tối đa:">
-                    <ctrl:NumericTextBox x:Name="SoLanTextBox" Width="200" />
-                </GroupBox>
-
-                <!--  Ngày bắt đầu / kết thúc  -->
-                <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                    <GroupBox Margin="0,0,8,0" Header="Ngày bắt đầu:">
-                        <DatePicker x:Name="NgayBatDauPicker" />
-                    </GroupBox>
-                    <GroupBox Header="Ngày kết thúc:">
-                        <DatePicker x:Name="NgayKetThucPicker" />
-                    </GroupBox>
+                    <CheckBox
+                        x:Name="DangSuDungCheckBox"
+                        Margin="0,0,0,0"
+                        Content="Đang sử dụng" />
                 </StackPanel>
+            </GroupBox>
 
+            <!--  Kiểu giảm  -->
+            <GroupBox Margin="0,0,0,5" Header="Kiểu giảm:">
+                <StackPanel Orientation="Horizontal">
+                    <ComboBox
+                        x:Name="KieuGiamComboBox"
+                        Width="200"
+                        Margin="0,0,8,0">
+                        <ComboBoxItem Content="Phần trăm" Tag="%" />
+                        <ComboBoxItem Content="Tiền mặt" Tag="$" />
+                    </ComboBox>
+                    <ctrl:NumericTextBox x:Name="GiaTriTextBox" Width="100" />
+                </StackPanel>
+            </GroupBox>
 
+            <!--  Điều kiện tối thiểu  -->
+            <GroupBox Margin="0,0,0,5" Header="Điều kiện hóa đơn tối thiểu:">
+                <ctrl:MoneyTextBox x:Name="DieuKienTextBox" Width="200" />
+            </GroupBox>
 
+            <!--  Số lần sử dụng tối đa  -->
+            <GroupBox Margin="0,0,0,5" Header="Số lần sử dụng tối đa:">
+                <ctrl:NumericTextBox x:Name="SoLanTextBox" Width="200" />
+            </GroupBox>
 
+            <!--  Ngày bắt đầu / kết thúc  -->
+            <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                <GroupBox Margin="0,0,8,0" Header="Ngày bắt đầu:">
+                    <DatePicker x:Name="NgayBatDauPicker" />
+                </GroupBox>
+                <GroupBox Header="Ngày kết thúc:">
+                    <DatePicker x:Name="NgayKetThucPicker" />
+                </GroupBox>
             </StackPanel>
 
-            <!--  Nút lưu và lỗi  -->
-            <StackPanel Grid.Row="2">
-                <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
-                <Button
-                    Name="SaveButton"
-                    Click="SaveButton_Click"
-                    Content="Lưu"
-                    Style="{StaticResource SaveButtonStyle}" />
-            </StackPanel>
-        </Grid>
-    </Border>
+
+
+
+        </StackPanel>
+
+        <!--  Nút lưu và lỗi  -->
+        <StackPanel Grid.Row="2">
+            <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
+            <Button
+                Name="SaveButton"
+                Click="SaveButton_Click"
+                Content="Lưu"
+                Style="{StaticResource SaveButtonStyle}" />
+        </StackPanel>
+    </Grid>
 </Window>

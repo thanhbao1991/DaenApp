@@ -100,11 +100,12 @@ namespace TraSuaApp.WpfClient.Views
                         var role = JwtHelper.GetRole(login.Token!);
                         var userId = JwtHelper.GetUserId(login.Token!);
 
-                        var mainWindow = new MainWindow
+                        var mainWindow = new Dashboard
                         {
-                            VaiTro = role ?? "NhanVien",
-                            UserId = userId ?? "",
-                            TenHienThi = login.TenHienThi ?? "Người dùng"
+                            //    VaiTro = role ?? "NhanVien",
+                            //    UserId = userId ?? "",
+                            //    TenHienThi = login.TenHienThi ?? "Người dùng"
+                            //
                         };
 
                         mainWindow.Show();

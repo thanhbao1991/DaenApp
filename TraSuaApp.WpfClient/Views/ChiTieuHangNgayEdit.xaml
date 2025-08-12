@@ -1,0 +1,69 @@
+﻿<Window
+    x:Class="TraSuaApp.WpfClient.HoaDonViews.ChiTieuHangNgayEdit"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
+    xmlns:local="clr-namespace:TraSuaApp.WpfClient.Converters"
+    Style="{StaticResource EditWindowStyle}"
+    WindowStartupLocation="CenterScreen">
+
+    <Border Style="{StaticResource EditFormBorderStyle}">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Style="{StaticResource EditHeaderPanelStyle}">
+                <TextBlock Name="TieuDeTextBlock" Style="{StaticResource EditTitleTextStyle}" />
+                <Button
+                    Click="CloseButton_Click"
+                    Content="✖"
+                    Style="{StaticResource CloseButtonStyle}" />
+            </DockPanel>
+
+            <!--  Nội dung form  -->
+            <StackPanel
+                Grid.Row="1"
+                VerticalAlignment="Top"
+                Orientation="Vertical">
+
+                <GroupBox Margin="0,0,0,5" Header="Nguyên liệu">
+                    <ctrl:NguyenLieuSearchBox x:Name="NguyenLieuComboBox" />
+                </GroupBox>
+                <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                    <GroupBox Header="Số lượng">
+                        <ctrl:NumericTextBox x:Name="SoLuongTextBox" Width="80" />
+                    </GroupBox>
+                    <GroupBox Header="Đơn giá">
+                        <ctrl:NumericTextBox x:Name="DonGiaTextBox" Width="80" />
+                    </GroupBox>
+                    <GroupBox Header="Thành tiền">
+                        <ctrl:NumericTextBox
+                            x:Name="ThanhTienTextBox"
+                            Width="100"
+                            Background="#EEE"
+                            IsReadOnly="True" />
+                    </GroupBox>
+                </StackPanel>
+                <CheckBox
+                    x:Name="BillThangCheckBox"
+                    Margin="5,0,0,0"
+                    Content="Bill Tháng" />
+
+            </StackPanel>
+
+
+            <!--  Nút và lỗi  -->
+            <StackPanel Grid.Row="2">
+                <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
+                <Button
+                    Name="SaveButton"
+                    Click="SaveButton_Click"
+                    Content="Lưu"
+                    Style="{StaticResource SaveButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
