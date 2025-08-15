@@ -23,9 +23,11 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         return new ChiTietHoaDonNoDto
         {
             Id = entity.Id,
+            MaHoaDon = entity.HoaDon.MaHoaDon,
             SoTienNo = entity.SoTienNo,
             SoTienDaTra = entity.SoTienDaTra,
             NgayGio = entity.NgayGio,
+            GhiChu = entity.GhiChu,
             Ngay = entity.Ngay,
             HoaDonId = entity.HoaDonId,
             KhachHangId = entity.KhachHangId,
@@ -41,6 +43,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
     {
         var list = await _context.ChiTietHoaDonNos.AsNoTracking()
            .Include(x => x.KhachHang)
+           .Include(x => x.HoaDon)
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.LastModified)
             .ToListAsync();
@@ -64,6 +67,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
             SoTienNo = dto.SoTienNo,
             SoTienDaTra = dto.SoTienDaTra,
             NgayGio = dto.NgayGio,
+            GhiChu = dto.GhiChu,
             Ngay = dto.Ngay,
             HoaDonId = dto.HoaDonId,
             KhachHangId = dto.KhachHangId,
@@ -99,6 +103,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         entity.SoTienDaTra = dto.SoTienDaTra;
         entity.NgayGio = dto.NgayGio;
         entity.Ngay = dto.Ngay;
+        entity.GhiChu = dto.GhiChu;
         entity.KhachHangId = dto.KhachHangId;
         entity.LastModified = DateTime.Now;
 

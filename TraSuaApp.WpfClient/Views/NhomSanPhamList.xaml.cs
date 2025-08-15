@@ -78,7 +78,7 @@ namespace TraSuaApp.WpfClient.AdminViews
             var window = new NhomSanPhamEdit()
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.NhomSanPhams.ReloadAsync();
@@ -95,7 +95,7 @@ namespace TraSuaApp.WpfClient.AdminViews
             var window = new NhomSanPhamEdit(selected)
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
 
             if (window.ShowDialog() == true)

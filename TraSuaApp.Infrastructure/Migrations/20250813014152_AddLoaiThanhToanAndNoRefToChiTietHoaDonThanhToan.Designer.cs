@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TraSuaApp.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using TraSuaApp.Infrastructure.Data;
 namespace TraSuaApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250813014152_AddLoaiThanhToanAndNoRefToChiTietHoaDonThanhToan")]
+    partial class AddLoaiThanhToanAndNoRefToChiTietHoaDonThanhToan
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -213,9 +216,6 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("GhiChu")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<Guid>("HoaDonId")
                         .HasColumnType("uniqueidentifier");
 
@@ -305,7 +305,10 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("ChiTietHoaDonNoId")
+                    b.Property<int?>("ChiTietHoaDonNoId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ChiTietHoaDonNoId1")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -313,9 +316,6 @@ namespace TraSuaApp.Infrastructure.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("GhiChu")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("HoaDonId")
                         .HasColumnType("uniqueidentifier");
@@ -348,7 +348,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("PK_Payments");
 
-                    b.HasIndex("ChiTietHoaDonNoId");
+                    b.HasIndex("ChiTietHoaDonNoId1");
 
                     b.HasIndex("KhachHangId");
 
@@ -1458,7 +1458,9 @@ namespace TraSuaApp.Infrastructure.Migrations
                 {
                     b.HasOne("TraSuaApp.Domain.Entities.ChiTietHoaDonNo", "ChiTietHoaDonNo")
                         .WithMany()
-                        .HasForeignKey("ChiTietHoaDonNoId");
+                        .HasForeignKey("ChiTietHoaDonNoId1")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("TraSuaApp.Domain.Entities.HoaDon", "HoaDon")
                         .WithMany("ChiTietHoaDonThanhToans")

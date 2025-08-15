@@ -2,10 +2,8 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Apis;
-using TraSuaApp.WpfClient.Models;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.HoaDonViews
@@ -13,9 +11,13 @@ namespace TraSuaApp.WpfClient.HoaDonViews
     public partial class ChiTietHoaDonThanhToanEdit : Window
     {
         public ChiTietHoaDonThanhToanDto Model { get; set; } = new();
+
         private readonly IChiTietHoaDonThanhToanApi _api;
-        private readonly string _friendlyName = TuDien._tableFriendlyNames["ChiTietHoaDonThanhToan"];
-        private List<NhomSanPhamCheckItem> _bindingList = new();
+        private readonly IPhuongThucThanhToanApi _ptttApi;
+
+        private readonly string _friendlyName = "Chi tiết hóa đơn thanh toán";
+
+        private List<PhuongThucThanhToanDto> _phuongThucThanhToanList = new();
 
         public ChiTietHoaDonThanhToanEdit(ChiTietHoaDonThanhToanDto? dto = null)
         {
@@ -25,47 +27,88 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             TieuDeTextBlock.Text = _friendlyName;
 
             _api = new ChiTietHoaDonThanhToanApi();
+            _ptttApi = new PhuongThucThanhToanApi();
+
+
+            _phuongThucThanhToanList = AppProviders.PhuongThucThanhToans.Items.ToList();
+            PhuongThucThanhToanComboBox.ItemsSource = _phuongThucThanhToanList;
+
 
             if (dto != null)
             {
                 Model = dto;
                 TenTextBox.Text = dto.Ten;
+                LoaiThanhToanTextBox.Text = dto.LoaiThanhToan;
+                SoTienTextBox.Value = dto.SoTien;
+                SoTienTextBox.Focus();
+                PhuongThucThanhToanComboBox.SelectedValue = dto.PhuongThucThanhToanId;
+                GhiChuTextBox.Text = dto.GhiChu ?? "";
+
+                if (Model.IsDeleted)
+                {
+                    TenTextBox.IsEnabled = false;
+                    SoTienTextBox.IsEnabled = false;
+                    PhuongThucThanhToanComboBox.IsEnabled = false;
+                    GhiChuTextBox.IsEnabled = false;
+                    SaveButton.Content = "Khôi phục";
+                }
             }
             else
             {
                 TenTextBox.Focus();
             }
-
-            if (Model.IsDeleted)
-            {
-                TenTextBox.IsEnabled = false;
-                SaveButton.Content = "Khôi phục";
-            }
-
         }
+
 
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             ErrorTextBlock.Text = "";
 
-            Model.Ten = TenTextBox.Text.Trim();
-            Model.NgayGio = DateTime.Now;
-            if (string.IsNullOrWhiteSpace(Model.Ten))
+            Model.SoTien = 0;
+            if (!decimal.TryParse(SoTienTextBox.Text.Replace(",", ""), out var tien))
             {
-                ErrorTextBlock.Text = $"Tên {_friendlyName} không được để trống.";
-                TenTextBox.Focus();
+                ErrorTextBlock.Text = "Số tiền không hợp lệ.";
+                SoTienTextBox.Focus();
+                return;
+            }
+            Model.SoTien = tien;
+
+            if (string.IsNullOrWhiteSpace(Model.LoaiThanhToan))
+            {
+                ErrorTextBlock.Text = "Vui lòng chọn loại thanh toán.";
                 return;
             }
 
-            // Cập nhật danh sách NhomSanPhamIds từ checkbox
+            if (PhuongThucThanhToanComboBox.SelectedItem is PhuongThucThanhToanDto pt)
+            {
+                Model.PhuongThucThanhToanId = pt.Id;
+                Model.TenPhuongThucThanhToan = pt.Ten;
+            }
+            else
+            {
+                ErrorTextBlock.Text = "Vui lòng chọn phương thức thanh toán.";
+                PhuongThucThanhToanComboBox.Focus();
+                return;
+            }
+
+            Model.GhiChu = GhiChuTextBox.Text.Trim();
+
+            Model.NgayGio = DateTime.Now;
+
             Result<ChiTietHoaDonThanhToanDto> result;
             if (Model.Id == Guid.Empty)
+            {
                 result = await _api.CreateAsync(Model);
+            }
             else if (Model.IsDeleted)
+            {
                 result = await _api.RestoreAsync(Model.Id);
+            }
             else
+            {
                 result = await _api.UpdateAsync(Model.Id, Model);
+            }
 
             if (!result.IsSuccess)
             {
@@ -98,11 +141,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     e.Handled = true;
                 }
             }
-        }
-
-        // Giữ event handler để tránh cảnh báo XAML
-        private void NhomSanPhamListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
         }
     }
 }

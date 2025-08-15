@@ -33,7 +33,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             };
 
             // Đăng ký sự kiện ValueChanged cho SoLuongTextBox và DonGiaTextBox
-            SoLuongTextBox.ValueChanged += (s, e) =>
+            SoLuongTextBox.txtValue.ValueChanged += (s, e) =>
             {
                 ThanhTienTextBox.Value = SoLuongTextBox.Value * DonGiaTextBox.Value;
             };
@@ -47,6 +47,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             {
                 NguyenLieuComboBox.SetSelectedNguyenLieuByIdWithoutPopup(dto.NguyenLieuId);
                 SoLuongTextBox.Value = dto.SoLuong;
+                GhiChuTextBox.Text = dto.GhiChu;
                 DonGiaTextBox.Value = dto.DonGia;
                 ThanhTienTextBox.Value = dto.ThanhTien;
                 BillThangCheckBox.IsChecked = dto.BillThang == true ? true : false;
@@ -102,6 +103,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 NguyenLieuComboBox.SearchTextBox.Focus();
                 return;
             }
+            Model.GhiChu = GhiChuTextBox.Text;
             Model.Ten = NguyenLieuComboBox.SearchTextBox.Text;
             Model.DonGia = DonGiaTextBox.Value;
             Model.SoLuong = SoLuongTextBox.Value;
@@ -119,17 +121,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             {
                 ErrorTextBlock.Text = result.Message;
                 return;
-            }
-
-            // Cập nhật giá nhập mới cho nguyên liệu
-            var nguyenLieu = _nguyenLieuList.FirstOrDefault(nl => nl.Id == Model.NguyenLieuId);
-            if (nguyenLieu != null && nguyenLieu.GiaNhap != Model.DonGia)
-            {
-                nguyenLieu.GiaNhap = Model.DonGia;
-
-                // Gọi API cập nhật nguyên liệu (giả sử có API như thế)
-                var nguyenLieuApi = new NguyenLieuApi();
-                var updateResult = await nguyenLieuApi.UpdateAsync(nguyenLieu.Id, nguyenLieu);
             }
 
             DialogResult = true;

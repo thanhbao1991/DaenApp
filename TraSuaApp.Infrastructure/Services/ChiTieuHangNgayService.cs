@@ -26,6 +26,7 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
             Ten = entity.Ten,
             DonGia = entity.DonGia,
             SoLuong = entity.SoLuong,
+            GhiChu = entity.GhiChu,
             ThanhTien = entity.ThanhTien,
             Ngay = entity.Ngay,
             NgayGio = entity.NgayGio,
@@ -62,6 +63,7 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
         {
             Id = Guid.NewGuid(),
             Ten = dto.Ten,
+            GhiChu = dto.GhiChu,
             SoLuong = dto.SoLuong,
             DonGia = dto.DonGia,
             BillThang = dto.BillThang,
@@ -78,11 +80,27 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
         await _context.SaveChangesAsync();
 
         var after = ToDto(entity);
+
+        // Cập nhật giá nhập nguyên liệu
+        await UpdateNguyenLieuGiaNhapAsync(dto.NguyenLieuId, dto.DonGia);
+
         return Result<ChiTieuHangNgayDto>.Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
             .WithId(after.Id)
             .WithAfter(after);
     }
 
+    private async Task UpdateNguyenLieuGiaNhapAsync(Guid nguyenLieuId, decimal donGia)
+    {
+        var nguyenLieu = await _context.NguyenLieus
+            .FirstOrDefaultAsync(nl => nl.Id == nguyenLieuId);
+
+        if (nguyenLieu != null && nguyenLieu.GiaNhap != donGia)
+        {
+            nguyenLieu.GiaNhap = donGia;
+            nguyenLieu.LastModified = DateTime.Now;
+            await _context.SaveChangesAsync();
+        }
+    }
     public async Task<Result<ChiTieuHangNgayDto>> UpdateAsync(Guid id, ChiTieuHangNgayDto dto)
     {
         var entity = await _context.ChiTieuHangNgays
@@ -97,6 +115,7 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
         var before = ToDto(entity);
         var now = DateTime.Now;
         entity.Ten = dto.Ten;
+        entity.GhiChu = dto.GhiChu;
         entity.SoLuong = dto.SoLuong;
         entity.BillThang = dto.BillThang;
         entity.DonGia = dto.DonGia;
@@ -109,6 +128,11 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
         await _context.SaveChangesAsync();
 
         var after = ToDto(entity);
+
+        // Cập nhật giá nhập nguyên liệu
+        await UpdateNguyenLieuGiaNhapAsync(dto.NguyenLieuId, dto.DonGia);
+
+
         return Result<ChiTieuHangNgayDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
             .WithId(id)
             .WithBefore(before)

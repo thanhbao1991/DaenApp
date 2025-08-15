@@ -29,7 +29,6 @@
                             BorderThickness="1"
                             CornerRadius="8 8 0 0">
                             <ContentPresenter
-                                
                                 x:Name="ContentSite"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
@@ -115,8 +114,8 @@
             <Setter Property="IsHitTestVisible" Value="False" />
         </Style>
         <Style x:Key="CloseButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="28" />
-            <Setter Property="Height" Value="28" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
             <Setter Property="Margin" Value="0,5,5,0" />
             <Setter Property="HorizontalAlignment" Value="Right" />
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -271,7 +270,8 @@
         </Style>
 
         <!--  Nút Xóa  -->
-        <Style x:Key="XoaButtonStyle" TargetType="Button">
+        <!--
+        <Style x:Key="DeleteButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="60" />
             <Setter Property="Height" Value="26" />
             <Setter Property="Background" Value="#e57373" />
@@ -298,7 +298,7 @@
                     <Setter Property="Background" Value="#ef5350" />
                 </Trigger>
             </Style.Triggers>
-        </Style>
+        </Style>-->
 
         <!--  TextBlock lỗi  -->
         <Style x:Key="ErrorTextBlock" TargetType="TextBlock">
@@ -443,7 +443,17 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
+        <Style x:Key="DataGridCheckBoxElementStyle" TargetType="CheckBox">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Padding" Value="16,8,16,8" />
 
+        </Style>
+        <Style x:Key="DataGridCheckBoxElementStyleLeft" TargetType="CheckBox">
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="16,0,16,0" />
+        </Style>
         <!--  Base Button style  -->
         <Style
             x:Key="BaseButtonStyle"
@@ -511,7 +521,7 @@
             x:Key="BaseSmallButtonStyle"
             BasedOn="{StaticResource BaseButtonStyle}"
             TargetType="Button">
-            <Setter Property="MinWidth" Value="60" />
+            <Setter Property="MinWidth" Value="0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
@@ -527,19 +537,19 @@
             TargetType="Button">
             <Setter Property="Foreground" Value="#2196F3" />
         </Style>
-        <!--<Style
+        <Style
             x:Key="XoaButtonStyle"
             BasedOn="{StaticResource BaseSmallButtonStyle}"
             TargetType="Button">
             <Setter Property="Foreground" Value="#F44336" />
-        </Style>-->
+        </Style>
 
         <!--  DataGrid styles  -->
         <Style x:Key="MiddleCellStyle" TargetType="DataGridCell">
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Height" Value="24" />
-            <Setter Property="Padding" Value="8" />
+            <Setter Property="Padding" Value="16,8,16,8" />
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="#FFCCE5FF" />
@@ -551,21 +561,21 @@
         <Style x:Key="CenterTextCellStyle" TargetType="TextBlock">
             <Setter Property="Width" Value="Auto" />
             <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="Padding" Value="8" />
+            <Setter Property="Padding" Value="16,8,16,8" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style x:Key="LeftTextCellStyle" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Left" />
-            <Setter Property="Padding" Value="8" />
+            <Setter Property="Padding" Value="16,8,16,8" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style x:Key="RightTextCellStyle" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Right" />
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Padding" Value="8" />
-
+            <Setter Property="Padding" Value="16,8,16,8" />
         </Style>
         <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Padding" Value="16,8,16,8" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
@@ -575,7 +585,7 @@
             <Setter Property="RowBackground" Value="#f6f6f6" />
             <Setter Property="AutoGenerateColumns" Value="False" />
             <Setter Property="BorderBrush" Value="#DDD" />
-            <Setter Property="Background" Value="#fff" />
+            <Setter Property="Background" Value="#f6f6f6" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CanUserSortColumns" Value="False" />
             <Setter Property="CanUserAddRows" Value="False" />

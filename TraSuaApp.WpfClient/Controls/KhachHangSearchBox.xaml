@@ -18,6 +18,8 @@
             <Button
                 x:Name="ClearButton"
                 Click="ClearButton_Click"
+                Focusable="False"
+                IsTabStop="False"
                 Style="{StaticResource ClearXButtonStyle}"
                 Visibility="Collapsed" />
         </Grid>

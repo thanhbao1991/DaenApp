@@ -20,9 +20,14 @@ public class HoaDonService : IHoaDonService
 
     private HoaDonDto ToDto(HoaDon entity)
     {
+        var tongDaThu = entity.ChiTietHoaDonThanhToans?
+        .Where(x => !x.IsDeleted)
+        .Sum(x => x.SoTien) ?? 0;
+
         return new HoaDonDto
         {
             Id = entity.Id,
+            PhanLoai = entity.PhanLoai,
             Ten = entity.KhachHang != null ? entity.KhachHang.Ten + " / " + entity.DiaChiText : entity.TenBan,
             MaHoaDon = entity.MaHoaDon,
             TrangThai = entity.TrangThai,
@@ -38,6 +43,8 @@ public class HoaDonService : IHoaDonService
             ThanhTien = entity.ThanhTien,
             CreatedAt = entity.CreatedAt,
             LastModified = entity.LastModified,
+            DaThu = tongDaThu,
+            ConLai = entity.ThanhTien - tongDaThu,
 
             ChiTietHoaDons = entity.ChiTietHoaDons?
                 .Where(x => !x.IsDeleted)
@@ -94,6 +101,7 @@ public class HoaDonService : IHoaDonService
         var list = await _context.HoaDons.AsNoTracking()
             .Where(x => !x.IsDeleted)
             .Where(x => x.Ngay >= DateTime.Today.AddDays(-1))
+            //.Include(h => h.ChiTietHoaDons)
             .Include(h => h.KhachHang)
             .Include(h => h.ChiTietHoaDonThanhToans)
                 .ThenInclude(ct => ct.PhuongThucThanhToan)

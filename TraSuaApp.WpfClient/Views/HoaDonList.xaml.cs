@@ -79,7 +79,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             var window = new HoaDonEdit()
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.HoaDons.ReloadAsync();
@@ -96,7 +96,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             var window = new HoaDonEdit(selected)
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
 
             if (window.ShowDialog() == true)

@@ -80,7 +80,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             var window = new ChiTietHoaDonThanhToanEdit()
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
@@ -98,7 +98,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             var window = new ChiTietHoaDonThanhToanEdit(selected)
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();

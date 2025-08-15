@@ -24,10 +24,7 @@
             <StackPanel Grid.Row="1">
                 <GroupBox Margin="0,0,0,5" Header="Tên công việc">
                     <StackPanel Orientation="Horizontal">
-                        <TextBox
-                            x:Name="TenTextBox"
-                            Width="200"
-                            Margin="0,0,8,0" />
+                        <TextBox x:Name="TenTextBox" Width="300" />
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

@@ -19,21 +19,40 @@ namespace TraSuaApp.Api.Controllers
         [HttpGet("homnay")]
         public async Task<ActionResult<DashboardDto>> GetToday()
         {
-            var today = DateTime.Today;
+            var today = DateTime.Today.AddDays(0);
             var tomorrow = today.AddDays(1);
+            var chiTietQuery = _db.ChiTietHoaDons
+                .Where(c => c.HoaDon.Ngay >= today && c.HoaDon.Ngay < tomorrow && !c.HoaDon.IsDeleted);
 
+            var tongDoanhThu = await chiTietQuery.SumAsync(x => x.ThanhTien);
 
-            var topSanPham = await _db.ChiTietHoaDons
-      .Where(c => c.HoaDon.Ngay >= today && c.HoaDon.Ngay < tomorrow && !c.HoaDon.IsDeleted)
-      .GroupBy(c => c.TenSanPham)
-      .Select(g => new DashboardTopSanPhamDto
-      {
-          TenSanPham = g.Key ?? "",
-          SoLuong = g.Sum(x => x.SoLuong),
-          DoanhThu = g.Sum(x => x.ThanhTien)
-      })
-      .OrderByDescending(x => x.DoanhThu)
-      .ToListAsync();
+            var tempList = await chiTietQuery
+                .GroupBy(c => new { c.TenSanPham, Ngay = c.HoaDon.Ngay.Date })
+                .Select(g => new
+                {
+                    Ngay = g.Key.Ngay,
+                    TenSanPham = g.Key.TenSanPham ?? "",
+                    SoLuong = g.Sum(x => x.SoLuong),
+                    DoanhThu = g.Sum(x => x.ThanhTien),
+                    TyLeDoanhThu = tongDoanhThu == 0
+                        ? "0%"
+                        : (Math.Round((g.Sum(x => x.ThanhTien) / tongDoanhThu) * 100, 2).ToString("0.00") + "%")
+                })
+                .OrderByDescending(x => x.DoanhThu)
+                .ToListAsync();
+
+            // Gán STT sau khi có danh sách
+            var topSanPham = tempList
+                .Select((x, index) => new DashboardTopSanPhamDto
+                {
+                    Stt = index + 1,
+                    Ngay = x.Ngay,
+                    TenSanPham = x.TenSanPham,
+                    SoLuong = x.SoLuong,
+                    DoanhThu = x.DoanhThu,
+                    TyLeDoanhThu = x.TyLeDoanhThu
+                })
+                .ToList();
 
             return new DashboardDto
             {

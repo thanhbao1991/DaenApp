@@ -29,15 +29,15 @@
                 VerticalAlignment="Top"
                 Orientation="Vertical">
 
-                <GroupBox Margin="0,0,0,5" Header="Nguyên liệu">
-                    <ctrl:NguyenLieuSearchBox x:Name="NguyenLieuComboBox" />
+                <GroupBox Margin="0,0,0,5" Header="Nguyên vật liệu">
+                    <ctrl:NguyenLieuSearchBox x:Name="NguyenLieuComboBox" HorizontalAlignment="Stretch" />
                 </GroupBox>
                 <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
                     <GroupBox Header="Số lượng">
-                        <ctrl:NumericTextBox x:Name="SoLuongTextBox" Width="80" />
+                        <ctrl:NumericUpDown x:Name="SoLuongTextBox" Width="100" />
                     </GroupBox>
                     <GroupBox Header="Đơn giá">
-                        <ctrl:NumericTextBox x:Name="DonGiaTextBox" Width="80" />
+                        <ctrl:NumericTextBox x:Name="DonGiaTextBox" Width="100" />
                     </GroupBox>
                     <GroupBox Header="Thành tiền">
                         <ctrl:NumericTextBox
@@ -47,9 +47,12 @@
                             IsReadOnly="True" />
                     </GroupBox>
                 </StackPanel>
+                <GroupBox Header="Ghi chú">
+                    <TextBox x:Name="GhiChuTextBox" HorizontalAlignment="Stretch" />
+                </GroupBox>
                 <CheckBox
                     x:Name="BillThangCheckBox"
-                    Margin="5,0,0,0"
+                    Margin="5,5,0,0"
                     Content="Bill Tháng" />
 
             </StackPanel>
@@ -63,6 +66,7 @@
                     Click="SaveButton_Click"
                     Content="Lưu"
                     Style="{StaticResource SaveButtonStyle}" />
+                
             </StackPanel>
         </Grid>
     </Border>

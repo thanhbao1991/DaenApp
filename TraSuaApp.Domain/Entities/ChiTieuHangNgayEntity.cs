@@ -15,6 +15,7 @@ public partial class ChiTieuHangNgay
     public decimal ThanhTien { get; set; }
     public Boolean BillThang { get; set; }
     public string Ten { get; set; } = null!;
+    public string? GhiChu { get; set; }
 
     public DateTime Ngay { get; set; }
     public DateTime NgayGio { get; set; }

@@ -113,41 +113,5 @@ namespace TraSuaApp.WpfClient
                          _isLoggingIn = false;
                      });
         }
-        //private static void HandleTokenExpired()
-        //{
-        //    if (_isLoggingIn) return;
-        //    _isLoggingIn = true;
-
-        //    System.Windows.Application.Current.Dispatcher.Invoke(() =>
-        //     {
-        //         // Nếu đã có LoginForm đang mở → không mở thêm
-        //         if (System.Windows.Application.Current.Windows.OfType<LoginForm>().Any())
-        //         {
-        //             _isLoggingIn = false;
-        //             return;
-        //         }
-
-        //         var loginWindow = new LoginForm();
-        //         var result = loginWindow.ShowDialog();
-
-        //         if (result == true)
-        //         {
-        //             AppProviders.InitializeAsync().Wait();
-        //             var main = new MainWindow();
-        //             main.Show();
-        //         }
-
-        //         // Đóng hết cửa sổ khác (trừ LoginForm nếu cần)
-        //         foreach (Window w in System.Windows.Application.Current.Windows.OfType<Window>().ToList())
-        //         {
-        //             if (w is not LoginForm)
-        //                 w.Close();
-        //         }
-
-        //         _isLoggingIn = false;
-        //     });
-        //}
-
-
     }
 }

@@ -80,7 +80,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             var window = new ChiTieuHangNgayEdit()
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,
+                Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.ChiTieuHangNgays.ReloadAsync();
@@ -98,7 +99,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             var window = new ChiTieuHangNgayEdit(selected)
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,
+                Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.ChiTieuHangNgays.ReloadAsync();
@@ -118,18 +120,25 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
             if (confirm != MessageBoxResult.Yes) return;
 
+
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
                 var response = await ApiClient.DeleteAsync($"/api/ChiTieuHangNgay/{selected.Id}");
                 var result = await response.Content.ReadFromJsonAsync<Result<ChiTieuHangNgayDto>>();
+
                 if (result?.IsSuccess == true)
+                {
                     AppProviders.ChiTieuHangNgays.Remove(selected.Id);
+                }
                 else
-                    throw new Exception(result?.Message ?? "Không thể xoá.");
+                {
+                    _errorHandler.Handle(new Exception(result?.Message ?? "Không thể xoá."), "Delete");
+                }
             }
             catch (Exception ex)
             {
+                // Khối catch này vẫn hữu ích để bắt các lỗi mạng hoặc lỗi không xác định
                 _errorHandler.Handle(ex, "Delete");
             }
             finally

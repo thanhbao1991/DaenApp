@@ -105,7 +105,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new KhachHangEdit()
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.KhachHangs.ReloadAsync();
@@ -122,7 +122,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new KhachHangEdit(selected)
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.KhachHangs.ReloadAsync();

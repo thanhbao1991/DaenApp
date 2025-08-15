@@ -62,7 +62,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
 
         _timer = new System.Timers.Timer(60000);
         _timer.Elapsed += async (_, _) => await ReloadAsync();
-        _timer.Start();
+        // _timer.Start();
     }
 
     private string GetActionVerb(string action)
@@ -79,6 +79,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
 
     public async Task ReloadAsync()
     {
+
         try
         {
             var response = await ApiClient.GetAsync($"/api/{_entityName}");

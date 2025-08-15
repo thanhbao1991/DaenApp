@@ -1,6 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <Compile Remove="MainWindow.xaml.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Remove="MainWindow.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="FontAwesome.Sharp" Version="6.6.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
@@ -15,6 +23,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Controls\NumericUpDown.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Controls\NguyenLieuSearchBox.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

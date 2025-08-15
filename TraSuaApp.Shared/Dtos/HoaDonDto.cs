@@ -30,6 +30,8 @@ public class HoaDonDto : DtoBase
     public decimal TongTien { get; set; }
     public decimal GiamGia { get; set; }
     public decimal ThanhTien { get; set; }
+    public decimal DaThu { get; set; }
+    public decimal ConLai { get; set; }
 
     public int TichDiem => (int)ThanhTien / 10000;
     public virtual ICollection<ChiTietHoaDonDto> ChiTietHoaDons { get; set; } = new List<ChiTietHoaDonDto>();

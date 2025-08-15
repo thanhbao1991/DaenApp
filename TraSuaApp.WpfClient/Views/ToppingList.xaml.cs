@@ -80,7 +80,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new ToppingEdit()
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.Toppings.ReloadAsync();
@@ -98,7 +98,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new ToppingEdit(selected)
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.Toppings.ReloadAsync();

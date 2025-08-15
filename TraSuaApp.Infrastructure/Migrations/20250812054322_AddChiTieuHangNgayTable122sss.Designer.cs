@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TraSuaApp.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using TraSuaApp.Infrastructure.Data;
 namespace TraSuaApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250812054322_AddChiTieuHangNgayTable122sss")]
+    partial class AddChiTieuHangNgayTable122sss
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -213,9 +216,6 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("GhiChu")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<Guid>("HoaDonId")
                         .HasColumnType("uniqueidentifier");
 
@@ -305,17 +305,11 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("ChiTietHoaDonNoId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("GhiChu")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("HoaDonId")
                         .HasColumnType("uniqueidentifier");
@@ -328,10 +322,6 @@ namespace TraSuaApp.Infrastructure.Migrations
 
                     b.Property<DateTime?>("LastModified")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("LoaiThanhToan")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("Ngay")
                         .HasColumnType("datetime2");
@@ -347,8 +337,6 @@ namespace TraSuaApp.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("PK_Payments");
-
-                    b.HasIndex("ChiTietHoaDonNoId");
 
                     b.HasIndex("KhachHangId");
 
@@ -1456,10 +1444,6 @@ namespace TraSuaApp.Infrastructure.Migrations
 
             modelBuilder.Entity("TraSuaApp.Domain.Entities.ChiTietHoaDonThanhToan", b =>
                 {
-                    b.HasOne("TraSuaApp.Domain.Entities.ChiTietHoaDonNo", "ChiTietHoaDonNo")
-                        .WithMany()
-                        .HasForeignKey("ChiTietHoaDonNoId");
-
                     b.HasOne("TraSuaApp.Domain.Entities.HoaDon", "HoaDon")
                         .WithMany("ChiTietHoaDonThanhToans")
                         .HasForeignKey("HoaDonId")
@@ -1477,8 +1461,6 @@ namespace TraSuaApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_Payments_PaymentMethods_PaymentMethodId");
-
-                    b.Navigation("ChiTietHoaDonNo");
 
                     b.Navigation("HoaDon");
 

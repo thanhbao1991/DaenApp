@@ -4,6 +4,9 @@ public class ChiTieuHangNgayDto : DtoBase
 {
     public override string ApiRoute => "ChiTieuHangNgay";
     public decimal SoLuong { get; set; }
+    public string? GhiChu { get; set; }
+
+
     public decimal DonGia { get; set; }
     public decimal ThanhTien { get; set; }
     public DateTime Ngay { get; set; }

@@ -80,7 +80,8 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new CongViecNoiBoEdit()
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,
+                Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.CongViecNoiBos.ReloadAsync();
@@ -98,7 +99,8 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new CongViecNoiBoEdit(selected)
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,
+                Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.CongViecNoiBos.ReloadAsync();
@@ -123,19 +125,27 @@ namespace TraSuaApp.WpfClient.SettingsViews
                 Mouse.OverrideCursor = Cursors.Wait;
                 var response = await ApiClient.DeleteAsync($"/api/CongViecNoiBo/{selected.Id}");
                 var result = await response.Content.ReadFromJsonAsync<Result<CongViecNoiBoDto>>();
+
                 if (result?.IsSuccess == true)
+                {
                     AppProviders.CongViecNoiBos.Remove(selected.Id);
+                }
                 else
-                    throw new Exception(result?.Message ?? "Không thể xoá.");
+                {
+                    _errorHandler.Handle(new Exception(result?.Message ?? "Không thể xoá."), "Delete");
+                }
             }
             catch (Exception ex)
             {
+                // Khối catch này vẫn hữu ích để bắt các lỗi mạng hoặc lỗi không xác định
                 _errorHandler.Handle(ex, "Delete");
             }
             finally
             {
                 Mouse.OverrideCursor = null;
             }
+
+
         }
 
         private async void CongViecNoiBoDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)

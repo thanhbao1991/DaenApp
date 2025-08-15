@@ -80,7 +80,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new NguyenLieuEdit()
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.NguyenLieus.ReloadAsync();
@@ -98,7 +98,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new NguyenLieuEdit(selected)
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight
+                Height = this.ActualHeight,                 Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.NguyenLieus.ReloadAsync();

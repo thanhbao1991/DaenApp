@@ -2,6 +2,7 @@
     x:Class="TraSuaApp.WpfClient.HoaDonViews.ChiTietHoaDonThanhToanEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
     Style="{StaticResource EditWindowStyle}"
     WindowStartupLocation="CenterScreen">
 
@@ -20,15 +21,38 @@
                     Content="✖"
                     Style="{StaticResource CloseButtonStyle}" />
             </DockPanel>
+
             <!--  Nội dung form  -->
-            <StackPanel Grid.Row="1">
-                <GroupBox Margin="0,0,0,5" Header="Tên công việc">
-                    <StackPanel Orientation="Horizontal">
+            <StackPanel Grid.Row="1" Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal">
+                    <GroupBox Header="Tên bàn/khách">
                         <TextBox
                             x:Name="TenTextBox"
-                            Width="200"
-                            Margin="0,0,8,0" />
-                    </StackPanel>
+                            Width="150"
+                            IsEnabled="False" />
+                    </GroupBox>
+                    <GroupBox Header="Loại thanh toán">
+                        <TextBox
+                            x:Name="LoaiThanhToanTextBox"
+                            Width="150"
+                            IsEnabled="False" />
+                    </GroupBox>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <GroupBox Header="Số tiền">
+                        <ctrl:NumericTextBox x:Name="SoTienTextBox" Width="150" />
+                    </GroupBox>
+                    <GroupBox Header="Phương thức">
+                        <ComboBox
+                            x:Name="PhuongThucThanhToanComboBox"
+                            Width="150"
+                            HorizontalAlignment="Left"
+                            DisplayMemberPath="Ten"
+                            SelectedValuePath="Id" />
+                    </GroupBox>
+                </StackPanel>
+                <GroupBox Header="Ghi chú">
+                    <TextBox x:Name="GhiChuTextBox" HorizontalAlignment="Stretch" />
                 </GroupBox>
             </StackPanel>
 

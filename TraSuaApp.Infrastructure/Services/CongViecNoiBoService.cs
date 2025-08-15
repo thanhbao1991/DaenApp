@@ -53,6 +53,15 @@ public class CongViecNoiBoService : ICongViecNoiBoService
 
     public async Task<Result<CongViecNoiBoDto>> CreateAsync(CongViecNoiBoDto dto)
     {
+        bool daTonTai = _context.CongViecNoiBos
+            .Any(x => x.Ten.ToLower() == dto.Ten.ToLower());
+
+        if (daTonTai)
+        {
+            return Result<CongViecNoiBoDto>
+                .Failure($"{dto.Ten} đã tồn tại");
+        }
+
         var entity = new CongViecNoiBo
         {
             Id = Guid.NewGuid(),
@@ -63,6 +72,7 @@ public class CongViecNoiBoService : ICongViecNoiBoService
             LastModified = DateTime.Now,
             IsDeleted = false,
         };
+
 
         _context.CongViecNoiBos.Add(entity);
         await _context.SaveChangesAsync();
@@ -75,6 +85,17 @@ public class CongViecNoiBoService : ICongViecNoiBoService
 
     public async Task<Result<CongViecNoiBoDto>> UpdateAsync(Guid id, CongViecNoiBoDto dto)
     {
+
+        bool daTonTai = _context.CongViecNoiBos
+            .Any(x => x.Id != dto.Id &&
+            x.Ten.ToLower() == dto.Ten.ToLower());
+
+        if (daTonTai)
+        {
+            return Result<CongViecNoiBoDto>
+                .Failure($"{dto.Ten} đã tồn tại");
+        }
+
         var entity = await _context.CongViecNoiBos
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
