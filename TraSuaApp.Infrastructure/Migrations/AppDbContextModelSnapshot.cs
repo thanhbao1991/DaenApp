@@ -234,9 +234,6 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<DateTime>("NgayGio")
                         .HasColumnType("datetime2");
 
-                    b.Property<decimal>("SoTienDaTra")
-                        .HasColumnType("decimal(18, 2)");
-
                     b.Property<decimal>("SoTienNo")
                         .HasColumnType("decimal(18, 2)");
 
@@ -292,6 +289,8 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("PK_CustomerPointLogs");
 
+                    b.HasIndex("HoaDonId");
+
                     b.HasIndex(new[] { "IsDeleted", "LastModified" }, "IX_ChiTietHoaDonPoints_IsDeleted_LastModified")
                         .IsDescending(false, true);
 
@@ -344,6 +343,10 @@ namespace TraSuaApp.Infrastructure.Migrations
 
                     b.Property<decimal>("SoTien")
                         .HasColumnType("decimal(18, 2)");
+
+                    b.Property<string>("TenPhuongThucThanhToan")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id")
                         .HasName("PK_Payments");
@@ -561,6 +564,9 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("BaoDon")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -568,6 +574,9 @@ namespace TraSuaApp.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("DiaChiText")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GhiChu")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("GiamGia")
@@ -591,6 +600,15 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<DateTime>("NgayGio")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("NgayHen")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NgayRa")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NgayShip")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("OldId")
                         .HasColumnType("int");
 
@@ -603,6 +621,9 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<string>("TenBan")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("TenKhachHangText")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<decimal>("ThanhTien")
                         .HasColumnType("decimal(18, 2)");
 
@@ -611,6 +632,9 @@ namespace TraSuaApp.Infrastructure.Migrations
 
                     b.Property<string>("TrangThai")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("UuTien")
+                        .HasColumnType("bit");
 
                     b.Property<Guid?>("VoucherId")
                         .HasColumnType("uniqueidentifier");
@@ -774,40 +798,6 @@ namespace TraSuaApp.Infrastructure.Migrations
                         .IsDescending(false, true);
 
                     b.ToTable("KhachHangPhones");
-                });
-
-            modelBuilder.Entity("TraSuaApp.Domain.Entities.KhachHangPoint", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("KhachHangId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("LastModified")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("TongDiem")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id")
-                        .HasName("PK_CustomerPoints");
-
-                    b.HasIndex(new[] { "KhachHangId" }, "IX_CustomerPoints_KhachHangId");
-
-                    b.HasIndex(new[] { "IsDeleted", "LastModified" }, "IX_DiemKhachHangs_IsDeleted_LastModified")
-                        .IsDescending(false, true);
-
-                    b.ToTable("KhachHangPoints");
                 });
 
             modelBuilder.Entity("TraSuaApp.Domain.Entities.LichSuNhapXuatKho", b =>
@@ -1444,12 +1434,20 @@ namespace TraSuaApp.Infrastructure.Migrations
 
             modelBuilder.Entity("TraSuaApp.Domain.Entities.ChiTietHoaDonPoint", b =>
                 {
+                    b.HasOne("TraSuaApp.Domain.Entities.HoaDon", "HoaDon")
+                        .WithMany()
+                        .HasForeignKey("HoaDonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("TraSuaApp.Domain.Entities.KhachHang", "KhachHang")
                         .WithMany("ChiTietHoaDonPoints")
                         .HasForeignKey("KhachHangId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_CustomerPointLogs_KhachHangs_KhachHangId");
+
+                    b.Navigation("HoaDon");
 
                     b.Navigation("KhachHang");
                 });
@@ -1582,18 +1580,6 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Navigation("KhachHang");
                 });
 
-            modelBuilder.Entity("TraSuaApp.Domain.Entities.KhachHangPoint", b =>
-                {
-                    b.HasOne("TraSuaApp.Domain.Entities.KhachHang", "KhachHang")
-                        .WithMany("DiemKhachHangs")
-                        .HasForeignKey("KhachHangId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_CustomerPoints_KhachHangs_KhachHangId");
-
-                    b.Navigation("KhachHang");
-                });
-
             modelBuilder.Entity("TraSuaApp.Domain.Entities.LichSuNhapXuatKho", b =>
                 {
                     b.HasOne("TraSuaApp.Domain.Entities.NguyenLieu", "NguyenLieu")
@@ -1672,8 +1658,6 @@ namespace TraSuaApp.Infrastructure.Migrations
             modelBuilder.Entity("TraSuaApp.Domain.Entities.KhachHang", b =>
                 {
                     b.Navigation("ChiTietHoaDonPoints");
-
-                    b.Navigation("DiemKhachHangs");
 
                     b.Navigation("HoaDons");
 

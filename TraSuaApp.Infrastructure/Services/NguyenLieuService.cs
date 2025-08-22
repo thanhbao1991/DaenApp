@@ -18,7 +18,7 @@ public class NguyenLieuService : INguyenLieuService
         _context = context;
     }
 
-    private NguyenLieuDto ToDto(NguyenLieu entity)
+    private static NguyenLieuDto ToDto(NguyenLieu entity)
     {
         return new NguyenLieuDto
         {
@@ -35,26 +35,16 @@ public class NguyenLieuService : INguyenLieuService
         };
     }
 
-    public async Task<List<NguyenLieuDto>> GetAllAsync()
-    {
-        var list = await _context.NguyenLieus.AsNoTracking()
-            .Where(x => !x.IsDeleted)
-            .OrderByDescending(x => x.LastModified)
-            .ToListAsync();
-
-        return list.Select(ToDto).ToList();
-    }
-
-    public async Task<NguyenLieuDto?> GetByIdAsync(Guid id)
-    {
-        var entity = await _context.NguyenLieus
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-
-        return entity == null ? null : ToDto(entity);
-    }
 
     public async Task<Result<NguyenLieuDto>> CreateAsync(NguyenLieuDto dto)
     {
+        bool daTonTai = await _context.NguyenLieus
+            .AnyAsync(x => x.Ten.ToLower() == dto.Ten.ToLower() && !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<NguyenLieuDto>.Failure($"{dto.Ten} đã tồn tại.");
+
+        var now = DateTime.Now;
         var entity = new NguyenLieu
         {
             Id = Guid.NewGuid(),
@@ -63,8 +53,8 @@ public class NguyenLieuService : INguyenLieuService
             DonViTinh = dto.DonViTinh,
             TonKho = dto.TonKho,
             GiaNhap = dto.GiaNhap,
-            CreatedAt = DateTime.Now,
-            LastModified = DateTime.Now,
+            CreatedAt = now,
+            LastModified = now,
             IsDeleted = false,
         };
 
@@ -88,14 +78,23 @@ public class NguyenLieuService : INguyenLieuService
         if (dto.LastModified < entity.LastModified)
             return Result<NguyenLieuDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
+        bool daTonTai = await _context.NguyenLieus
+            .AnyAsync(x => x.Id != id &&
+                           x.Ten.ToLower() == dto.Ten.ToLower() &&
+                           !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<NguyenLieuDto>.Failure($"{dto.Ten} đã tồn tại.");
+
         var before = ToDto(entity);
+        var now = DateTime.Now;
 
         entity.Ten = dto.Ten.Trim();
         entity.GiaNhap = dto.GiaNhap;
         entity.TonKho = dto.TonKho;
         entity.DonViTinh = dto.DonViTinh;
         entity.DangSuDung = dto.DangSuDung;
-        entity.LastModified = DateTime.Now;
+        entity.LastModified = now;
 
         await _context.SaveChangesAsync();
 
@@ -115,10 +114,11 @@ public class NguyenLieuService : INguyenLieuService
             return Result<NguyenLieuDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
         var before = ToDto(entity);
+        var now = DateTime.Now;
 
         entity.IsDeleted = true;
-        entity.DeletedAt = DateTime.Now;
-        entity.LastModified = DateTime.Now;
+        entity.DeletedAt = now;
+        entity.LastModified = now;
 
         await _context.SaveChangesAsync();
 
@@ -152,11 +152,28 @@ public class NguyenLieuService : INguyenLieuService
 
     public async Task<List<NguyenLieuDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.NguyenLieus.AsNoTracking()
+        return await _context.NguyenLieus.AsNoTracking()
             .Where(x => x.LastModified > lastSync)
-                 .OrderByDescending(x => x.LastModified) // ✅ THÊM DÒNG NÀY
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
+    public async Task<List<NguyenLieuDto>> GetAllAsync()
+    {
+        return await _context.NguyenLieus.AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
+            .ToListAsync();
+    }
+
+    public async Task<NguyenLieuDto?> GetByIdAsync(Guid id)
+    {
+        var entity = await _context.NguyenLieus
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+        return entity == null ? null : ToDto(entity);
+    }
+
 }

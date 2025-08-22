@@ -16,7 +16,7 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
         _context = context;
     }
 
-    private PhuongThucThanhToanDto ToDto(PhuongThucThanhToan entity)
+    private static PhuongThucThanhToanDto ToDto(PhuongThucThanhToan entity)
     {
         return new PhuongThucThanhToanDto
         {
@@ -33,17 +33,17 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
 
     public async Task<List<PhuongThucThanhToanDto>> GetAllAsync()
     {
-        var list = await _context.PhuongThucThanhToans.AsNoTracking()
+        return await _context.PhuongThucThanhToans.AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
 
     public async Task<PhuongThucThanhToanDto?> GetByIdAsync(Guid id)
     {
         var entity = await _context.PhuongThucThanhToans
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
         return entity == null ? null : ToDto(entity);
@@ -51,14 +51,21 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
 
     public async Task<Result<PhuongThucThanhToanDto>> CreateAsync(PhuongThucThanhToanDto dto)
     {
+        bool daTonTai = await _context.PhuongThucThanhToans
+            .AnyAsync(x => x.Ten.ToLower() == dto.Ten.ToLower() && !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<PhuongThucThanhToanDto>.Failure($"{_friendlyName} {dto.Ten} đã tồn tại.");
+
+        var now = DateTime.Now;
         var entity = new PhuongThucThanhToan
         {
             Id = Guid.NewGuid(),
             Ten = dto.Ten.Trim(),
             DangSuDung = dto.DangSuDung,
 
-            CreatedAt = DateTime.Now,
-            LastModified = DateTime.Now,
+            CreatedAt = now,
+            LastModified = now,
             IsDeleted = false,
         };
 
@@ -82,11 +89,18 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
         if (dto.LastModified < entity.LastModified)
             return Result<PhuongThucThanhToanDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
+        bool daTonTai = await _context.PhuongThucThanhToans
+            .AnyAsync(x => x.Id != id &&
+                           x.Ten.ToLower() == dto.Ten.ToLower() &&
+                           !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<PhuongThucThanhToanDto>.Failure($"{_friendlyName} {dto.Ten} đã tồn tại.");
+
         var before = ToDto(entity);
 
         entity.Ten = dto.Ten.Trim();
         entity.DangSuDung = dto.DangSuDung;
-
         entity.LastModified = DateTime.Now;
 
         await _context.SaveChangesAsync();
@@ -100,17 +114,17 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
 
     public async Task<Result<PhuongThucThanhToanDto>> DeleteAsync(Guid id)
     {
-        var entity = await _context.PhuongThucThanhToans
-            .FirstOrDefaultAsync(x => x.Id == id);
+        var entity = await _context.PhuongThucThanhToans.FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null || entity.IsDeleted)
             return Result<PhuongThucThanhToanDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
         var before = ToDto(entity);
+        var now = DateTime.Now;
 
         entity.IsDeleted = true;
-        entity.DeletedAt = DateTime.Now;
-        entity.LastModified = DateTime.Now;
+        entity.DeletedAt = now;
+        entity.LastModified = now;
 
         await _context.SaveChangesAsync();
 
@@ -121,8 +135,7 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
 
     public async Task<Result<PhuongThucThanhToanDto>> RestoreAsync(Guid id)
     {
-        var entity = await _context.PhuongThucThanhToans
-            .FirstOrDefaultAsync(x => x.Id == id);
+        var entity = await _context.PhuongThucThanhToans.FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null)
             return Result<PhuongThucThanhToanDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
@@ -144,11 +157,10 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
 
     public async Task<List<PhuongThucThanhToanDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.PhuongThucThanhToans.AsNoTracking()
+        return await _context.PhuongThucThanhToans.AsNoTracking()
             .Where(x => x.LastModified > lastSync)
             .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
 }

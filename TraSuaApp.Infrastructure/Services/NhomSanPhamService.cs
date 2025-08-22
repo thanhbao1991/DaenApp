@@ -11,14 +11,14 @@ namespace TraSuaApp.Infrastructure.Services;
 public class NhomSanPhamService : INhomSanPhamService
 {
     private readonly AppDbContext _context;
-    private readonly string _friendlyName = TuDien._tableFriendlyNames[("NhomSanPham")];
+    private readonly string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham"];
 
     public NhomSanPhamService(AppDbContext context)
     {
         _context = context;
     }
 
-    private NhomSanPhamDto ToDto(NhomSanPham entity)
+    private static NhomSanPhamDto ToDto(NhomSanPham entity)
     {
         return new NhomSanPhamDto
         {
@@ -33,29 +33,37 @@ public class NhomSanPhamService : INhomSanPhamService
 
     public async Task<List<NhomSanPhamDto>> GetAllAsync()
     {
-        var list = await _context.NhomSanPhams.AsNoTracking()
+        return await _context.NhomSanPhams.AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
 
     public async Task<NhomSanPhamDto?> GetByIdAsync(Guid id)
     {
         var entity = await _context.NhomSanPhams
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
         return entity == null ? null : ToDto(entity);
     }
 
     public async Task<Result<NhomSanPhamDto>> CreateAsync(NhomSanPhamDto dto)
     {
+        bool daTonTai = await _context.NhomSanPhams
+            .AnyAsync(x => x.Ten.ToLower() == dto.Ten.ToLower() && !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<NhomSanPhamDto>.Failure($"{_friendlyName} {dto.Ten} đã tồn tại.");
+
+        var now = DateTime.Now;
         var entity = new NhomSanPham
         {
             Id = Guid.NewGuid(),
-            Ten = (dto.Ten).Trim(),
-            LastModified = DateTime.Now,
-            CreatedAt = DateTime.Now,
+            Ten = dto.Ten.Trim(),
+            LastModified = now,
+            CreatedAt = now,
             IsDeleted = false
         };
 
@@ -70,16 +78,26 @@ public class NhomSanPhamService : INhomSanPhamService
 
     public async Task<Result<NhomSanPhamDto>> UpdateAsync(Guid id, NhomSanPhamDto dto)
     {
-        var entity = await _context.NhomSanPhams.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+        var entity = await _context.NhomSanPhams
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
         if (entity == null)
             return Result<NhomSanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
         if (dto.LastModified < entity.LastModified)
             return Result<NhomSanPhamDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
+        bool daTonTai = await _context.NhomSanPhams
+            .AnyAsync(x => x.Id != id &&
+                           x.Ten.ToLower() == dto.Ten.ToLower() &&
+                           !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<NhomSanPhamDto>.Failure($"{_friendlyName} {dto.Ten} đã tồn tại.");
+
         var before = ToDto(entity);
 
-        entity.Ten = (dto.Ten).Trim();
+        entity.Ten = dto.Ten.Trim();
         entity.LastModified = DateTime.Now;
 
         await _context.SaveChangesAsync();
@@ -94,14 +112,16 @@ public class NhomSanPhamService : INhomSanPhamService
     public async Task<Result<NhomSanPhamDto>> DeleteAsync(Guid id)
     {
         var entity = await _context.NhomSanPhams.FirstOrDefaultAsync(x => x.Id == id);
+
         if (entity == null || entity.IsDeleted)
             return Result<NhomSanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
         var before = ToDto(entity);
+        var now = DateTime.Now;
 
         entity.IsDeleted = true;
-        entity.DeletedAt = DateTime.Now;
-        entity.LastModified = DateTime.Now;
+        entity.DeletedAt = now;
+        entity.LastModified = now;
 
         await _context.SaveChangesAsync();
 
@@ -113,6 +133,7 @@ public class NhomSanPhamService : INhomSanPhamService
     public async Task<Result<NhomSanPhamDto>> RestoreAsync(Guid id)
     {
         var entity = await _context.NhomSanPhams.FirstOrDefaultAsync(x => x.Id == id);
+
         if (entity == null)
             return Result<NhomSanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
@@ -133,11 +154,10 @@ public class NhomSanPhamService : INhomSanPhamService
 
     public async Task<List<NhomSanPhamDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.NhomSanPhams.AsNoTracking()
+        return await _context.NhomSanPhams.AsNoTracking()
             .Where(x => x.LastModified > lastSync)
             .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
 }

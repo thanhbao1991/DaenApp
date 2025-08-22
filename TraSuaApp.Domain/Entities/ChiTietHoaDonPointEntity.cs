@@ -5,7 +5,9 @@ namespace TraSuaApp.Domain.Entities;
 [Table("ChiTietHoaDonPoints")]
 public class ChiTietHoaDonPoint
 {
-    public Guid HoaDonId { get; set; }
+    public Guid HoaDonId { get; set; }   // ✅ FK tới HoaDons
+    public HoaDon HoaDon { get; set; }
+
 
     public Guid Id { get; set; }
 

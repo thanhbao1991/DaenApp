@@ -18,16 +18,16 @@ public class TaiKhoanService : ITaiKhoanService
         _context = context;
     }
 
-    private TaiKhoanDto ToDto(TaiKhoan entity)
+    private static TaiKhoanDto ToDto(TaiKhoan entity)
     {
         return new TaiKhoanDto
         {
             Id = entity.Id,
             IsActive = entity.IsActive,
-            MatKhau = null,
             TenDangNhap = entity.TenDangNhap,
             TenHienThi = entity.TenHienThi,
             VaiTro = entity.VaiTro,
+            MatKhau = null, // ❌ không bao giờ trả mật khẩu
 
             CreatedAt = entity.CreatedAt,
             LastModified = entity.LastModified,
@@ -38,17 +38,17 @@ public class TaiKhoanService : ITaiKhoanService
 
     public async Task<List<TaiKhoanDto>> GetAllAsync()
     {
-        var list = await _context.TaiKhoans.AsNoTracking()
+        return await _context.TaiKhoans.AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
 
     public async Task<TaiKhoanDto?> GetByIdAsync(Guid id)
     {
         var entity = await _context.TaiKhoans
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
         return entity == null ? null : ToDto(entity);
@@ -56,17 +56,24 @@ public class TaiKhoanService : ITaiKhoanService
 
     public async Task<Result<TaiKhoanDto>> CreateAsync(TaiKhoanDto dto)
     {
+        bool daTonTai = await _context.TaiKhoans
+            .AnyAsync(x => x.TenDangNhap.ToLower() == dto.TenDangNhap.ToLower() && !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<TaiKhoanDto>.Failure($"Tên đăng nhập {dto.TenDangNhap} đã tồn tại.");
+
+        var now = DateTime.Now;
         var entity = new TaiKhoan
         {
             Id = Guid.NewGuid(),
             IsActive = dto.IsActive,
-            MatKhau = PasswordHelper.HashPassword(dto.MatKhau ?? ""),
-            TenDangNhap = dto.TenDangNhap,
-            TenHienThi = dto.TenHienThi,
+            TenDangNhap = dto.TenDangNhap.Trim(),
+            TenHienThi = dto.TenHienThi.Trim(),
             VaiTro = dto.VaiTro,
+            MatKhau = PasswordHelper.HashPassword(dto.MatKhau ?? ""),
 
-            CreatedAt = DateTime.Now,
-            LastModified = DateTime.Now,
+            CreatedAt = now,
+            LastModified = now,
             IsDeleted = false,
         };
 
@@ -74,7 +81,6 @@ public class TaiKhoanService : ITaiKhoanService
         await _context.SaveChangesAsync();
 
         var after = ToDto(entity);
-        after.MatKhau = null;
         return Result<TaiKhoanDto>.Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
             .WithId(after.Id)
             .WithAfter(after);
@@ -91,25 +97,30 @@ public class TaiKhoanService : ITaiKhoanService
         if (dto.LastModified < entity.LastModified)
             return Result<TaiKhoanDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
+        bool daTonTai = await _context.TaiKhoans
+            .AnyAsync(x => x.Id != id &&
+                           x.TenDangNhap.ToLower() == dto.TenDangNhap.ToLower() &&
+                           !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<TaiKhoanDto>.Failure($"Tên đăng nhập {dto.TenDangNhap} đã tồn tại.");
 
         var before = ToDto(entity);
 
-        entity.TenDangNhap = dto.TenDangNhap;
-        entity.TenHienThi = dto.TenHienThi;
+        entity.TenDangNhap = dto.TenDangNhap.Trim();
+        entity.TenHienThi = dto.TenHienThi.Trim();
         entity.VaiTro = dto.VaiTro;
         entity.IsActive = dto.IsActive;
+
         if (!string.IsNullOrWhiteSpace(dto.MatKhau))
         {
             entity.MatKhau = PasswordHelper.HashPassword(dto.MatKhau);
         }
 
         entity.LastModified = DateTime.Now;
-
         await _context.SaveChangesAsync();
 
         var after = ToDto(entity);
-        after.MatKhau = null;
-
         return Result<TaiKhoanDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
             .WithId(id)
             .WithBefore(before)
@@ -118,17 +129,17 @@ public class TaiKhoanService : ITaiKhoanService
 
     public async Task<Result<TaiKhoanDto>> DeleteAsync(Guid id)
     {
-        var entity = await _context.TaiKhoans
-            .FirstOrDefaultAsync(x => x.Id == id);
+        var entity = await _context.TaiKhoans.FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null || entity.IsDeleted)
             return Result<TaiKhoanDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
         var before = ToDto(entity);
+        var now = DateTime.Now;
 
         entity.IsDeleted = true;
-        entity.DeletedAt = DateTime.Now;
-        entity.LastModified = DateTime.Now;
+        entity.DeletedAt = now;
+        entity.LastModified = now;
 
         await _context.SaveChangesAsync();
 
@@ -139,8 +150,7 @@ public class TaiKhoanService : ITaiKhoanService
 
     public async Task<Result<TaiKhoanDto>> RestoreAsync(Guid id)
     {
-        var entity = await _context.TaiKhoans
-            .FirstOrDefaultAsync(x => x.Id == id);
+        var entity = await _context.TaiKhoans.FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null)
             return Result<TaiKhoanDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
@@ -162,11 +172,10 @@ public class TaiKhoanService : ITaiKhoanService
 
     public async Task<List<TaiKhoanDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.TaiKhoans.AsNoTracking()
+        return await _context.TaiKhoans.AsNoTracking()
             .Where(x => x.LastModified > lastSync)
-                 .OrderByDescending(x => x.LastModified) // ✅ THÊM DÒNG NÀY
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
 }

@@ -5,6 +5,7 @@ using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Shared.Services;
 
 namespace TraSuaApp.Infrastructure.Services;
 
@@ -18,22 +19,46 @@ public class HoaDonService : IHoaDonService
         _context = context;
     }
 
+    // ✅ Dùng chung cho mọi nơi
+    private static string ResolveTrangThai(decimal thanhTien, decimal daThu, bool coNo, IList<string> methods)
+    {
+        if (daThu >= thanhTien)
+        {
+            if (methods.Count > 1) return $"{methods[0]} + {methods[1]}";
+            if (methods.Count == 1) return methods[0];
+            return "Đã thu";
+        }
+        if (daThu > 0 && daThu < thanhTien) return coNo ? "Nợ một phần" : "Thu một phần";
+        return coNo ? "Ghi nợ" : "Chưa thu";
+    }
+
+    // ✅ Dùng cho Create/Update/Delete
     private HoaDonDto ToDto(HoaDon entity)
     {
-        var tongDaThu = entity.ChiTietHoaDonThanhToans?
-        .Where(x => !x.IsDeleted)
-        .Sum(x => x.SoTien) ?? 0;
+        var daThu = entity.ChiTietHoaDonThanhToans?.Where(x => !x.IsDeleted).Sum(x => x.SoTien) ?? 0;
+        bool coNo = entity.ChiTietHoaDonNos?.Any(x => !x.IsDeleted) == true;
+        var methods = entity.ChiTietHoaDonThanhToans?
+            .Where(x => !x.IsDeleted)
+            .Select(x => x.TenPhuongThucThanhToan)
+            .Distinct()
+            .ToList() ?? new List<string>();
+
+        var trangThai = ResolveTrangThai(entity.ThanhTien, daThu, coNo, methods);
 
         return new HoaDonDto
         {
             Id = entity.Id,
-            PhanLoai = entity.PhanLoai,
-            Ten = entity.KhachHang != null ? entity.KhachHang.Ten + " / " + entity.DiaChiText : entity.TenBan,
             MaHoaDon = entity.MaHoaDon,
-            TrangThai = entity.TrangThai,
             Ngay = entity.Ngay,
+            BaoDon = entity.BaoDon,
+            UuTien = entity.UuTien,
             NgayGio = entity.NgayGio,
+            NgayShip = entity.NgayShip,
+            NgayHen = entity.NgayHen,
+            NgayRa = entity.NgayRa,
+            PhanLoai = entity.PhanLoai,
             TenBan = entity.TenBan,
+            TenKhachHangText = !string.IsNullOrWhiteSpace(entity.TenKhachHangText) ? entity.TenKhachHangText : entity.TenBan,
             DiaChiText = entity.DiaChiText,
             SoDienThoaiText = entity.SoDienThoaiText,
             VoucherId = entity.VoucherId,
@@ -41,84 +66,16 @@ public class HoaDonService : IHoaDonService
             TongTien = entity.TongTien,
             GiamGia = entity.GiamGia,
             ThanhTien = entity.ThanhTien,
+            GhiChu = entity.GhiChu,
             CreatedAt = entity.CreatedAt,
             LastModified = entity.LastModified,
-            DaThu = tongDaThu,
-            ConLai = entity.ThanhTien - tongDaThu,
-
-            ChiTietHoaDons = entity.ChiTietHoaDons?
-                .Where(x => !x.IsDeleted)
-                .Select(ct => new ChiTietHoaDonDto
-                {
-                    Id = ct.Id,
-                    HoaDonId = ct.HoaDonId,
-                    SanPhamIdBienThe = ct.SanPhamBienTheId,
-                    SoLuong = ct.SoLuong,
-                    DonGia = ct.DonGia,
-                    TenSanPham = ct.TenSanPham ?? "",
-                    TenBienThe = ct.TenBienThe,
-                    ToppingText = ct.ToppingText,
-                    NoteText = ct.NoteText,
-                    CreatedAt = ct.CreatedAt,
-                    LastModified = ct.LastModified,
-                })
-                .ToList() ?? new List<ChiTietHoaDonDto>(),
-
-            ChiTietHoaDonToppings = entity.ChiTietHoaDonToppings?
-                .Where(x => !x.IsDeleted)
-                .Select(tp => new ChiTietHoaDonToppingDto
-                {
-                    Id = tp.Id,
-                    HoaDonId = tp.HoaDonId,
-                    ChiTietHoaDonId = tp.ChiTietHoaDonId,
-                    ToppingId = tp.ToppingId,
-                    Ten = tp.TenTopping,
-                    SoLuong = tp.SoLuong,
-                    Gia = tp.Gia,
-                    CreatedAt = tp.CreatedAt,
-                    LastModified = tp.LastModified,
-                })
-                .ToList() ?? new List<ChiTietHoaDonToppingDto>(),
-
-            ChiTietHoaDonVouchers = entity.ChiTietHoaDonVouchers?
-                .Where(x => !x.IsDeleted)
-                .Select(v => new ChiTietHoaDonVoucherDto
-                {
-                    Id = v.Id,
-                    HoaDonId = v.HoaDonId,
-                    VoucherId = v.VoucherId,
-                    Ten = v.TenVoucher,
-                    GiaTriApDung = v.GiaTriApDung,
-                    CreatedAt = v.CreatedAt,
-                    LastModified = v.LastModified,
-                })
-                .ToList() ?? new List<ChiTietHoaDonVoucherDto>()
+            DaThu = daThu,
+            ConLai = entity.ThanhTien - daThu,
+            TrangThai = trangThai
         };
     }
 
-    public async Task<List<HoaDonDto>> GetAllAsync()
-    {
-        var list = await _context.HoaDons.AsNoTracking()
-            .Where(x => !x.IsDeleted)
-            .Where(x => x.Ngay >= DateTime.Today.AddDays(-1))
-            //.Include(h => h.ChiTietHoaDons)
-            .Include(h => h.KhachHang)
-            .Include(h => h.ChiTietHoaDonThanhToans)
-                .ThenInclude(ct => ct.PhuongThucThanhToan)
-            .OrderByDescending(x => x.LastModified)
-            .ToListAsync();
-        return list.Select(ToDto).ToList();
-    }
-
-    public async Task<HoaDonDto?> GetByIdAsync(Guid id)
-    {
-        var entity = await _context.HoaDons
-            .Include(x => x.ChiTietHoaDons)
-            .Include(x => x.ChiTietHoaDonToppings)
-            .Include(x => x.ChiTietHoaDonVouchers)
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-        return entity == null ? null : ToDto(entity);
-    }
+    // ✅ Danh sách nhanh
 
     public async Task<Result<HoaDonDto>> CreateAsync(HoaDonDto dto)
     {
@@ -131,13 +88,20 @@ public class HoaDonService : IHoaDonService
         {
             Id = Guid.NewGuid(),
             MaHoaDon = MaHoaDonGenerator.Generate(),
-            TrangThai = dto.TrangThai,
+            //TrangThai = dto.TrangThai,
+            NgayRa = dto.NgayRa,
+            GhiChu = dto.GhiChu,
+            NgayShip = dto.NgayShip,
+            NgayHen = dto.NgayHen,
             TenBan = dto.TenBan,
+            TenKhachHangText = dto.TenKhachHangText,
             DiaChiText = dto.DiaChiText,
             SoDienThoaiText = dto.SoDienThoaiText,
             VoucherId = dto.VoucherId,
             KhachHangId = dto.KhachHangId,
             Ngay = now.Date,
+            BaoDon = dto.BaoDon,
+            UuTien = dto.UuTien,
             NgayGio = now,
             LastModified = now,
             CreatedAt = now,
@@ -179,8 +143,14 @@ public class HoaDonService : IHoaDonService
         dto.KhachHangId = khachHang?.Id;
 
         // entity.MaHoaDon = dto.MaHoaDon;
-        entity.TrangThai = dto.TrangThai;
+        // entity.TrangThai = dto.TrangThai;
         entity.TenBan = dto.TenBan;
+        entity.TenKhachHangText = dto.TenKhachHangText;
+        entity.NgayShip = dto.NgayShip;
+        entity.NgayHen = dto.NgayHen;
+        entity.NgayRa = dto.NgayRa;
+        entity.GhiChu = dto.GhiChu;
+
         entity.DiaChiText = dto.DiaChiText;
         entity.SoDienThoaiText = dto.SoDienThoaiText;
         entity.VoucherId = dto.VoucherId;
@@ -202,11 +172,66 @@ public class HoaDonService : IHoaDonService
 
         await _context.SaveChangesAsync();
 
+
         var after = ToDto(entity);
+
         return Result<HoaDonDto>.Success(after, "Cập nhật hóa đơn thành công.")
             .WithId(id)
             .WithBefore(before)
             .WithAfter(after);
+    }
+    public async Task<Result<HoaDonDto>> UpdateSingleAsync(Guid id, HoaDonDto dto)
+    {
+        var entity = await _context.HoaDons
+            // .Include(x => x.KhachHang)
+            //      .Include(x => x.ChiTietHoaDonToppings)
+            //    .Include(x => x.ChiTietHoaDonVouchers)
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+        if (entity == null)
+            return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
+
+        if (dto.LastModified < entity.LastModified)
+            return Result<HoaDonDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+
+        var now = DateTime.Now;
+        var before = ToDto(entity);
+
+        entity.NgayShip = dto.NgayShip;
+        entity.NgayHen = dto.NgayHen;
+        entity.BaoDon = dto.BaoDon;
+        entity.UuTien = dto.UuTien;
+        entity.LastModified = now;
+
+        await _context.SaveChangesAsync();
+
+
+        var after = ToDto(entity);
+
+        if (before.NgayShip == null && after.NgayShip != null)
+        {
+            await DiscordService.DiShipAsync(
+               $"{(entity.KhachHangId != null ? entity.TenKhachHangText + " / " + before.DiaChiText : entity.TenBan)}\n{entity.GhiChu}"
+           );
+        }
+        if (before.BaoDon == true && after.BaoDon == false)
+        {
+            await DiscordService.NhanDonAsync(
+                   $"{(entity.KhachHangId != null ? entity.TenKhachHangText + " / " + before.DiaChiText : entity.TenBan)}\n{entity.GhiChu}"
+
+         );
+        }
+
+        if (before.NgayHen != null && after.NgayHen == null)
+        {
+            await DiscordService.HenGioAsync(
+               $"{(entity.KhachHangId != null ? entity.TenKhachHangText + " / " + before.DiaChiText : entity.TenBan)}\n{entity.GhiChu}"
+           );
+        }
+        return Result<HoaDonDto>.Success(after, "Cập nhật hóa đơn thành công.")
+                        .WithId(id)
+                        .WithBefore(before)
+                        .WithAfter(after);
     }
 
     private async Task<KhachHang?> GetOrCreateKhachHangAsync(HoaDonDto dto, DateTime now)
@@ -229,12 +254,12 @@ public class HoaDonService : IHoaDonService
         }
 
         if (khachHang == null &&
-            (!string.IsNullOrWhiteSpace(dto.TenKhachHang) || !string.IsNullOrWhiteSpace(dto.SoDienThoaiText)))
+            (!string.IsNullOrWhiteSpace(dto.TenKhachHangText) || !string.IsNullOrWhiteSpace(dto.SoDienThoaiText)))
         {
             khachHang = new KhachHang
             {
                 Id = Guid.NewGuid(),
-                Ten = dto.TenKhachHang?.Trim() ?? "Khách lẻ",
+                Ten = dto.TenKhachHangText?.Trim() ?? "Khách lẻ",
                 DuocNhanVoucher = true,
                 CreatedAt = now,
                 LastModified = now
@@ -414,6 +439,7 @@ public class HoaDonService : IHoaDonService
             HoaDonId = hoaDonId,
             KhachHangId = khachHangId.Value,
             Ngay = now.Date,
+
             NgayGio = now,
             DiemThayDoi = diemTichLuy,
             GhiChu = $"Tích điểm từ hoá đơn {hoaDonId}",
@@ -421,24 +447,6 @@ public class HoaDonService : IHoaDonService
             LastModified = now
         });
 
-        var point = await _context.KhachHangPoints.FirstOrDefaultAsync(x => x.KhachHangId == khachHangId.Value);
-        if (point == null)
-        {
-            _context.KhachHangPoints.Add(new KhachHangPoint
-            {
-                Id = Guid.NewGuid(),
-                KhachHangId = khachHangId.Value,
-                TongDiem = diemTichLuy,
-                CreatedAt = now,
-                LastModified = now,
-
-            });
-        }
-        else
-        {
-            point.TongDiem += diemTichLuy;
-            point.LastModified = now;
-        }
     }
 
     private async Task UpdateTichDiemAsync(Guid? khachHangId, Guid hoaDonId, decimal thanhTien, DateTime now)
@@ -452,13 +460,6 @@ public class HoaDonService : IHoaDonService
         if (oldLogs.Any())
         {
             int oldPoints = oldLogs.Sum(l => l.DiemThayDoi);
-            var point = await _context.KhachHangPoints.FirstOrDefaultAsync(x => x.KhachHangId == khachHangId);
-            if (point != null)
-            {
-                point.TongDiem -= oldPoints;
-                if (point.TongDiem < 0) point.TongDiem = 0;
-                point.LastModified = now;
-            }
             _context.ChiTietHoaDonPoints.RemoveRange(oldLogs);
         }
 
@@ -471,6 +472,9 @@ public class HoaDonService : IHoaDonService
             .Include(x => x.ChiTietHoaDons)
             .Include(x => x.ChiTietHoaDonToppings)
             .Include(x => x.ChiTietHoaDonVouchers)
+            .Include(x => x.ChiTietHoaDonThanhToans)
+            .Include(x => x.ChiTietHoaDonNos)
+            .Include(x => x.ChiTietHoaDonPoints) // ✅ dùng FK HoaDonId
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null || entity.IsDeleted)
@@ -479,109 +483,110 @@ public class HoaDonService : IHoaDonService
         var before = ToDto(entity);
         var now = DateTime.Now;
 
-        // ✅ Xóa mềm bản ghi liên quan
-        foreach (var ct in entity.ChiTietHoaDons) { ct.IsDeleted = true; ct.LastModified = now; }
-        foreach (var tp in entity.ChiTietHoaDonToppings) { tp.IsDeleted = true; tp.LastModified = now; }
-        foreach (var v in entity.ChiTietHoaDonVouchers) { v.IsDeleted = true; v.LastModified = now; }
-
-        // ✅ Trừ điểm tích lũy
-        var logs = await _context.ChiTietHoaDonPoints
-            .Where(l => l.GhiChu.Contains(id.ToString()))
-            .ToListAsync();
-
-        if (logs.Any())
+        // ✅ Xoá mềm tất cả chi tiết
+        foreach (var ct in entity.ChiTietHoaDons)
         {
-            int points = logs.Sum(l => l.DiemThayDoi);
-            var diemKH = await _context.KhachHangPoints.FirstOrDefaultAsync(x => x.KhachHangId == entity.KhachHangId);
-            if (diemKH != null)
-            {
-                diemKH.TongDiem -= points;
-                if (diemKH.TongDiem < 0) diemKH.TongDiem = 0;
-                diemKH.LastModified = now;
-            }
-            _context.ChiTietHoaDonPoints.RemoveRange(logs);
+            ct.IsDeleted = true;
+            ct.LastModified = now;
+        }
+        foreach (var tp in entity.ChiTietHoaDonToppings)
+        {
+            tp.IsDeleted = true;
+            tp.LastModified = now;
+        }
+        foreach (var v in entity.ChiTietHoaDonVouchers)
+        {
+            v.IsDeleted = true;
+            v.LastModified = now;
+        }
+        foreach (var tt in entity.ChiTietHoaDonThanhToans)
+        {
+            tt.IsDeleted = true;
+            tt.LastModified = now;
+        }
+        foreach (var no in entity.ChiTietHoaDonNos)
+        {
+            no.IsDeleted = true;
+            no.LastModified = now;
+        }
+        foreach (var p in entity.ChiTietHoaDonPoints)
+        {
+            p.IsDeleted = true;
+            p.LastModified = now;
         }
 
+        // ✅ Xoá mềm hóa đơn chính
         entity.IsDeleted = true;
         entity.DeletedAt = now;
         entity.LastModified = now;
 
         await _context.SaveChangesAsync();
 
-        return Result<HoaDonDto>.Success(before, $"Xoá hóa đơn thành công.")
+        return Result<HoaDonDto>.Success(before, "Xoá hóa đơn thành công.")
             .WithId(before.Id)
             .WithBefore(before);
     }
-
     public async Task<Result<HoaDonDto>> RestoreAsync(Guid id)
     {
         var entity = await _context.HoaDons
             .Include(x => x.ChiTietHoaDons)
             .Include(x => x.ChiTietHoaDonToppings)
             .Include(x => x.ChiTietHoaDonVouchers)
+            .Include(x => x.ChiTietHoaDonThanhToans)
+            .Include(x => x.ChiTietHoaDonNos)
+            .Include(x => x.ChiTietHoaDonPoints)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (entity == null)
             return Result<HoaDonDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
         if (!entity.IsDeleted)
-            return Result<HoaDonDto>.Failure($"{_friendlyName} này chưa bị xoá.");
+            return Result<HoaDonDto>.Failure("Hóa đơn chưa bị xoá, không cần khôi phục.");
 
         var now = DateTime.Now;
 
-        // ✅ Khôi phục hóa đơn
+        // ✅ Khôi phục chi tiết
+        foreach (var ct in entity.ChiTietHoaDons)
+        {
+            ct.IsDeleted = false;
+            ct.LastModified = now;
+        }
+        foreach (var tp in entity.ChiTietHoaDonToppings)
+        {
+            tp.IsDeleted = false;
+            tp.LastModified = now;
+        }
+        foreach (var v in entity.ChiTietHoaDonVouchers)
+        {
+            v.IsDeleted = false;
+            v.LastModified = now;
+        }
+        foreach (var tt in entity.ChiTietHoaDonThanhToans)
+        {
+            tt.IsDeleted = false;
+            tt.LastModified = now;
+        }
+        foreach (var no in entity.ChiTietHoaDonNos)
+        {
+            no.IsDeleted = false;
+            no.LastModified = now;
+        }
+        foreach (var p in entity.ChiTietHoaDonPoints)
+        {
+            p.IsDeleted = false;
+            p.LastModified = now;
+        }
+
+        // ✅ Khôi phục hóa đơn chính
         entity.IsDeleted = false;
         entity.DeletedAt = null;
         entity.LastModified = now;
 
-        // ✅ Khôi phục các bảng con
-        foreach (var ct in entity.ChiTietHoaDons) { ct.IsDeleted = false; ct.LastModified = now; }
-        foreach (var tp in entity.ChiTietHoaDonToppings) { tp.IsDeleted = false; tp.LastModified = now; }
-        foreach (var v in entity.ChiTietHoaDonVouchers) { v.IsDeleted = false; v.LastModified = now; }
-
-        // ✅ Cộng lại điểm tích lũy
-        if (entity.KhachHangId != null)
-        {
-            int diemTichLuy = (int)Math.Floor(entity.ThanhTien * 0.01m);
-
-            _context.ChiTietHoaDonPoints.Add(new ChiTietHoaDonPoint
-            {
-                Id = Guid.NewGuid(),
-                KhachHangId = entity.KhachHangId.Value,
-                Ngay = now.Date,
-                NgayGio = now,
-
-                DiemThayDoi = diemTichLuy,
-                GhiChu = $"Tích điểm từ hoá đơn {entity.Id}",
-                CreatedAt = now,
-                LastModified = now
-            });
-
-            var point = await _context.KhachHangPoints
-                .FirstOrDefaultAsync(x => x.KhachHangId == entity.KhachHangId);
-
-            if (point == null)
-            {
-                _context.KhachHangPoints.Add(new KhachHangPoint
-                {
-                    Id = Guid.NewGuid(),
-                    KhachHangId = entity.KhachHangId.Value,
-                    TongDiem = diemTichLuy,
-                    CreatedAt = now,
-                    LastModified = now
-                });
-            }
-            else
-            {
-                point.TongDiem += diemTichLuy;
-                point.LastModified = now;
-            }
-        }
-
         await _context.SaveChangesAsync();
 
         var after = ToDto(entity);
-        return Result<HoaDonDto>.Success(after, $"Khôi phục hóa đơn thành công.")
+
+        return Result<HoaDonDto>.Success(after, "Khôi phục hóa đơn thành công.")
             .WithId(after.Id)
             .WithAfter(after);
     }
@@ -595,4 +600,216 @@ public class HoaDonService : IHoaDonService
 
         return list.Select(ToDto).ToList();
     }
+    public async Task<List<HoaDonDto>> GetAllAsync()
+    {
+        var list = await _context.HoaDons.AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .Select(h => new
+            {
+                h.Id,
+                h.MaHoaDon,
+                h.Ngay,
+                h.NgayGio,
+                h.BaoDon,
+                h.UuTien,
+                h.NgayShip,
+                h.NgayHen,
+                h.NgayRa,
+                h.PhanLoai,
+                h.TenBan,
+                h.TenKhachHangText,
+                h.DiaChiText,
+                h.SoDienThoaiText,
+                h.VoucherId,
+                h.KhachHangId,
+                h.TongTien,
+                h.GiamGia,
+                h.ThanhTien,
+                h.GhiChu,
+                h.CreatedAt,
+                h.LastModified,
+
+                DaThu = h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted).Sum(t => (decimal?)t.SoTien) ?? 0,
+                Methods = h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted).Select(t => t.TenPhuongThucThanhToan).Distinct().ToList(),
+                CoNo = h.ChiTietHoaDonNos.Any(n => !n.IsDeleted)
+            })
+            .OrderByDescending(h => h.LastModified)
+            .ToListAsync();
+
+        return list.Select(h => new HoaDonDto
+        {
+            Id = h.Id,
+            MaHoaDon = h.MaHoaDon,
+            Ngay = h.Ngay,
+            NgayGio = h.NgayGio,
+            BaoDon = h.BaoDon,
+            UuTien = h.UuTien,
+            NgayShip = h.NgayShip,
+            NgayHen = h.NgayHen,
+            NgayRa = h.NgayRa,
+            PhanLoai = h.PhanLoai,
+            TenBan = h.TenBan,
+            Ten = h.KhachHangId != null ? $"{h.TenKhachHangText} - {h.DiaChiText}" : h.TenBan,
+            TenKhachHangText = h.TenKhachHangText,
+            DiaChiText = h.DiaChiText,
+            SoDienThoaiText = h.SoDienThoaiText,
+            VoucherId = h.VoucherId,
+            KhachHangId = h.KhachHangId,
+            TongTien = h.TongTien,
+            GiamGia = h.GiamGia,
+            ThanhTien = h.ThanhTien,
+            GhiChu = h.GhiChu,
+            CreatedAt = h.CreatedAt,
+            LastModified = h.LastModified,
+            DaThu = h.DaThu,
+            ConLai = h.ThanhTien - h.DaThu,
+            TrangThai = ResolveTrangThai(h.ThanhTien, h.DaThu, h.CoNo, h.Methods)
+        }).ToList();
+    }
+    public async Task<HoaDonDto?> GetByIdAsync(Guid id)
+    {
+        var h = await _context.HoaDons.AsNoTracking()
+            .Where(x => x.Id == id && !x.IsDeleted)
+            .Select(x => new
+            {
+                x.Id,
+                x.MaHoaDon,
+                x.Ngay,
+                x.NgayGio,
+                x.BaoDon,
+                x.UuTien,
+                x.NgayShip,
+                x.NgayHen,
+                x.NgayRa,
+                x.PhanLoai,
+                x.TenBan,
+                x.TenKhachHangText,
+                x.DiaChiText,
+                x.SoDienThoaiText,
+                x.VoucherId,
+                x.KhachHangId,
+                x.TongTien,
+                x.GiamGia,
+                x.ThanhTien,
+                x.GhiChu,
+                x.CreatedAt,
+                x.LastModified,
+
+                DaThu = x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted).Sum(t => (decimal?)t.SoTien) ?? 0,
+                Methods = x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted).Select(t => t.TenPhuongThucThanhToan).Distinct().ToList(),
+                CoNo = x.ChiTietHoaDonNos.Any(n => !n.IsDeleted),
+
+                ChiTiets = x.ChiTietHoaDons.Where(ct => !ct.IsDeleted).Select(ct => new ChiTietHoaDonDto
+                {
+                    Id = ct.Id,
+                    HoaDonId = ct.HoaDonId,
+                    SanPhamIdBienThe = ct.SanPhamBienTheId,
+                    SoLuong = ct.SoLuong,
+                    DonGia = ct.DonGia,
+                    TenSanPham = ct.TenSanPham ?? "",
+                    TenBienThe = ct.TenBienThe,
+                    ToppingText = ct.ToppingText,
+                    NoteText = ct.NoteText,
+                    CreatedAt = ct.CreatedAt,
+                    LastModified = ct.LastModified
+                }).ToList(),
+
+                Toppings = x.ChiTietHoaDonToppings.Where(tp => !tp.IsDeleted).Select(tp => new ChiTietHoaDonToppingDto
+                {
+                    Id = tp.Id,
+                    HoaDonId = tp.HoaDonId,
+                    ChiTietHoaDonId = tp.ChiTietHoaDonId,
+                    ToppingId = tp.ToppingId,
+                    Ten = tp.TenTopping,
+                    SoLuong = tp.SoLuong,
+                    Gia = tp.Gia,
+                    CreatedAt = tp.CreatedAt,
+                    LastModified = tp.LastModified
+                }).ToList(),
+
+                Vouchers = x.ChiTietHoaDonVouchers.Where(v => !v.IsDeleted).Select(v => new ChiTietHoaDonVoucherDto
+                {
+                    Id = v.Id,
+                    HoaDonId = v.HoaDonId,
+                    VoucherId = v.VoucherId,
+                    Ten = v.TenVoucher,
+                    GiaTriApDung = v.GiaTriApDung,
+                    CreatedAt = v.CreatedAt,
+                    LastModified = v.LastModified
+                }).ToList()
+            })
+            .FirstOrDefaultAsync();
+
+        if (h == null) return null;
+
+        var dto = new HoaDonDto
+        {
+            Id = h.Id,
+            MaHoaDon = h.MaHoaDon,
+            Ngay = h.Ngay,
+            NgayGio = h.NgayGio,
+            BaoDon = h.BaoDon,
+            UuTien = h.UuTien,
+            NgayShip = h.NgayShip,
+            NgayHen = h.NgayHen,
+            NgayRa = h.NgayRa,
+            PhanLoai = h.PhanLoai,
+            TenBan = h.TenBan,
+            Ten = !string.IsNullOrWhiteSpace(h.TenKhachHangText) ? h.TenKhachHangText : h.TenBan,
+            TenKhachHangText = h.TenKhachHangText,
+            DiaChiText = h.DiaChiText,
+            SoDienThoaiText = h.SoDienThoaiText,
+            VoucherId = h.VoucherId,
+            KhachHangId = h.KhachHangId,
+            TongTien = h.TongTien,
+            GiamGia = h.GiamGia,
+            ThanhTien = h.ThanhTien,
+            GhiChu = h.GhiChu,
+            CreatedAt = h.CreatedAt,
+            LastModified = h.LastModified,
+            DaThu = h.DaThu,
+            ConLai = h.ThanhTien - h.DaThu,
+            TrangThai = ResolveTrangThai(h.ThanhTien, h.DaThu, h.CoNo, h.Methods),
+
+            ChiTietHoaDons = h.ChiTiets,
+            ChiTietHoaDonToppings = h.Toppings,
+            ChiTietHoaDonVouchers = h.Vouchers
+        };
+
+        // ✅ Tính điểm khách hàng
+        if (dto.KhachHangId != null)
+        {
+            var khId = dto.KhachHangId.Value;
+            var now = DateTime.Now;
+            var firstDay = new DateTime(now.Year, now.Month, 1);
+
+            dto.DiemTrongThang = await _context.ChiTietHoaDonPoints.AsNoTracking()
+                .Where(p => p.KhachHangId == khId && p.Ngay >= firstDay && p.Ngay <= now.Date)
+                .SumAsync(p => (int?)p.DiemThayDoi) ?? 0;
+
+
+            dto.TongNoKhachHang = await TinhTongNoKhachHangAsync(khId, dto.Id);
+        }
+        return dto;
+    }
+    public async Task<decimal> TinhTongNoKhachHangAsync(Guid khachHangId, Guid? excludeHoaDonId = null)
+    {
+        var congNoQuery = _context.ChiTietHoaDonNos.AsNoTracking()
+            .Where(h => h.KhachHangId == khachHangId && !h.IsDeleted);
+
+        if (excludeHoaDonId.HasValue)
+            congNoQuery = congNoQuery.Where(h => h.HoaDonId != excludeHoaDonId.Value);
+
+        var result = await congNoQuery
+            .Select(h => new
+            {
+                ConLai = h.SoTienNo - (_context.ChiTietHoaDonThanhToans
+                                    .Where(t => t.ChiTietHoaDonNoId == h.Id && !t.IsDeleted)
+                                    .Sum(t => (decimal?)t.SoTien) ?? 0)
+            })
+            .ToListAsync();
+
+        return result.Sum(x => x.ConLai > 0 ? x.ConLai : 0);
+    }
+
 }

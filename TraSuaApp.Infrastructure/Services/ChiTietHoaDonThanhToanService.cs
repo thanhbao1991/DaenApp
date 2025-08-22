@@ -5,6 +5,7 @@ using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Shared.Services;
 
 namespace TraSuaApp.Infrastructure.Services;
 
@@ -45,42 +46,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         };
     }
 
-    private async Task UpdateSoTienDaTraChiTietHoaDonNo(Guid? chiTietHoaDonNoId, decimal soTienDelta)
-    {
-        if (chiTietHoaDonNoId == null) return;
 
-        var congNo = await _context.ChiTietHoaDonNos.FindAsync(chiTietHoaDonNoId.Value);
-        if (congNo != null)
-        {
-            congNo.SoTienDaTra += soTienDelta;
-            if (congNo.SoTienDaTra < 0) congNo.SoTienDaTra = 0;
-            congNo.LastModified = DateTime.Now;
-        }
-    }
-
-    public async Task<List<ChiTietHoaDonThanhToanDto>> GetAllAsync()
-    {
-        var list = await _context.ChiTietHoaDonThanhToans.AsNoTracking()
-            .Where(x => !x.IsDeleted)
-            .Where(x => x.Ngay >= DateTime.Today.AddDays(-1))
-            .Include(x => x.HoaDon)
-            .Include(x => x.KhachHang)
-            .Include(x => x.PhuongThucThanhToan)
-            .OrderByDescending(x => x.LastModified)
-            .ToListAsync();
-
-        return list.Select(ToDto).ToList();
-    }
-
-    public async Task<ChiTietHoaDonThanhToanDto?> GetByIdAsync(Guid id)
-    {
-        var entity = await _context.ChiTietHoaDonThanhToans
-            .Include(x => x.KhachHang)
-            .Include(x => x.PhuongThucThanhToan)
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-
-        return entity == null ? null : ToDto(entity);
-    }
 
     public async Task<Result<ChiTietHoaDonThanhToanDto>> CreateAsync(ChiTietHoaDonThanhToanDto dto)
     {
@@ -96,25 +62,28 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             .Where(x => x.HoaDonId == dto.HoaDonId && !x.IsDeleted)
             .SumAsync(x => x.SoTien);
 
-        var soTienConLai = hoaDon.TongTien - tongDaThanhToan;
+        var soTienConLai = hoaDon.ThanhTien - tongDaThanhToan;
 
         if (dto.SoTien > soTienConLai)
             return Result<ChiTietHoaDonThanhToanDto>.Failure($"Số tiền còn lại cần thu: {soTienConLai.ToString("N0")}.");
+        string GhiChu = dto.SoTien == soTienConLai ? "Thanh toán đủ" : $"Thanh toán thiếu";
+
 
         var now = DateTime.Now;
+
         var entity = new ChiTietHoaDonThanhToan
         {
             Id = Guid.NewGuid(),
             SoTien = dto.SoTien,
             LoaiThanhToan = dto.LoaiThanhToan,
             ChiTietHoaDonNoId = dto.ChiTietHoaDonNoId,
-            NgayGio = now,
-            Ngay = now.Date,
+            NgayGio = dto.NgayGio,
+            TenPhuongThucThanhToan = dto.TenPhuongThucThanhToan,
+            Ngay = dto.Ngay,
             HoaDonId = dto.HoaDonId,
             KhachHangId = dto.KhachHangId,
             PhuongThucThanhToanId = dto.PhuongThucThanhToanId,
-            GhiChu = dto.GhiChu,
-
+            GhiChu = GhiChu,
             CreatedAt = now,
             LastModified = now,
             IsDeleted = false,
@@ -122,7 +91,6 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
 
         _context.ChiTietHoaDonThanhToans.Add(entity);
 
-        await UpdateSoTienDaTraChiTietHoaDonNo(dto.ChiTietHoaDonNoId, dto.SoTien);
 
         await _context.SaveChangesAsync();
 
@@ -132,6 +100,12 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             .FirstAsync(x => x.Id == entity.Id);
 
         var after = ToDto(afterEntity);
+
+        if (entity.ChiTietHoaDonNoId != null)
+            await DiscordService.TraNoAsync($"{dto.Ten}\n{entity.SoTien.ToString("N0")}đ {entity.TenPhuongThucThanhToan} ({GhiChu})");
+        else
+            await DiscordService.ThanhToanAsync($"{dto.Ten}\n{entity.SoTien.ToString("N0")}đ {entity.TenPhuongThucThanhToan} ({GhiChu})");
+
         return Result<ChiTietHoaDonThanhToanDto>.Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
             .WithId(after.Id)
             .WithAfter(after);
@@ -160,10 +134,12 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             .Where(x => x.HoaDonId == dto.HoaDonId && !x.IsDeleted && x.Id != dto.Id)
             .SumAsync(x => x.SoTien);
 
-        var soTienConLai = hoaDon.TongTien - tongDaThanhToan;
+        var soTienConLai = hoaDon.ThanhTien - tongDaThanhToan;
 
         if (dto.SoTien > soTienConLai)
             return Result<ChiTietHoaDonThanhToanDto>.Failure($"Số tiền còn lại cần thu: {soTienConLai.ToString("N0")}.");
+
+        string GhiChu = dto.SoTien == soTienConLai ? "Thanh toán đủ" : "Thanh toán thiếu";
 
 
         var before = ToDto(entity);
@@ -177,20 +153,10 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.KhachHangId = dto.KhachHangId;
         entity.HoaDonId = dto.HoaDonId;
         entity.PhuongThucThanhToanId = dto.PhuongThucThanhToanId;
-        entity.GhiChu = dto.GhiChu;
+        entity.TenPhuongThucThanhToan = dto.TenPhuongThucThanhToan;
+        entity.GhiChu = GhiChu;
 
         entity.LastModified = DateTime.Now;
-
-        if (oldChiTietHoaDonNoId == dto.ChiTietHoaDonNoId)
-        {
-            var delta = dto.SoTien - oldSoTien;
-            await UpdateSoTienDaTraChiTietHoaDonNo(dto.ChiTietHoaDonNoId, delta);
-        }
-        else
-        {
-            await UpdateSoTienDaTraChiTietHoaDonNo(oldChiTietHoaDonNoId, -oldSoTien);
-            await UpdateSoTienDaTraChiTietHoaDonNo(dto.ChiTietHoaDonNoId, dto.SoTien);
-        }
 
         await _context.SaveChangesAsync();
 
@@ -200,6 +166,13 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             .FirstAsync(x => x.Id == id);
 
         var after = ToDto(afterEntity);
+        if (entity.ChiTietHoaDonNoId != null)
+
+            await DiscordService.TraNoAsync($"[Chỉnh sửa] {dto.Ten}\n{entity.SoTien.ToString("N0")}đ {entity.TenPhuongThucThanhToan} ({GhiChu})");
+        else
+            await DiscordService.ThanhToanAsync($"[Chỉnh sửa] {dto.Ten}\n{entity.SoTien.ToString("N0")}đ {entity.TenPhuongThucThanhToan} ({GhiChu})");
+
+
         return Result<ChiTietHoaDonThanhToanDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
             .WithId(id)
             .WithBefore(before)
@@ -220,7 +193,6 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.DeletedAt = DateTime.Now;
         entity.LastModified = DateTime.Now;
 
-        await UpdateSoTienDaTraChiTietHoaDonNo(entity.ChiTietHoaDonNoId, -entity.SoTien);
 
         await _context.SaveChangesAsync();
 
@@ -257,15 +229,82 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             .WithAfter(after);
     }
 
+    public async Task<List<ChiTietHoaDonThanhToanDto>> GetAllAsync()
+    {
+        return await _context.ChiTietHoaDonThanhToans.AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => new ChiTietHoaDonThanhToanDto
+            {
+                Id = x.Id,
+                Ten = x.KhachHangId != null ? x.KhachHang!.Ten : x.HoaDon!.TenBan,
+                LoaiThanhToan = x.LoaiThanhToan,
+                ChiTietHoaDonNoId = x.ChiTietHoaDonNoId,
+                SoTien = x.SoTien,
+                NgayGio = x.NgayGio,
+                Ngay = x.Ngay,
+                HoaDonId = x.HoaDonId,
+                KhachHangId = x.KhachHangId,
+                PhuongThucThanhToanId = x.PhuongThucThanhToanId,
+                TenPhuongThucThanhToan = x.PhuongThucThanhToan != null ? x.PhuongThucThanhToan.Ten : null,
+                GhiChu = x.GhiChu,
+                CreatedAt = x.CreatedAt,
+                DeletedAt = x.DeletedAt,
+                IsDeleted = x.IsDeleted,
+                LastModified = x.LastModified
+            })
+            .ToListAsync();
+    }
+    public async Task<ChiTietHoaDonThanhToanDto?> GetByIdAsync(Guid id)
+    {
+        return await _context.ChiTietHoaDonThanhToans.AsNoTracking()
+            .Where(x => x.Id == id && !x.IsDeleted)
+            .Select(x => new ChiTietHoaDonThanhToanDto
+            {
+                Id = x.Id,
+                Ten = x.KhachHangId != null ? x.KhachHang!.Ten : x.HoaDon!.TenBan,
+                LoaiThanhToan = x.LoaiThanhToan,
+                ChiTietHoaDonNoId = x.ChiTietHoaDonNoId,
+                SoTien = x.SoTien,
+                NgayGio = x.NgayGio,
+                Ngay = x.Ngay,
+                HoaDonId = x.HoaDonId,
+                KhachHangId = x.KhachHangId,
+                PhuongThucThanhToanId = x.PhuongThucThanhToanId,
+                TenPhuongThucThanhToan = x.PhuongThucThanhToan != null ? x.PhuongThucThanhToan.Ten : null,
+                GhiChu = x.GhiChu,
+                CreatedAt = x.CreatedAt,
+                DeletedAt = x.DeletedAt,
+                IsDeleted = x.IsDeleted,
+                LastModified = x.LastModified
+            })
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<List<ChiTietHoaDonThanhToanDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.ChiTietHoaDonThanhToans.AsNoTracking()
-            .Include(x => x.KhachHang)
-            .Include(x => x.PhuongThucThanhToan)
+        return await _context.ChiTietHoaDonThanhToans.AsNoTracking()
             .Where(x => x.LastModified > lastSync)
             .OrderByDescending(x => x.LastModified)
+            .Select(x => new ChiTietHoaDonThanhToanDto
+            {
+                Id = x.Id,
+                Ten = x.KhachHangId != null ? x.KhachHang!.Ten : x.HoaDon!.TenBan,
+                LoaiThanhToan = x.LoaiThanhToan,
+                ChiTietHoaDonNoId = x.ChiTietHoaDonNoId,
+                SoTien = x.SoTien,
+                NgayGio = x.NgayGio,
+                Ngay = x.Ngay,
+                HoaDonId = x.HoaDonId,
+                KhachHangId = x.KhachHangId,
+                PhuongThucThanhToanId = x.PhuongThucThanhToanId,
+                TenPhuongThucThanhToan = x.PhuongThucThanhToan != null ? x.PhuongThucThanhToan.Ten : null,
+                GhiChu = x.GhiChu,
+                CreatedAt = x.CreatedAt,
+                DeletedAt = x.DeletedAt,
+                IsDeleted = x.IsDeleted,
+                LastModified = x.LastModified
+            })
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
 }

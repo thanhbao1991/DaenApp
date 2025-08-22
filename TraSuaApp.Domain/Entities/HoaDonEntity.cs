@@ -1,11 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel;
 
 namespace TraSuaApp.Domain.Entities;
 
 public partial class HoaDon
 {
+    public DateTime? NgayHen { get; set; }
+
     public Guid Id { get; set; }
+    [DefaultValue(false)]
+    public bool UuTien { get; set; }
+    [DefaultValue(false)]
+    public bool BaoDon { get; set; }
+    public DateTime? NgayShip { get; set; }
+    public DateTime? NgayRa { get; set; }
+    public string? GhiChu { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -14,6 +22,7 @@ public partial class HoaDon
     public decimal GiamGia { get; set; }
 
     public decimal ThanhTien { get; set; }
+
 
     public Guid? KhachHangId { get; set; }
 
@@ -29,6 +38,7 @@ public partial class HoaDon
 
     public Guid? VoucherId { get; set; }
 
+    public string? TenKhachHangText { get; set; }
     public string? DiaChiText { get; set; }
 
     public string? SoDienThoaiText { get; set; }
@@ -44,6 +54,7 @@ public partial class HoaDon
     public DateTime NgayGio { get; set; }
 
     public virtual ICollection<ChiTietHoaDonNo> ChiTietHoaDonNos { get; set; } = new List<ChiTietHoaDonNo>();
+    public virtual ICollection<ChiTietHoaDonPoint> ChiTietHoaDonPoints { get; set; } = new List<ChiTietHoaDonPoint>();
 
     public virtual ICollection<ChiTietHoaDonThanhToan> ChiTietHoaDonThanhToans { get; set; } = new List<ChiTietHoaDonThanhToan>();
 

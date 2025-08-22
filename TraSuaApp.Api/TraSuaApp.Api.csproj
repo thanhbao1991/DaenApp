@@ -6,6 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Extensions\ResultExtensions.cs" />
+  </ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.4" />
@@ -24,6 +28,11 @@
     <ProjectReference Include="..\TraSuaApp.Domain\TraSuaApp.Domain.csproj" />
     <ProjectReference Include="..\TraSuaApp.Infrastructure\TraSuaApp.Infrastructure.csproj" />
     <ProjectReference Include="..\TraSuaApp.Shared\TraSuaApp.Shared.csproj" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <Folder Include="Extensions\" />
+    <Folder Include="Helpers\" />
   </ItemGroup>
 
 </Project>

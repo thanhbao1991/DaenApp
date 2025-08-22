@@ -9,6 +9,7 @@ public interface IHoaDonService
     Task<HoaDonDto?> GetByIdAsync(Guid id);
     Task<Result<HoaDonDto>> CreateAsync(HoaDonDto dto);
     Task<Result<HoaDonDto>> UpdateAsync(Guid id, HoaDonDto dto);
+    Task<Result<HoaDonDto>> UpdateSingleAsync(Guid id, HoaDonDto dto);
     Task<Result<HoaDonDto>> DeleteAsync(Guid id);
     Task<Result<HoaDonDto>> RestoreAsync(Guid id);
     Task<List<HoaDonDto>> GetUpdatedSince(DateTime lastSync);

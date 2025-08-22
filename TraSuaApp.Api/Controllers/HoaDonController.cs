@@ -95,6 +95,16 @@ public class HoaDonController : BaseApiController
         return result;
     }
 
+    [HttpPut("{id}/single")]
+    public async Task<ActionResult<Result<HoaDonDto>>> UpdateSingle(Guid id, HoaDonDto dto)
+    {
+        var result = await _service.UpdateSingleAsync(id, dto);
+        if (result.IsSuccess)
+            await NotifyClients("updated", id);
+
+        return result;
+    }
+
     [HttpGet("sync")]
     public async Task<ActionResult<Result<List<HoaDonDto>>>> Sync(DateTime lastSync)
     {

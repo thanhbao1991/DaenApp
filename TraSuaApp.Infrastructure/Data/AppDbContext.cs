@@ -41,8 +41,6 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     public virtual DbSet<CongViecNoiBo> CongViecNoiBos { get; set; }
 
-    public virtual DbSet<KhachHangPoint> KhachHangPoints { get; set; }
-
     public virtual DbSet<ChiTietHoaDonPoint> ChiTietHoaDonPoints { get; set; }
 
     public virtual DbSet<HoaDon> HoaDons { get; set; }
@@ -131,7 +129,7 @@ public partial class AppDbContext : DbContext, IAppDbContext
             entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_NoHoaDons_IsDeleted_LastModified").IsDescending(false, true);
 
             entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.SoTienDaTra).HasColumnType("decimal(18, 2)");
+            //entity.Property(e => e.SoTienDaTra).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.SoTienNo).HasColumnType("decimal(18, 2)");
 
             entity.HasOne(d => d.HoaDon).WithMany(p => p.ChiTietHoaDonNos)
@@ -230,20 +228,6 @@ public partial class AppDbContext : DbContext, IAppDbContext
             entity.Property(e => e.Id).ValueGeneratedNever();
         });
 
-        modelBuilder.Entity<KhachHangPoint>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK_CustomerPoints");
-
-            entity.HasIndex(e => e.KhachHangId, "IX_CustomerPoints_KhachHangId");
-
-            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_DiemKhachHangs_IsDeleted_LastModified").IsDescending(false, true);
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-
-            entity.HasOne(d => d.KhachHang).WithMany(p => p.DiemKhachHangs)
-                .HasForeignKey(d => d.KhachHangId)
-                .HasConstraintName("FK_CustomerPoints_KhachHangs_KhachHangId");
-        });
 
         modelBuilder.Entity<ChiTietHoaDonPoint>(entity =>
         {

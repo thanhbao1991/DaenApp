@@ -10,6 +10,8 @@
     <Application.Resources>
         <!--  Converter  -->
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <conveter:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+        <conveter:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVisibilityConverter" />
         <conveter:SoDienThoaiConverter x:Key="SoDienThoaiConverter" />
 
         <Style TargetType="TabItem">
@@ -165,31 +167,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style
-            x:Key="PopupWindowWithBorderStyle2"
-            BasedOn="{StaticResource BasePopupWindowStyle}"
-            TargetType="Window">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Window">
-                        <Grid Background="#99000000">
-                            <Border
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Background="WhiteSmoke"
-                                BorderBrush="#DDD"
-                                BorderThickness="1"
-                                CornerRadius="12">
-                                <ContentPresenter />
-                            </Border>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-
-
         <Style x:Key="HideIfEmptyTextBlockStyle" TargetType="TextBlock">
             <Setter Property="Visibility" Value="Visible" />
             <Style.Triggers>
@@ -455,6 +432,7 @@
             <Setter Property="Margin" Value="16,0,16,0" />
         </Style>
         <!--  Base Button style  -->
+
         <Style
             x:Key="BaseButtonStyle"
             BasedOn="{StaticResource BaseInputStyle}"
@@ -468,6 +446,7 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Opacity" Value="1" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -482,15 +461,55 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+
+            <!--  Trigger khi IsEnabled = False  -->
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.5" />
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
-        <!--  Các màu button  -->
-        <!--<Style
-            x:Key="SaveButtonStyle"
-            BasedOn="{StaticResource BaseButtonStyle}"
+        <Style
+            x:Key="BaseButtonStyle2"
+            BasedOn="{StaticResource BaseInputStyle}"
             TargetType="Button">
-            <Setter Property="Background" Value="#4CAF50" />
-        </Style>-->
+            <Setter Property="MinWidth" Value="80" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#CCC" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                <fa:IconBlock
+                                    Width="16"
+                                    Height="16"
+                                    Margin="0,0,5,0"
+                                    Foreground="{TemplateBinding Foreground}"
+                                    Icon="{TemplateBinding Tag}" />
+                                <ContentPresenter VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <!--  Trigger khi IsEnabled = False  -->
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.5" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style
             x:Key="AddButtonStyle"
             BasedOn="{StaticResource BaseButtonStyle}"

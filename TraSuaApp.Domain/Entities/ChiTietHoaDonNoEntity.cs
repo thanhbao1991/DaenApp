@@ -6,8 +6,9 @@ public partial class ChiTietHoaDonNo
 
     public decimal SoTienNo { get; set; }
 
-    public decimal SoTienDaTra { get; set; }
+    // public decimal SoTienDaTra { get; set; }
     public string? GhiChu { get; set; }
+
 
     public DateTime NgayGio { get; set; }
 

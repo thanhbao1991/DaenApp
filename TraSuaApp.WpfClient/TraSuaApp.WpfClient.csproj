@@ -5,6 +5,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Images\viettin007.jpg" />
+    <None Remove="Resources\ring3.wav" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Page Remove="MainWindow.xaml" />
   </ItemGroup>
 
@@ -13,6 +18,8 @@
     <PackageReference Include="FontAwesome.Sharp" Version="6.6.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.35.0" />
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="139.0.7258.6800" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +27,15 @@
     <ProjectReference Include="..\TraSuaApp.Domain\TraSuaApp.Domain.csproj" />
     <ProjectReference Include="..\TraSuaApp.Infrastructure\TraSuaApp.Infrastructure.csproj" />
     <ProjectReference Include="..\TraSuaApp.Shared\TraSuaApp.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\viettin007.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\ring3.wav">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
   <ItemGroup>

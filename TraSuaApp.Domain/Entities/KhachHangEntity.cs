@@ -20,7 +20,6 @@ public partial class KhachHang
 
     public virtual ICollection<ChiTietHoaDonPoint> ChiTietHoaDonPoints { get; set; } = new List<ChiTietHoaDonPoint>();
 
-    public virtual ICollection<KhachHangPoint> DiemKhachHangs { get; set; } = new List<KhachHangPoint>();
 
     public virtual ICollection<HoaDon> HoaDons { get; set; } = new List<HoaDon>();
 

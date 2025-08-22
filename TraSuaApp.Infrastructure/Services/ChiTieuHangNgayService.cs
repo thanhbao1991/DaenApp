@@ -38,23 +38,6 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
             BillThang = entity.BillThang // hoặc lấy từ entity nếu có cột này
         };
     }
-    public async Task<List<ChiTieuHangNgayDto>> GetAllAsync()
-    {
-        var list = await _context.ChiTieuHangNgays.AsNoTracking()
-            .Where(x => !x.IsDeleted)
-            .OrderByDescending(x => x.LastModified)
-            .ToListAsync();
-
-        return list.Select(ToDto).ToList();
-    }
-
-    public async Task<ChiTieuHangNgayDto?> GetByIdAsync(Guid id)
-    {
-        var entity = await _context.ChiTieuHangNgays
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-
-        return entity == null ? null : ToDto(entity);
-    }
 
     public async Task<Result<ChiTieuHangNgayDto>> CreateAsync(ChiTieuHangNgayDto dto)
     {
@@ -183,13 +166,76 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
             .WithAfter(after);
     }
 
+    public async Task<List<ChiTieuHangNgayDto>> GetAllAsync()
+    {
+        return await _context.ChiTieuHangNgays.AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => new ChiTieuHangNgayDto
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                DonGia = x.DonGia,
+                SoLuong = x.SoLuong,
+                GhiChu = x.GhiChu,
+                ThanhTien = x.ThanhTien,
+                Ngay = x.Ngay,
+                NgayGio = x.NgayGio,
+                NguyenLieuId = x.NguyenLieuId,
+                CreatedAt = x.CreatedAt,
+                LastModified = x.LastModified,
+                DeletedAt = x.DeletedAt,
+                IsDeleted = x.IsDeleted,
+                BillThang = x.BillThang
+            })
+            .ToListAsync();
+    }
+    public async Task<ChiTieuHangNgayDto?> GetByIdAsync(Guid id)
+    {
+        return await _context.ChiTieuHangNgays.AsNoTracking()
+            .Where(x => x.Id == id && !x.IsDeleted)
+            .Select(x => new ChiTieuHangNgayDto
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                DonGia = x.DonGia,
+                SoLuong = x.SoLuong,
+                GhiChu = x.GhiChu,
+                ThanhTien = x.ThanhTien,
+                Ngay = x.Ngay,
+                NgayGio = x.NgayGio,
+                NguyenLieuId = x.NguyenLieuId,
+                CreatedAt = x.CreatedAt,
+                LastModified = x.LastModified,
+                DeletedAt = x.DeletedAt,
+                IsDeleted = x.IsDeleted,
+                BillThang = x.BillThang
+            })
+            .FirstOrDefaultAsync();
+    }
     public async Task<List<ChiTieuHangNgayDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.ChiTieuHangNgays.AsNoTracking()
+        return await _context.ChiTieuHangNgays.AsNoTracking()
             .Where(x => x.LastModified > lastSync)
-                 .OrderByDescending(x => x.LastModified) // ✅ THÊM DÒNG NÀY
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => new ChiTieuHangNgayDto
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                DonGia = x.DonGia,
+                SoLuong = x.SoLuong,
+                GhiChu = x.GhiChu,
+                ThanhTien = x.ThanhTien,
+                Ngay = x.Ngay,
+                NgayGio = x.NgayGio,
+                NguyenLieuId = x.NguyenLieuId,
+                CreatedAt = x.CreatedAt,
+                LastModified = x.LastModified,
+                DeletedAt = x.DeletedAt,
+                IsDeleted = x.IsDeleted,
+                BillThang = x.BillThang
+            })
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
+
 }

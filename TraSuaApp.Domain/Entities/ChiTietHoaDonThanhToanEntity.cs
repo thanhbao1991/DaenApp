@@ -8,6 +8,7 @@ public partial class ChiTietHoaDonThanhToan
     public Guid? ChiTietHoaDonNoId { get; set; }
     public string? GhiChu { get; set; }
 
+    public string TenPhuongThucThanhToan { get; set; }
 
     public decimal SoTien { get; set; }
     public DateTime Ngay { get; set; }

@@ -18,7 +18,7 @@ public class ToppingService : IToppingService
         _context = context;
     }
 
-    private ToppingDto ToDto(Topping entity)
+    private static ToppingDto ToDto(Topping entity)
     {
         return new ToppingDto
         {
@@ -36,19 +36,19 @@ public class ToppingService : IToppingService
 
     public async Task<List<ToppingDto>> GetAllAsync()
     {
-        var list = await _context.Toppings.AsNoTracking()
+        return await _context.Toppings.AsNoTracking()
             .Include(x => x.NhomSanPhams)
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
 
     public async Task<ToppingDto?> GetByIdAsync(Guid id)
     {
         var entity = await _context.Toppings
             .Include(x => x.NhomSanPhams)
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
         return entity == null ? null : ToDto(entity);
@@ -56,18 +56,25 @@ public class ToppingService : IToppingService
 
     public async Task<Result<ToppingDto>> CreateAsync(ToppingDto dto)
     {
+        bool daTonTai = await _context.Toppings
+            .AnyAsync(x => x.Ten.ToLower() == dto.Ten.ToLower() && !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<ToppingDto>.Failure($"{dto.Ten} đã tồn tại.");
+
         var nhoms = await _context.NhomSanPhams
             .Where(x => dto.NhomSanPhams.Contains(x.Id))
             .ToListAsync();
 
+        var now = DateTime.Now;
         var entity = new Topping
         {
             Id = Guid.NewGuid(),
             Ten = dto.Ten.Trim(),
             Gia = dto.Gia,
             NgungBan = dto.NgungBan,
-            CreatedAt = DateTime.Now,
-            LastModified = DateTime.Now,
+            CreatedAt = now,
+            LastModified = now,
             IsDeleted = false,
             NhomSanPhams = nhoms
         };
@@ -92,6 +99,14 @@ public class ToppingService : IToppingService
 
         if (dto.LastModified < entity.LastModified)
             return Result<ToppingDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+
+        bool daTonTai = await _context.Toppings
+            .AnyAsync(x => x.Id != id &&
+                           x.Ten.ToLower() == dto.Ten.ToLower() &&
+                           !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<ToppingDto>.Failure($"{dto.Ten} đã tồn tại.");
 
         var nhoms = await _context.NhomSanPhams
             .Where(x => dto.NhomSanPhams.Contains(x.Id))
@@ -124,10 +139,11 @@ public class ToppingService : IToppingService
             return Result<ToppingDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
         var before = ToDto(entity);
+        var now = DateTime.Now;
 
         entity.IsDeleted = true;
-        entity.DeletedAt = DateTime.Now;
-        entity.LastModified = DateTime.Now;
+        entity.DeletedAt = now;
+        entity.LastModified = now;
 
         await _context.SaveChangesAsync();
 
@@ -162,12 +178,11 @@ public class ToppingService : IToppingService
 
     public async Task<List<ToppingDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.Toppings.AsNoTracking()
+        return await _context.Toppings.AsNoTracking()
             .Include(x => x.NhomSanPhams)
             .Where(x => x.LastModified > lastSync)
-                 .OrderByDescending(x => x.LastModified) // ✅ THÊM DÒNG NÀY
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
 }

@@ -50,26 +50,6 @@ namespace TraSuaApp.Infrastructure.Services
             };
         }
 
-        public async Task<List<SanPhamDto>> GetAllAsync()
-        {
-            var list = await _context.SanPhams.AsNoTracking()
-                .Include(x => x.NhomSanPham)
-                .Include(x => x.SanPhamBienThes)
-                .Where(x => !x.IsDeleted)
-                .OrderByDescending(x => x.LastModified)
-                .ToListAsync();
-
-            return list.Select(ToDto).ToList();
-        }
-        public async Task<SanPhamDto?> GetByIdAsync(Guid id)
-        {
-            var entity = await _context.SanPhams
-                .Include(x => x.NhomSanPham)
-                .Include(x => x.SanPhamBienThes)
-                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-
-            return entity == null ? null : ToDto(entity);
-        }
 
         public async Task<Result<SanPhamDto>> CreateAsync(SanPhamDto dto)
         {
@@ -201,16 +181,104 @@ namespace TraSuaApp.Infrastructure.Services
                                      .WithAfter(after);
         }
 
+
+
+        public async Task<List<SanPhamDto>> GetAllAsync()
+        {
+            return await _context.SanPhams.AsNoTracking()
+                .Where(x => !x.IsDeleted)
+                .OrderByDescending(x => x.LastModified)
+                .Select(entity => new SanPhamDto
+                {
+                    Id = entity.Id,
+                    Ten = entity.Ten,
+                    DinhLuong = entity.DinhLuong,
+                    VietTat = entity.VietTat,
+                    DaBan = entity.DaBan,
+                    NgungBan = entity.NgungBan,
+                    TichDiem = entity.TichDiem,
+                    OldId = entity.OldId,
+                    NhomSanPhamId = entity.NhomSanPhamId,
+                    TenNhomSanPham = entity.NhomSanPham != null ? entity.NhomSanPham.Ten : null,
+                    CreatedAt = entity.CreatedAt,
+                    LastModified = entity.LastModified,
+                    DeletedAt = entity.DeletedAt,
+                    IsDeleted = entity.IsDeleted,
+                    BienThe = entity.SanPhamBienThes.Select(b => new SanPhamBienTheDto
+                    {
+                        Id = b.Id,
+                        SanPhamId = b.SanPhamId,
+                        TenBienThe = b.TenBienThe,
+                        GiaBan = b.GiaBan,
+                        MacDinh = b.MacDinh
+                    }).ToList()
+                })
+                .ToListAsync();
+        }
+
+        public async Task<SanPhamDto?> GetByIdAsync(Guid id)
+        {
+            return await _context.SanPhams.AsNoTracking()
+                .Where(x => x.Id == id && !x.IsDeleted)
+                .Select(entity => new SanPhamDto
+                {
+                    Id = entity.Id,
+                    Ten = entity.Ten,
+                    DinhLuong = entity.DinhLuong,
+                    VietTat = entity.VietTat,
+                    DaBan = entity.DaBan,
+                    NgungBan = entity.NgungBan,
+                    TichDiem = entity.TichDiem,
+                    OldId = entity.OldId,
+                    NhomSanPhamId = entity.NhomSanPhamId,
+                    TenNhomSanPham = entity.NhomSanPham != null ? entity.NhomSanPham.Ten : null,
+                    CreatedAt = entity.CreatedAt,
+                    LastModified = entity.LastModified,
+                    DeletedAt = entity.DeletedAt,
+                    IsDeleted = entity.IsDeleted,
+                    BienThe = entity.SanPhamBienThes.Select(b => new SanPhamBienTheDto
+                    {
+                        Id = b.Id,
+                        SanPhamId = b.SanPhamId,
+                        TenBienThe = b.TenBienThe,
+                        GiaBan = b.GiaBan,
+                        MacDinh = b.MacDinh
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<List<SanPhamDto>> GetUpdatedSince(DateTime lastSync)
         {
-            var list = await _context.SanPhams.AsNoTracking()
-                .Include(x => x.NhomSanPham)
-                .Include(x => x.SanPhamBienThes)
+            return await _context.SanPhams.AsNoTracking()
                 .Where(x => x.LastModified > lastSync)
                 .OrderByDescending(x => x.LastModified)
+                .Select(entity => new SanPhamDto
+                {
+                    Id = entity.Id,
+                    Ten = entity.Ten,
+                    DinhLuong = entity.DinhLuong,
+                    VietTat = entity.VietTat,
+                    DaBan = entity.DaBan,
+                    NgungBan = entity.NgungBan,
+                    TichDiem = entity.TichDiem,
+                    OldId = entity.OldId,
+                    NhomSanPhamId = entity.NhomSanPhamId,
+                    TenNhomSanPham = entity.NhomSanPham != null ? entity.NhomSanPham.Ten : null,
+                    CreatedAt = entity.CreatedAt,
+                    LastModified = entity.LastModified,
+                    DeletedAt = entity.DeletedAt,
+                    IsDeleted = entity.IsDeleted,
+                    BienThe = entity.SanPhamBienThes.Select(b => new SanPhamBienTheDto
+                    {
+                        Id = b.Id,
+                        SanPhamId = b.SanPhamId,
+                        TenBienThe = b.TenBienThe,
+                        GiaBan = b.GiaBan,
+                        MacDinh = b.MacDinh
+                    }).ToList()
+                })
                 .ToListAsync();
-
-            return list.Select(ToDto).ToList();
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Apis;
@@ -38,18 +39,20 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             {
                 Model = dto;
                 TenTextBox.Text = dto.Ten;
+                NgayTextBox.Text = dto.Ngay.ToString("dd-MM-yyyy");
+                GioTextBox.Text = dto.NgayGio.ToString("HH:mm:ss");
                 LoaiThanhToanTextBox.Text = dto.LoaiThanhToan;
                 SoTienTextBox.Value = dto.SoTien;
                 SoTienTextBox.Focus();
                 PhuongThucThanhToanComboBox.SelectedValue = dto.PhuongThucThanhToanId;
-                GhiChuTextBox.Text = dto.GhiChu ?? "";
+                //GhiChuTextBox.Text = dto.GhiChu ?? "";
 
                 if (Model.IsDeleted)
                 {
                     TenTextBox.IsEnabled = false;
                     SoTienTextBox.IsEnabled = false;
                     PhuongThucThanhToanComboBox.IsEnabled = false;
-                    GhiChuTextBox.IsEnabled = false;
+                    //GhiChuTextBox.IsEnabled = false;
                     SaveButton.Content = "Khôi phục";
                 }
             }
@@ -92,9 +95,9 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 return;
             }
 
-            Model.GhiChu = GhiChuTextBox.Text.Trim();
+            // Model.GhiChu = GhiChuTextBox.Text.Trim();
 
-            Model.NgayGio = DateTime.Now;
+            //     Model.NgayGio = DateTime.Now;
 
             Result<ChiTietHoaDonThanhToanDto> result;
             if (Model.Id == Guid.Empty)
@@ -141,6 +144,27 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     e.Handled = true;
                 }
             }
+        }
+        public static SolidColorBrush MakeBrush(SolidColorBrush brush, double opacity = 1.0)
+        {
+            var color = brush.Color;
+            var newBrush = new SolidColorBrush(color);
+            newBrush.Opacity = opacity; // 0.0 -> 1.0
+
+            return newBrush;
+        }
+        private void PhuongThucThanhToanComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (PhuongThucThanhToanComboBox.SelectedIndex == 1)
+                Background = MakeBrush(Brushes.LightGreen, 0.8);
+            else
+            if (PhuongThucThanhToanComboBox.SelectedIndex == 0)
+                Background = MakeBrush(Brushes.LightYellow, 0.8);
+            else
+                Background = MakeBrush(Brushes.Gold, 0.8);
+
+
+
         }
     }
 }

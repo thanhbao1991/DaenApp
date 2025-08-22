@@ -2,6 +2,7 @@
     x:Class="TraSuaApp.WpfClient.HoaDonViews.ChiTietHoaDonNoEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
     Style="{StaticResource EditWindowStyle}"
     WindowStartupLocation="CenterScreen">
 
@@ -21,15 +22,35 @@
                     Style="{StaticResource CloseButtonStyle}" />
             </DockPanel>
             <!--  Nội dung form  -->
-            <StackPanel Grid.Row="1">
-                <GroupBox Margin="0,0,0,5" Header="Tên công việc">
-                    <StackPanel Orientation="Horizontal">
+            <StackPanel Grid.Row="1" Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal">
+                    <GroupBox Header="Ngày">
+                        <TextBox
+                            x:Name="NgayTextBox"
+                            Width="150"
+                            IsEnabled="False" />
+                    </GroupBox>
+                    <GroupBox Header="Giờ">
+                        <TextBox
+                            x:Name="GioTextBox"
+                            Width="150"
+                            IsEnabled="False" />
+                    </GroupBox>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <GroupBox Header="Tên bàn/khách">
                         <TextBox
                             x:Name="TenTextBox"
-                            Width="200"
-                            Margin="0,0,8,0" />
-                    </StackPanel>
-                </GroupBox>
+                            Width="150"
+                            IsEnabled="False" />
+                    </GroupBox>
+                    <GroupBox Header="Số tiền">
+                        <ctrl:NumericTextBox x:Name="SoTienTextBox" Width="150" />
+                    </GroupBox>
+                </StackPanel>
+                <!--<GroupBox Header="Ghi chú">
+                 <TextBox x:Name="GhiChuTextBox" HorizontalAlignment="Stretch" />
+             </GroupBox>-->
             </StackPanel>
 
             <!--  Nút và lỗi  -->

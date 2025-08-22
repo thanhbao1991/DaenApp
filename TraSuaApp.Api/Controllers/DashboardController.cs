@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Services;
 
 namespace TraSuaApp.Api.Controllers
 {
@@ -19,7 +20,7 @@ namespace TraSuaApp.Api.Controllers
         [HttpGet("homnay")]
         public async Task<ActionResult<DashboardDto>> GetToday()
         {
-            var today = DateTime.Today.AddDays(0);
+            var today = DateTime.Today;
             var tomorrow = today.AddDays(1);
             var chiTietQuery = _db.ChiTietHoaDons
                 .Where(c => c.HoaDon.Ngay >= today && c.HoaDon.Ngay < tomorrow && !c.HoaDon.IsDeleted);
@@ -91,7 +92,7 @@ namespace TraSuaApp.Api.Controllers
             }
 
             // Gọi GPT
-            var prediction = await GPTService.DuDoanGioDongKhachAsync(detailedHeatmap);
+            var prediction = await GeminiService.DuDoanGioDongKhachAsync(detailedHeatmap);
             return new DashboardDto
             {
                 PredictedPeak = prediction// ✅ Thêm dòng này

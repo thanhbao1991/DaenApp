@@ -16,7 +16,7 @@ public class VoucherService : IVoucherService
         _context = context;
     }
 
-    private VoucherDto ToDto(Voucher entity)
+    private static VoucherDto ToDto(Voucher entity)
     {
         return new VoucherDto
         {
@@ -29,7 +29,6 @@ public class VoucherService : IVoucherService
             NgayBatDau = entity.NgayBatDau,
             NgayKetThuc = entity.NgayKetThuc,
             DangSuDung = entity.DangSuDung,
-
             CreatedAt = entity.CreatedAt,
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
@@ -39,17 +38,17 @@ public class VoucherService : IVoucherService
 
     public async Task<List<VoucherDto>> GetAllAsync()
     {
-        var list = await _context.Vouchers.AsNoTracking()
+        return await _context.Vouchers.AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
 
     public async Task<VoucherDto?> GetByIdAsync(Guid id)
     {
         var entity = await _context.Vouchers
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
         return entity == null ? null : ToDto(entity);
@@ -57,6 +56,13 @@ public class VoucherService : IVoucherService
 
     public async Task<Result<VoucherDto>> CreateAsync(VoucherDto dto)
     {
+        bool daTonTai = await _context.Vouchers
+            .AnyAsync(x => x.Ten.ToLower() == dto.Ten.ToLower() && !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<VoucherDto>.Failure($"{dto.Ten} đã tồn tại.");
+
+        var now = DateTime.Now;
         var entity = new Voucher
         {
             Id = Guid.NewGuid(),
@@ -68,9 +74,8 @@ public class VoucherService : IVoucherService
             NgayBatDau = dto.NgayBatDau,
             NgayKetThuc = dto.NgayKetThuc,
             DangSuDung = dto.DangSuDung,
-
-            CreatedAt = DateTime.Now,
-            LastModified = DateTime.Now,
+            CreatedAt = now,
+            LastModified = now,
             IsDeleted = false,
         };
 
@@ -94,7 +99,16 @@ public class VoucherService : IVoucherService
         if (dto.LastModified < entity.LastModified)
             return Result<VoucherDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
+        bool daTonTai = await _context.Vouchers
+            .AnyAsync(x => x.Id != id &&
+                           x.Ten.ToLower() == dto.Ten.ToLower() &&
+                           !x.IsDeleted);
+
+        if (daTonTai)
+            return Result<VoucherDto>.Failure($"{dto.Ten} đã tồn tại.");
+
         var before = ToDto(entity);
+        var now = DateTime.Now;
 
         entity.Ten = dto.Ten.Trim();
         entity.KieuGiam = dto.KieuGiam;
@@ -104,8 +118,7 @@ public class VoucherService : IVoucherService
         entity.NgayBatDau = dto.NgayBatDau;
         entity.NgayKetThuc = dto.NgayKetThuc;
         entity.DangSuDung = dto.DangSuDung;
-
-        entity.LastModified = DateTime.Now;
+        entity.LastModified = now;
 
         await _context.SaveChangesAsync();
 
@@ -125,10 +138,11 @@ public class VoucherService : IVoucherService
             return Result<VoucherDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
         var before = ToDto(entity);
+        var now = DateTime.Now;
 
         entity.IsDeleted = true;
-        entity.DeletedAt = DateTime.Now;
-        entity.LastModified = DateTime.Now;
+        entity.DeletedAt = now;
+        entity.LastModified = now;
 
         await _context.SaveChangesAsync();
 
@@ -162,11 +176,10 @@ public class VoucherService : IVoucherService
 
     public async Task<List<VoucherDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.Vouchers.AsNoTracking()
+        return await _context.Vouchers.AsNoTracking()
             .Where(x => x.LastModified > lastSync)
             .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
 }

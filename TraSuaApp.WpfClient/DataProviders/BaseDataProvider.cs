@@ -54,7 +54,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
 
                     if (TuDien._tableFriendlyNames.TryGetValue(entityName, out var friendlyName))
                     {
-                        ToastHelper.Show($"Cập nhật {GetActionVerb(action)} {friendlyName.ToLower()}.");
+                        NotiHelper.Show($"Cập nhật {GetActionVerb(action)} {friendlyName.ToLower()}.");
                     }
                 });
             });

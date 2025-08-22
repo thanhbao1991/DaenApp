@@ -35,7 +35,10 @@ public class HoaDonApi : BaseApi, IHoaDonApi
     {
         return await PutAsync<HoaDonDto>($"{BASE_URL}/{id}", dto);
     }
-
+    public async Task<Result<HoaDonDto>> UpdateSingleAsync(Guid id, HoaDonDto dto)
+    {
+        return await PutAsync<HoaDonDto>($"{BASE_URL}/{id}/single", dto);
+    }
     public async Task<Result<HoaDonDto>> DeleteAsync(Guid id)
     {
         return await DeleteAsync<HoaDonDto>($"{BASE_URL}/{id}");

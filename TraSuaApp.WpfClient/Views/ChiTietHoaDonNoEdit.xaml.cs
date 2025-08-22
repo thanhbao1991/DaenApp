@@ -30,6 +30,13 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             {
                 Model = dto;
                 TenTextBox.Text = dto.Ten;
+                NgayTextBox.Text = dto.Ngay.ToString("dd-MM-yyyy");
+                GioTextBox.Text = dto.NgayGio.ToString("HH:mm:ss");
+                SoTienTextBox.Value = dto.SoTienNo;
+                SoTienTextBox.Focus();
+                // PhuongThucThanhToanComboBox.SelectedValue = dto.PhuongThucThanhToanId;
+                //GhiChuTextBox.Text = dto.GhiChu ?? "";
+
             }
             else
             {

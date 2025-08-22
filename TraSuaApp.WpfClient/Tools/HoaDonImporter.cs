@@ -10,6 +10,7 @@ public class OldHoaDon
     public int? IdNhomHoaDon { get; set; }
     public int? IdBan { get; set; }
     public DateTime? NgayHoaDon { get; set; }
+    public DateTime? NgayShip { get; set; }
     public DateTime? NgayRa { get; set; }
     public decimal TongTien { get; set; }
     public decimal DaThu { get; set; }
@@ -52,10 +53,11 @@ public class HoaDonImporter
         using var oldDb = new SqlConnection(_oldConn);
         using var newDb = new SqlConnection(_newConn);
 
-        var today = DateTime.Today.AddDays(-5);
+        var today = DateTime.Today.AddDays(-10);
 
         var hoadons = (await oldDb.QueryAsync<OldHoaDon>(@"
             SELECT 
+h.NgayShip,
                 h.IdHoaDon,
 h.NgayRa,
                 h.IdKhachHang,
@@ -194,15 +196,26 @@ h.NgayRa,
                     {
                         trangThai = "Khác";
                     }
+                    // Tạo ghi chú tóm tắt sản phẩm
+                    var ghiChuTomTat = string.Join(", ",
+                        cts
+                        .Where(x => !voucherMap.ContainsKey(x.IdSanPham) && !toppingMap.ContainsKey(x.IdSanPham))
+                        .GroupBy(x => x.TenSanPham.Trim())
+                        .Select(g => $"{g.Sum(x => x.SoLuong)} {g.Key}")
+                    );
 
                     await newDb.ExecuteAsync(@"
-                    INSERT INTO HoaDons(Id, OldId, MaHoaDon, TrangThai, PhanLoai, TenBan, DiaChiText, SoDienThoaiText,
+                    INSERT INTO HoaDons(TenKhachHangText, GhiChu, NgayShip, NgayRa, Id, OldId, MaHoaDon, TrangThai, PhanLoai, TenBan, DiaChiText, SoDienThoaiText,
                                         KhachHangId, TongTien, GiamGia, ThanhTien, Ngay, NgayGio, CreatedAt, LastModified, IsDeleted)
-                    VALUES (@Id, @OldId, @MaHoaDon, @TrangThai, @PhanLoai, @TenBan, @DiaChi, @Phone,
+                    VALUES (@TenKhachHangText, @GhiChu, @NgayShip, @NgayRa, @Id, @OldId, @MaHoaDon, @TrangThai, @PhanLoai, @TenBan, @DiaChi, @Phone,
                             @KhId, @TongTien, @GiamGia, @ThanhTien, @Ngay, @NgayGio, @CreatedAt, @LastModified, 0)
                 ", new
                     {
+                        TenKhachHangText = hd.ThongTinHoaDon,
+                        GhiChu = ghiChuTomTat,
                         Id = hoaDonId,
+                        NgayShip = hd.NgayShip,
+                        NgayRa = hd.NgayRa,
                         OldId = hd.IdHoaDon,
                         MaHoaDon = $"HD{hd.IdHoaDon:D6}",
                         TrangThai = trangThai,
@@ -221,13 +234,7 @@ h.NgayRa,
                         LastModified = hd.NgayHoaDon ?? DateTime.Now
                     });
 
-                    // Tạo ghi chú tóm tắt sản phẩm
-                    var ghiChuTomTat = string.Join(", ",
-                        cts
-                        .Where(x => !voucherMap.ContainsKey(x.IdSanPham) && !toppingMap.ContainsKey(x.IdSanPham))
-                        .GroupBy(x => x.TenSanPham.Trim())
-                        .Select(g => $"{g.Sum(x => x.SoLuong)} {g.Key}")
-                    );
+
 
                     // === Thanh toán, Nợ, Điểm (giữ nguyên) ===
                     decimal tienMat = hd.DaThu - hd.TienBank;
@@ -235,11 +242,12 @@ h.NgayRa,
                     {
                         await newDb.ExecuteAsync(@"
     INSERT INTO ChiTietHoaDonThanhToans
-    (GhiChu, Id, HoaDonId, PhuongThucThanhToanId, SoTien, Ngay, NgayGio, CreatedAt, LastModified, KhachHangId, LoaiThanhToan)
-    VALUES (@GhiChu, @Id, @HoaDonId, @PTTT, @SoTien, @Ngay, @NgayGio, @CreatedAt, @LastModified, @KhId, @LoaiThanhToan)
+    (TenPhuongThucThanhToan, GhiChu, Id, HoaDonId, PhuongThucThanhToanId, SoTien, Ngay, NgayGio, CreatedAt, LastModified, KhachHangId, LoaiThanhToan)
+    VALUES (@TenPhuongThucThanhToan, @GhiChu, @Id, @HoaDonId, @PTTT, @SoTien, @Ngay, @NgayGio, @CreatedAt, @LastModified, @KhId, @LoaiThanhToan)
 ", new
                         {
-                            GhiChu = ghiChuTomTat,
+                            TenPhuongThucThanhToan = "Tiền mặt",
+                            GhiChu = "",
                             Id = Guid.NewGuid(),
                             HoaDonId = hoaDonId,
                             PTTT = tienMatId,
@@ -257,12 +265,13 @@ h.NgayRa,
                     {
                         await newDb.ExecuteAsync(@"
     INSERT INTO ChiTietHoaDonThanhToans
-    (GhiChu, Id, HoaDonId, PhuongThucThanhToanId, SoTien, Ngay, NgayGio, CreatedAt, LastModified, KhachHangId,LoaiThanhToan)
-    VALUES (@GhiChu, @Id, @HoaDonId, @PTTT, @SoTien, @Ngay, @NgayGio, @CreatedAt, @LastModified, @KhId,@LoaiThanhToan)
+    (TenPhuongThucThanhToan, GhiChu, Id, HoaDonId, PhuongThucThanhToanId, SoTien, Ngay, NgayGio, CreatedAt, LastModified, KhachHangId,LoaiThanhToan)
+    VALUES (@TenPhuongThucThanhToan, @GhiChu, @Id, @HoaDonId, @PTTT, @SoTien, @Ngay, @NgayGio, @CreatedAt, @LastModified, @KhId,@LoaiThanhToan)
 ", new
                         {
+                            TenPhuongThucThanhToan = "Chuyển khoản",
                             LoaiThanhToan = "Trong ngày",
-                            GhiChu = ghiChuTomTat,
+                            GhiChu = "",
                             Id = Guid.NewGuid(),
                             HoaDonId = hoaDonId,
                             PTTT = ckId,
@@ -279,8 +288,8 @@ h.NgayRa,
                     {
                         await newDb.ExecuteAsync(@"
     INSERT INTO ChiTietHoaDonNos
-    (GhiChu,Id, HoaDonId, KhachHangId, SoTienNo, SoTienDaTra, Ngay, NgayGio, CreatedAt, LastModified)
-    VALUES (@GhiChu,@Id, @HoaDonId, @KhId, @SoTienNo, 0, @Ngay, @NgayGio, @CreatedAt, @LastModified)
+    (GhiChu,Id, HoaDonId, KhachHangId, SoTienNo, Ngay, NgayGio, CreatedAt, LastModified)
+    VALUES (@GhiChu,@Id, @HoaDonId, @KhId, @SoTienNo, @Ngay, @NgayGio, @CreatedAt, @LastModified)
 ", new
                         {
                             GhiChu = ghiChuTomTat,
@@ -318,33 +327,6 @@ h.NgayRa,
                             LastModified = ngayGio
                         });
 
-                        var existingDiem = await newDb.ExecuteScalarAsync<int?>(@"
-        SELECT TongDiem FROM KhachHangPoints WHERE KhachHangId = @KhId
-    ", new { KhId = khId.Value });
-
-                        if (existingDiem == null)
-                        {
-                            await newDb.ExecuteAsync(@"
-            INSERT INTO KhachHangPoints
-            (Id, KhachHangId, TongDiem, CreatedAt, LastModified)
-            VALUES (@Id, @KhachHangId, @TongDiem, @CreatedAt, @LastModified)
-        ", new
-                            {
-                                Id = Guid.NewGuid(),
-                                KhachHangId = khId.Value,
-                                TongDiem = diemTichLuy,
-                                CreatedAt = ngayGio,
-                                LastModified = ngayGio
-                            });
-                        }
-                        else
-                        {
-                            await newDb.ExecuteAsync(@"
-            UPDATE KhachHangPoints
-            SET TongDiem = TongDiem + @Diem, LastModified = @LastModified
-            WHERE KhachHangId = @KhId
-        ", new { Diem = diemTichLuy, KhId = khId.Value, LastModified = ngayGio });
-                        }
                     }
                     // === Insert chi tiết hóa đơn ===
                     foreach (var ct in cts)

@@ -121,7 +121,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             }
             else
             {
-                Model.TrangThai = "Chờ";
+                //Model.TrangThai = "Chờ";
                 Model.MaHoaDon = "HD" + DateTime.Now.Ticks.ToString()[^6..];
             }
 
@@ -148,7 +148,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             if (KhachHangSearchBox.SelectedKhachHang == null
                 && !string.IsNullOrWhiteSpace(KhachHangSearchBox.SearchTextBox.Text))
             {
-                Model.TenKhachHang = KhachHangSearchBox.SearchTextBox.Text.Trim();
+                Model.TenKhachHangText = KhachHangSearchBox.SearchTextBox.Text.Trim();
             }
             Model.VoucherId = (Guid?)VoucherComboBox.SelectedValue;
 

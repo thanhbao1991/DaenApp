@@ -33,23 +33,6 @@ public class CongViecNoiBoService : ICongViecNoiBoService
         };
     }
 
-    public async Task<List<CongViecNoiBoDto>> GetAllAsync()
-    {
-        var list = await _context.CongViecNoiBos.AsNoTracking()
-            .Where(x => !x.IsDeleted)
-            .OrderByDescending(x => x.LastModified)
-            .ToListAsync();
-
-        return list.Select(ToDto).ToList();
-    }
-
-    public async Task<CongViecNoiBoDto?> GetByIdAsync(Guid id)
-    {
-        var entity = await _context.CongViecNoiBos
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-
-        return entity == null ? null : ToDto(entity);
-    }
 
     public async Task<Result<CongViecNoiBoDto>> CreateAsync(CongViecNoiBoDto dto)
     {
@@ -165,13 +148,60 @@ public class CongViecNoiBoService : ICongViecNoiBoService
             .WithAfter(after);
     }
 
+    public async Task<List<CongViecNoiBoDto>> GetAllAsync()
+    {
+        return await _context.CongViecNoiBos.AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => new CongViecNoiBoDto
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                DaHoanThanh = x.DaHoanThanh,
+                NgayGio = x.NgayGio,
+                CreatedAt = x.CreatedAt,
+                LastModified = x.LastModified,
+                DeletedAt = x.DeletedAt,
+                IsDeleted = x.IsDeleted
+            })
+            .ToListAsync();
+    }
+    public async Task<CongViecNoiBoDto?> GetByIdAsync(Guid id)
+    {
+        return await _context.CongViecNoiBos.AsNoTracking()
+            .Where(x => x.Id == id && !x.IsDeleted)
+            .Select(x => new CongViecNoiBoDto
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                DaHoanThanh = x.DaHoanThanh,
+                NgayGio = x.NgayGio,
+                CreatedAt = x.CreatedAt,
+                LastModified = x.LastModified,
+                DeletedAt = x.DeletedAt,
+                IsDeleted = x.IsDeleted
+            })
+            .FirstOrDefaultAsync();
+    }
     public async Task<List<CongViecNoiBoDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.CongViecNoiBos.AsNoTracking()
+        return await _context.CongViecNoiBos.AsNoTracking()
             .Where(x => x.LastModified > lastSync)
-                 .OrderByDescending(x => x.LastModified) // ✅ THÊM DÒNG NÀY
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => new CongViecNoiBoDto
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                DaHoanThanh = x.DaHoanThanh,
+                NgayGio = x.NgayGio,
+                CreatedAt = x.CreatedAt,
+                LastModified = x.LastModified,
+                DeletedAt = x.DeletedAt,
+                IsDeleted = x.IsDeleted
+            })
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
+
+
+
 }

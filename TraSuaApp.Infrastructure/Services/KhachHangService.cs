@@ -106,27 +106,6 @@ public class KhachHangService : IKhachHangService
         return Result<KhachHangDto>.Success(dto);
     }
 
-    public async Task<List<KhachHangDto>> GetAllAsync()
-    {
-        var list = await _context.KhachHangs.AsNoTracking()
-            .Include(x => x.KhachHangPhones)
-            .Include(x => x.KhachHangAddresses)
-            .Where(x => !x.IsDeleted)
-            .OrderByDescending(x => x.LastModified)
-            .ToListAsync();
-
-        return list.Select(ToDto).ToList();
-    }
-
-    public async Task<KhachHangDto?> GetByIdAsync(Guid id)
-    {
-        var entity = await _context.KhachHangs
-            .Include(x => x.KhachHangPhones)
-            .Include(x => x.KhachHangAddresses)
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-
-        return entity == null ? null : ToDto(entity);
-    }
     private string GenerateNameFromAddress(string address)
     {
         var parts = address
@@ -333,15 +312,113 @@ public class KhachHangService : IKhachHangService
             .WithAfter(after);
     }
 
+    public async Task<List<KhachHangDto>> GetAllAsync()
+    {
+        return await _context.KhachHangs.AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .OrderByDescending(x => x.LastModified)
+            .Select(entity => new KhachHangDto
+            {
+                Id = entity.Id,
+                Ten = entity.Ten,
+                IsDeleted = entity.IsDeleted,
+                LastModified = entity.LastModified,
+                CreatedAt = entity.CreatedAt,
+                DeletedAt = entity.DeletedAt,
+                DuocNhanVoucher = entity.DuocNhanVoucher,
+                Phones = entity.KhachHangPhones
+                    .Select(p => new KhachHangPhoneDto
+                    {
+                        Id = p.Id,
+                        SoDienThoai = p.SoDienThoai,
+                        IsDefault = p.IsDefault
+                    })
+                    .OrderByDescending(p => p.IsDefault)
+                    .ToList(),
+                Addresses = entity.KhachHangAddresses
+                    .Select(a => new KhachHangAddressDto
+                    {
+                        Id = a.Id,
+                        DiaChi = a.DiaChi,
+                        IsDefault = a.IsDefault
+                    })
+                    .OrderByDescending(a => a.IsDefault)
+                    .ToList()
+            })
+            .ToListAsync();
+    }
+
+    public async Task<KhachHangDto?> GetByIdAsync(Guid id)
+    {
+        return await _context.KhachHangs.AsNoTracking()
+            .Where(x => x.Id == id && !x.IsDeleted)
+            .Select(entity => new KhachHangDto
+            {
+                Id = entity.Id,
+                Ten = entity.Ten,
+                IsDeleted = entity.IsDeleted,
+                LastModified = entity.LastModified,
+                CreatedAt = entity.CreatedAt,
+                DeletedAt = entity.DeletedAt,
+                DuocNhanVoucher = entity.DuocNhanVoucher,
+                Phones = entity.KhachHangPhones
+                    .Select(p => new KhachHangPhoneDto
+                    {
+                        Id = p.Id,
+                        SoDienThoai = p.SoDienThoai,
+                        IsDefault = p.IsDefault
+                    })
+                    .OrderByDescending(p => p.IsDefault)
+                    .ToList(),
+                Addresses = entity.KhachHangAddresses
+                    .Select(a => new KhachHangAddressDto
+                    {
+                        Id = a.Id,
+                        DiaChi = a.DiaChi,
+                        IsDefault = a.IsDefault
+                    })
+                    .OrderByDescending(a => a.IsDefault)
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<List<KhachHangDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await _context.KhachHangs.AsNoTracking()
-            .Include(x => x.KhachHangPhones)
-            .Include(x => x.KhachHangAddresses)
+        return await _context.KhachHangs.AsNoTracking()
             .Where(x => x.LastModified > lastSync)
             .OrderByDescending(x => x.LastModified)
+            .Select(entity => new KhachHangDto
+            {
+                Id = entity.Id,
+                Ten = entity.Ten,
+                IsDeleted = entity.IsDeleted,
+                LastModified = entity.LastModified,
+                CreatedAt = entity.CreatedAt,
+                DeletedAt = entity.DeletedAt,
+                DuocNhanVoucher = entity.DuocNhanVoucher,
+                Phones = entity.KhachHangPhones
+                    .Select(p => new KhachHangPhoneDto
+                    {
+                        Id = p.Id,
+                        SoDienThoai = p.SoDienThoai,
+                        IsDefault = p.IsDefault
+                    })
+                    .OrderByDescending(p => p.IsDefault)
+                    .ToList(),
+                Addresses = entity.KhachHangAddresses
+                    .Select(a => new KhachHangAddressDto
+                    {
+                        Id = a.Id,
+                        DiaChi = a.DiaChi,
+                        IsDefault = a.IsDefault
+                    })
+                    .OrderByDescending(a => a.IsDefault)
+                    .ToList()
+            })
             .ToListAsync();
-
-        return list.Select(ToDto).ToList();
     }
+
+
+
 }

@@ -1,5 +1,7 @@
-﻿using System.Net.Http.Json;
+﻿using System.Diagnostics;
+using System.Net.Http.Json;
 using System.Reflection;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -19,91 +21,174 @@ namespace TraSuaApp.WpfClient.Views
 {
     public partial class Dashboard : Window
     {
+        private MediaPlayer _baoDonPlayer;
+        private DispatcherTimer _mainTimer;
+
         public Dashboard()
         {
             InitializeComponent();
+            _baoDonPlayer = new MediaPlayer();
+            var uri = new Uri("pack://application:,,,/Resources/ring3.wav"); //
+            _baoDonPlayer.Open(uri); // đường dẫn file
+            _baoDonPlayer.Volume = 0.8; // âm lượng 0.0 → 1.0
+            _baoDonPlayer.MediaEnded += (s, e) =>
+            {
+                _baoDonPlayer.Position = TimeSpan.Zero;
+                _baoDonPlayer.Play();
+            };
+            _mainTimer = new DispatcherTimer();
+            _mainTimer.Interval = TimeSpan.FromSeconds(10); // tick mỗi 10 giây
+            _mainTimer.Tick += async (s, e) => await MainTimer_Tick();
+            _mainTimer.Start();
+
+            Loaded += Dashboard_Loaded;
+
             this.MaxHeight = SystemParameters.MaximizedPrimaryScreenHeight;
             this.MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
             GenerateMenu("Admin", AdminMenu);
             GenerateMenu("HoaDon", HoaDonMenu);
             GenerateMenu("Settings", SettingsMenu);
-
-            Loaded += Dashboard_Loaded;
-
-            _nhacNhoTimer = new DispatcherTimer();
-            _nhacNhoTimer.Interval = TimeSpan.FromMinutes(15);
-            _nhacNhoTimer.Tick += async (s, e) => await KiemTraCongViec();
-            //_nhacNhoTimer.Start();
-            _ = KiemTraCongViec();
+            for (int h = 6; h < 22; h++) GioCombo.Items.Add(h.ToString("D2"));
+            for (int m = 0; m < 60; m += 10) PhutCombo.Items.Add(m.ToString("D2")); // bước 5 phút
         }
-
-        private DispatcherTimer _nhacNhoTimer;
-        private async Task KiemTraCongViec()
+        private async Task MainTimer_Tick()
         {
-            if (AppProviders.CongViecNoiBos == null) return;
-            var today = DateTime.Today;
-
-            var congViec = AppProviders.CongViecNoiBos.Items
-                .Where(cv => !cv.DaHoanThanh)
-                .OrderBy(x => x.NgayGio)
-                .SingleOrDefault();
-            if (congViec != null)
+            // 🟟 Báo đơn
+            if (_fullHoaDonList.Any(hd => hd.BaoDon))
             {
-                await TTSHelper.DownloadAndPlayGoogleTTSAsync(congViec.Ten);
+                if (_baoDonPlayer.Position == TimeSpan.Zero || _baoDonPlayer.CanPause)
+                {
+                    _baoDonPlayer.Play();
+                }
+            }
+            else
+            {
+                _baoDonPlayer.Stop();
             }
 
+            // 🟟 Refresh giờ hiển thị (mỗi 1 phút mới cần)
+            if (DateTime.Now.Second < 10) // tick đầu phút
+            {
+                foreach (var item in _fullHoaDonList)
+                    item.RefreshGioHienThi();
+            }
+
+            // 🟟 Check đơn hẹn giờ
+            var dsDenHan = _fullHoaDonList
+                .Where(h => h.NgayHen.HasValue && h.NgayHen.Value <= DateTime.Now)
+                .ToList();
+
+            foreach (var hd in dsDenHan)
+            {
+                // ⚠️ Không dùng MessageBox spam liên tục
+                NotiHelper.Show($"⏰ Đến giờ hẹn: {hd.Ten} ({hd.TongTien:N0}đ)");
+
+                hd.NgayHen = null;
+                var api = new HoaDonApi();
+                await api.UpdateSingleAsync(hd.Id, hd);
+            }
+
+            // 🟟 Công việc nội bộ (mỗi 15 phút mới đọc lại)
+            if (DateTime.Now.Minute % 15 == 0 && AppProviders.CongViecNoiBos != null)
+            {
+                var congViec = _fullCongViecNoiBoList
+                    .Where(cv => !cv.DaHoanThanh)
+                    .OrderBy(x => x.NgayGio)
+                    .FirstOrDefault();
+
+                if (congViec != null)
+                    await TTSHelper.DownloadAndPlayGoogleTTSAsync(congViec.Ten);
+            }
         }
 
+        private async Task<bool> WaitForDataAsync(Func<bool> condition, int timeoutMs = 5000)
+        {
+            var sw = Stopwatch.StartNew();
+            while (!condition() && sw.ElapsedMilliseconds < timeoutMs)
+            {
+                await Task.Delay(100);
+            }
+            return condition();
+        }
 
         private async void Dashboard_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                var result = await ApiClient.GetAsync("/api/dashboard/homnay");
-                var dashboard = await result.Content.ReadFromJsonAsync<DashboardDto>();
-                if (dashboard == null) return;
-                now = DateTime.Today.AddDays(0);
-
-                BanNhieuGrid.ItemsSource = dashboard.TopSanPhams;
-
-                while (AppProviders.CongViecNoiBos?.Items == null)
-                {
-                    await Task.Delay(100);
-                }
-                AppProviders.CongViecNoiBos.OnChanged += ReloadCongViecNoiBoUI;
-                while (AppProviders.ChiTietHoaDonNos?.Items == null)
-                {
-                    await Task.Delay(100);
-                }
-                AppProviders.ChiTietHoaDonNos.OnChanged += ReloadChiTietHoaDonNoUI;
-
-                while (AppProviders.ChiTietHoaDonThanhToans?.Items == null)
-                {
-                    await Task.Delay(100);
-                }
-                AppProviders.ChiTietHoaDonThanhToans.OnChanged += ReloadChiTietHoaDonThanhToanUI;
-
-                while (AppProviders.ChiTieuHangNgays?.Items == null)
-                {
-                    await Task.Delay(100);
-                }
-                AppProviders.ChiTieuHangNgays.OnChanged += ReloadChiTieuHangNgayUI;
-
-                while (AppProviders.HoaDons?.Items == null)
-                {
-                    await Task.Delay(100);
-                }
-                AppProviders.HoaDons.OnChanged += ReloadHoaDonUI;
-
-
-
+                now = DateTime.Today.AddDays(-1);
+                await BindAllProviders();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Lỗi tải dashboard: " + ex.Message);
             }
         }
+        private async Task BindProviderAsync(Func<bool> waitCondition, Action<Action> subscribe, Action reloadAction, string name)
+        {
+            await WaitForDataAsync(waitCondition);
+            subscribe(() =>
+            {
+                Debug.WriteLine($"{DateTime.Now:T} - {name} changed");
+                reloadAction();
+                ScheduleUpdateDashboardSummary();
+            });
+        }
 
+        private DispatcherTimer _updateSummaryTimer;
+
+        private void ScheduleUpdateDashboardSummary()
+        {
+            if (_updateSummaryTimer == null)
+            {
+                _updateSummaryTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(500) // debounce 0.5s
+                };
+                _updateSummaryTimer.Tick += async (s, e) =>
+                {
+                    _updateSummaryTimer.Stop();
+                    await UpdateDashboardSummary();
+                };
+            }
+
+            _updateSummaryTimer.Stop();
+            _updateSummaryTimer.Start();
+        }
+        private async Task BindAllProviders()
+        {
+            var providers = new List<(Func<bool> wait, Action<Action> subscribe, Action reload, string name)>
+    {
+        (() => AppProviders.HoaDons?.Items != null,
+         h => AppProviders.HoaDons.OnChanged += h,
+         ReloadHoaDonUI,
+         "HoaDons"),
+
+        (() => AppProviders.CongViecNoiBos?.Items != null,
+         h => AppProviders.CongViecNoiBos.OnChanged += h,
+         ReloadCongViecNoiBoUI,
+         "CongViecNoiBos"),
+
+        (() => AppProviders.ChiTietHoaDonNos?.Items != null,
+         h => AppProviders.ChiTietHoaDonNos.OnChanged += h,
+         ReloadChiTietHoaDonNoUI,
+         "ChiTietHoaDonNos"),
+
+        (() => AppProviders.ChiTietHoaDonThanhToans?.Items != null,
+         h => AppProviders.ChiTietHoaDonThanhToans.OnChanged += h,
+         ReloadChiTietHoaDonThanhToanUI,
+         "ChiTietHoaDonThanhToans"),
+
+        (() => AppProviders.ChiTieuHangNgays?.Items != null,
+         h => AppProviders.ChiTieuHangNgays.OnChanged += h,
+         ReloadChiTieuHangNgayUI,
+         "ChiTieuHangNgays"),
+    };
+
+            foreach (var (wait, subscribe, reload, name) in providers)
+            {
+                await BindProviderAsync(wait, subscribe, reload, name);
+            }
+        }
 
         private void GenerateMenu(string loai, MenuItem m)
         {
@@ -177,12 +262,10 @@ namespace TraSuaApp.WpfClient.Views
                 this.DragMove();
             }
         }
-
         private void MinimizeButton_Click(object sender, RoutedEventArgs e)
         {
             this.WindowState = WindowState.Minimized;
         }
-
         private void MaximizeButton_Click(object sender, RoutedEventArgs e)
         {
             if (this.WindowState == WindowState.Maximized)
@@ -197,7 +280,6 @@ namespace TraSuaApp.WpfClient.Views
                 this.WindowState = WindowState.Maximized;
             }
         }
-
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
@@ -317,7 +399,6 @@ namespace TraSuaApp.WpfClient.Views
         private void ReloadCongViecNoiBoUI()
         {
             _fullCongViecNoiBoList = AppProviders.CongViecNoiBos.Items
-                .Where(x => !x.IsDeleted)
                 .OrderBy(x => x.DaHoanThanh)
                 .ThenByDescending(x => x.LastModified)
                 .ToList();
@@ -335,15 +416,18 @@ namespace TraSuaApp.WpfClient.Views
             if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected) return;
 
             // Tạo model thanh toán mới từ chi tiết nợ
+            var now = DateTime.Now;
             var dto = new ChiTietHoaDonThanhToanDto
             {
                 ChiTietHoaDonNoId = selected.Id,
+                Ngay = now.Date,
+                NgayGio = now,
                 HoaDonId = selected.HoaDonId,
                 KhachHangId = selected.KhachHangId,
                 Ten = $"{selected.Ten}",
-                LoaiThanhToan = "Trả nợ",
-                SoTien = selected.SoTienNo, // mặc định thanh toán toàn bộ số nợ
-                GhiChu = $"{selected.Ten} thanh toán nợ: {selected.MaHoaDon}"
+                LoaiThanhToan = selected.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
+                GhiChu = selected.GhiChu,
+                SoTien = selected.ConLai,
             };
 
             var window = new ChiTietHoaDonThanhToanEdit(dto)
@@ -357,6 +441,42 @@ namespace TraSuaApp.WpfClient.Views
             {
                 await AppProviders.ChiTietHoaDonNos.ReloadAsync();
             }
+        }
+        private async void XoaChiTietHoaDonNoButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected)
+                return;
+            var confirm = MessageBox.Show(
+               $"Bạn có chắc chắn muốn xoá '{selected.Ten}'?",
+               "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                var response = await ApiClient.DeleteAsync($"/api/ChiTietHoaDonNo/{selected.Id}");
+                var result = await response.Content.ReadFromJsonAsync<Result<ChiTietHoaDonNoDto>>();
+
+                if (result?.IsSuccess == true)
+                {
+                    AppProviders.ChiTietHoaDonNos.Remove(selected.Id);
+                }
+                else
+                {
+                    _errorHandler.Handle(new Exception(result?.Message ?? "Không thể xoá."), "Delete");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Khối catch này vẫn hữu ích để bắt các lỗi mạng hoặc lỗi không xác định
+                _errorHandler.Handle(ex, "Delete");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+
         }
         private void SearchChiTietHoaDonNoTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -387,7 +507,7 @@ namespace TraSuaApp.WpfClient.Views
             }
 
             ChiTietHoaDonNoDataGrid.ItemsSource = sourceList;
-            tongTien = sourceList.Sum(x => x.SoTienConNo);
+            tongTien = sourceList.Sum(x => x.ConLai);
 
             TongTienChiTietHoaDonNoTextBlock.Header = $"{tongTien:N0} đ";
 
@@ -397,12 +517,11 @@ namespace TraSuaApp.WpfClient.Views
         private void ReloadChiTietHoaDonNoUI()
         {
             _fullChiTietHoaDonNoList = AppProviders.ChiTietHoaDonNos.Items
-                .Where(x => !x.IsDeleted && x.SoTienConNo > 0)
+                .Where(x => x.ConLai > 0)
                 // .Where(x => !x.IsDeleted && x.Ngay == now)
                 .OrderByDescending(x => x.LastModified)
                 .ToList();
             ApplyChiTietHoaDonNoFilter();
-            UpdateDashboardSummary();
         }
 
 
@@ -496,12 +615,10 @@ namespace TraSuaApp.WpfClient.Views
         private void ReloadChiTietHoaDonThanhToanUI()
         {
             _fullChiTietHoaDonThanhToanList = AppProviders.ChiTietHoaDonThanhToans.Items
-                .Where(x => !x.IsDeleted)
                 .Where(x => x.Ngay == now)
                 .OrderByDescending(x => x.NgayGio)
                 .ToList();
             ApplyChiTietHoaDonThanhToanFilter();
-            UpdateDashboardSummary();
         }
 
 
@@ -606,51 +723,25 @@ namespace TraSuaApp.WpfClient.Views
         private void ReloadChiTieuHangNgayUI()
         {
             _fullChiTieuHangNgayList = AppProviders.ChiTieuHangNgays.Items
-                .Where(x => !x.IsDeleted && x.Ngay == now)
+                .Where(x => x.Ngay == now)
                 .OrderBy(x => x.BillThang)
                 .ThenByDescending(x => x.NgayGio)
                 .ToList();
             ApplyChiTieuHangNgayFilter();
-            UpdateDashboardSummary();
         }
 
 
 
 
-        private void ThongKeHomNay()
+
+        private async Task LoadDoanhThuDynamic()
         {
-            var today = now;
-            var hoaDons = AppProviders.HoaDons.Items
-                .Where(x => !x.IsDeleted && x.Ngay == today)
-                .ToList();
-            LoadDoanhThuDynamic(hoaDons);
-            LoadChuaThuDynamic(hoaDons);
-            LoadCongNoDynamic(hoaDons);
 
-            var thanhToans = AppProviders.ChiTietHoaDonThanhToans.Items
-                .Where(x => !x.IsDeleted && x.Ngay == today)
-                .ToList();
-            LoadDaThuDynamic(thanhToans);
-            LoadTraNoTienDynamic(thanhToans);
-            LoadTraNoBankDynamic(thanhToans);
-
-            var chiTieu = AppProviders.ChiTieuHangNgays.Items
-                .Where(x => !x.IsDeleted && x.Ngay == today)
-                .ToList();
-            LoadChiTieuDynamic(chiTieu);
-            LoadMangVeDynamic(chiTieu, thanhToans, hoaDons);
-
-
-            var congNo = AppProviders.ChiTietHoaDonNos.Items
-                .Where(x => !x.IsDeleted && x.Ngay == today)
-                .ToList();
-
-        }
-        private void LoadDoanhThuDynamic(List<HoaDonDto> hoaDons)
-        {
             DoanhThuStackPanel.Children.Clear();
 
-            var groups = hoaDons
+            await WaitForDataAsync(() => AppProviders.HoaDons?.Items != null);
+            var groups = AppProviders.HoaDons.Items
+                .Where(x => x.Ngay == now)
                 .GroupBy(x => x.PhanLoai)
                 .Select(g => new
                 {
@@ -700,12 +791,15 @@ namespace TraSuaApp.WpfClient.Views
                 DoanhThuStackPanel.Children.Add(grid);
             }
         }
-        private void LoadDaThuDynamic(List<ChiTietHoaDonThanhToanDto> chiTietThanhToans)
+        private async void LoadDaThuDynamic()
         {
             DaThuStackPanel.Children.Clear();
 
-            var groups = chiTietThanhToans
-                .Where(x => x.LoaiThanhToan.ToLower() == "trong ngày")
+            await WaitForDataAsync(() => AppProviders.ChiTietHoaDonThanhToans?.Items != null);
+
+            var groups = AppProviders.ChiTietHoaDonThanhToans.Items
+                .Where(x => x.Ngay == now)
+                .Where(x => x.LoaiThanhToan.ToLower().Contains("trong ngày"))
                 .GroupBy(x => x.TenPhuongThucThanhToan) // Ví dụ: "Tiền mặt", "Chuyển khoản", ...
                 .Select(g => new
                 {
@@ -761,13 +855,17 @@ namespace TraSuaApp.WpfClient.Views
                 DaThuStackPanel.Children.Add(grid);
             }
         }
-        private void LoadChuaThuDynamic(List<HoaDonDto> hoaDons)
+        private async void LoadChuaThuDynamic()
         {
             ChuaThuStackPanel.Children.Clear();
             // Lọc trước các hóa đơn còn nợ
-            var hoaDonChuaThu = hoaDons
-                .Where(x => x.ConLai > 0 &&
-                x.TrangThai == "Chưa Thu")
+            await WaitForDataAsync(() => AppProviders.HoaDons?.Items != null);
+
+            var hoaDonChuaThu = AppProviders.HoaDons.Items
+                .Where(x => x.Ngay == now)
+
+                .Where(x => x.ConLai > 0 && x.TrangThai == "Chưa thu"
+                )
                 .OrderByDescending(g => g.TongTien)
                 .ToList();
 
@@ -796,7 +894,7 @@ namespace TraSuaApp.WpfClient.Views
 
                 var loaiText = new TextBlock
                 {
-                    Text = $"{hd.Ten}:",
+                    Text = $"{hd.TenKhachHangText}:",
                     TextTrimming = TextTrimming.CharacterEllipsis,
                     TextWrapping = TextWrapping.NoWrap,
                     VerticalAlignment = VerticalAlignment.Center
@@ -819,19 +917,15 @@ namespace TraSuaApp.WpfClient.Views
                 ChuaThuStackPanel.Children.Add(grid);
             }
         }
-        private void LoadCongNoDynamic(List<HoaDonDto> hoaDons)
+        private async void LoadCongNoDynamic()
         {
             CongNoStackPanel.Children.Clear();
 
-            // Lọc trước các hóa đơn còn nợ hôm nay
-            var hoaDonNo = hoaDons
-                .Where(x => x.ConLai > 0
-                    && x.TrangThai == "Ghi Nợ"
-                    && x.Ngay == now)
-                .ToList();
-
             // Gom nhóm theo KhachHangId
-            var groups = hoaDonNo
+            await WaitForDataAsync(() => AppProviders.ChiTietHoaDonNos?.Items != null);
+
+            var groups = AppProviders.ChiTietHoaDonNos.Items
+                .Where(x => x.Ngay == now)
                 .GroupBy(x => new { x.KhachHangId, x.Ten })
                 .Select(g => new
                 {
@@ -888,12 +982,16 @@ namespace TraSuaApp.WpfClient.Views
                 CongNoStackPanel.Children.Add(grid);
             }
         }
-        private void LoadChiTieuDynamic(List<ChiTieuHangNgayDto> chiTieuList)
+        private async void LoadChiTieuDynamic()
         {
             ChiTieuStackPanel.Children.Clear();
 
             // Gom nhóm theo NguyenLieuId
-            var groups = chiTieuList
+            await WaitForDataAsync(() => AppProviders.ChiTieuHangNgays?.Items != null);
+
+            var groups = AppProviders.ChiTieuHangNgays.Items
+                .Where(x => x.Ngay == now)
+
                 .Where(x => x.BillThang == false)
                 .GroupBy(x => new { x.NguyenLieuId, x.Ten })
                 .Select(g => new
@@ -948,25 +1046,35 @@ namespace TraSuaApp.WpfClient.Views
                 ChiTieuStackPanel.Children.Add(grid);
             }
         }
-        private void LoadMangVeDynamic(List<ChiTieuHangNgayDto> chiTieuList, List<ChiTietHoaDonThanhToanDto> thanhToanList, List<HoaDonDto> hoaDonList)
+        private async void LoadMangVeDynamic()
         {
             MangVeStackPanel.Children.Clear();
 
             // Tính tổng tất cả
-            decimal tongTienMat = thanhToanList
+            await WaitForDataAsync(() => AppProviders.ChiTietHoaDonThanhToans?.Items != null);
+
+            decimal tongTienMat = AppProviders.ChiTietHoaDonThanhToans.Items
+                .Where(x => x.Ngay == now)
+
                 .Where(x => x.LoaiThanhToan.ToLower() == "trong ngày")
               .Where(x => x.TenPhuongThucThanhToan?.ToLower() == "tiền mặt")
               .Sum(x => x.SoTien);
-            decimal tongChiTieu = chiTieuList
+            decimal tongChiTieu = AppProviders.ChiTieuHangNgays.Items
+                .Where(x => x.Ngay == now)
+
                 .Where(x => !x.BillThang)
                 .Sum(x => x.ThanhTien);
-            decimal tongChuaThu = hoaDonList
-               .Where(x => x.ConLai > 0 && x.TrangThai.ToLower() == "chưa thu")
+            decimal tongChuaThu = AppProviders.HoaDons.Items
+                .Where(x => x.Ngay == now)
+
+                .Where(x => x.ConLai > 0 && x.TrangThai.ToLower() == "chưa thu")
                .Sum(g => g.ConLai);
             decimal tongTatCa = tongTienMat - tongChiTieu + tongChuaThu;
 
-            decimal tongTraNo = thanhToanList
-           .Where(x =>
+            decimal tongTraNo = AppProviders.ChiTietHoaDonThanhToans.Items
+                .Where(x => x.Ngay == now)
+
+                .Where(x =>
            x.LoaiThanhToan?.ToLower().Contains("trả nợ") == true
            &&
            x.TenPhuongThucThanhToan?.ToLower().Contains("tiền mặt") == true
@@ -1117,9 +1225,11 @@ namespace TraSuaApp.WpfClient.Views
 
             var copyButton = new Button
             {
-                Content = "Copy -> Ctrl v",
+                Content = "Copy",
                 Foreground = Brushes.WhiteSmoke,
-                Style = (Style)FindResource("ThemButtonStyle")
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(20),
+                Style = (Style)FindResource("AddButtonStyle")
             };
 
             copyButton.Click += (s, e) =>
@@ -1153,13 +1263,17 @@ namespace TraSuaApp.WpfClient.Views
             MangVeStackPanel.Children.Add(copyButton);
 
         }
-        private void LoadTraNoBankDynamic(List<ChiTietHoaDonThanhToanDto> thanhToans)
+        private async void LoadTraNoBankDynamic()
         {
             TraNoBankStackPanel.Children.Clear();
 
             // Nhóm theo KhachHangId
-            var groups = thanhToans
-                .Where(x => x.LoaiThanhToan.ToLower() == "trả nợ")
+            await WaitForDataAsync(() => AppProviders.ChiTietHoaDonThanhToans?.Items != null);
+
+            var groups = AppProviders.ChiTietHoaDonThanhToans.Items
+                .Where(x => x.Ngay == now)
+
+                .Where(x => x.LoaiThanhToan.ToLower() == "trả nợ qua ngày")
                 .Where(x => x.TenPhuongThucThanhToan?.ToLower() != "tiền mặt")
                 .GroupBy(x => x.KhachHangId)
                 .Select(g => new
@@ -1215,12 +1329,15 @@ namespace TraSuaApp.WpfClient.Views
                 TraNoBankStackPanel.Children.Add(grid);
             }
         }
-        private void LoadTraNoTienDynamic(List<ChiTietHoaDonThanhToanDto> thanhToans)
+        private async void LoadTraNoTienDynamic()
         {
             TraNoTienStackPanel.Children.Clear();
+            await WaitForDataAsync(() => AppProviders.ChiTietHoaDonThanhToans?.Items != null);
 
-            var groups = thanhToans
-                .Where(x => x.LoaiThanhToan.ToLower() == "trả nợ")
+            var groups = AppProviders.ChiTietHoaDonThanhToans.Items
+                .Where(x => x.Ngay == now)
+
+                .Where(x => x.LoaiThanhToan.ToLower() == "trả nợ qua ngày")
                 .Where(x => x.TenPhuongThucThanhToan?.ToLower() == "tiền mặt")
                 .GroupBy(x => x.KhachHangId)
                 .Select(g => new
@@ -1275,31 +1392,55 @@ namespace TraSuaApp.WpfClient.Views
                 TraNoTienStackPanel.Children.Add(grid);
             }
         }
-
-        private bool _isUpdatingDashboard = false;
-        private void UpdateDashboardSummary()
+        private async Task UpdateDashboardSummary()
         {
-            // Nếu có một quá trình cập nhật khác đang chạy, thì thoát
-            if (_isUpdatingDashboard) return;
             try
             {
-                _isUpdatingDashboard = true;
-                this.Dispatcher.BeginInvoke(new Action(() =>
+                // Load các panel
+                LoadDoanhThuDynamic();
+                LoadChuaThuDynamic();
+                LoadDaThuDynamic();
+                LoadTraNoTienDynamic();
+                LoadTraNoBankDynamic();
+                LoadChiTieuDynamic();
+                LoadMangVeDynamic();
+                LoadCongNoDynamic();
+
+                // Nếu tab thống kê đang mở thì reload luôn thống kê
+                var selectedTab = TabControl.SelectedItem as TabItem;
+                if (selectedTab?.Tag?.ToString() == "ThongKeHomNay")
                 {
-                    // Đây là nơi bạn đặt toàn bộ logic của hàm ThongKeHomNay()
-                    ThongKeHomNay();
-                    _isUpdatingDashboard = false;
-                }), System.Windows.Threading.DispatcherPriority.Background);
+                    await ReloadThongKeUI();
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                _isUpdatingDashboard = false;
+                Debug.WriteLine("UpdateDashboardSummary lỗi: " + ex.Message);
             }
         }
+        private async Task ReloadThongKeUI()
+        {
+            try
+            {
+                var result = await ApiClient.GetAsync("/api/dashboard/homnay");
+                var dashboard = await result.Content.ReadFromJsonAsync<DashboardDto>();
+                if (dashboard != null)
+                {
+                    BanNhieuGrid.ItemsSource = dashboard.TopSanPhams ?? new List<DashboardTopSanPhamDto>();
+                }
 
-
-
-
+                var result2 = await ApiClient.GetAsync("/api/dashboard/dubao");
+                var dashboard2 = await result2.Content.ReadFromJsonAsync<DashboardDto>();
+                if (dashboard2 != null)
+                {
+                    DuDoanDoanhThu.Text = dashboard2.PredictedPeak ?? "Không có dữ liệu";
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Lỗi tải thống kê: " + ex.Message);
+            }
+        }
 
 
         private List<HoaDonDto> _fullHoaDonList = new();
@@ -1314,6 +1455,42 @@ namespace TraSuaApp.WpfClient.Views
             if (window.ShowDialog() == true)
                 await AppProviders.HoaDons.ReloadAsync();
         }
+
+        private async void HoaDonDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+                return;
+
+            var api = new HoaDonApi();
+
+            // Lấy chi tiết hóa đơn
+            var getResult = await api.GetByIdAsync(selected.Id);
+            if (!getResult.IsSuccess)
+            {
+                MessageBox.Show($"Lỗi: {getResult.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                ChiTietHoaDonListBox.ItemsSource = null;
+                return;
+            }
+
+            ChiTietHoaDonListBox.ItemsSource = getResult.Data.ChiTietHoaDons;
+
+            // Nếu hóa đơn đang được báo đơn => tắt báo đơn
+            if (selected.BaoDon == true)
+            {
+                selected.BaoDon = false;
+                var updateResult = await api.UpdateSingleAsync(selected.Id, selected);
+
+                if (!updateResult.IsSuccess)
+                {
+                    MessageBox.Show($"Lỗi: {updateResult.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    await AppProviders.HoaDons.ReloadAsync();
+                    ReloadHoaDonUI();
+                }
+            }
+        }
         private async void HoaDonDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected) return;
@@ -1325,6 +1502,41 @@ namespace TraSuaApp.WpfClient.Views
             };
             if (window.ShowDialog() == true)
                 await AppProviders.HoaDons.ReloadAsync();
+        }
+        private async void XoaHoaDonButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+                return;
+            var confirm = MessageBox.Show(
+               $"Bạn có chắc chắn muốn xoá '{selected.Ten}'?",
+               "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                var response = await ApiClient.DeleteAsync($"/api/HoaDon/{selected.Id}");
+                var result = await response.Content.ReadFromJsonAsync<Result<HoaDonDto>>();
+
+                if (result?.IsSuccess == true)
+                {
+                    AppProviders.HoaDons.Remove(selected.Id);
+                }
+                else
+                {
+                    _errorHandler.Handle(new Exception(result?.Message ?? "Không thể xoá."), "Delete");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Khối catch này vẫn hữu ích để bắt các lỗi mạng hoặc lỗi không xác định
+                _errorHandler.Handle(ex, "Delete");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
         }
         private void SearchHoaDonTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -1347,6 +1559,17 @@ namespace TraSuaApp.WpfClient.Views
                     .ToList();
             }
 
+            // Sắp xếp: các hoá đơn "Chưa thu" lên đầu
+            sourceList = sourceList
+        .OrderBy(x => x.TrangThai switch
+        {
+            "Chưa thu" => 0,        // Ưu tiên cao nhất
+            "Thu một phần" => 1,    // Ưu tiên kế tiếp
+            _ => 2                  // Các trạng thái khác
+        })
+        .ThenByDescending(x => x.UuTien)
+        .ThenByDescending(x => x.NgayGio)
+        .ToList();
             // Gán số thứ tự
             int stt = 1;
             foreach (var item in sourceList)
@@ -1356,18 +1579,17 @@ namespace TraSuaApp.WpfClient.Views
 
             HoaDonDataGrid.ItemsSource = sourceList;
             tongTien = sourceList.Sum(x => x.ThanhTien);
-
             TongTienHoaDonTextBlock.Header = $"{tongTien:N0} đ";
-
         }
         private void ReloadHoaDonUI()
         {
             _fullHoaDonList = AppProviders.HoaDons.Items
-                .Where(x => !x.IsDeleted && x.Ngay == now)
+                .Where(x => x.Ngay == now
+                || x.TrangThai == "Chưa thu"
+                || x.TrangThai == "Thu một phần")
                 .OrderByDescending(x => x.NgayGio)
                 .ToList();
             ApplyHoaDonFilter();
-            UpdateDashboardSummary();
         }
 
 
@@ -1386,49 +1608,923 @@ namespace TraSuaApp.WpfClient.Views
             await importer2.ImportTodayAsync();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
+        //private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        //{
+        //    if (e.Source is TabControl tabControl)
+        //    {
+        //        var selectedTab = tabControl.SelectedItem as TabItem;
+        //        if (selectedTab != null)
+        //        {
+        //            if (selectedTab.Tag.ToString() == "ThongKeHomNay")
+        //            {
+        //                var result = await ApiClient.GetAsync("/api/dashboard/homnay");
+        //                var dashboard = await result.Content.ReadFromJsonAsync<DashboardDto>();
+        //                if (dashboard == null) return;
+        //                BanNhieuGrid.ItemsSource = dashboard.TopSanPhams;
 
-        }
 
+        //                var result2 = await ApiClient.GetAsync("/api/dashboard/dubao");
+        //                var dashboard2 = await result2.Content.ReadFromJsonAsync<DashboardDto>();
+        //                if (dashboard2 == null) return;
+        //                DuDoanDoanhThu.Text = dashboard2.PredictedPeak;
+
+        //            }
+        //            else
+        //            if (selectedTab.Tag.ToString() == "HoaDon")
+        //            {
+        //                await WaitForDataAsync(() => AppProviders.HoaDons?.Items != null);
+
+        //                await AppProviders.HoaDons.ReloadAsync();
+        //                ReloadHoaDonUI();
+        //            }
+        //            else if (selectedTab.Tag.ToString() == "ChiTieuHangNgay")
+        //            {
+        //                await WaitForDataAsync(() => AppProviders.ChiTieuHangNgays?.Items != null);
+
+        //                await AppProviders.ChiTieuHangNgays.ReloadAsync();
+        //                ReloadChiTieuHangNgayUI();
+        //            }
+        //            else if (selectedTab.Tag.ToString() == "ChiTietHoaDonNo")
+        //            {
+        //                await WaitForDataAsync(() => AppProviders.ChiTietHoaDonNos?.Items != null);
+        //                await AppProviders.ChiTietHoaDonNos.ReloadAsync();
+        //                ReloadChiTietHoaDonNoUI();
+        //            }
+        //            else if (selectedTab.Tag.ToString() == "CongViecNoiBo")
+        //            {
+        //                await WaitForDataAsync(() => AppProviders.CongViecNoiBos?.Items != null);
+        //                await AppProviders.CongViecNoiBos.ReloadAsync();
+        //                ReloadCongViecNoiBoUI();
+        //            }
+        //            else if (selectedTab.Tag.ToString() == "ChiTietHoaDonThanhToan")
+        //            {
+        //                await WaitForDataAsync(() => AppProviders.ChiTietHoaDonThanhToans?.Items != null);
+        //                await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
+        //                ReloadChiTietHoaDonThanhToanUI();
+        //            }
+
+        //        }
+        //    }
+
+
+
+        //}
         private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.Source is TabControl tabControl)
+            if (e.Source is not TabControl tabControl) return;
+
+            var selectedTab = tabControl.SelectedItem as TabItem;
+            if (selectedTab == null) return;
+
+            var tag = selectedTab.Tag?.ToString();
+            if (string.IsNullOrEmpty(tag)) return;
+
+            // Dictionary map tag → async action
+            var loadActions = new Dictionary<string, Func<Task>>
             {
-                var selectedTab = tabControl.SelectedItem as TabItem;
-                if (selectedTab != null)
+                ["ThongKeHomNay"] = async () =>
                 {
-                    if (selectedTab.Tag.ToString() == "HoaDon")
+                    // Load top sản phẩm hôm nay
+                    var result1 = await ApiClient.GetAsync("/api/dashboard/homnay");
+                    if (result1.IsSuccessStatusCode)
                     {
-                        //if (AppProviders.HoaDons == null) return;
-                        await AppProviders.HoaDons.ReloadAsync();
-                        ReloadHoaDonUI();
+                        var json1 = await result1.Content.ReadAsStringAsync();
+                        var dashboard1 = JsonSerializer.Deserialize<DashboardDto>(json1,
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (dashboard1 != null)
+                            BanNhieuGrid.ItemsSource = dashboard1.TopSanPhams;
                     }
-                    else if (selectedTab.Tag.ToString() == "ChiTieuHangNgay")
+
+                    // Load dự đoán doanh thu
+                    var result2 = await ApiClient.GetAsync("/api/dashboard/dubao");
+                    if (result2.IsSuccessStatusCode)
                     {
-                        await AppProviders.ChiTieuHangNgays.ReloadAsync();
-                        ReloadChiTieuHangNgayUI();
+                        var json2 = await result2.Content.ReadAsStringAsync();
+                        var dashboard2 = JsonSerializer.Deserialize<DashboardDto>(json2,
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (dashboard2 != null)
+                            DuDoanDoanhThu.Text = dashboard2.PredictedPeak;
                     }
-                    else if (selectedTab.Tag.ToString() == "ChiTietHoaDonNo")
+                },
+
+                ["HoaDon"] = async () =>
+                {
+                    var provider = AppProviders.HoaDons;
+                    await this.BindProviderAsync(
+                        waitCondition: () => provider.Items != null,
+                        subscribe: act => { },
+                        reloadAction: ReloadHoaDonUI,
+                        name: "HoaDon"
+                    );
+                },
+
+                ["ChiTieuHangNgay"] = async () =>
+                {
+                    var provider = AppProviders.ChiTieuHangNgays;
+                    await this.BindProviderAsync(
+                        waitCondition: () => provider.Items != null,
+                        subscribe: act => { },
+                        reloadAction: ReloadChiTieuHangNgayUI,
+                        name: "ChiTieuHangNgay"
+                    );
+                },
+
+                ["ChiTietHoaDonNo"] = async () =>
+                {
+                    var provider = AppProviders.ChiTietHoaDonNos;
+                    await this.BindProviderAsync(
+                        waitCondition: () => provider.Items != null,
+                        subscribe: act => { },
+                        reloadAction: ReloadChiTietHoaDonNoUI,
+                        name: "ChiTietHoaDonNo"
+                    );
+                },
+
+                ["CongViecNoiBo"] = async () =>
+                {
+                    var provider = AppProviders.CongViecNoiBos;
+                    await this.BindProviderAsync(
+                        waitCondition: () => provider.Items != null,
+                        subscribe: act => { },
+                        reloadAction: ReloadCongViecNoiBoUI,
+                        name: "CongViecNoiBo"
+                    );
+                },
+
+                ["ChiTietHoaDonThanhToan"] = async () =>
+                {
+                    var provider = AppProviders.ChiTietHoaDonThanhToans;
+                    await this.BindProviderAsync(
+                        waitCondition: () => provider.Items != null,
+                        subscribe: act => { },
+                        reloadAction: ReloadChiTietHoaDonThanhToanUI,
+                        name: "ChiTietHoaDonThanhToan"
+                    );
+                }
+            };
+
+            // Thực thi action tương ứng tag
+            if (loadActions.TryGetValue(tag, out var action))
+            {
+                await action();
+            }
+        }
+
+
+
+
+
+
+        private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            var selectedTab = TabControl.SelectedItem as TabItem;
+            if (selectedTab != null)
+            {
+                if (selectedTab.Tag.ToString() == "HoaDon")
+                {
+                    switch (e.Key)
                     {
-                        await AppProviders.ChiTietHoaDonNos.ReloadAsync();
-                        ReloadChiTietHoaDonNoUI();
+                        case Key.Enter:
+                        case Key.Space: // 🟟 thêm xử lý phím cách
+                            if (_fullHoaDonList.Any(hd => hd.BaoDon)) // chỉ khi đang báo đơn
+                            {
+                                foreach (var hd in _fullHoaDonList.Where(x => x.BaoDon))
+                                {
+                                    hd.BaoDon = false;
+                                    var api = new HoaDonApi();
+                                    await api.UpdateSingleAsync(hd.Id, hd);
+                                }
+                                await AppProviders.HoaDons.ReloadAsync();
+                                ReloadHoaDonUI();
+                                _baoDonPlayer.Stop();
+                                e.Handled = true; // tránh Space làm scroll
+                            }
+                            break;
+                        case Key.Escape:
+                            EscButton_Click(null, null);
+                            break;
+                        case Key.F1:
+                            F1Button_Click(null, null);
+                            break;
+                        case Key.F2:
+                            F2Button_Click(null, null);
+                            break;
+                        case Key.F3:
+                            F3Button_Click(null, null);
+                            break;
+                        case Key.F4:
+                            F4Button_Click(null, null);
+                            break;
+                        case Key.F5:
+                            F5Button_Click(null, null);
+                            break;
+                        case Key.F6:
+                            F6Button_Click(null, null);
+                            break;
+                        case Key.F7:
+                            F7Button_Click(null, null);
+                            break;
+                        case Key.F8:
+                            F8Button_Click(null, null);
+                            break;
+                        case Key.F9:
+                            F9Button_Click(null, null);
+                            break;
+                        case Key.F12:
+                            F12Button_Click(null, null);
+                            break;
+                        case Key.Delete:
+                            DelButton_Click(null, null);
+                            break;
                     }
-                    else if (selectedTab.Tag.ToString() == "CongViecNoiBo")
+                }
+                else
+                if (selectedTab.Tag.ToString() == "ChiTietHoaDonNo")
+                {
+                    switch (e.Key)
                     {
-                        await AppProviders.CongViecNoiBos.ReloadAsync();
-                        ReloadCongViecNoiBoUI();
-                    }
-                    else if (selectedTab.Tag.ToString() == "ChiTietHoaDonThanhToan")
-                    {
-                        await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
-                        ReloadChiTietHoaDonThanhToanUI();
+                        case Key.F1:
+                            F1aButton_Click(null, null);
+                            break;
+                        case Key.F4:
+                            F4aButton_Click(null, null);
+                            break;
+                        case Key.F5:
+                            F5aButton_Click(null, null);
+                            break;
                     }
                 }
             }
+        }
+        private async void EscButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn hoá đơn!");
+                return;
+            }
+            EscButton.IsEnabled = false;
+
+            selected.NgayShip = DateTime.Now;
+
+            var api = new HoaDonApi();
+            var result = await api.UpdateSingleAsync(selected.Id, selected);
+
+            if (!result.IsSuccess)
+            {
+                MessageBox.Show($"Lỗi: {result.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                await AppProviders.HoaDons.ReloadAsync();
+                ReloadHoaDonUI();
+            }
+
+            await Task.Delay(1000);
+            EscButton.IsEnabled = true;
+        }
+        private async void F1Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn hoá đơn!");
+                return;
+            }
+            if (selected.ConLai == 0)
+            {
+                MessageBox.Show("Hoá đơn đã thu đủ!");
+                return;
+            }
+            if (selected.TrangThai.ToLower().Contains("nợ"))
+            {
+                MessageBox.Show("Vui lòng thanh toán tại tab Công nợ!");
+                return;
+            }
+
+            F1Button.IsEnabled = false;
+
+            var now = DateTime.Now;
+            var trongngay = now.Date == selected.Ngay;
+            var dto = new ChiTietHoaDonThanhToanDto
+            {
+                Ngay = trongngay ? now.Date : selected.Ngay,
+                NgayGio = trongngay ? now : selected.Ngay.AddDays(1).AddMinutes(-1),
+                HoaDonId = selected.Id,
+                KhachHangId = selected.KhachHangId,
+                Ten = $"{selected.Ten}",
+                LoaiThanhToan = "Trong ngày",
+                PhuongThucThanhToanId = Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C"),
+                SoTien = selected.ConLai,
+            };
+
+            var window = new ChiTietHoaDonThanhToanEdit(dto)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                Owner = this,
+                //0Background = MakeBrush(Brushes.LightGreen, 0.8)
+            };
+            window.PhuongThucThanhToanComboBox.IsEnabled = false;
+
+            if (window.ShowDialog() == true)
+            {
+                await AppProviders.HoaDons.ReloadAsync();
+                await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
+
+            }
+
+
+            await Task.Delay(100);
+            F1Button.IsEnabled = true;
+        }
+        private async void F2Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn hoá đơn!");
+                return;
+            }
+            F2Button.IsEnabled = false;
+
+            try
+            {
+                // 🟟 Lấy lại hóa đơn đầy đủ từ DB (bao gồm ChiTietHoaDons, Topping, Voucher...)
+                var api = new HoaDonApi();
+                var result = await api.GetByIdAsync(selected.Id);
+
+                if (!result.IsSuccess || result.Data == null)
+                {
+                    MessageBox.Show($"Không thể tải chi tiết hóa đơn: {result.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                HoaDonPrinter.Print(result.Data);
+                //HoaDonPrinter.Preview(result.Data, this);
+            }
+            finally
+            {
+                await Task.Delay(100);
+                F2Button.IsEnabled = true;
+            }
+        }
+        private async void F3Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn hoá đơn!");
+                return;
+            }
+
+            F3Button.IsEnabled = false;
+
+            try
+            {
+                // 🟟 Lấy lại hóa đơn đầy đủ từ DB
+                var api = new HoaDonApi();
+                var result = await api.GetByIdAsync(selected.Id);
+
+                if (!result.IsSuccess || result.Data == null)
+                {
+                    MessageBox.Show($"Không thể tải chi tiết hóa đơn: {result.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // 🟟 Chỉ copy vào clipboard, không show, không in
+                HoaDonPrinter.Copy(result.Data);
+                MessageBox.Show("Đã copy, ctrl v để gửi!");
+
+            }
+            finally
+            {
+                await Task.Delay(100);
+                F3Button.IsEnabled = true;
+            }
+        }
+        private async void F4Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn hoá đơn!");
+                return;
+            }
+            if (selected.ConLai == 0)
+            {
+                MessageBox.Show("Hoá đơn đã thu đủ!");
+                return;
+            }
+            if (selected.TrangThai.ToLower().Contains("nợ"))
+            {
+                MessageBox.Show("Vui lòng thanh toán tại tab Công nợ!");
+                return;
+            }
+
+            F4Button.IsEnabled = false;
+
+            var now = DateTime.Now;
+            var trongngay = now.Date == selected.Ngay;
+            var dto = new ChiTietHoaDonThanhToanDto
+            {
+                Ngay = trongngay ? now.Date : selected.Ngay,
+                NgayGio = trongngay ? now : selected.Ngay.AddDays(1).AddMinutes(-1),
+                HoaDonId = selected.Id,
+                KhachHangId = selected.KhachHangId,
+                Ten = $"{selected.Ten}",
+                LoaiThanhToan = "Trong ngày",
+                PhuongThucThanhToanId = Guid.Parse("2cf9a88f-3bc0-4d4b-940d-f8ffa4affa02"),
+                SoTien = selected.ConLai,
+            };
+
+            var window = new ChiTietHoaDonThanhToanEdit(dto)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                Owner = this,
+                // Background = MakeBrush(Brushes.LightYellow, 0.8)
+
+            };
+            window.PhuongThucThanhToanComboBox.IsEnabled = false;
+
+            if (window.ShowDialog() == true)
+            {
+                await AppProviders.HoaDons.ReloadAsync();
+                await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
+
+            }
+
+
+            await Task.Delay(100);
+            F4Button.IsEnabled = true;
+        }
+        private async void F5Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn hoá đơn!");
+                return;
+            }
+            if (selected.ConLai == 0)
+            {
+                MessageBox.Show("Hoá đơn đã thu đủ!");
+                return;
+            }
+            if (selected.TrangThai.ToLower().Contains("nợ"))
+            {
+                MessageBox.Show("Vui lòng thanh toán tại tab Công nợ!");
+                return;
+            }
+
+            F5Button.IsEnabled = false;
+
+            var now = DateTime.Now;
+            var trongngay = now.Date == selected.Ngay;
+            var dto = new ChiTietHoaDonThanhToanDto
+            {
+                Ngay = trongngay ? now.Date : selected.Ngay,
+                NgayGio = trongngay ? now : selected.Ngay.AddDays(1).AddMinutes(-1),
+                HoaDonId = selected.Id,
+                KhachHangId = selected.KhachHangId,
+                Ten = $"{selected.Ten}",
+                LoaiThanhToan = "Trong ngày",
+                PhuongThucThanhToanId = Guid.Parse("3d75dd9f-a5d3-491d-a316-6d5c9ff7e66c"),
+                SoTien = selected.ConLai,
+            };
+
+            var window = new ChiTietHoaDonThanhToanEdit(dto)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                Owner = this,
+                // Background = MakeBrush(Brushes.Gold, 0.8)
+            };
+            window.PhuongThucThanhToanComboBox.IsEnabled = false;
+            if (window.ShowDialog() == true)
+            {
+                await AppProviders.HoaDons.ReloadAsync();
+                await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
+
+            }
+
+
+            await Task.Delay(100);
+            F5Button.IsEnabled = true;
+        }
+        private async void F6Button_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var uri = new Uri("pack://application:,,,/Images/viettin007.jpg"); // đổi tên file
+                BitmapImage bitmap = new BitmapImage(uri);
+                Clipboard.SetImage(bitmap);
+                MessageBox.Show("Đã copy, ctrl v để gửi!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi: {ex.Message}");
+            }
+
+
+        }
+        private async void F7Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn hoá đơn!");
+                return;
+            }
+            F7Button.IsEnabled = false;
+            if (selected.BaoDon != true)
+                selected.BaoDon = true;
+            else
+                selected.BaoDon = false;
+
+
+            var api = new HoaDonApi();
+            var result = await api.UpdateSingleAsync(selected.Id, selected);
+
+            if (!result.IsSuccess)
+            {
+                MessageBox.Show($"Lỗi: {result.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                await AppProviders.HoaDons.ReloadAsync();
+                ReloadHoaDonUI();
+            }
+            await Task.Delay(1000);
+            F7Button.IsEnabled = true;
+        }
+        private async void F8Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn hoá đơn!");
+                return;
+            }
+            F8Button.IsEnabled = false;
+            if (selected.UuTien != true)
+                selected.UuTien = true;
+            else
+                selected.UuTien = false;
+
+
+            var api = new HoaDonApi();
+            var result = await api.UpdateSingleAsync(selected.Id, selected);
+
+            if (!result.IsSuccess)
+            {
+                MessageBox.Show($"Lỗi: {result.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                await AppProviders.HoaDons.ReloadAsync();
+                ReloadHoaDonUI();
+            }
+            await Task.Delay(1000);
+            F8Button.IsEnabled = true;
+        }
+        private async void F9Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (HenGioStackPanel.Visibility != Visibility.Visible)
+            {
+                GioCombo.SelectedIndex = DateTime.Now.Hour - 6;
+                PhutCombo.SelectedIndex = DateTime.Now.Minute / 10;
+
+                HenGioStackPanel.Visibility = Visibility.Visible;
+            }
+            else
+                HenGioStackPanel.Visibility = Visibility.Collapsed;
 
 
 
+        }
+        private async void OkHenGioButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn hoá đơn!");
+                return;
+            }
+            OkHenGio.IsEnabled = false;
+
+            int.TryParse(GioCombo.SelectedItem?.ToString(), out int gio);
+            int.TryParse(PhutCombo.SelectedItem?.ToString(), out int phut);
+
+            selected.NgayHen = DateTime.Now.Date.AddHours(gio).AddMinutes(phut);
+
+            var api = new HoaDonApi();
+            var result = await api.UpdateSingleAsync(selected.Id, selected);
+
+            if (!result.IsSuccess)
+            {
+                MessageBox.Show($"Lỗi: {result.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                await AppProviders.HoaDons.ReloadAsync();
+                ReloadHoaDonUI();
+                HenGioStackPanel.Visibility = Visibility.Collapsed;
+
+            }
+            await Task.Delay(1000);
+            OkHenGio.IsEnabled = true;
+        }
+        private async void F12Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn hoá đơn!");
+                return;
+            }
+            if (selected.ConLai == 0)
+            {
+                MessageBox.Show("Hoá đơn đã thu đủ!");
+                return;
+            }
+            if (selected.TrangThai.ToLower().Contains("nợ"))
+            {
+                MessageBox.Show("Hoá đơn đã ghi nợ!");
+                return;
+            }
+            if (selected.KhachHangId == null)
+            {
+                MessageBox.Show("Hoá đơn chưa có thông tin khách hàng!");
+                return;
+            }
+
+            F12Button.IsEnabled = false;
+
+            var now = DateTime.Now;
+            var trongngay = now.Date == selected.Ngay;
+            var dto = new ChiTietHoaDonNoDto
+            {
+                Ngay = trongngay ? now.Date : selected.Ngay,
+                NgayGio = trongngay ? now : selected.Ngay.AddDays(1).AddMinutes(-1),
+                HoaDonId = selected.Id,
+                KhachHangId = selected.KhachHangId,
+                Ten = $"{selected.Ten}",
+                SoTienNo = selected.ConLai,
+                MaHoaDon = selected.MaHoaDon,
+                GhiChu = selected.GhiChu,
+
+            };
+
+            var window = new ChiTietHoaDonNoEdit(dto)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                Owner = this,
+                Background = MakeBrush(Brushes.IndianRed, 0.8),
+            };
+            window.SoTienTextBox.IsReadOnly = true;
+            if (window.ShowDialog() == true)
+            {
+                await AppProviders.HoaDons.ReloadAsync();
+                await AppProviders.ChiTietHoaDonNos.ReloadAsync();
+            }
+
+            await Task.Delay(100);
+            F12Button.IsEnabled = true;
+
+        }
+        public static SolidColorBrush MakeBrush(SolidColorBrush brush, double opacity = 1.0)
+        {
+            var color = brush.Color;
+            var newBrush = new SolidColorBrush(color);
+            newBrush.Opacity = opacity; // 0.0 -> 1.0
+            return newBrush;
+        }
+        private async void F1aButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn công nợ!");
+                return;
+            }
+            if (selected.ConLai == 0)
+            {
+                MessageBox.Show("Công nợ đã thu đủ!");
+                return;
+            }
+
+            //  F1Button.IsEnabled = false;
+
+            var now = DateTime.Now;
+            var trongngay = now.Date == selected.Ngay;
+            var dto = new ChiTietHoaDonThanhToanDto
+            {
+                ChiTietHoaDonNoId = selected.Id,
+                Ngay = now.Date,
+                NgayGio = now,
+                HoaDonId = selected.HoaDonId,
+                KhachHangId = selected.KhachHangId,
+                Ten = $"{selected.Ten}",
+                PhuongThucThanhToanId = Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C"),
+                LoaiThanhToan = selected.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
+                GhiChu = selected.GhiChu,
+                SoTien = selected.ConLai,
+            };
+
+            var window = new ChiTietHoaDonThanhToanEdit(dto)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                Owner = this,
+                //0Background = MakeBrush(Brushes.LightGreen, 0.8)
+            };
+            window.PhuongThucThanhToanComboBox.IsEnabled = false;
+
+            if (window.ShowDialog() == true)
+            {
+                await AppProviders.ChiTietHoaDonNos.ReloadAsync();
+                await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
+
+            }
+
+
+            await Task.Delay(100);
+            // F1Button.IsEnabled = true;
+        }
+        private async void F4aButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn công nợ!");
+                return;
+            }
+            if (selected.ConLai == 0)
+            {
+                MessageBox.Show("Công nợ đã thu đủ!");
+                return;
+            }
+
+            //  F1Button.IsEnabled = false;
+
+            var now = DateTime.Now;
+            var trongngay = now.Date == selected.Ngay;
+            var dto = new ChiTietHoaDonThanhToanDto
+            {
+                PhuongThucThanhToanId = Guid.Parse("2cf9a88f-3bc0-4d4b-940d-f8ffa4affa02"),
+
+                ChiTietHoaDonNoId = selected.Id,
+                Ngay = now.Date,
+                NgayGio = now,
+                HoaDonId = selected.HoaDonId,
+                KhachHangId = selected.KhachHangId,
+                Ten = $"{selected.Ten}",
+                LoaiThanhToan = selected.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
+                GhiChu = selected.GhiChu,
+                SoTien = selected.ConLai,
+            };
+
+            var window = new ChiTietHoaDonThanhToanEdit(dto)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                Owner = this,
+                //0Background = MakeBrush(Brushes.LightGreen, 0.8)
+            };
+            window.PhuongThucThanhToanComboBox.IsEnabled = false;
+
+            if (window.ShowDialog() == true)
+            {
+                await AppProviders.ChiTietHoaDonNos.ReloadAsync();
+                await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
+
+            }
+
+
+            await Task.Delay(100);
+            // F1Button.IsEnabled = true;
+        }
+        private async void F5aButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn công nợ!");
+                return;
+            }
+            if (selected.ConLai == 0)
+            {
+                MessageBox.Show("Công nợ đã thu đủ!");
+                return;
+            }
+
+            //  F1Button.IsEnabled = false;
+
+            var now = DateTime.Now;
+            var trongngay = now.Date == selected.Ngay;
+            var dto = new ChiTietHoaDonThanhToanDto
+            {
+                ChiTietHoaDonNoId = selected.Id,
+                Ngay = now.Date,
+                NgayGio = now,
+                HoaDonId = selected.HoaDonId,
+                KhachHangId = selected.KhachHangId,
+                Ten = $"{selected.Ten}",
+                PhuongThucThanhToanId = Guid.Parse("3d75dd9f-a5d3-491d-a316-6d5c9ff7e66c"),
+
+                LoaiThanhToan = selected.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
+                GhiChu = selected.GhiChu,
+                SoTien = selected.ConLai,
+            };
+
+            var window = new ChiTietHoaDonThanhToanEdit(dto)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                Owner = this,
+                //0Background = MakeBrush(Brushes.LightGreen, 0.8)
+            };
+            window.PhuongThucThanhToanComboBox.IsEnabled = false;
+
+            if (window.ShowDialog() == true)
+            {
+                await AppProviders.ChiTietHoaDonNos.ReloadAsync();
+                await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
+
+            }
+
+
+            await Task.Delay(100);
+            // F1Button.IsEnabled = true;
+        }
+        private async void DelButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+                return;
+            var confirm = MessageBox.Show(
+               $"Bạn có chắc chắn muốn xoá '{selected.Ten}'?",
+               "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                var response = await ApiClient.DeleteAsync($"/api/HoaDon/{selected.Id}");
+                var result = await response.Content.ReadFromJsonAsync<Result<HoaDonDto>>();
+
+                if (result?.IsSuccess == true)
+                {
+                    AppProviders.HoaDons.Remove(selected.Id);
+                }
+                else
+                {
+                    _errorHandler.Handle(new Exception(result?.Message ?? "Không thể xoá."), "Delete");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Khối catch này vẫn hữu ích để bắt các lỗi mạng hoặc lỗi không xác định
+                _errorHandler.Handle(ex, "Delete");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+
+        }
+
+        private async void AppButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                AppButton.IsEnabled = false;
+
+                var helper = new AppShippingHelperText("12122431577", "baothanh1991");
+
+                // Chạy trên background thread
+                var hoaDon = await Task.Run(() => helper.GetFirstOrderPopup());
+
+                var now = DateTime.Now;
+                var dto = new HoaDonDto
+                {
+                    Ngay = now.Date,
+                    NgayGio = now,
+                    MaHoaDon = hoaDon.Code,
+                    // KhachHangId = selected.KhachHangId,
+                };
+
+                var window = new HoaDonEdit(dto)
+                {
+                    Width = this.ActualWidth,
+                    Height = this.ActualHeight,
+                    Owner = this,
+                };
+
+                if (window.ShowDialog() == true)
+                {
+                    await AppProviders.HoaDons.ReloadAsync();
+                }
+
+
+                await Task.Delay(100);
+                AppButton.IsEnabled = true;
+            }
+            catch (Exception ex)
+            {
+                NotiHelper.Show(ex.Message);
+            }
         }
     }
 }
