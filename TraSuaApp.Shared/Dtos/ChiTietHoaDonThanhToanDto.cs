@@ -33,6 +33,6 @@ public class ChiTietHoaDonThanhToanDto : DtoBase
     public Guid PhuongThucThanhToanId { get; set; } // ✅ bổ sung
 
     // Thông tin hiển thị
-    public string? TenPhuongThucThanhToan { get; set; }
+    public string TenPhuongThucThanhToan { get; set; } = null!;
     public string? GhiChu { get; set; }
 }

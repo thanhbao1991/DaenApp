@@ -53,33 +53,38 @@ public class HoaDonImporter
         using var oldDb = new SqlConnection(_oldConn);
         using var newDb = new SqlConnection(_newConn);
 
-        var today = DateTime.Today.AddDays(-10);
+
+        var startOfJuly = new DateTime(DateTime.Today.Year, 7, 1);
+        var endOfYear = new DateTime(DateTime.Today.Year, 12, 31).AddDays(1); // để lấy hết ngày 31/12
 
         var hoadons = (await oldDb.QueryAsync<OldHoaDon>(@"
-            SELECT 
-h.NgayShip,
-                h.IdHoaDon,
-h.NgayRa,
-                h.IdKhachHang,
-                h.IdNhomHoaDon,
-                h.IdBan,
-                h.NgayHoaDon,
-                h.TongTien,
-                h.DaThu,
-                h.ConLai,
-                ISNULL(h.TienBank,0) AS TienBank,
-                h.NgayBank,
-                ISNULL(h.TienNo,0) AS TienNo,
-                h.NgayNo,
-                h.DiaChiShip,
-                h.DienThoaiShip,
-                h.ThongTinHoaDon,
-                ISNULL(b.TenBan, '') AS TenBan
-            FROM dbo.HoaDon h
-            LEFT JOIN dbo.Ban b ON b.IdBan = h.IdBan
-            WHERE h.IdNhomHoaDon < 20 and h.NgayHoaDon >= @today
-            ORDER BY h.IdHoaDon
-        ", new { Today = today })).ToList();
+    SELECT 
+        h.NgayShip,
+        h.IdHoaDon,
+        h.NgayRa,
+        h.IdKhachHang,
+        h.IdNhomHoaDon,
+        h.IdBan,
+        h.NgayHoaDon,
+        h.TongTien,
+        h.DaThu,
+        h.ConLai,
+        ISNULL(h.TienBank,0) AS TienBank,
+        h.NgayBank,
+        ISNULL(h.TienNo,0) AS TienNo,
+        h.NgayNo,
+        h.DiaChiShip,
+        h.DienThoaiShip,
+        h.ThongTinHoaDon,
+        ISNULL(b.TenBan, '') AS TenBan
+    FROM dbo.HoaDon h
+    LEFT JOIN dbo.Ban b ON b.IdBan = h.IdBan
+    WHERE h.IdNhomHoaDon < 20
+      AND h.NgayHoaDon >= @startOfJuly
+      AND h.NgayHoaDon < @endOfYear
+    ORDER BY h.IdHoaDon
+", new { startOfJuly, endOfYear })).ToList();
+
 
         if (hoadons.Count == 0)
         {
@@ -101,7 +106,19 @@ h.NgayRa,
             SELECT OldId, Id FROM SanPhams
             WHERE OldId IS NOT NULL AND OldId <> 0
         ")).ToDictionary(x => x.OldId, x => x.NewId);
-
+        // Map thủ công các sản phẩm Size L (DB cũ → DB mới)
+        var manualSpMap = new Dictionary<int, int>
+{
+    { 5515, 43 },    // Bạc Xỉu Đá Size (Size L) -> Bạc Xỉu Đá
+    { 1289, 184 },   // Cf Kemm (Size L) -> Cf Kemm
+    { 8537, 3337 },  // Cf Muối (Size L) -> Cf Muối
+    { 8554, 102 },   // Sinh Tố Sampo (Size L) -> Sinh Tố Sampo
+    { 179, 100 },    // Sữa Tươi TCĐĐ (Size L) -> Sữa Tươi TCĐĐ
+    { 5527, 1231 },  // Trà Sữa Khoai Môn (Size L) -> Trà Sữa Khoai Môn
+    { 3451, 99 },    // Trà Sữa TCĐĐ (Size L) -> Trà Sữa TCĐĐ
+    { 4511, 1241 },  // Trà Sữa Thái Xanh (Size L) -> Trà Sữa Thái Xanh
+    { 5526, 96 },    // Trà Sữa Đenn (Size L) -> Trà Sữa Truyền Thống
+};
         var spBienTheMap = (await newDb.QueryAsync<(Guid SpId, Guid BienTheId, decimal Gia, string Ten, bool IsDefault)>(@"
             SELECT bt.SanPhamId AS SpId, bt.Id AS BienTheId, bt.GiaBan AS Gia, bt.TenBienThe AS Ten,
                    CAST(ISNULL(bt.MacDinh, 0) AS BIT) AS IsDefault
@@ -173,29 +190,29 @@ h.NgayRa,
                     Guid hoaDonId = Guid.NewGuid();
 
                     // Xác định trạng thái hóa đơn
-                    string trangThai;
-                    var ngayHoaDon = (hd.NgayHoaDon ?? DateTime.Now).Date;
+                    //string trangThai;
+                    //var ngayHoaDon = (hd.NgayHoaDon ?? DateTime.Now).Date;
 
-                    if (hd.DaThu >= hd.TongTien)
-                    {
-                        trangThai = "Đã Thu";
-                    }
-                    else if (hd.DaThu == 0 && hd.ConLai > 0)
-                    {
-                        // Nếu hóa đơn hôm nay chưa thu đồng nào => Chưa Thu
-                        if (hd.NgayRa == null)
-                            trangThai = "Chưa Thu";
-                        else
-                            trangThai = "Ghi Nợ"; // bán chịu từ trước
-                    }
-                    else if (hd.DaThu > 0 && hd.ConLai > 0)
-                    {
-                        trangThai = "Còn Nợ"; // thu một phần
-                    }
-                    else
-                    {
-                        trangThai = "Khác";
-                    }
+                    //if (hd.DaThu >= hd.TongTien)
+                    //{
+                    //    trangThai = "Đã Thu";
+                    //}
+                    //else if (hd.DaThu == 0 && hd.ConLai > 0)
+                    //{
+                    //    // Nếu hóa đơn hôm nay chưa thu đồng nào => Chưa Thu
+                    //    if (hd.NgayRa == null)
+                    //        trangThai = "Chưa Thu";
+                    //    else
+                    //        trangThai = "Ghi Nợ"; // bán chịu từ trước
+                    //}
+                    //else if (hd.DaThu > 0 && hd.ConLai > 0)
+                    //{
+                    //    trangThai = "Còn Nợ"; // thu một phần
+                    //}
+                    //else
+                    //{
+                    //    trangThai = "Khác";
+                    //}
                     // Tạo ghi chú tóm tắt sản phẩm
                     var ghiChuTomTat = string.Join(", ",
                         cts
@@ -205,9 +222,9 @@ h.NgayRa,
                     );
 
                     await newDb.ExecuteAsync(@"
-                    INSERT INTO HoaDons(TenKhachHangText, GhiChu, NgayShip, NgayRa, Id, OldId, MaHoaDon, TrangThai, PhanLoai, TenBan, DiaChiText, SoDienThoaiText,
+                    INSERT INTO HoaDons(TenKhachHangText, GhiChu, NgayShip, NgayRa, Id, OldId, MaHoaDon, PhanLoai, TenBan, DiaChiText, SoDienThoaiText,
                                         KhachHangId, TongTien, GiamGia, ThanhTien, Ngay, NgayGio, CreatedAt, LastModified, IsDeleted)
-                    VALUES (@TenKhachHangText, @GhiChu, @NgayShip, @NgayRa, @Id, @OldId, @MaHoaDon, @TrangThai, @PhanLoai, @TenBan, @DiaChi, @Phone,
+                    VALUES (@TenKhachHangText, @GhiChu, @NgayShip, @NgayRa, @Id, @OldId, @MaHoaDon, @PhanLoai, @TenBan, @DiaChi, @Phone,
                             @KhId, @TongTien, @GiamGia, @ThanhTien, @Ngay, @NgayGio, @CreatedAt, @LastModified, 0)
                 ", new
                     {
@@ -218,7 +235,7 @@ h.NgayRa,
                         NgayRa = hd.NgayRa,
                         OldId = hd.IdHoaDon,
                         MaHoaDon = $"HD{hd.IdHoaDon:D6}",
-                        TrangThai = trangThai,
+                        //TrangThai = trangThai,
                         PhanLoai = phanLoai,
                         TenBan = tenBan,
                         DiaChi = hd.DiaChiShip ?? "",
@@ -372,22 +389,55 @@ h.NgayRa,
                         }
 
                         // Sản phẩm chính
-                        if (!spMapBase.TryGetValue(ct.IdSanPham, out var spId))
+                        // Sản phẩm chính
+                        int spOldId = ct.IdSanPham;
+
+                        // Map thủ công từ DB cũ sang DB mới (nếu có)
+                        if (manualSpMap.TryGetValue(spOldId, out var newSpOldId))
+                            spOldId = newSpOldId;
+
+                        // Lấy ra Id sản phẩm gốc bên DB mới
+                        if (!spMapBase.TryGetValue(spOldId, out var spId))
                         {
-                            logMessages.Add($"⚠️ Hóa đơn {hd.IdHoaDon} - Không tìm thấy sản phẩm {ct.IdSanPham}");
+                            logMessages.Add($"⚠️ Hóa đơn {hd.IdHoaDon} - Không tìm thấy sản phẩm {ct.IdSanPham} {ct.TenSanPham}");
                             continue;
                         }
 
-                        var bienThe = spBienTheMap.FirstOrDefault(x => x.SpId == spId && Math.Abs(x.Gia - ct.DonGia) < 1);
+                        // ===== Tìm biến thể phù hợp =====
+                        var bienThe = spBienTheMap.FirstOrDefault(
+                            x => x.SpId == spId && Math.Abs(x.Gia - ct.DonGia) < 1
+                        );
+
+                        // Nếu không match theo giá → thử check theo tên "size L"
+                        if (bienThe.BienTheId == Guid.Empty)
+                        {
+                            var tenLower = (ct.TenSanPham ?? "").ToLower();
+                            if (tenLower.Contains("size l"))
+                            {
+                                bienThe = spBienTheMap.FirstOrDefault(
+                                    x => x.SpId == spId && x.Ten.ToLower().Contains("l")
+                                );
+                            }
+                        }
+
+                        // Nếu vẫn chưa có → fallback về biến thể mặc định
                         if (bienThe.BienTheId == Guid.Empty)
                             bienThe = spBienTheMap.FirstOrDefault(x => x.SpId == spId && x.IsDefault);
 
-                        Guid chiTietId = Guid.NewGuid();
+                        // Nếu vẫn không ra → log cảnh báo và bỏ qua
+                        if (bienThe.BienTheId == Guid.Empty)
+                        {
+                            logMessages.Add($"⚠️ Hóa đơn {hd.IdHoaDon} - Không tìm thấy biến thể cho sản phẩm {ct.IdSanPham} {ct.TenSanPham}");
+                            continue;
+                        }
 
+                        // === Insert chi tiết hóa đơn ===
+                        Guid chiTietId = Guid.NewGuid();
                         await newDb.ExecuteAsync(@"
-                        INSERT INTO ChiTietHoaDons(Id, HoaDonId, SanPhamBienTheId, TenBienThe, TenSanPham, SoLuong, DonGia, ThanhTien, NoteText, CreatedAt, LastModified)
-                        VALUES (@Id, @HoaDonId, @BienTheId, @TenBienThe, @TenSP, @SL, @Gia, @TT, @GhiChu, @CreatedAt, @LastModified)
-                    ", new
+    INSERT INTO ChiTietHoaDons
+    (Id, HoaDonId, SanPhamBienTheId, TenBienThe, TenSanPham, SoLuong, DonGia, ThanhTien, NoteText, CreatedAt, LastModified)
+    VALUES (@Id, @HoaDonId, @BienTheId, @TenBienThe, @TenSP, @SL, @Gia, @TT, @GhiChu, @CreatedAt, @LastModified)
+", new
                         {
                             Id = chiTietId,
                             HoaDonId = hoaDonId,
@@ -401,10 +451,11 @@ h.NgayRa,
                             CreatedAt = hd.NgayHoaDon ?? DateTime.Now,
                             LastModified = hd.NgayHoaDon ?? DateTime.Now
                         });
+
                     }
 
                     added++;
-                    logMessages.Add($"✅ Đã import hóa đơn {hd.IdHoaDon}");
+                    //logMessages.Add($"✅ Đã import hóa đơn {hd.IdHoaDon}");
                 }
                 catch (Exception ex)
                 {
@@ -446,7 +497,7 @@ h.NgayRa,
                             IsDeleted = false,
                         });
                     }
-                    logMessages.Add($"✅ Đã import chi tiêu {hd.IdHoaDon}");
+                    // logMessages.Add($"✅ Đã import chi tiêu {hd.IdHoaDon}");
                 }
 
 

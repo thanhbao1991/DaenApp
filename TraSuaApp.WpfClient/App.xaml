@@ -6,14 +6,13 @@
     xmlns:conveter="clr-namespace:TraSuaApp.WpfClient.Converters"
     xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
     xmlns:fa="clr-namespace:FontAwesome.Sharp;assembly=FontAwesome.Sharp"
-    xmlns:local="clr-namespace:TraSuaApp.WpfClient.Helpers">
+    xmlns:local="clr-namespace:TraSuaApp.WpfClient.Helpers"
+    Exit="Application_Exit">
     <Application.Resources>
         <!--  Converter  -->
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-        <conveter:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
-        <conveter:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVisibilityConverter" />
+        <conveter:NullOrEmptyOrDefaultToVisibilityConverter x:Key="NullOrEmptyOrDefaultToVisibilityConverter" />
         <conveter:SoDienThoaiConverter x:Key="SoDienThoaiConverter" />
-
         <Style TargetType="TabItem">
             <Setter Property="Padding" Value="12,6" />
             <Setter Property="Background" Value="Transparent" />
@@ -81,8 +80,6 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
-
         <Style
             x:Key="CloseTitleBarButtonStyle"
             BasedOn="{StaticResource TitleBarButtonStyle}"
@@ -101,8 +98,6 @@
             </Style.Triggers>
 
         </Style>
-
-
         <Style x:Key="SearchTextBoxStyle" TargetType="TextBox">
             <Setter Property="Padding" Value="10,0" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -218,7 +213,7 @@
 
         <!--  Nút Lưu  -->
         <Style x:Key="SaveButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="100" />
+            <Setter Property="MinWidth" Value="100" />
             <Setter Property="Height" Value="36" />
             <Setter Property="Background" Value="#4CAF50" />
             <Setter Property="Foreground" Value="White" />
@@ -328,34 +323,31 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <!--  Vùng click mở rộng toàn bộ layout  -->
                         <Border
                             Padding="4"
                             Background="Transparent"
                             SnapsToDevicePixels="True">
                             <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
-                                <!--  Icon FontAwesome  -->
                                 <Grid>
                                     <fa:IconBlock
                                         x:Name="CheckedIcon"
                                         Foreground="{TemplateBinding Foreground}"
-                                        Icon="CheckSquare"
+                                        Icon="Check"
                                         Visibility="Collapsed" />
+                                    <fa:IconBlock
+                                        Foreground="{TemplateBinding Foreground}"
+                                        Icon="Check"
+                                        Visibility="Hidden" />
                                 </Grid>
-
-                                <!--  Nội dung  -->
                                 <ContentPresenter
                                     Margin="5,0,0,0"
                                     VerticalAlignment="Center"
                                     RecognizesAccessKey="True" />
                             </StackPanel>
                         </Border>
-
-                        <!--  Trigger: khi được chọn  -->
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="CheckedIcon" Property="Visibility" Value="Visible" />
-                                <!--<Setter TargetName="UncheckedIcon" Property="Visibility" Value="Collapsed" />-->
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -420,16 +412,32 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
-        <Style x:Key="DataGridCheckBoxElementStyle" TargetType="CheckBox">
+
+        <!--  Style gốc (căn giữa mặc định)  -->
+        <Style x:Key="DataGridCheckBoxElementBaseStyle" TargetType="CheckBox">
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Padding" Value="16,8,16,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Focusable" Value="False" />
 
         </Style>
-        <Style x:Key="DataGridCheckBoxElementStyleLeft" TargetType="CheckBox">
+
+        <!--  Style căn giữa (kế thừa base)  -->
+        <Style
+            x:Key="DataGridCheckBoxElementStyle"
+            BasedOn="{StaticResource DataGridCheckBoxElementBaseStyle}"
+            TargetType="CheckBox" />
+
+        <!--  Style căn trái (kế thừa base)  -->
+        <Style
+            x:Key="DataGridCheckBoxElementStyleLeft"
+            BasedOn="{StaticResource DataGridCheckBoxElementBaseStyle}"
+            TargetType="CheckBox">
             <Setter Property="HorizontalAlignment" Value="Left" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Margin" Value="16,0,16,0" />
+            <Setter Property="Margin" Value="16,0,0,0" />
         </Style>
         <!--  Base Button style  -->
 
@@ -557,6 +565,13 @@
             <Setter Property="Foreground" Value="#2196F3" />
         </Style>
         <Style
+            x:Key="TaiLaiButtonStyle"
+            BasedOn="{StaticResource BaseSmallButtonStyle}"
+            TargetType="Button">
+            <Setter Property="Foreground" Value="#FF9800" />
+        </Style>
+
+        <Style
             x:Key="XoaButtonStyle"
             BasedOn="{StaticResource BaseSmallButtonStyle}"
             TargetType="Button">
@@ -567,8 +582,7 @@
         <Style x:Key="MiddleCellStyle" TargetType="DataGridCell">
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Height" Value="24" />
-            <Setter Property="Padding" Value="16,8,16,8" />
+            <Setter Property="Padding" Value="16,16,16,16" />
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="#FFCCE5FF" />
@@ -613,7 +627,7 @@
             <Setter Property="HeadersVisibility" Value="Column" />
             <Setter Property="HorizontalGridLinesBrush" Value="Transparent" />
             <Setter Property="IsReadOnly" Value="True" />
-            <Setter Property="RowHeight" Value="24" />
+            <Setter Property="RowHeight" Value="32" />
             <Setter Property="SelectionMode" Value="Single" />
             <Setter Property="SelectionUnit" Value="FullRow" />
             <Setter Property="CellStyle" Value="{StaticResource MiddleCellStyle}" />

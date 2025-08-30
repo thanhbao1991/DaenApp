@@ -4,7 +4,7 @@ public class VoucherDto : DtoBase
 {
     public override string ApiRoute => "Voucher";
 
-    public string? KieuGiam { get; set; }
+    public string KieuGiam { get; set; } = null!;
 
     public decimal GiaTri { get; set; }
 

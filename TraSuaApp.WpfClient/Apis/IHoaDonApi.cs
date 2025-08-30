@@ -12,4 +12,5 @@ public interface IHoaDonApi
     Task<Result<HoaDonDto>> UpdateAsync(Guid id, HoaDonDto dto);
     Task<Result<HoaDonDto>> DeleteAsync(Guid id);
     Task<Result<HoaDonDto>> RestoreAsync(Guid id);
+
 }

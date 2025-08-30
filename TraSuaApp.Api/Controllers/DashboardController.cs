@@ -60,6 +60,7 @@ namespace TraSuaApp.Api.Controllers
                 TopSanPhams = topSanPham,
             };
         }
+
         [HttpGet("dubao")]
         public async Task<ActionResult<DashboardDto>> GetDuBaoToday()
         {
@@ -96,6 +97,152 @@ namespace TraSuaApp.Api.Controllers
             return new DashboardDto
             {
                 PredictedPeak = prediction// ✅ Thêm dòng này
+            };
+        }
+
+        [HttpGet("lichsu-khachhang/{khachHangId}")]
+        public async Task<ActionResult<DashboardDto>> GetLichSuKhachHang(Guid khachHangId)
+        {
+            if (khachHangId == Guid.Empty)
+                return BadRequest("KhachHangId không hợp lệ.");
+
+            var history = await (
+      from ct in _db.ChiTietHoaDons.AsNoTracking()
+      join h in _db.HoaDons.AsNoTracking() on ct.HoaDonId equals h.Id
+      where h.KhachHangId == khachHangId
+          && !h.IsDeleted
+      //&& ((ct.NoteText ?? "") != "" || (ct.ToppingText ?? "") != "")
+      orderby h.NgayGio descending, ct.CreatedAt descending
+      select new ChiTietHoaDonDto
+      {
+          Id = ct.Id,
+          SoLuong = ct.SoLuong,
+          DonGia = ct.DonGia,
+          //ThanhTien = ct.ThanhTien,
+          SanPhamIdBienThe = ct.SanPhamBienTheId,
+          HoaDonId = ct.HoaDonId,
+          NoteText = ct.NoteText,
+          ToppingText = ct.ToppingText,
+          CreatedAt = ct.CreatedAt,
+          DeletedAt = ct.DeletedAt,
+          IsDeleted = ct.IsDeleted,
+          LastModified = ct.LastModified,
+          TenBienThe = ct.TenBienThe,
+          TenSanPham = ct.TenSanPham,
+          NgayGio = h.NgayGio
+      }
+  ).ToListAsync();
+
+            return new DashboardDto
+            {
+                History = history
+            };
+        }
+
+        [HttpGet("thongtin-khachhang/{khachHangId}")]
+        public async Task<ActionResult<KhachHangFavoriteDto>> GetThongTinKhachHang(Guid khachHangId)
+        {
+            if (khachHangId == Guid.Empty)
+                return BadRequest("KhachHangId không hợp lệ.");
+
+            var kh = await _db.KhachHangs.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == khachHangId);
+
+            if (kh == null) return NotFound("Không tìm thấy khách hàng.");
+
+
+            // 🟟 Top chi tiết
+            var threeMonthsAgo = DateTime.Now.AddMonths(-3);
+
+            var topChiTiets = await (
+                from ct in _db.ChiTietHoaDons.AsNoTracking()
+                join h in _db.HoaDons.AsNoTracking() on ct.HoaDonId equals h.Id
+                join bt in _db.SanPhamBienThes.AsNoTracking() on ct.SanPhamBienTheId equals bt.Id
+                join sp in _db.SanPhams.AsNoTracking() on bt.SanPhamId equals sp.Id
+                where h.KhachHangId == khachHangId
+                      && !h.IsDeleted
+                      && !ct.IsDeleted
+                      && h.NgayGio >= threeMonthsAgo   // 🟟 chỉ lấy đơn trong 3 tháng gần đây
+                group ct by new { bt.Id, sp.Ten, bt.TenBienThe, bt.GiaBan } into g
+                orderby g.Sum(x => x.SoLuong) descending
+                select new ChiTietHoaDonDto
+                {
+                    SanPhamIdBienThe = g.Key.Id,
+                    TenSanPham = g.Key.Ten ?? "",        // 🟟 lấy tên mới nhất từ SanPhams
+                    TenBienThe = g.Key.TenBienThe ?? "", // 🟟 lấy tên mới nhất từ SanPhamBienThes
+                    DonGia = g.Key.GiaBan,           // 🟟 giá hiện tại của biến thể
+                    SoLuong = 0
+                }
+            )
+            .Take(3) // 🟟 chỉ lấy tối đa 2 món
+            .ToListAsync();
+
+
+            // 🟟 Tính điểm thưởng
+            int diemThangNay = 0, diemThangTruoc = 0;
+            if (kh.DuocNhanVoucher)
+            {
+                var now = DateTime.Now;
+                var firstDayCurrent = new DateTime(now.Year, now.Month, 1);
+                diemThangNay = await _db.ChiTietHoaDonPoints.AsNoTracking()
+                    .Where(p => p.KhachHangId == khachHangId && p.Ngay >= firstDayCurrent && p.Ngay <= now.Date)
+                    .SumAsync(p => (int?)p.DiemThayDoi) ?? 0;
+
+                var firstDayPrev = firstDayCurrent.AddMonths(-1);
+                var lastDayPrev = firstDayCurrent.AddDays(-1);
+                diemThangTruoc = await _db.ChiTietHoaDonPoints.AsNoTracking()
+                    .Where(p => p.KhachHangId == khachHangId && p.Ngay >= firstDayPrev && p.Ngay <= lastDayPrev)
+                    .SumAsync(p => (int?)p.DiemThayDoi) ?? 0;
+            }
+            else
+            {
+                diemThangNay = diemThangTruoc = -1;
+            }
+
+            // 🟟 Tính tổng nợ
+            var congNoQuery = _db.ChiTietHoaDonNos.AsNoTracking()
+                .Where(h => h.KhachHangId == khachHangId && !h.IsDeleted);
+
+            var resultNo = await congNoQuery
+                .Select(h => new
+                {
+                    ConLai = h.SoTienNo - (_db.ChiTietHoaDonThanhToans
+                                            .Where(t => t.ChiTietHoaDonNoId == h.Id && !t.IsDeleted)
+                                            .Sum(t => (decimal?)t.SoTien) ?? 0)
+                })
+                .ToListAsync();
+
+            var tongNo = resultNo.Sum(x => x.ConLai > 0 ? x.ConLai : 0);
+
+            /// 🟟 Kiểm tra khách hàng đã nhận voucher trong tháng này chưa
+            bool daNhanVoucher = false;
+            if (kh.DuocNhanVoucher)
+            {
+                var now = DateTime.Now;
+                var firstDayCurrent = new DateTime(now.Year, now.Month, 1);
+
+                daNhanVoucher = await (
+                    from v in _db.ChiTietHoaDonVouchers.AsNoTracking()
+                    join h in _db.HoaDons.AsNoTracking() on v.HoaDonId equals h.Id
+                    where h.KhachHangId == khachHangId
+                          && !h.IsDeleted
+                          && !v.IsDeleted
+                          && v.CreatedAt >= firstDayCurrent
+                          && v.CreatedAt <= now
+                    select v
+                ).AnyAsync();
+            }
+
+            // 🟟 Trả về DTO gộp
+            return new KhachHangFavoriteDto
+            {
+                KhachHangId = kh.Id,
+                DuocNhanVoucher = kh.DuocNhanVoucher,
+                DaNhanVoucher = daNhanVoucher, // ✅ đã sửa lại đúng cách
+                DiemThangNay = diemThangNay,
+                DiemThangTruoc = diemThangTruoc,
+                TongNo = tongNo,
+                TopChiTiets = topChiTiets
             };
         }
 

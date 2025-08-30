@@ -5,6 +5,7 @@ using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Shared.Services;
 
 namespace TraSuaApp.Infrastructure.Services;
 
@@ -58,6 +59,11 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         _context.ChiTietHoaDonNos.Add(entity);
         await _context.SaveChangesAsync();
 
+        await DiscordService.SendAsync(
+            DiscordEventType.CongNo,
+            $"{dto.Ten}\nSố tiền nợ: {dto.SoTienNo:N0} đ\nGhi chú: {dto.GhiChu}"
+        );
+
         var after = ToDto(entity);
         return Result<ChiTietHoaDonNoDto>.Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
             .WithId(after.Id)
@@ -85,8 +91,13 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         entity.LastModified = DateTime.Now;
 
         await _context.SaveChangesAsync();
-
         var after = ToDto(entity);
+
+        await DiscordService.SendAsync(
+    DiscordEventType.CongNo,
+    $"[Chỉnh sửa]\n{after.Ten}\nSố tiền nợ: {after.SoTienNo:N0} đ\nGhi chú: {after.GhiChu}"
+);
+
         return Result<ChiTietHoaDonNoDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
             .WithId(id)
             .WithBefore(before)
@@ -119,30 +130,83 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
 
     public async Task<List<ChiTietHoaDonNoDto>> GetAllAsync()
     {
-        return await _context.ChiTietHoaDonNos.AsNoTracking()
+        var today = DateTime.Today;
+        var fromDate = today.AddDays(-2);
+
+        var list = await _context.ChiTietHoaDonNos.AsNoTracking()
             .Where(x => !x.IsDeleted)
-            .OrderByDescending(x => x.LastModified)
+            .Select(x => new
+            {
+                x.Id,
+                x.Ngay,
+                x.NgayGio,
+                x.HoaDonId,
+                x.KhachHangId,
+                TenKhachHang = x.KhachHang != null ? x.KhachHang.Ten : x.Id.ToString(), // 🟟 Ưu tiên tên khách
+                x.SoTienNo,
+                SoTienDaTra = _context.ChiTietHoaDonThanhToans
+                                      .Where(t => t.ChiTietHoaDonNoId == x.Id && !t.IsDeleted)
+                                      .Sum(t => (decimal?)t.SoTien) ?? 0,
+                x.GhiChu,
+                x.CreatedAt,
+                x.LastModified,
+                x.IsDeleted
+            })
+            .ToListAsync();
+
+        return list
+            .Where(x => x.SoTienNo > x.SoTienDaTra    // 🟟 còn nợ → lấy tất cả
+                     || x.Ngay >= fromDate)           // 🟟 trả đủ → chỉ lấy 3 ngày gần đây
             .Select(x => new ChiTietHoaDonNoDto
             {
                 Id = x.Id,
-                MaHoaDon = x.HoaDon != null ? x.HoaDon.MaHoaDon : null,
-                SoTienNo = x.SoTienNo,
-                SoTienDaTra = _context.ChiTietHoaDonThanhToans.AsNoTracking()
-                                    .Where(t => t.ChiTietHoaDonNoId == x.Id && !t.IsDeleted)
-                                    .Sum(t => (decimal?)t.SoTien) ?? 0,
-                NgayGio = x.NgayGio,
-                GhiChu = x.GhiChu,
                 Ngay = x.Ngay,
+                NgayGio = x.NgayGio,
                 HoaDonId = x.HoaDonId,
                 KhachHangId = x.KhachHangId,
-                Ten = x.KhachHang != null ? x.KhachHang.Ten : null,
+                Ten = x.TenKhachHang,                 // 🟟 gán tên khách
+                SoTienNo = x.SoTienNo,
+                SoTienDaTra = x.SoTienDaTra,
+                //ConLai = x.SoTienNo - x.SoTienDaTra,
+                GhiChu = x.GhiChu,
+                //  MaHoaDon = x.MaHoaDon,
                 CreatedAt = x.CreatedAt,
-                DeletedAt = x.DeletedAt,
-                IsDeleted = x.IsDeleted,
-                LastModified = x.LastModified
+                LastModified = x.LastModified,
+                IsDeleted = x.IsDeleted
             })
-            .ToListAsync();
+            .OrderByDescending(x => x.LastModified)
+            .ToList();
     }
+    //public async Task<List<ChiTietHoaDonNoDto>> GetAllAsync()
+    //{
+    //    var today = DateTime.Today;
+    //    var fromDate = today.AddDays(-2);
+
+    //    return await _context.ChiTietHoaDonNos.AsNoTracking()
+    //        .Where(x => !x.IsDeleted
+    //                 && (x.ConLai > 0 || x.Ngay >= fromDate)) // 🟟 nếu còn nợ thì lấy hết, ngược lại chỉ lấy 3 ngày gần đây
+    //        .OrderByDescending(x => x.LastModified)
+    //        .Select(x => new ChiTietHoaDonNoDto
+    //        {
+
+    //
+    //            SoTienDaTra = _context.ChiTietHoaDonThanhToans.AsNoTracking()
+    //                                .Where(t => t.ChiTietHoaDonNoId == x.Id && !t.IsDeleted)
+    //                                .Sum(t => (decimal?)t.SoTien) ?? 0,
+    //
+    //          NgayGio = x.NgayGio,
+    //            GhiChu = x.GhiChu,
+    //            Ngay = x.Ngay,
+    //            HoaDonId = x.HoaDonId,
+    //            KhachHangId = x.KhachHangId,
+    //            Ten = x.KhachHang != null ? x.KhachHang.Ten : null,
+    //            CreatedAt = x.CreatedAt,
+    //            DeletedAt = x.DeletedAt,
+    //            IsDeleted = x.IsDeleted,
+    //            LastModified = x.LastModified
+    //        })
+    //        .ToListAsync();
+    //}
 
     public async Task<ChiTietHoaDonNoDto?> GetByIdAsync(Guid id)
     {
@@ -204,6 +268,11 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         entity.LastModified = DateTime.Now;
 
         await _context.SaveChangesAsync();
+
+        await DiscordService.SendAsync(
+    DiscordEventType.CongNo,
+    $"[Xoá]\n{before.Ten}\nSố tiền nợ: {before.SoTienNo:N0} đ\nGhi chú: {before.GhiChu}"
+);
 
         return Result<ChiTietHoaDonNoDto>.Success(before, $"Xoá {_friendlyName.ToLower()} thành công.")
             .WithId(before.Id)

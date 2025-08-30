@@ -22,7 +22,7 @@ public partial class Voucher
 
     public bool IsDeleted { get; set; }
 
-    public string? KieuGiam { get; set; }
+    public string KieuGiam { get; set; } = null!;
 
     public DateTime? LastModified { get; set; }
 

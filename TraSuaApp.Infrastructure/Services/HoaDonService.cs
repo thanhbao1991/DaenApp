@@ -84,12 +84,16 @@ public class HoaDonService : IHoaDonService
         var khachHang = await GetOrCreateKhachHangAsync(dto, now);
         dto.KhachHangId = khachHang?.Id;
 
-        var entity = new HoaDon
+        HoaDon entity = new HoaDon
         {
+
             Id = Guid.NewGuid(),
-            MaHoaDon = MaHoaDonGenerator.Generate(),
+            MaHoaDon = string.IsNullOrWhiteSpace(dto.MaHoaDon)
+    ? MaHoaDonGenerator.Generate()
+    : dto.MaHoaDon,
             //TrangThai = dto.TrangThai,
             NgayRa = dto.NgayRa,
+            PhanLoai = dto.PhanLoai,
             GhiChu = dto.GhiChu,
             NgayShip = dto.NgayShip,
             NgayHen = dto.NgayHen,
@@ -115,9 +119,45 @@ public class HoaDonService : IHoaDonService
         entity.GiamGia = giamGia;
         entity.ThanhTien = thanhTien;
 
+        if (string.IsNullOrWhiteSpace(entity.GhiChu))
+        {
+            var ghiChuTomTat = string.Join(", ",
+                dto.ChiTietHoaDons.GroupBy(x => x.TenSanPham.Trim())
+                   .Select(g => $"{g.Sum(x => x.SoLuong)} {g.Key}")
+            );
+            entity.GhiChu = ghiChuTomTat;
+        }
+
+        string tenBan = dto.TenBan;
+        if (string.IsNullOrWhiteSpace(tenBan))
+        {
+            int stt = await _context.HoaDons
+                .CountAsync(h => h.Ngay == now.Date && h.PhanLoai == dto.PhanLoai && !h.IsDeleted) + 1;
+
+            tenBan = dto.PhanLoai switch
+            {
+                "MV" => $"MV {stt}",
+                "Ship" => $"Ship {stt}",
+                "App" => $"App {stt}",
+                _ => entity?.TenBan ?? ""  // giữ tên bàn cũ nếu update
+            };
+        }
+
+        entity!.TenBan = tenBan;
+
+
         await AddTichDiemAsync(dto.KhachHangId, thanhTien, entity.Id, now);
 
         await _context.SaveChangesAsync();
+
+        await DiscordService.SendAsync(
+    DiscordEventType.HoaDonNew,
+    $"🟟 Đơn mới: {entity.MaHoaDon}\n" +
+    $"Khách: {entity.KhachHang?.Ten ?? entity.TenBan}\n" +
+    $"Tổng tiền: {entity.ThanhTien:N0} đ"
+);
+
+
         var after = ToDto(entity);
         return Result<HoaDonDto>.Success(after, "Đã thêm hóa đơn thành công.").WithId(after.Id).WithAfter(after);
     }
@@ -145,6 +185,7 @@ public class HoaDonService : IHoaDonService
         // entity.MaHoaDon = dto.MaHoaDon;
         // entity.TrangThai = dto.TrangThai;
         entity.TenBan = dto.TenBan;
+        entity.PhanLoai = dto.PhanLoai;
         entity.TenKhachHangText = dto.TenKhachHangText;
         entity.NgayShip = dto.NgayShip;
         entity.NgayHen = dto.NgayHen;
@@ -166,6 +207,32 @@ public class HoaDonService : IHoaDonService
         entity.TongTien = tongTien;
         entity.GiamGia = giamGia;
         entity.ThanhTien = thanhTien;
+
+        // 🟟 Bổ sung tại đây
+        if (string.IsNullOrWhiteSpace(entity.GhiChu))
+        {
+            var ghiChuTomTat = string.Join(", ",
+                dto.ChiTietHoaDons.GroupBy(x => x.TenSanPham.Trim())
+                   .Select(g => $"{g.Sum(x => x.SoLuong)} {g.Key}")
+            );
+            entity.GhiChu = ghiChuTomTat;
+        }
+
+        string tenBan = dto.TenBan;
+        if (string.IsNullOrWhiteSpace(tenBan))
+        {
+            int stt = await _context.HoaDons
+                .CountAsync(h => h.Ngay == now.Date && h.PhanLoai == dto.PhanLoai && !h.IsDeleted) + 1;
+
+            tenBan = dto.PhanLoai switch
+            {
+                "MV" => $"MV {stt}",
+                "Ship" => $"Ship {stt}",
+                "App" => $"App {stt}",
+                _ => entity?.TenBan ?? ""  // giữ tên bàn cũ nếu update
+            };
+        }
+        entity!.TenBan = tenBan;
 
         // ✅ Cập nhật lại điểm
         await UpdateTichDiemAsync(entity.KhachHangId, entity.Id, thanhTien, now);
@@ -209,25 +276,13 @@ public class HoaDonService : IHoaDonService
         var after = ToDto(entity);
 
         if (before.NgayShip == null && after.NgayShip != null)
-        {
-            await DiscordService.DiShipAsync(
-               $"{(entity.KhachHangId != null ? entity.TenKhachHangText + " / " + before.DiaChiText : entity.TenBan)}\n{entity.GhiChu}"
-           );
-        }
+            await DiscordService.SendAsync(DiscordEventType.DiShip, $"{entity.TenKhachHangText} đã được giao hàng");
         if (before.BaoDon == true && after.BaoDon == false)
-        {
-            await DiscordService.NhanDonAsync(
-                   $"{(entity.KhachHangId != null ? entity.TenKhachHangText + " / " + before.DiaChiText : entity.TenBan)}\n{entity.GhiChu}"
-
-         );
-        }
-
+            await DiscordService.SendAsync(DiscordEventType.NhanDon, $"{entity.TenKhachHangText} đã nhận đơn");
         if (before.NgayHen != null && after.NgayHen == null)
-        {
-            await DiscordService.HenGioAsync(
-               $"{(entity.KhachHangId != null ? entity.TenKhachHangText + " / " + before.DiaChiText : entity.TenBan)}\n{entity.GhiChu}"
-           );
-        }
+            await DiscordService.SendAsync(DiscordEventType.HenGio, $"{entity.TenKhachHangText} đã đến giờ hẹn");
+
+
         return Result<HoaDonDto>.Success(after, "Cập nhật hóa đơn thành công.")
                         .WithId(id)
                         .WithBefore(before)
@@ -409,15 +464,8 @@ public class HoaDonService : IHoaDonService
                 IsDeleted = false
             };
 
-            if (voucher.KieuGiam == "%")
-            {
-                var mucGiam = tongTien * (voucher.GiaTri / 100m);
-                giamGia += Math.Min(mucGiam, tongTien);
-            }
-            else
-            {
-                giamGia += voucher.GiaTri;
-            }
+            giamGia += DiscountHelper.TinhGiamGia(tongTien, voucher.KieuGiam, voucher.GiaTri, lamTron: true);
+
             _context.ChiTietHoaDonVouchers.Add(vvv);
         }
 
@@ -426,10 +474,9 @@ public class HoaDonService : IHoaDonService
 
         return (tongTien, giamGia, thanhTien);
     }
-
-    private async Task AddTichDiemAsync(Guid? khachHangId, decimal thanhTien, Guid hoaDonId, DateTime now)
+    private Task AddTichDiemAsync(Guid? khachHangId, decimal thanhTien, Guid hoaDonId, DateTime now)
     {
-        if (khachHangId == null) return;
+        if (khachHangId == null) return Task.CompletedTask;
 
         int diemTichLuy = (int)Math.Floor(thanhTien * 0.01m);
 
@@ -439,7 +486,6 @@ public class HoaDonService : IHoaDonService
             HoaDonId = hoaDonId,
             KhachHangId = khachHangId.Value,
             Ngay = now.Date,
-
             NgayGio = now,
             DiemThayDoi = diemTichLuy,
             GhiChu = $"Tích điểm từ hoá đơn {hoaDonId}",
@@ -447,8 +493,8 @@ public class HoaDonService : IHoaDonService
             LastModified = now
         });
 
+        return Task.CompletedTask;
     }
-
     private async Task UpdateTichDiemAsync(Guid? khachHangId, Guid hoaDonId, decimal thanhTien, DateTime now)
     {
         if (khachHangId == null) return;
@@ -521,6 +567,14 @@ public class HoaDonService : IHoaDonService
         entity.LastModified = now;
 
         await _context.SaveChangesAsync();
+
+        await DiscordService.SendAsync(
+    DiscordEventType.HoaDonDel,
+    $"🟟️ Đã xoá hoá đơn: {entity.MaHoaDon}\n" +
+    $"Khách: {entity.KhachHang?.Ten ?? entity.TenBan}\n" +
+    $"Tổng tiền: {entity.ThanhTien:N0} đ"
+);
+
 
         return Result<HoaDonDto>.Success(before, "Xoá hóa đơn thành công.")
             .WithId(before.Id)
@@ -602,10 +656,17 @@ public class HoaDonService : IHoaDonService
     }
     public async Task<List<HoaDonDto>> GetAllAsync()
     {
+        var today = DateTime.Today;
+        var fromDate = today.AddDays(-2); // 3 ngày gần đây (hôm nay + 2 ngày trước)
+
         var list = await _context.HoaDons.AsNoTracking()
-            .Where(x => !x.IsDeleted)
+            .Where(x => !x.IsDeleted &&
+                       (x.Ngay >= fromDate
+                       //|| x.TrangThai == "Chưa thu" || x.TrangThai == "Thu một phần"
+                       ))
             .Select(h => new
             {
+
                 h.Id,
                 h.MaHoaDon,
                 h.Ngay,
@@ -736,7 +797,8 @@ public class HoaDonService : IHoaDonService
                     GiaTriApDung = v.GiaTriApDung,
                     CreatedAt = v.CreatedAt,
                     LastModified = v.LastModified
-                }).ToList()
+                }).ToList(),
+
             })
             .FirstOrDefaultAsync();
 
@@ -773,23 +835,65 @@ public class HoaDonService : IHoaDonService
 
             ChiTietHoaDons = h.ChiTiets,
             ChiTietHoaDonToppings = h.Toppings,
-            ChiTietHoaDonVouchers = h.Vouchers
-        };
+            ChiTietHoaDonVouchers = h.Vouchers,
 
+        };
+        // ✅ Gán topping vào từng chi tiết hóa đơn
+        foreach (var ct in dto.ChiTietHoaDons)
+        {
+            ct.ToppingDtos = dto.ChiTietHoaDonToppings
+                .Where(tp => tp.ChiTietHoaDonId == ct.Id)
+                .Select(tp => new ToppingDto
+                {
+                    Id = tp.ToppingId,
+                    Ten = tp.Ten,
+                    Gia = tp.Gia,
+                    SoLuong = tp.SoLuong
+                })
+                .ToList();
+
+            // Gán luôn text hiển thị (nếu chưa có)
+            if (string.IsNullOrEmpty(ct.ToppingText) && ct.ToppingDtos.Any())
+            {
+                ct.ToppingText = string.Join(", ", ct.ToppingDtos.Select(t => $"{t.Ten} x{t.SoLuong}"));
+            }
+        }
         // ✅ Tính điểm khách hàng
         if (dto.KhachHangId != null)
         {
             var khId = dto.KhachHangId.Value;
-            var now = DateTime.Now;
-            var firstDay = new DateTime(now.Year, now.Month, 1);
 
-            dto.DiemTrongThang = await _context.ChiTietHoaDonPoints.AsNoTracking()
-                .Where(p => p.KhachHangId == khId && p.Ngay >= firstDay && p.Ngay <= now.Date)
-                .SumAsync(p => (int?)p.DiemThayDoi) ?? 0;
+            // Lấy cờ DuocNhanVoucher trực tiếp từ DB
+            var duocNhanVoucher = await _context.KhachHangs
+                .Where(k => k.Id == khId)
+                .Select(k => k.DuocNhanVoucher)
+                .FirstOrDefaultAsync();
 
+            if (duocNhanVoucher)
+            {
+                var now = DateTime.Now;
+
+                // Tháng hiện tại
+                var firstDayCurrent = new DateTime(now.Year, now.Month, 1);
+                dto.DiemThangNay = await _context.ChiTietHoaDonPoints.AsNoTracking()
+                    .Where(p => p.KhachHangId == khId && p.Ngay >= firstDayCurrent && p.Ngay <= now.Date)
+                    .SumAsync(p => (int?)p.DiemThayDoi) ?? 0;
+
+                // Tháng trước
+                var firstDayPrev = firstDayCurrent.AddMonths(-1);
+                var lastDayPrev = firstDayCurrent.AddDays(-1);
+                dto.DiemThangTruoc = await _context.ChiTietHoaDonPoints.AsNoTracking()
+                    .Where(p => p.KhachHangId == khId && p.Ngay >= firstDayPrev && p.Ngay <= lastDayPrev)
+                    .SumAsync(p => (int?)p.DiemThayDoi) ?? 0;
+            }
+            else
+            {
+                dto.DiemThangTruoc = dto.DiemThangNay = -1;
+            }
 
             dto.TongNoKhachHang = await TinhTongNoKhachHangAsync(khId, dto.Id);
         }
+
         return dto;
     }
     public async Task<decimal> TinhTongNoKhachHangAsync(Guid khachHangId, Guid? excludeHoaDonId = null)

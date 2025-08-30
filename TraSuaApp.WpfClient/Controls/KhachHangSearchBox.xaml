@@ -10,8 +10,7 @@
                 x:Name="SearchTextBox"
                 Padding="4,4,28,4"
                 VerticalContentAlignment="Center"
-                GotFocus="SearchTextBox_GotFocus"
-                PreviewKeyDown="SearchTextBox_PreviewKeyDown"
+                PreviewKeyDown="SearchBox_And_ListBox_PreviewKeyDown"
                 TextChanged="SearchTextBox_TextChanged" />
 
             <!--  Nút X để xóa  -->

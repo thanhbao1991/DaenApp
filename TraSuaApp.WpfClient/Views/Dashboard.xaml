@@ -23,6 +23,13 @@
                 FontWeight="Bold"
                 Foreground="Red"
                 Text="Dashboard" />
+            <ProgressBar
+                x:Name="ProgressBar"
+                Height="16"
+                VerticalAlignment="Bottom"
+                Panel.ZIndex="2"
+                IsIndeterminate="True"
+                Visibility="Collapsed" />
             <TabControl
                 Name="TabControl"
                 Grid.Row="0"
@@ -160,22 +167,72 @@
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="auto" />
+                            <ColumnDefinition Width="175" />
                             <ColumnDefinition Width="2*" />
                             <ColumnDefinition Width="*" />
-
                         </Grid.ColumnDefinitions>
                         <TextBox
                             x:Name="SearchHoaDonTextBox"
                             Grid.ColumnSpan="3"
-                            Padding="60,0,0,0"
+                            Padding="350,0,0,0"
                             TextChanged="SearchHoaDonTextBox_TextChanged" />
-                        <Button
+
+                        <StackPanel
+                            Grid.ColumnSpan="3"
                             HorizontalAlignment="Left"
                             Panel.ZIndex="1"
-                            Click="AddHoaDonButton_Click"
-                            Content="➕ Add"
-                            Style="{StaticResource ThemButtonStyle}" />
+                            Orientation="Horizontal">
+                            <Button
+                                HorizontalAlignment="Left"
+                                Panel.ZIndex="1"
+                                Click="AddTaiChoButton_Click"
+                                FontSize="16"
+                                Style="{StaticResource ThemButtonStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa:IconBlock Margin="0,0,5,0" Icon="Plus" />
+                                    <TextBlock Text="Tại chỗ" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button
+                                Margin="8,0,0,0"
+                                HorizontalAlignment="Left"
+                                Panel.ZIndex="1"
+                                Click="AddMuaVeButton_Click"
+                                FontSize="16"
+                                Style="{StaticResource SuaButtonStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa:IconBlock Margin="0,0,5,0" Icon="ShoppingBag" />
+                                    <TextBlock Text="Mua về" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button
+                                Margin="8,0,0,0"
+                                HorizontalAlignment="Left"
+                                Panel.ZIndex="1"
+                                Click="AddShipButton_Click"
+                                FontSize="16"
+                                Style="{StaticResource TaiLaiButtonStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa:IconBlock Margin="0,0,5,0" Icon="Truck" />
+                                    <TextBlock Text="Ship" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button
+                                Margin="8,0,0,0"
+                                HorizontalAlignment="Left"
+                                Panel.ZIndex="1"
+                                Click="AddAppButton_Click"
+                                FontSize="16"
+                                Style="{StaticResource XoaButtonStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa:IconBlock Margin="0,0,5,0" Icon="Mobile" />
+                                    <TextBlock Text="App" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
                         <DataGrid
                             x:Name="HoaDonDataGrid"
                             Grid.Row="1"
@@ -183,7 +240,7 @@
                             AutoGenerateColumns="False"
                             IsReadOnly="True"
                             MouseDoubleClick="HoaDonDataGrid_MouseDoubleClick"
-                            SelectionChanged="HoaDonDataGrid_SelectionChanged">
+                            SelectionChanged="HoaDonDataGrid_SelectionChangedAsync">
                             <DataGrid.RowStyle>
                                 <Style TargetType="DataGridRow">
                                     <Style.Triggers>
@@ -208,172 +265,108 @@
                             </DataGrid.RowStyle>
                             <DataGrid.Columns>
                                 <DataGridTextColumn
-                                    Binding="{Binding Stt}"
+                                    Binding="{Binding NgayGio}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="STT" />
-
-                                <!--<DataGridTextColumn
-                                    x:Name="NgayHoaDonDataGridTextColumn"
-                                    Binding="{Binding NgayGio, StringFormat=dd-MM-yyyy}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Ngày"
-                                  />
-                                <DataGridTextColumn
-                                    Binding="{Binding NgayGio, StringFormat=hh:mm tt}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Giờ" />-->
                                 <DataGridTextColumn
                                     Binding="{Binding GioHienThi}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Giờ" />
-
-                                <DataGridTextColumn
-                                    Binding="{Binding Ten}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Tên bàn/khách" />
-                                <!--<DataGridTextColumn
-                                    Binding="{Binding TongTien, StringFormat=N0}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Tổng tiền"
-                                    Visibility="{Binding ElementName=NgayHoaDonDataGridTextColumn, Path=Visibility}" />
-                                <DataGridTextColumn
-                                    Binding="{Binding GiamGia, StringFormat=N0}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Voucher"
-                                    Visibility="{Binding ElementName=NgayHoaDonDataGridTextColumn, Path=Visibility}" />-->
-
-                                <DataGridTemplateColumn x:Name="TongTienHoaDonTextBlock" Header="Thành tiền">
+                                <DataGridTemplateColumn Width="auto" Header="">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock
-                                                Padding="16,8,16,8"
-                                                VerticalAlignment="Center"
-                                                Text="{Binding ThanhTien, StringFormat=N0}"
-                                                TextAlignment="Right"
-                                                ToolTip="{Binding TrangThai}">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding TrangThai}" Value="Tiền mặt">
-                                                                <Setter Property="Background" Value="LightGreen" />
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding TrangThai}" Value="Chuyển khoản">
-                                                                <Setter Property="Background" Value="LightYellow" />
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding TrangThai}" Value="Banking Nhã">
-                                                                <Setter Property="Background" Value="Gold" />
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding TrangThai}" Value="Chuyển khoản + Tiền mặt">
-                                                                <Setter Property="Background">
-                                                                    <Setter.Value>
-                                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                            <!--  Nửa đầu màu cam  -->
-                                                                            <GradientStop Offset="0.0" Color="LightGreen" />
-                                                                            <GradientStop Offset="0.5" Color="LightGreen" />
-                                                                            <!--  Nửa sau trong suốt  -->
-                                                                            <GradientStop Offset="0.5" Color="LightYellow" />
-                                                                            <GradientStop Offset="1.0" Color="LightYellow" />
-                                                                        </LinearGradientBrush>
-                                                                    </Setter.Value>
-                                                                </Setter>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding TrangThai}" Value="Banking Nhã + Tiền mặt">
-                                                                <Setter Property="Background">
-                                                                    <Setter.Value>
-                                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                            <!--  Nửa đầu màu cam  -->
-                                                                            <GradientStop Offset="0.0" Color="LightGreen" />
-                                                                            <GradientStop Offset="0.5" Color="LightGreen" />
-                                                                            <!--  Nửa sau trong suốt  -->
-                                                                            <GradientStop Offset="0.5" Color="Gold" />
-                                                                            <GradientStop Offset="1.0" Color="Gold" />
-                                                                        </LinearGradientBrush>
-                                                                    </Setter.Value>
-                                                                </Setter>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding TrangThai}" Value="Thu một phần">
-                                                                <Setter Property="Background" Value="PaleTurquoise" />
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding TrangThai}" Value="Chưa thu">
-                                                                <Setter Property="Background" Value="Transparent" />
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding TrangThai}" Value="Nợ một phần">
-                                                                <Setter Property="Background" Value="LightCoral" />
-                                                                <Setter Property="Foreground" Value="White" />
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding TrangThai}" Value="Ghi nợ">
-                                                                <Setter Property="Background" Value="IndianRed" />
-                                                                <Setter Property="Foreground" Value="White" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
+                                            <StackPanel
+                                                Height="32"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Stretch"
+                                                Orientation="Horizontal">
+                                                <fa:IconBlock Icon="Motorcycle" Visibility="{Binding NgayShip, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
 
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
+                                                <fa:IconBlock Icon="Bell" Visibility="{Binding BaoDon, Converter={StaticResource BoolToVisibilityConverter}}" />
 
+                                                <fa:IconBlock Icon="Star" Visibility="{Binding UuTien, Converter={StaticResource BoolToVisibilityConverter}}" />
 
-                                <DataGridTextColumn
-                                    Binding="{Binding DaThu, StringFormat=N0}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Đã thu"
-                                    Visibility="{Binding ElementName=NgayHoaDonDataGridTextColumn, Path=Visibility}" />
-
-                                <DataGridTextColumn
-                                    Binding="{Binding ConLai, StringFormat=N0}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Còn Lại"
-                                    Visibility="{Binding ElementName=NgayHoaDonDataGridTextColumn, Path=Visibility}" />
-
-                                <!--<DataGridTextColumn
-                                    Binding="{Binding TrangThai}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Trạng thái"
-                                    Visibility="{Binding ElementName=NgayHoaDonDataGridTextColumn, Path=Visibility}" />-->
-                                <!--<DataGridTemplateColumn Header="Xoá">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button
-                                                Click="XoaHoaDonButton_Click"
-                                                Content="❌"
-                                                Style="{StaticResource XoaButtonStyle}"
-                                                ToolTip="Xoá" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>-->
-                                <DataGridTemplateColumn Width="Auto" Header="">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
-                                                <fa:IconBlock
-                                                    Width="16"
-                                                    Height="16"
-                                                    Icon="Motorcycle"
-                                                    Visibility="{Binding NgayShip, Converter={StaticResource NullToVisibilityConverter}}" />
-
-                                                <fa:IconBlock
-                                                    Width="16"
-                                                    Height="16"
-                                                    Icon="Bell"
-                                                    Visibility="{Binding BaoDon, Converter={StaticResource BoolToVisibilityConverter}}" />
-
-                                                <fa:IconBlock
-                                                    Width="16"
-                                                    Height="16"
-                                                    Icon="Star"
-                                                    Visibility="{Binding UuTien, Converter={StaticResource BoolToVisibilityConverter}}" />
-
-                                                <fa:IconBlock
-                                                    Width="16"
-                                                    Height="16"
-                                                    Icon="Clock"
-                                                    Visibility="{Binding NgayHen, Converter={StaticResource NullToVisibilityConverter}}" />
+                                                <fa:IconBlock Icon="Clock" Visibility="{Binding NgayHen, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
                                             </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
+                                <DataGridTextColumn
+                                    Width="*"
+                                    Binding="{Binding Ten}"
+                                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                                    Header="Tên bàn/khách" />
+                                <DataGridTextColumn
+                                    x:Name="TongTienHoaDonTextBlock"
+                                    Binding="{Binding ThanhTien, StringFormat=N0}"
+                                    ElementStyle="{StaticResource RightTextCellStyle}"
+                                    Header="Thành tiền" />
+                                <DataGridTextColumn
+                                    Binding="{Binding DaThu, StringFormat=N0}"
+                                    Header="Đã thu"
+                                    Visibility="{Binding ElementName=NgayHoaDonDataGridTextColumn, Path=Visibility}">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style BasedOn="{StaticResource CenterTextCellStyle}" TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding TrangThai}" Value="Tiền mặt">
+                                                    <Setter Property="Background" Value="LightGreen" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding TrangThai}" Value="Chuyển khoản">
+                                                    <Setter Property="Background" Value="LightYellow" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding TrangThai}" Value="Banking Nhã">
+                                                    <Setter Property="Background" Value="Gold" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding TrangThai}" Value="Chuyển khoản + Tiền mặt">
+                                                    <Setter Property="Background">
+                                                        <Setter.Value>
+                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                                <GradientStop Offset="0.0" Color="LightGreen" />
+                                                                <GradientStop Offset="0.5" Color="LightGreen" />
+                                                                <GradientStop Offset="0.5" Color="LightYellow" />
+                                                                <GradientStop Offset="1.0" Color="LightYellow" />
+                                                            </LinearGradientBrush>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding TrangThai}" Value="Banking Nhã + Tiền mặt">
+                                                    <Setter Property="Background">
+                                                        <Setter.Value>
+                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                                <GradientStop Offset="0.0" Color="LightGreen" />
+                                                                <GradientStop Offset="0.5" Color="LightGreen" />
+                                                                <GradientStop Offset="0.5" Color="Gold" />
+                                                                <GradientStop Offset="1.0" Color="Gold" />
+                                                            </LinearGradientBrush>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding TrangThai}" Value="Thu một phần">
+                                                    <Setter Property="Background" Value="PaleTurquoise" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn
+                                    Binding="{Binding ConLai, StringFormat=N0}"
+                                    Header="Còn lại"
+                                    Visibility="{Binding ElementName=NgayHoaDonDataGridTextColumn, Path=Visibility}">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style BasedOn="{StaticResource CenterTextCellStyle}" TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding TrangThai}" Value="Nợ một phần">
+                                                    <Setter Property="Background" Value="LightCoral" />
+                                                    <Setter Property="Foreground" Value="White" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding TrangThai}" Value="Ghi nợ">
+                                                    <Setter Property="Background" Value="IndianRed" />
+                                                    <Setter Property="Foreground" Value="White" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
                             </DataGrid.Columns>
                         </DataGrid>
                         <Grid
@@ -588,8 +581,10 @@
                                     </StackPanel>
                                 </Button>
                                 <Button
+                                    Name="HisButton"
                                     Margin="5"
                                     Background="DodgerBlue"
+                                    Click="HisButton_Click"
                                     Foreground="White"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
@@ -619,85 +614,140 @@
                                 </Button>
                             </StackPanel>
                         </Grid>
-                        <ListBox
-                            x:Name="ChiTietHoaDonListBox"
-                            Grid.Row="1"
-                            Grid.Column="2"
-                            Background="WhiteSmoke"
-                            BorderThickness="0"
-                            ScrollViewer.VerticalScrollBarVisibility="Auto">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border
-                                        Margin="4"
-                                        Padding="8"
-                                        Background="White"
-                                        BorderBrush="LightGray"
-                                        BorderThickness="1"
-                                        CornerRadius="4">
-                                        <StackPanel>
-                                            <!--  Tên sản phẩm + biến thể  -->
-                                            <TextBlock
-                                                FontSize="14"
-                                                FontWeight="SemiBold"
-                                                Foreground="Black"
-                                                Text="{Binding TenSanPham}" />
-                                            <TextBlock
-                                                Margin="0,0,0,4"
-                                                FontSize="12"
-                                                Foreground="Gray"
-                                                Text="{Binding TenBienThe}" />
+                        <Grid Grid.Row="1" Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition />
+                                <RowDefinition Height="auto" />
+                            </Grid.RowDefinitions>
+                            <ListBox
+                                x:Name="ChiTietHoaDonListBox"
+                                Background="WhiteSmoke"
+                                BorderThickness="0"
+                                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                SelectionChanged="ChiTietHoaDonListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
 
-                                            <!--  Grid chi tiết số lượng, đơn giá, thành tiền  -->
-                                            <Grid Margin="0,2,0,2">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-
+                                        <Border
+                                            Margin="4"
+                                            Padding="8"
+                                            Background="White"
+                                            BorderBrush="LightGray"
+                                            BorderThickness="1"
+                                            CornerRadius="4">
+                                            <StackPanel>
                                                 <TextBlock
-                                                    Grid.Column="0"
-                                                    Margin="0,0,15,0"
-                                                    Text="{Binding SoLuong, StringFormat='SL: {0}'}" />
-
-                                                <TextBlock
-                                                    Grid.Column="1"
-                                                    Margin="0,0,15,0"
-                                                    Foreground="DarkSlateGray"
-                                                    Text="{Binding DonGia, StringFormat={}{0:n0} đ}" />
-
-                                                <TextBlock
-                                                    Grid.Column="2"
                                                     HorizontalAlignment="Right"
+                                                    FontSize="10"
+                                                    Text="{Binding NgayGio, StringFormat=dd-MM-yyyy HH:mm}"
+                                                    Visibility="{Binding NgayGio, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+                                                <TextBlock
+                                                    FontSize="14"
+                                                    FontWeight="SemiBold"
+                                                    Foreground="Black"
+                                                    Text="{Binding TenSanPham}" />
+                                                <TextBlock
+                                                    Margin="0,0,0,4"
+                                                    FontSize="12"
+                                                    Foreground="Gray"
+                                                    Text="{Binding TenBienThe}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding TenBienThe}" Value="Size Chuẩn">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <!--  Grid chi tiết số lượng, đơn giá, thành tiền  -->
+                                                <Grid Margin="0,2,0,2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <TextBlock
+                                                        Grid.Column="0"
+                                                        Margin="0,0,15,0"
+                                                        Text="{Binding SoLuong, StringFormat='SL: {0}'}" />
+
+                                                    <TextBlock
+                                                        Grid.Column="1"
+                                                        Margin="0,0,15,0"
+                                                        Foreground="DarkSlateGray"
+                                                        Text="{Binding DonGia, StringFormat={}{0:n0} đ}" />
+
+                                                    <TextBlock
+                                                        Grid.Column="2"
+                                                        HorizontalAlignment="Right"
+                                                        FontWeight="Bold"
+                                                        Foreground="DarkRed"
+                                                        Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
+                                                </Grid>
+
+                                                <!--  Topping  -->
+                                                <TextBlock
+                                                    Margin="0,0,0,2"
+                                                    FontSize="12"
+                                                    Foreground="DarkGreen"
+                                                    Text="{Binding ToppingText}"
+                                                    TextWrapping="Wrap"
+                                                    Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+
+                                                <!--  Ghi chú  -->
+                                                <TextBlock
+                                                    FontStyle="Italic"
                                                     FontWeight="Bold"
                                                     Foreground="DarkRed"
-                                                    Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
-                                            </Grid>
+                                                    Text="{Binding NoteText}"
+                                                    TextWrapping="Wrap"
+                                                    Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+                                                <TextBlock
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top"
+                                                    Text="{Binding DinhLuong}"
+                                                    TextWrapping="Wrap"
+                                                    Visibility="{Binding DinhLuong, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
 
-                                            <!--  Topping  -->
-                                            <TextBlock
-                                                Margin="0,0,0,2"
-                                                FontSize="12"
-                                                Foreground="DarkGreen"
-                                                Text="{Binding ToppingText}"
-                                                TextWrapping="Wrap"
-                                                Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyToVisibilityConverter}}" />
+                                            </StackPanel>
+                                        </Border>
 
-                                            <!--  Ghi chú  -->
-                                            <TextBlock
-                                                FontSize="12"
-                                                FontStyle="Italic"
-                                                Foreground="DarkOrange"
-                                                Text="{Binding NoteText}"
-                                                TextWrapping="Wrap"
-                                                Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyToVisibilityConverter}}" />
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
 
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+
+                            </ListBox>
+                            <TextBlock
+                                x:Name="TongSoSanPhamTextBlock"
+                                Padding="4"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Bottom"
+                                Panel.ZIndex="1"
+                                FontSize="80"
+                                FontWeight="Bold"
+                                Foreground="#4CAF50"
+                                Opacity=".5"
+                                TextAlignment="Right" />
+                            <TextBlock
+                                x:Name="TongNoKhachHangTextBlock"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                FontSize="16"
+                                FontWeight="Bold"
+                                Foreground="WhiteSmoke"
+                                Opacity="0.8"
+                                TextAlignment="Right" />
+                            <TextBox
+                                x:Name="SearchChiTietHoaDonTextBox"
+                                Grid.Row="1"
+                                TextChanged="SearchChiTietHoaDonTextBox_TextChanged"
+                                Visibility="Collapsed" />
+                        </Grid>
 
                     </Grid>
                 </TabItem>
@@ -745,7 +795,7 @@
 
                                 <!--  3. Giờ chi tiết đi kèm với ngày  -->
                                 <DataGridTextColumn
-                                    Binding="{Binding NgayGio, StringFormat=hh:mm tt}"
+                                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Giờ" />
 
@@ -847,7 +897,7 @@
                                         <DataTrigger Binding="{Binding IsToday}" Value="false">
                                             <Setter Property="TextBlock.TextDecorations" Value="Strikethrough" />
                                             <Setter Property="Foreground" Value="Gray" />
-                                            <Setter Property="Opacity" Value="0.6" />
+                                            <Setter Property="Opacity" Value="0.8" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -867,7 +917,7 @@
 
 
                                 <DataGridTextColumn
-                                    Binding="{Binding NgayGio, StringFormat=hh:mm tt}"
+                                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Giờ" />
 
@@ -942,7 +992,7 @@
                                         <DataTrigger Binding="{Binding BillThang}" Value="True">
                                             <Setter Property="TextBlock.TextDecorations" Value="Strikethrough" />
                                             <Setter Property="Foreground" Value="Gray" />
-                                            <Setter Property="Opacity" Value="0.6" />
+                                            <Setter Property="Opacity" Value="0.8" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -957,13 +1007,14 @@
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Ngày" />
                                 <DataGridTextColumn
-                                    Binding="{Binding NgayGio, StringFormat=hh:mm tt}"
+                                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Giờ" />
                                 <DataGridCheckBoxColumn
                                     Binding="{Binding BillThang}"
                                     ElementStyle="{StaticResource DataGridCheckBoxElementStyle}"
-                                    Header="Bill tháng" />
+                                    Header="Bill tháng"
+                                    IsReadOnly="True" />
                                 <DataGridTextColumn
                                     Binding="{Binding Ten}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
@@ -1029,7 +1080,7 @@
                                         <DataTrigger Binding="{Binding DaHoanThanh}" Value="True">
                                             <Setter Property="TextBlock.TextDecorations" Value="Strikethrough" />
                                             <Setter Property="Foreground" Value="Gray" />
-                                            <Setter Property="Opacity" Value="0.5" />
+                                            <Setter Property="Opacity" Value="0.8" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -1044,7 +1095,7 @@
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Ngày" />
                                 <DataGridTextColumn
-                                    Binding="{Binding NgayGio, StringFormat=hh:mm tt}"
+                                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Giờ" />
                                 <DataGridTextColumn
@@ -1054,7 +1105,8 @@
                                 <DataGridCheckBoxColumn
                                     Width="*"
                                     Binding="{Binding DaHoanThanh}"
-                                    ElementStyle="{StaticResource DataGridCheckBoxElementStyleLeft}" />
+                                    ElementStyle="{StaticResource DataGridCheckBoxElementStyleLeft}"
+                                    IsReadOnly="True" />
                                 <DataGridTemplateColumn Header="Xoá">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
@@ -1073,6 +1125,7 @@
 
             </TabControl>
             <Grid
+                x:Name="Menu"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
                 Panel.ZIndex="1">

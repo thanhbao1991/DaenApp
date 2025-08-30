@@ -17,7 +17,7 @@ public class SanPhamDto : DtoBase
     [NotMapped]
     public int OldId { get; set; }
     public override string TimKiem =>
-    TextSearchHelper.NormalizeText($"{Ten} {VietTat}") + " " +
+    TextSearchHelper.NormalizeText($"{Ten} {Ten.Replace(" ", "")} {VietTat}") + " " +
     TextSearchHelper.GetShortName(Ten ?? "");
 
     public virtual List<SanPhamBienTheDto> BienThe { get; set; } = new List<SanPhamBienTheDto>();

@@ -11,7 +11,8 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public bool BaoDon { get; set; }
     public decimal TongNoKhachHang { get; set; }
     public int TongDiem { get; set; }
-    public int DiemTrongThang { get; set; }
+    public int DiemThangNay { get; set; }
+    public int DiemThangTruoc { get; set; }
 
     public DateTime? NgayShip { get; set; }
     public DateTime? NgayRa { get; set; }
@@ -25,7 +26,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
                 var phut = (int)(DateTime.Now - NgayGio).TotalMinutes;
                 return $"{phut}'";
             }
-            return NgayGio.ToString("hh:mm tt");
+            return NgayGio.ToString("HH:mm");
         }
     }
 
@@ -47,8 +48,8 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public Guid? VoucherId { get; set; }
 
     public string? MaHoaDon { get; set; }
-    public string? TenBan { get; set; }
-    public string? TrangThai { get; set; }
+    public string TenBan { get; set; } = null!;
+    public string TrangThai { get; set; } = null!;
 
     public string? DiaChiText { get; set; }
     public string? SoDienThoaiText { get; set; }
@@ -73,6 +74,8 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
 
     public virtual ICollection<ChiTietHoaDonThanhToan> ChiTietHoaDonThanhToans { get; set; } = new List<ChiTietHoaDonThanhToan>();
     public DateTime? NgayHen { get; set; }
+    public bool DuocNhanVoucher { get; set; }
+    public bool DaNhanVoucher { get; set; }
 }
 
 

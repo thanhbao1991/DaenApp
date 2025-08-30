@@ -101,10 +101,17 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
 
         var after = ToDto(afterEntity);
 
+
         if (entity.ChiTietHoaDonNoId != null)
-            await DiscordService.TraNoAsync($"{dto.Ten}\n{entity.SoTien.ToString("N0")}đ {entity.TenPhuongThucThanhToan} ({GhiChu})");
+            await DiscordService.SendAsync(
+                DiscordEventType.TraNo,
+                $"{dto.Ten}\n{entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({GhiChu})"
+            );
         else
-            await DiscordService.ThanhToanAsync($"{dto.Ten}\n{entity.SoTien.ToString("N0")}đ {entity.TenPhuongThucThanhToan} ({GhiChu})");
+            await DiscordService.SendAsync(
+                DiscordEventType.ThanhToan,
+                $"{dto.Ten}\n{entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({GhiChu})"
+            );
 
         return Result<ChiTietHoaDonThanhToanDto>.Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
             .WithId(after.Id)
@@ -166,12 +173,17 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             .FirstAsync(x => x.Id == id);
 
         var after = ToDto(afterEntity);
+
         if (entity.ChiTietHoaDonNoId != null)
-
-            await DiscordService.TraNoAsync($"[Chỉnh sửa] {dto.Ten}\n{entity.SoTien.ToString("N0")}đ {entity.TenPhuongThucThanhToan} ({GhiChu})");
+            await DiscordService.SendAsync(
+                DiscordEventType.TraNo,
+                $"[Chỉnh sửa]\n{dto.Ten} - {entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({GhiChu})"
+            );
         else
-            await DiscordService.ThanhToanAsync($"[Chỉnh sửa] {dto.Ten}\n{entity.SoTien.ToString("N0")}đ {entity.TenPhuongThucThanhToan} ({GhiChu})");
-
+            await DiscordService.SendAsync(
+                DiscordEventType.ThanhToan,
+                $"[Chỉnh sửa]\n{dto.Ten} - {entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({GhiChu})"
+            );
 
         return Result<ChiTietHoaDonThanhToanDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
             .WithId(id)
@@ -195,6 +207,18 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
 
 
         await _context.SaveChangesAsync();
+
+        if (entity.ChiTietHoaDonNoId != null)
+            await DiscordService.SendAsync(
+                DiscordEventType.TraNo,
+                $"[Xoá]\n{entity.Id} - {entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({entity.GhiChu})"
+            );
+        else
+            await DiscordService.SendAsync(
+                DiscordEventType.ThanhToan,
+                $"[Xoá]\n{entity.Id} - {entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({entity.GhiChu})"
+            );
+
 
         return Result<ChiTietHoaDonThanhToanDto>.Success(before, $"Xoá {_friendlyName.ToLower()} thành công.")
             .WithId(before.Id)
@@ -231,8 +255,11 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
 
     public async Task<List<ChiTietHoaDonThanhToanDto>> GetAllAsync()
     {
+        var today = DateTime.Today;
+        var fromDate = today.AddDays(-2);
+
         return await _context.ChiTietHoaDonThanhToans.AsNoTracking()
-            .Where(x => !x.IsDeleted)
+            .Where(x => !x.IsDeleted && x.Ngay >= fromDate)
             .OrderByDescending(x => x.LastModified)
             .Select(x => new ChiTietHoaDonThanhToanDto
             {

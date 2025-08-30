@@ -23,21 +23,15 @@ namespace TraSuaApp.WpfClient.Helpers
             {
                 sb.AppendLine($"Khách hàng: {hoaDon.TenKhachHangText} - {hoaDon.DiaChiText} - {FormatPhone(hoaDon.SoDienThoaiText)}");
 
-                // ⭐ Sao theo điểm
-                decimal stars = hoaDon.DiemTrongThang / 3000m;
-                int fullStars = (int)Math.Floor(stars);
-                bool halfStar = (stars - fullStars) >= 0.5m;
+                var starText = StarHelper.GetStarText(hoaDon.DiemThangNay);
+                if (!string.IsNullOrEmpty(starText))
+                    sb.AppendLine($"Điểm tháng này: {starText}");
 
-                string starIcons = "";
-                if (hoaDon.DiemTrongThang < 3000)
-                    starIcons = "☆";
-                else
-                {
-                    starIcons = new string('★', fullStars);
-                    if (halfStar) starIcons += "☆";
-                }
 
-                sb.AppendLine($"Điểm: {starIcons} ({hoaDon.DiemTrongThang / 10})");
+                var starText2 = StarHelper.GetStarText(hoaDon.DiemThangTruoc);
+                if (!string.IsNullOrEmpty(starText2))
+                    sb.AppendLine($"Điểm tháng trước: {starText2}");
+
             }
             sb.AppendLine("---------------------------");
             sb.AppendLine();
@@ -92,7 +86,9 @@ namespace TraSuaApp.WpfClient.Helpers
             if (hoaDon.TongNoKhachHang > 0)
             {
                 sb.AppendLine("---------------------------");
-                AddRow(sb, "* CÔNG NỢ:", hoaDon.TongNoKhachHang);
+                AddRow(sb, "Công nợ:", hoaDon.TongNoKhachHang);
+                AddRow(sb, "TỔNG:", hoaDon.TongNoKhachHang + hoaDon.ConLai);
+
             }
             sb.AppendLine("===========================");
 

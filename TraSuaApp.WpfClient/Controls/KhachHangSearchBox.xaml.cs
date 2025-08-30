@@ -1,14 +1,13 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
-
 namespace TraSuaApp.WpfClient.Controls
 {
     public partial class KhachHangSearchBox : UserControl
     {
-        // Public API:
         public List<KhachHangDto> KhachHangList { get; set; } = new();
         public KhachHangDto? SelectedKhachHang { get; private set; }
         public event Action<KhachHangDto>? KhachHangSelected;
@@ -18,95 +17,57 @@ namespace TraSuaApp.WpfClient.Controls
         {
             InitializeComponent();
         }
-        private void SearchBox_And_ListBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            // Nếu đang ở TextBox và nhấn phím xuống
-            if (sender == SearchTextBox && e.Key == Key.Down && ListBoxResults.Items.Count > 0)
-            {
-                ListBoxResults.Focus();
-                ListBoxResults.SelectedIndex = 0;
-                e.Handled = true;
-            }
-            // Nếu nhấn Enter
-            else if (e.Key == Key.Enter)
-            {
-                KhachHangDto? kh = null;
 
-                if (sender == SearchTextBox && ListBoxResults.Items.Count > 0)
-                {
-                    // Lấy kết quả đầu tiên
-                    kh = ListBoxResults.Items[0] as KhachHangDto;
-                }
-                else if (sender == ListBoxResults && ListBoxResults.SelectedItem is KhachHangDto selected)
-                {
-                    // Lấy mục đang chọn
-                    kh = selected;
-                }
+        public bool IsPopupOpen => ListBoxResults.Items.Count > 0;
+        public bool SuppressPopup { get; set; } = false;
 
-                if (kh != null)
-                {
-                    Select(kh);
-                    e.Handled = true;
-                }
-            }
-            // Nếu nhấn Escape
-            else if (e.Key == Key.Escape)
-            {
-                Popup.IsOpen = false;
-                SearchTextBox.Focus();
-                KhachHangCleared?.Invoke();
-                e.Handled = true;
-            }
-        }
-
-        // Expose for HoaDonEdit to pre-select
         public void SetSelectedKhachHang(KhachHangDto kh)
         {
             SelectedKhachHang = kh;
             SearchTextBox.Text = kh.Ten;
         }
 
-        // Internal state for Popup
-        public bool IsPopupOpen
-            => ListBoxResults.Items.Count > 0;
-
-        private void SearchTextBox_GotFocus(object sender, RoutedEventArgs e)
+        public void SetTextWithoutPopup(string text)
         {
-            SearchTextBox.CaretIndex = SearchTextBox.Text.Length;
+            SuppressPopup = true;
+            SearchTextBox.Text = text;
+            SuppressPopup = false;
         }
 
-        private void SearchTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        public void SetSelectedKhachHangByIdWithoutPopup(Guid id)
         {
-            if (e.Key == Key.Down && ListBoxResults.Items.Count > 0)
+            SuppressPopup = true;
+            SetSelectedKhachHangById(id);
+            SuppressPopup = false;
+        }
+
+        public void SetSelectedKhachHangById(Guid id)
+        {
+            var kh = KhachHangList.FirstOrDefault(x => x.Id == id);
+            if (kh != null)
+                SetSelectedKhachHang(kh);
+            else
             {
-                ListBoxResults.Focus();
-                ListBoxResults.SelectedIndex = 0;
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Escape)
-            {
+                SelectedKhachHang = null;
+                SearchTextBox.Text = "";
                 Popup.IsOpen = false;
-                KhachHangCleared?.Invoke();
             }
         }
+
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
             SearchTextBox.Text = "";
-            ClearButton.Visibility = Visibility.Collapsed;
             SelectedKhachHang = null;
-
-            // Bạn có thể raise event để thông báo đã huỷ chọn nếu cần
+            ClearButton.Visibility = Visibility.Collapsed;
             KhachHangCleared?.Invoke();
-            //
             SearchTextBox.Focus();
         }
 
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             ClearButton.Visibility = string.IsNullOrWhiteSpace(SearchTextBox.Text)
-        ? Visibility.Collapsed
-        : Visibility.Visible;
-
+                ? Visibility.Collapsed
+                : Visibility.Visible;
 
             string keyword = TextSearchHelper.NormalizeText(SearchTextBox.Text.Trim());
             if (string.IsNullOrEmpty(keyword))
@@ -116,31 +77,67 @@ namespace TraSuaApp.WpfClient.Controls
                 return;
             }
 
-            var parts = keyword.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            // Hàm tạo chữ cái viết tắt (acronym) từ tên
+            string GetInitials(string name)
+            {
+                if (string.IsNullOrWhiteSpace(name)) return "";
+                var words = TextSearchHelper.NormalizeText(name)
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                return string.Concat(words.Select(w => w[0])); // ví dụ "Xuân Hải" -> "xh"
+            }
 
-            var result = KhachHangList
-                .Where(kh => kh.TimKiem.Contains(keyword)
-                             || parts.All(p => kh.TimKiem.Contains(p)))
+            var results = KhachHangList
+                .Select(kh =>
+                {
+                    int score = 0;
+                    var ten = TextSearchHelper.NormalizeText(kh.Ten ?? "");
+                    var initials = GetInitials(kh.Ten ?? "");
+                    var sdt = TextSearchHelper.NormalizeText(kh.DienThoai ?? "");
+                    var diaChi = TextSearchHelper.NormalizeText(kh.DiaChi ?? "");
+                    var timKiem = TextSearchHelper.NormalizeText(kh.TimKiem ?? "");
+
+                    // Ưu tiên viết tắt
+                    if (initials == keyword) score += 500;
+                    else if (initials.StartsWith(keyword)) score += 400;
+
+                    // Tên
+                    if (ten.StartsWith(keyword)) score += 300;
+                    else if (ten.Contains(keyword)) score += 200;
+
+                    // SĐT
+                    if (!string.IsNullOrEmpty(sdt))
+                    {
+                        if (sdt.StartsWith(keyword)) score += 350;
+                        else if (sdt.Contains(keyword)) score += 150;
+                    }
+
+                    // Địa chỉ
+                    if (!string.IsNullOrEmpty(diaChi) && diaChi.Contains(keyword))
+                        score += 100;
+
+                    // Fallback TimKiem
+                    if (!string.IsNullOrEmpty(timKiem) && timKiem.Contains(keyword))
+                        score += 50;
+
+                    return new { KhachHang = kh, Score = score };
+                })
+                .Where(x => x.Score > 0)
+                .OrderByDescending(x => x.Score)
+                .ThenBy(x => x.KhachHang.Ten)
                 .Take(50)
-                .OrderBy(x => x.Ten)
-
+                .Select(x => x.KhachHang)
                 .ToList();
 
-            ListBoxResults.ItemsSource = result;
-            Popup.IsOpen = result.Any();
+            ListBoxResults.ItemsSource = results;
+            Popup.IsOpen = !SuppressPopup && results.Any();
         }
 
         private void ListBoxResults_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (ListBoxResults.SelectedItem is KhachHangDto kh)
                 Select(kh);
-            // SearchTextBox.Focus();
-            //SearchTextBox.SelectAll();
-        }
-
-        private void ListBoxResults_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            // optional: if you want selection change by keyboard
+            SearchTextBox.Focus();
+            SearchTextBox.SelectAll();
         }
 
         private void Select(KhachHangDto kh)
@@ -150,6 +147,37 @@ namespace TraSuaApp.WpfClient.Controls
             SearchTextBox.CaretIndex = SearchTextBox.Text.Length;
             Popup.IsOpen = false;
             KhachHangSelected?.Invoke(kh);
+        }
+
+        private void SearchBox_And_ListBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (sender == SearchTextBox && e.Key == Key.Down && ListBoxResults.Items.Count > 0)
+            {
+                ListBoxResults.Focus();
+                ListBoxResults.SelectedIndex = 0;
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter)
+            {
+                KhachHangDto? kh = null;
+                if (sender == SearchTextBox && ListBoxResults.Items.Count > 0)
+                    kh = ListBoxResults.Items[0] as KhachHangDto;
+                else if (sender == ListBoxResults && ListBoxResults.SelectedItem is KhachHangDto selected)
+                    kh = selected;
+
+                if (kh != null)
+                {
+                    Select(kh);
+                    e.Handled = true;
+                }
+            }
+            else if (e.Key == Key.Escape)
+            {
+                Popup.IsOpen = false;
+                SearchTextBox.Focus();
+                KhachHangCleared?.Invoke();
+                e.Handled = true;
+            }
         }
     }
 }

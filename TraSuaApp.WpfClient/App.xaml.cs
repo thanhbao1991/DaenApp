@@ -113,5 +113,12 @@ namespace TraSuaApp.WpfClient
                          _isLoggingIn = false;
                      });
         }
+
+        private void Application_Exit(object sender, ExitEventArgs e)
+        {
+            // Đóng ChromeDriver khi app thoát
+            AppShippingHelperText.DisposeDriver();
+        }
+
     }
 }

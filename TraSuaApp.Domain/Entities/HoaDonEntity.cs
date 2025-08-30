@@ -34,7 +34,7 @@ public partial class HoaDon
 
     public string? MaHoaDon { get; set; }
 
-    public string? TrangThai { get; set; }
+    // public string? TrangThai { get; set; }
 
     public Guid? VoucherId { get; set; }
 
@@ -43,7 +43,7 @@ public partial class HoaDon
 
     public string? SoDienThoaiText { get; set; }
 
-    public string? TenBan { get; set; }
+    public string TenBan { get; set; } = null!;
 
     public int OldId { get; set; }
 

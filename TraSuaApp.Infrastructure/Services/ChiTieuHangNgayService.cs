@@ -168,8 +168,11 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
 
     public async Task<List<ChiTieuHangNgayDto>> GetAllAsync()
     {
+        var today = DateTime.Today;
+        var fromDate = today.AddDays(-2);
+
         return await _context.ChiTieuHangNgays.AsNoTracking()
-            .Where(x => !x.IsDeleted)
+            .Where(x => !x.IsDeleted && x.Ngay >= fromDate)
             .OrderByDescending(x => x.LastModified)
             .Select(x => new ChiTieuHangNgayDto
             {

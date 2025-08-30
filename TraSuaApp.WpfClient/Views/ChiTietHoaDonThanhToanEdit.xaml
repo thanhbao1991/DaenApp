@@ -4,9 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
     Style="{StaticResource EditWindowStyle}"
-    
     WindowStartupLocation="CenterScreen">
-
     <Border Style="{StaticResource EditFormBorderStyle}">
         <Grid Margin="16">
             <Grid.RowDefinitions>

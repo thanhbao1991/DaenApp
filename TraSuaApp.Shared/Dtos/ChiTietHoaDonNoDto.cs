@@ -21,6 +21,8 @@ string.Join(" ", new[] {
     public decimal ConLai => SoTienNo - SoTienDaTra;
     public DateTime NgayGio { get; set; }
     public DateTime Ngay { get; set; }
+
+
     public string? MaHoaDon { get; set; }
     public string? GhiChu { get; set; }
 

@@ -18,15 +18,41 @@ namespace TraSuaApp.WpfClient.Controls
             InitializeComponent();
         }
 
+        public bool IsPopupOpen => ListBoxResults.Items.Count > 0;
+        public bool SuppressPopup { get; set; } = false;
+
         public void SetSelectedSanPham(SanPhamDto sp)
         {
             SelectedSanPham = sp;
             SearchTextBox.Text = sp.Ten;
         }
 
-        public bool IsPopupOpen => ListBoxResults.Items.Count > 0;
+        public void SetTextWithoutPopup(string text)
+        {
+            SuppressPopup = true;
+            SearchTextBox.Text = text;
+            SuppressPopup = false;
+        }
 
-        public bool SuppressPopup { get; set; } = false;
+        public void SetSelectedSanPhamByIdWithoutPopup(Guid id)
+        {
+            SuppressPopup = true;
+            SetSelectedSanPhamById(id);
+            SuppressPopup = false;
+        }
+
+        public void SetSelectedSanPhamById(Guid id)
+        {
+            var sp = SanPhamList.FirstOrDefault(x => x.Id == id);
+            if (sp != null)
+                SetSelectedSanPham(sp);
+            else
+            {
+                SelectedSanPham = null;
+                SearchTextBox.Text = "";
+                Popup.IsOpen = false;
+            }
+        }
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
@@ -57,14 +83,12 @@ namespace TraSuaApp.WpfClient.Controls
                 .Where(sp => (sp.TimKiem ?? "").Contains(keyword) || parts.All(p => (sp.TimKiem ?? "").Contains(p)))
                 .Take(50)
                 .OrderBy(x => x.Ten)
-
                 .ToList();
 
             ListBoxResults.ItemsSource = result;
-
-            // 🟟 Chỉ mở Popup nếu không bị suppress
             Popup.IsOpen = !SuppressPopup && result.Any();
         }
+
         private void ListBoxResults_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (ListBoxResults.SelectedItem is SanPhamDto sp)
@@ -84,28 +108,19 @@ namespace TraSuaApp.WpfClient.Controls
 
         private void SearchBox_And_ListBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            // Nếu đang ở TextBox và nhấn phím xuống
             if (sender == SearchTextBox && e.Key == Key.Down && ListBoxResults.Items.Count > 0)
             {
                 ListBoxResults.Focus();
                 ListBoxResults.SelectedIndex = 0;
                 e.Handled = true;
             }
-            // Nếu nhấn Enter
             else if (e.Key == Key.Enter)
             {
                 SanPhamDto? sp = null;
-
                 if (sender == SearchTextBox && ListBoxResults.Items.Count > 0)
-                {
-                    // Lấy kết quả đầu tiên
                     sp = ListBoxResults.Items[0] as SanPhamDto;
-                }
                 else if (sender == ListBoxResults && ListBoxResults.SelectedItem is SanPhamDto selected)
-                {
-                    // Lấy mục đang chọn
                     sp = selected;
-                }
 
                 if (sp != null)
                 {
@@ -113,7 +128,6 @@ namespace TraSuaApp.WpfClient.Controls
                     e.Handled = true;
                 }
             }
-            // Nếu nhấn Escape
             else if (e.Key == Key.Escape)
             {
                 Popup.IsOpen = false;

@@ -24,7 +24,7 @@ public partial class ChiTietHoaDonEntity
 
     public string TenBienThe { get; set; } = null!;
 
-    public string? TenSanPham { get; set; }
+    public string TenSanPham { get; set; } = null!;
 
     public string ToppingText { get; set; } = null!;
 

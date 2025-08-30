@@ -60,6 +60,9 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             {
                 TenTextBox.Focus();
             }
+
+            _ = TTSHelper.DownloadAndPlayGoogleTTSAsync(Model.TenPhuongThucThanhToan);
+
         }
 
 
@@ -118,6 +121,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 ErrorTextBlock.Text = result.Message;
                 return;
             }
+
+            await TTSHelper.DownloadAndPlayGoogleTTSAsync(Model.TenPhuongThucThanhToan);
 
             DialogResult = true;
             Close();
