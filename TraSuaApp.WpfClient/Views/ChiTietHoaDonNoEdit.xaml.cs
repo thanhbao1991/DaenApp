@@ -96,14 +96,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
             if (e.Key == Key.Enter)
             {
-                if (Keyboard.FocusedElement is Button) return;
-
-                var request = new TraversalRequest(FocusNavigationDirection.Next);
-                if (Keyboard.FocusedElement is UIElement element)
-                {
-                    element.MoveFocus(request);
-                    e.Handled = true;
-                }
+                SaveButton_Click(null, null);
             }
         }
 

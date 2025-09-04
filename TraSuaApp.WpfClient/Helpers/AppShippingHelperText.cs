@@ -7,6 +7,7 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Shared.Services;
 
 public class AppShippingHelperText
 {
@@ -185,12 +186,24 @@ public class AppShippingHelperText
     {
         try
         {
-            _driver?.Quit();
-            _driver?.Dispose();
-            _driver = null;
-            _wait = null;
+            if (_driver != null)
+            {
+                _driver.Quit();
+                _driver.Dispose();
+            }
         }
         catch { }
+        finally
+        {
+            _driver = null;
+            _wait = null;
+
+            // Kill process nếu còn sót
+            foreach (var process in System.Diagnostics.Process.GetProcessesByName("chromedriver"))
+            {
+                try { process.Kill(); } catch { }
+            }
+        }
     }
 
     private bool IsLoggedIn(IWebDriver driver) =>
@@ -216,11 +229,12 @@ public class AppShippingHelperText
         if (sp == null)
         {
             MessageBox.Show(
-                $"⚠️ Không tìm thấy sản phẩm: {tenSanPham}\nBiến thể: {tenBienThe}",
+                $"⚠️ Không tìm thấy sản phẩm: {tenSanPham}",
                 "Cảnh báo mapping sản phẩm",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning
             );
+            DiscordService.SendAsync(TraSuaApp.Shared.Enums.DiscordEventType.Admin, $"{tenSanPham} AppShippingError");
             return Guid.Empty;
         }
 

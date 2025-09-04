@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace TraSuaApp.Domain.Entities;
+﻿namespace TraSuaApp.Domain.Entities;
 
 public partial class SanPham
 {
@@ -13,7 +10,7 @@ public partial class SanPham
 
     public string? VietTat { get; set; }
 
-    public int? DaBan { get; set; }
+    public int DaBan { get; set; }
 
     public Guid? NhomSanPhamId { get; set; }
 

@@ -1,24 +1,23 @@
-﻿using TraSuaApp.Shared.Helpers;
-
-namespace TraSuaApp.Shared.Dtos;
+﻿namespace TraSuaApp.Shared.Dtos;
 
 public class ChiTietHoaDonThanhToanDto : DtoBase
 {
     public override string ApiRoute => "ChiTietHoaDonThanhToan";
 
+    public bool IsToday => Ngay == DateTime.Today;
 
-    public override string TimKiem =>
-    string.Join(" ", new[] {
-        Ten,
-        Ten?.Replace(" ", ""),
-        TenPhuongThucThanhToan,
-        TenPhuongThucThanhToan?.Replace(" ", ""),
-        LoaiThanhToan,
-        LoaiThanhToan?.Replace(" ", "")
-    }
-    .Where(s => !string.IsNullOrEmpty(s))
-    .Select(s => TextSearchHelper.NormalizeText(s))
-    ) + " " + TextSearchHelper.GetShortName(Ten ?? "");
+    //public override string TimKiem =>
+    //string.Join(" ", new[] {
+    //    Ten,
+    //    Ten?.Replace(" ", ""),
+    //    TenPhuongThucThanhToan,
+    //    TenPhuongThucThanhToan?.Replace(" ", ""),
+    //    LoaiThanhToan,
+    //    LoaiThanhToan?.Replace(" ", "")
+    //}
+    //.Where(s => !string.IsNullOrEmpty(s))
+    //.Select(s => TextSearchHelper.NormalizeText(s))
+    //) + " " + TextSearchHelper.GetShortName(Ten ?? "");
 
     public string LoaiThanhToan { get; set; }
     public Guid? ChiTietHoaDonNoId { get; set; }

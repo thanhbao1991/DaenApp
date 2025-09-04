@@ -28,7 +28,9 @@
                 Grid.Row="1"
                 VerticalAlignment="Top"
                 Orientation="Vertical">
-
+                <GroupBox Margin="0,0,0,5" Header="Ngày chi tiêu">
+                    <DatePicker x:Name="NgayDatePicker" />
+                </GroupBox>
                 <GroupBox Margin="0,0,0,5" Header="Nguyên vật liệu">
                     <ctrl:NguyenLieuSearchBox x:Name="NguyenLieuComboBox" HorizontalAlignment="Stretch" />
                 </GroupBox>
@@ -50,6 +52,7 @@
                 <GroupBox Header="Ghi chú">
                     <TextBox x:Name="GhiChuTextBox" HorizontalAlignment="Stretch" />
                 </GroupBox>
+                <GroupItem />
                 <CheckBox
                     x:Name="BillThangCheckBox"
                     Margin="5,5,0,0"
@@ -64,7 +67,7 @@
                 <Button
                     Name="SaveButton"
                     Click="SaveButton_Click"
-                    Content="Lưu"
+                    Content="Lưu Và Thêm Tiếp"
                     Style="{StaticResource SaveButtonStyle}" />
 
             </StackPanel>

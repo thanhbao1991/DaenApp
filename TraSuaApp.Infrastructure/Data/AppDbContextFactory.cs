@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using TraSuaApp.Shared.Config;
 
 namespace TraSuaApp.Infrastructure.Data;
 
@@ -9,8 +10,7 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
     {
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
 
-        // Thay chuỗi kết nối bằng chuỗi bạn dùng thật
-        optionsBuilder.UseSqlServer("Server=localhost;Database=TraSuaAppDb;Trusted_Connection=True;TrustServerCertificate=True");
+        optionsBuilder.UseSqlServer(Config.ConnectionString);
 
         return new AppDbContext(optionsBuilder.Options);
     }

@@ -12,6 +12,8 @@ namespace TraSuaApp.WpfClient.Controls
 
         public PhoneNumberTextBox()
         {
+            FontWeight = FontWeights.Medium;
+
             this.PreviewTextInput += OnPreviewTextInput;
             this.TextChanged += OnTextChanged;
             this.LostFocus += OnLostFocus;

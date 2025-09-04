@@ -41,7 +41,7 @@
                         GroupName="LoaiDon">
                         <StackPanel VerticalAlignment="Stretch" Orientation="Horizontal">
                             <fa:IconBlock Foreground="#4CAF50" Icon="Cutlery" />
-                            <TextBlock FontSize="16" Text="Tại chỗ" />
+                            <TextBlock FontSize="{StaticResource FontSizeLarge}" Text="Tại chỗ" />
                         </StackPanel>
                     </RadioButton>
                     <ComboBox
@@ -61,26 +61,12 @@
                                 Margin="0,0,5,0"
                                 Foreground="#2196F3"
                                 Icon="ShoppingBag" />
-                            <TextBlock FontSize="16" Text="Mua về" />
+                            <TextBlock FontSize="{StaticResource FontSizeLarge}" Text="Mua về" />
                         </StackPanel>
                     </RadioButton>
                     <RadioButton
                         x:Name="ShipRadio"
                         Margin="0,0,8,0"
-                        Checked="LoaiDonRadio_Checked"
-                        Foreground="#F44336"
-                        GroupName="LoaiDon">
-                        <StackPanel VerticalAlignment="Stretch" Orientation="Horizontal">
-                            <fa:IconBlock
-                                Margin="0,0,5,0"
-                                Foreground="#F44336"
-                                Icon="Truck" />
-                            <TextBlock FontSize="16" Text="Ship" />
-                        </StackPanel>
-                    </RadioButton>
-
-                    <RadioButton
-                        x:Name="AppRadio"
                         Checked="LoaiDonRadio_Checked"
                         Foreground="#FF9800"
                         GroupName="LoaiDon">
@@ -88,8 +74,22 @@
                             <fa:IconBlock
                                 Margin="0,0,5,0"
                                 Foreground="#FF9800"
+                                Icon="Truck" />
+                            <TextBlock FontSize="{StaticResource FontSizeLarge}" Text="Ship" />
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton
+                        x:Name="AppRadio"
+                        Checked="LoaiDonRadio_Checked"
+                        Foreground="#F44336"
+                        GroupName="LoaiDon">
+                        <StackPanel VerticalAlignment="Stretch" Orientation="Horizontal">
+                            <fa:IconBlock
+                                Margin="0,0,5,0"
+                                Foreground="#F44336"
                                 Icon="Mobile" />
-                            <TextBlock FontSize="16" Text="App" />
+                            <TextBlock FontSize="{StaticResource FontSizeLarge}" Text="App" />
                         </StackPanel>
                     </RadioButton>
 
@@ -131,7 +131,10 @@
                                 SelectedValuePath="Id" />
                         </GroupBox>
                         <GroupBox Header="Điểm tháng này">
-                            <TextBlock x:Name="DiemThangNayTextBlock" Width="175" />
+                            <TextBlock
+                                x:Name="DiemThangNayTextBlock"
+                                Width="175"
+                                FontWeight="Medium" />
                         </GroupBox>
                         <GroupBox
                             x:Name="DiemThangTruocGroupBox"
@@ -141,7 +144,7 @@
                             <TextBlock
                                 x:Name="DiemThangTruocTextBlock"
                                 Width="175"
-                                MouseDown="DiemThangTruocTextBlock_MouseDown" />
+                                FontWeight="Medium" />
                         </GroupBox>
                         <GroupBox Header="Voucher">
                             <Grid>
@@ -162,10 +165,10 @@
                             </Grid>
                         </GroupBox>
                         <GroupBox
-                            Background="WhiteSmoke"
                             BorderBrush="Gray"
+                            BorderThickness="1"
                             Header="Thông tin thanh toán">
-                            <Grid Margin="4" Background="WhiteSmoke">
+                            <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition />
                                     <ColumnDefinition />
@@ -176,46 +179,46 @@
                                     <RowDefinition />
                                     <RowDefinition />
                                 </Grid.RowDefinitions>
-                                <TextBlock FontSize="14" Text="Tổng tiền: " />
+                                <TextBlock Padding="4" Text="Tổng tiền: " />
                                 <TextBlock
                                     x:Name="TongTienTextBlock"
                                     Grid.Column="1"
-                                    FontSize="14"
+                                    Padding="4"
                                     TextAlignment="Right" />
                                 <TextBlock
                                     Grid.Row="1"
-                                    FontSize="14"
+                                    Padding="4"
                                     Text="Voucher/CK: " />
                                 <TextBlock
                                     x:Name="GiamGiaTextBlock"
                                     Grid.Row="1"
                                     Grid.Column="1"
-                                    FontSize="14"
+                                    Padding="4"
                                     TextAlignment="Right" />
                                 <TextBlock
                                     Grid.Row="2"
-                                    FontSize="14"
-                                    FontWeight="Bold"
+                                    Padding="4"
+                                    FontWeight="Medium"
                                     Text="Thành tiền: " />
                                 <TextBlock
                                     x:Name="ThanhTienTextBlock"
                                     Grid.Row="2"
                                     Grid.Column="1"
-                                    FontSize="14"
-                                    FontWeight="Bold"
+                                    Padding="4"
+                                    FontWeight="Medium"
                                     TextAlignment="Right" />
                                 <TextBlock
                                     Grid.Row="3"
-                                    FontSize="14"
-                                    FontWeight="Bold"
+                                    Padding="4"
+                                    FontWeight="Medium"
                                     Foreground="IndianRed"
                                     Text="Công nợ: " />
                                 <TextBlock
                                     x:Name="CongNoTextBlock"
                                     Grid.Row="3"
                                     Grid.Column="1"
-                                    FontSize="14"
-                                    FontWeight="Bold"
+                                    Padding="4"
+                                    FontWeight="Medium"
                                     Foreground="IndianRed"
                                     TextAlignment="Right" />
                             </Grid>
@@ -225,201 +228,155 @@
                         <GroupBox Header="Nhập để tìm sản phẩm">
                             <ctrl:SanPhamSearchBox x:Name="SanPhamSearchBox" Width="175" />
                         </GroupBox>
-                        <StackPanel Orientation="Horizontal">
-                            <GroupBox Header="Size">
-                                <ComboBox
-                                    x:Name="BienTheComboBox"
-                                    Width="80"
-                                    SelectedValuePath="Id"
-                                    SelectionChanged="BienTheComboBox_SelectionChanged">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding GiaBan, StringFormat={}{0:N0}}" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </GroupBox>
-                            <GroupBox Header="SL">
-                                <StackPanel Orientation="Horizontal">
-                                    <Button
-                                        Width="25"
-                                        Click="GiamButton_Click"
-                                        Content="−" />
-                                    <ctrl:NumericTextBox
-                                        x:Name="SoLuongTextBox"
-                                        HorizontalContentAlignment="Center"
-                                        Text="0" />
-                                    <Button
-                                        Width="25"
-                                        Click="TangButton_Click"
-                                        Content="+" />
-                                </StackPanel>
-                            </GroupBox>
-                        </StackPanel>
                         <GroupBox Header="Ghi chú">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition />
-                                    <ColumnDefinition />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="auto" />
-                                    <RowDefinition Height="auto" />
-                                    <RowDefinition Height="auto" />
-                                </Grid.RowDefinitions>
-                                <StackPanel Orientation="Vertical">
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Không đường"
-                                        GroupName="Duong"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Ít ngọt"
-                                        GroupName="Duong"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Nhiều ngọt"
-                                        GroupName="Duong"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Đường riêng"
-                                        GroupName="Duong"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Orientation="Vertical">
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Không đá"
-                                        GroupName="Da"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Ít đá"
-                                        GroupName="Da"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Nhiều đá"
-                                        GroupName="Da"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Đá riêng"
-                                        GroupName="Da"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                </StackPanel>
-                                <StackPanel
-                                    Grid.Row="1"
-                                    Margin="0,8,0,0"
-                                    Orientation="Vertical">
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Chỉ TCĐĐ"
-                                        GroupName="Khac"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Chỉ TCOL"
-                                        GroupName="Khac"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Size L"
-                                        GroupName="Khac"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Size XL"
-                                        GroupName="Khac"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                </StackPanel>
-                                <StackPanel
-                                    Grid.Row="1"
-                                    Grid.Column="1"
-                                    Margin="0,8,0,0">
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Không trà"
-                                        GroupName="Tra"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Trà nhạt"
-                                        GroupName="Tra"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Trà đậm"
-                                        GroupName="Tra"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                    <RadioButton
-                                        Checked="NoteRadio_Checked"
-                                        Content="Trà nóng"
-                                        GroupName="Tra"
-                                        PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                        Unchecked="NoteRadio_Checked" />
-                                </StackPanel>
-                            </Grid>
-                        </GroupBox>
-                        <GroupBox Header="Ghi chú khác">
                             <TextBox
                                 x:Name="NoteTuDoTextBox"
                                 Grid.Row="2"
                                 Grid.ColumnSpan="2"
                                 Width="175"
-                                Height="68"
-                                HorizontalContentAlignment="Left"
-                                VerticalContentAlignment="Top"
-                                AcceptsReturn="True"
                                 TextChanged="NoteTuDoTextBox_TextChanged" />
                         </GroupBox>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto" />
+                                <RowDefinition Height="auto" />
+                                <RowDefinition Height="auto" />
+                            </Grid.RowDefinitions>
+                            <StackPanel Orientation="Vertical">
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Không đường"
+                                    GroupName="Duong"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Ít ngọt"
+                                    GroupName="Duong"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Nhiều ngọt"
+                                    GroupName="Duong"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Đường riêng"
+                                    GroupName="Duong"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Vertical">
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Không đá"
+                                    GroupName="Da"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Ít đá"
+                                    GroupName="Da"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Nhiều đá"
+                                    GroupName="Da"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Đá riêng"
+                                    GroupName="Da"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                            </StackPanel>
+                            <StackPanel
+                                Grid.Row="1"
+                                Margin="0,8,0,0"
+                                Orientation="Vertical">
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Chỉ TCĐĐ"
+                                    GroupName="Khac"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Chỉ TCOL"
+                                    GroupName="Khac"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Size L"
+                                    GroupName="Khac"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Đắng"
+                                    GroupName="Khac"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                            </StackPanel>
+                            <StackPanel
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Margin="0,8,0,0">
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Không trà"
+                                    GroupName="Tra"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Trà nhạt"
+                                    GroupName="Tra"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Trà đậm"
+                                    GroupName="Tra"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Trà nóng"
+                                    GroupName="Tra"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                            </StackPanel>
+                        </Grid>
 
                     </StackPanel>
                     <GroupBox Grid.Column="2" Header="Danh sách món đã chọn">
                         <Grid>
-                            <Button
-                                x:Name="ThemDongButton"
-                                Margin="-28"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Bottom"
-                                Panel.ZIndex="1"
-                                Click="ThemDongButton_Click"
-                                Content="Tách dòng mới"
-                                Style="{StaticResource ThemButtonStyle}"
-                                Visibility="Visible" />
                             <TextBlock
                                 x:Name="TongSoSanPhamTextBlock"
+                                Margin="0,-100,30,0"
                                 Padding="4"
                                 HorizontalAlignment="Right"
-                                VerticalAlignment="Bottom"
+                                VerticalAlignment="Top"
                                 Panel.ZIndex="1"
-                                FontSize="80"
+                                FontSize="{StaticResource FontSizeXXX}"
                                 FontWeight="Bold"
                                 Foreground="#4CAF50"
-                                Opacity=".5"
                                 TextAlignment="Center" />
                             <ListBox
                                 x:Name="ChiTietListBox"
-                                Width="300"
-                                Height="400"
+                                Width="350"
+                                Height="450"
                                 HorizontalContentAlignment="Stretch"
                                 AlternationCount="99"
                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -439,103 +396,163 @@
                                 </ListBox.ItemContainerStyle>
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <Border
-                                            Padding="8"
-                                            Background="White"
-                                            BorderBrush="LightGray"
-                                            BorderThickness="1"
-                                            CornerRadius="4">
-                                            <Grid>
-                                                <StackPanel>
-                                                    <TextBlock
-                                                        HorizontalAlignment="Right"
-                                                        FontSize="10"
-                                                        Text="{Binding NgayGio, StringFormat=dd-MM-yyyy HH:mm}"
-                                                        Visibility="{Binding NgayGio, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-                                                    <!--  Tên sản phẩm + biến thể  -->
-                                                    <TextBlock
-                                                        FontSize="14"
-                                                        FontWeight="SemiBold"
-                                                        Foreground="Black"
-                                                        Text="{Binding TenSanPham}" />
-                                                    <TextBlock
-                                                        Margin="0,0,0,4"
-                                                        FontSize="12"
-                                                        Foreground="Gray"
-                                                        Text="{Binding TenBienThe}">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding TenBienThe}" Value="Size Chuẩn">
-                                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                    <!--  Grid chi tiết số lượng, đơn giá, thành tiền  -->
-                                                    <Grid Margin="0,2,0,2">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="Auto" />
-                                                            <ColumnDefinition Width="Auto" />
-                                                            <ColumnDefinition Width="*" />
-                                                        </Grid.ColumnDefinitions>
-
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="40" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border
+                                                Grid.Column="0"
+                                                Background="Gray"
+                                                BorderBrush="LightGray"
+                                                BorderThickness="1,1,0,1"
+                                                CornerRadius="4,0,0,4">
+                                                <TextBlock
+                                                    Padding="8"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    FontSize="{StaticResource FontSizeBig}" 
+                                                    FontWeight="Medium"
+                                                    Foreground="White"
+                                                    Text="{Binding SoLuong}" />
+                                            </Border>
+                                            <Border
+                                                Grid.Column="1"
+                                                Padding="8"
+                                                Background="White"
+                                                BorderBrush="LightGray"
+                                                BorderThickness="0,1,1,1"
+                                                CornerRadius="0,4,4,0">
+                                                <Grid>
+                                                    <StackPanel>
+                                                        <!--  Ngày giờ  -->
                                                         <TextBlock
-                                                            Grid.Column="0"
-                                                            Margin="0,0,15,0"
-                                                            Text="{Binding SoLuong, StringFormat='SL: {0}'}" />
-
-                                                        <TextBlock
-                                                            Grid.Column="1"
-                                                            Margin="0,0,15,0"
-                                                            Foreground="DarkSlateGray"
-                                                            Text="{Binding DonGia, StringFormat={}{0:n0} đ}" />
-
-                                                        <TextBlock
-                                                            Grid.Column="2"
                                                             HorizontalAlignment="Right"
-                                                            FontWeight="Bold"
-                                                            Foreground="DarkRed"
-                                                            Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
-                                                    </Grid>
+                                                           FontSize="{StaticResource FontSizeSmall}" 
+                                                            Text="{Binding NgayGio, StringFormat=dd-MM-yyyy HH:mm}"
+                                                            Visibility="{Binding NgayGio, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+                                                        <!--  Tên sản phẩm + biến thể  -->
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock
+                                                                FontWeight="Bold"
+                                                                Foreground="Blue"
+                                                                Text="{Binding TenSanPham}" />
+                                                            <TextBlock
+                                                                Margin="4,0,0,0"
+                                                                FontWeight="Medium"
+                                                                Foreground="Red"
+                                                                Text="{Binding TenBienThe}">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding TenBienThe}" Value="Size Chuẩn">
+                                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding TenBienThe}" Value="Size L">
+                                                                                <DataTrigger.EnterActions>
+                                                                                    <BeginStoryboard>
+                                                                                        <Storyboard AutoReverse="True" RepeatBehavior="Forever">
+                                                                                            <DoubleAnimation
+                                                                                                Storyboard.TargetProperty="Opacity"
+                                                                                                From="1.0"
+                                                                                                To="0.3"
+                                                                                                Duration="0:0:0.5" />
+                                                                                        </Storyboard>
+                                                                                    </BeginStoryboard>
+                                                                                </DataTrigger.EnterActions>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
 
-                                                    <!--  Topping  -->
-                                                    <TextBlock
-                                                        Margin="0,0,0,2"
-                                                        FontSize="12"
-                                                        Foreground="DarkGreen"
-                                                        Text="{Binding ToppingText}"
-                                                        TextWrapping="Wrap"
-                                                        Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+                                                        </StackPanel>
+                                                        <!--  Grid chi tiết: SL - Đơn giá - Thành tiền  -->
+                                                        <Grid Margin="0,2,0,2" Grid.IsSharedSizeScope="True">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="auto" SharedSizeGroup="ColSL" />
+                                                                <ColumnDefinition Width="auto" SharedSizeGroup="ColGia" />
+                                                                <ColumnDefinition Width="auto" SharedSizeGroup="ColTT" />
+                                                            </Grid.ColumnDefinitions>
 
-                                                    <!--  Ghi chú  -->
-                                                    <TextBlock
-                                                        FontSize="12"
-                                                        FontStyle="Italic"
-                                                        Foreground="DarkOrange"
-                                                        Text="{Binding NoteText}"
-                                                        TextWrapping="Wrap"
-                                                        Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-                                                </StackPanel>
+                                                            <!--  Số lượng  -->
+                                                            <!--  Số lượng kèm nút +/-  -->
+                                                            <StackPanel
+                                                                Grid.Column="0"
+                                                                HorizontalAlignment="Center"
+                                                                Orientation="Horizontal">
+                                                                <!--  Số lượng  -->
+                                                                <ctrl:NumericUpDown
+                                                                    Grid.Column="0"
+                                                                    GotFocus="ChiTietItem_Focus"
+                                                                    Value="{Binding SoLuong, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
-                                                <Button
-                                                    Grid.Column="2"
-                                                    HorizontalAlignment="Right"
-                                                    VerticalAlignment="Top"
-                                                    Click="XoaChiTietButton_Click"
-                                                    Style="{StaticResource ClearXButtonStyle}"
-                                                    Tag="{Binding}"
-                                                    Visibility="Visible" />
-                                            </Grid>
+                                                            </StackPanel>
+                                                            <!--  Đơn giá  -->
+                                                            <ctrl:MoneyTextBox
+                                                                Grid.Column="1"
+                                                                HorizontalContentAlignment="Right"
+                                                                VerticalContentAlignment="Center"
+                                                                BorderBrush="Transparent"
+                                                                GotFocus="ChiTietItem_Focus"
+                                                                LostFocus="DonGiaTextBox_LostFocus"
+                                                                Value="{Binding DonGia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
-                                        </Border>
+                                                            <!--  Thành tiền  -->
+                                                            <TextBlock
+                                                                Grid.Column="2"
+                                                                HorizontalAlignment="Right"
+                                                                VerticalAlignment="Center"
+                                                                FontWeight="Bold"
+                                                                Foreground="DarkRed"
+                                                                Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
+                                                        </Grid>
+
+                                                        <!--  Topping  -->
+                                                        <TextBlock
+                                                            Margin="0,0,0,2"
+                                                            FontSize="{StaticResource FontSizeSmall}" 
+                                                            Foreground="DarkGreen"
+                                                            Text="{Binding ToppingText}"
+                                                            TextWrapping="Wrap"
+                                                            Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+
+                                                        <!--  Ghi chú  -->
+                                                        <TextBox
+                                                            AcceptsReturn="True"
+                                                            Background="Transparent"
+                                                            BorderBrush="Transparent"
+                                                            FontSize="{StaticResource FontSizeSmall}" 
+                                                            FontStyle="Italic"
+                                                            Foreground="DarkOrange"
+                                                            GotFocus="ChiTietItem_Focus"
+                                                            Text=
+                                                            "{Binding NoteText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            TextWrapping="Wrap"
+                                                            Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+                                                    </StackPanel>
+                                                    <!--  Nút Xóa  -->
+                                                    <Button
+                                                        Grid.Column="2"
+                                                        HorizontalAlignment="Right"
+                                                        VerticalAlignment="Top"
+                                                        Click="XoaChiTietButton_Click"
+                                                        Style="{StaticResource ClearXButtonStyle}"
+                                                        Tag="{Binding}"
+                                                        Visibility="Visible" />
+
+
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </Grid>
                     </GroupBox>
+
                 </Grid>
 
                 <GroupBox
@@ -597,11 +614,10 @@
             <!--  Nút và lỗi  -->
             <StackPanel Grid.Row="2">
                 <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
-                <Button
-                    Name="SaveButton"
+                <ctrl:LoadingButton
+                    x:Name="SaveButton"
                     Click="SaveButton_Click"
-                    Content="Lưu"
-                    Style="{StaticResource SaveButtonStyle}" />
+                    Content="Lưu (Enter)" />
             </StackPanel>
         </Grid>
     </Border>

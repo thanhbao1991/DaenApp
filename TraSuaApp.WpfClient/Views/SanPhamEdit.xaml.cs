@@ -94,14 +94,15 @@ namespace TraSuaApp.WpfClient.SettingsViews
                 Close();
                 return;
             }
-            if (e.Key == Key.Enter && !(Keyboard.FocusedElement is Button))
+            if (e.Key == Key.Enter
+
+
+
+
+                )
             {
-                var req = new TraversalRequest(FocusNavigationDirection.Next);
-                if (Keyboard.FocusedElement is UIElement el)
-                {
-                    el.MoveFocus(req);
-                    e.Handled = true;
-                }
+                SaveButton_Click(null, null);
+
             }
         }
 

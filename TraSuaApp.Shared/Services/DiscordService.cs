@@ -6,6 +6,7 @@ namespace TraSuaApp.Shared.Services
 {
     public static class DiscordService
     {
+        private static readonly string AdminWebhookUrl = "https://discord.com/api/webhooks/1385632148387533011/MmRNpkKCoslZwNO2F9uJd_ZCjiaSvXMKeIpQlDP7gpDBwk1HZt1g2nonmEUiOVITaK0H";
         private static readonly string NhanDonWebhookUrl = "https://discord.com/api/webhooks/1407602585657147452/e6_AL5mYNU4-z6xrlgSKJHkE-YxdOmz4kgKSUMf5WRqPViN4jX1pWN6kXHMYbFKS2dpG";
 
         private static readonly string HoaDonDelWebhookUrl = "https://discord.com/api/webhooks/1407602584285351998/S7UaKM6Ag0SydXy62x4Y8BWUFJlG0x3_m2cjIUBGfNIX6xjYPWnDhCgvIg5y-t-Hkcoa";
@@ -29,6 +30,7 @@ namespace TraSuaApp.Shared.Services
         {
             string url = eventType switch
             {
+                DiscordEventType.Admin => AdminWebhookUrl,
                 DiscordEventType.DiShip => DiShipWebhookUrl,
                 DiscordEventType.NhanDon => NhanDonWebhookUrl,
                 DiscordEventType.HenGio => HenGioWebhookUrl,

@@ -60,9 +60,9 @@
                             x:Name="PhuongThucThanhToanComboBox"
                             Width="150"
                             HorizontalAlignment="Left"
-                            SelectionChanged="PhuongThucThanhToanComboBox_SelectionChanged"
                             DisplayMemberPath="Ten"
-                            SelectedValuePath="Id" />
+                            SelectedValuePath="Id"
+                            SelectionChanged="PhuongThucThanhToanComboBox_SelectionChanged" />
                     </GroupBox>
                 </StackPanel>
                 <!--<GroupBox Header="Ghi chú">

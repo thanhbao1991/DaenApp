@@ -16,12 +16,39 @@ namespace TraSuaApp.WpfClient.Views
             InitializeComponent();
             _errorHandler = new WpfErrorHandler(ErrorTextBlock);
 
+            // 🟟 Khôi phục RememberMe & AutoLogin từ setting
+            RememberMeCheckBox.IsChecked = Properties.Settings.Default.Luu;
+            AutoLoginCheckBox.IsChecked = Properties.Settings.Default.AutoLogin;
+
+            // Nếu AutoLogin = true nhưng RememberMe = false => ép RememberMe = true
+            if (Properties.Settings.Default.AutoLogin && !Properties.Settings.Default.Luu)
+            {
+                RememberMeCheckBox.IsChecked = true;
+            }
+
+            // Điền lại username + password nếu đã lưu
             if (Properties.Settings.Default.Luu)
             {
                 UsernameTextBox.Text = Properties.Settings.Default.TaiKhoan;
                 string decryptedPassword = SecureHelper.Decrypt(Properties.Settings.Default.MatKhau);
                 PasswordBox.Password = decryptedPassword;
-                RememberMeCheckBox.IsChecked = true;
+            }
+
+            // Disable AutoLogin nếu chưa lưu đăng nhập
+            AutoLoginCheckBox.IsEnabled = RememberMeCheckBox.IsChecked == true;
+
+            // 🟟 Nếu đủ điều kiện thì auto login
+            if (Properties.Settings.Default.Luu
+                && Properties.Settings.Default.AutoLogin
+                && !string.IsNullOrWhiteSpace(UsernameTextBox.Text)
+                && !string.IsNullOrWhiteSpace(PasswordBox.Password))
+            {
+                Loaded += async (s, e) =>
+                {
+                    await Task.Delay(1000);
+                    //0 NotiHelper.Show("Đang đăng nhập tự động...");
+                    LoginButton_Click(null!, null!);
+                };
             }
         }
 
@@ -56,9 +83,7 @@ namespace TraSuaApp.WpfClient.Views
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
                 _errorHandler.Handle(new Exception("Vui lòng nhập đầy đủ tài khoản và mật khẩu."), "Đăng nhập");
-                LoginButton.IsEnabled = true;
-                LoginProgressBar.Visibility = Visibility.Collapsed;
-                Mouse.OverrideCursor = null;
+                ResetUI();
                 return;
             }
 
@@ -82,32 +107,30 @@ namespace TraSuaApp.WpfClient.Views
 
                         ApiClient.SetToken(login.Token);
 
-                        if (RememberMeCheckBox.IsChecked == true)
+                        // 🟟 Lưu setting chính xác
+                        Properties.Settings.Default.Luu = RememberMeCheckBox.IsChecked == true;
+                        Properties.Settings.Default.AutoLogin = AutoLoginCheckBox.IsChecked == true;
+
+                        if (Properties.Settings.Default.Luu)
                         {
                             Properties.Settings.Default.TaiKhoan = username;
                             Properties.Settings.Default.MatKhau = SecureHelper.Encrypt(password);
-                            Properties.Settings.Default.Luu = true;
                         }
                         else
                         {
+                            // Không lưu tài khoản => cũng không cho AutoLogin
                             Properties.Settings.Default.TaiKhoan = "";
                             Properties.Settings.Default.MatKhau = "";
-                            Properties.Settings.Default.Luu = false;
+                            Properties.Settings.Default.AutoLogin = false;
                         }
 
                         Properties.Settings.Default.Save();
 
-                        var role = JwtHelper.GetRole(login.Token!);
-                        var userId = JwtHelper.GetUserId(login.Token!);
+                        // 🟟 Debug để chắc chắn
+                        System.Diagnostics.Debug.WriteLine(
+                            $"[Login Saved] Luu={Properties.Settings.Default.Luu}, AutoLogin={Properties.Settings.Default.AutoLogin}, User={Properties.Settings.Default.TaiKhoan}");
 
-                        var mainWindow = new Dashboard
-                        {
-                            //    VaiTro = role ?? "NhanVien",
-                            //    UserId = userId ?? "",
-                            //    TenHienThi = login.TenHienThi ?? "Người dùng"
-                            //
-                        };
-
+                        var mainWindow = new Dashboard();
                         mainWindow.Show();
                         this.DialogResult = true;
                         this.Close();
@@ -129,17 +152,25 @@ namespace TraSuaApp.WpfClient.Views
             }
             finally
             {
-                LoginButton.IsEnabled = true;
-                LoginProgressBar.Visibility = Visibility.Collapsed;
-                Mouse.OverrideCursor = null;
+                ResetUI();
             }
         }
-
-        public void SetLoading(bool isLoading)
+        private void ResetUI()
         {
-            LoginProgressBar.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
-            LoginButton.IsEnabled = !isLoading;
-            Mouse.OverrideCursor = isLoading ? Cursors.Wait : null;
+            LoginButton.IsEnabled = true;
+            LoginProgressBar.Visibility = Visibility.Collapsed;
+            Mouse.OverrideCursor = null;
+        }
+
+        private void RememberMeCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            AutoLoginCheckBox.IsEnabled = true;
+        }
+
+        private void RememberMeCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            AutoLoginCheckBox.IsChecked = false;
+            AutoLoginCheckBox.IsEnabled = false;
         }
     }
 }

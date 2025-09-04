@@ -37,8 +37,6 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     // Hàm gọi mỗi phút để refresh cell
     public void RefreshGioHienThi() => OnPropertyChanged(nameof(GioHienThi));
 
-
-
     public string? PhanLoai { get; set; }
     public override string ApiRoute => "HoaDon";
     public DateTime Ngay { get; set; }
@@ -67,15 +65,63 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public virtual ICollection<ChiTietHoaDonToppingDto> ChiTietHoaDonToppings { get; set; } = new List<ChiTietHoaDonToppingDto>();
     public ICollection<ChiTietHoaDonVoucherDto>? ChiTietHoaDonVouchers { get; set; }
 
-
     public virtual KhachHang? KhachHang { get; set; }
-
-    // public virtual ICollection<ChiTietHoaDonNo> ChiTietHoaDonNosp { get; set; } = new List<ChiTietHoaDonNo>();
-
     public virtual ICollection<ChiTietHoaDonThanhToan> ChiTietHoaDonThanhToans { get; set; } = new List<ChiTietHoaDonThanhToan>();
     public DateTime? NgayHen { get; set; }
-    public bool DuocNhanVoucher { get; set; }
     public bool DaNhanVoucher { get; set; }
+    public bool DaThuHoacGhiNo { get; set; }
+
+    // 🟟 Hàm đồng bộ dữ liệu khi nhận update từ SignalR
+    public void CopyFrom(HoaDonDto other)
+    {
+        if (other == null) return;
+
+        UuTien = other.UuTien;
+        BaoDon = other.BaoDon;
+        TongNoKhachHang = other.TongNoKhachHang;
+        TongDiem = other.TongDiem;
+        DiemThangNay = other.DiemThangNay;
+        DiemThangTruoc = other.DiemThangTruoc;
+
+        NgayShip = other.NgayShip;
+        NgayRa = other.NgayRa;
+        NgayHen = other.NgayHen;
+
+        PhanLoai = other.PhanLoai;
+        Ngay = other.Ngay;
+        NgayGio = other.NgayGio;
+
+        KhachHangId = other.KhachHangId;
+        VoucherId = other.VoucherId;
+
+        MaHoaDon = other.MaHoaDon;
+        TenBan = other.TenBan;
+        TrangThai = other.TrangThai;
+
+        DiaChiText = other.DiaChiText;
+        SoDienThoaiText = other.SoDienThoaiText;
+        TenKhachHangText = other.TenKhachHangText;
+        GhiChu = other.GhiChu;
+
+        TongTien = other.TongTien;
+        GiamGia = other.GiamGia;
+        ThanhTien = other.ThanhTien;
+        DaThu = other.DaThu;
+        ConLai = other.ConLai;
+
+        // collections
+        ChiTietHoaDons = other.ChiTietHoaDons?.ToList() ?? new List<ChiTietHoaDonDto>();
+        ChiTietHoaDonToppings = other.ChiTietHoaDonToppings?.ToList() ?? new List<ChiTietHoaDonToppingDto>();
+        ChiTietHoaDonVouchers = other.ChiTietHoaDonVouchers?.ToList();
+        ChiTietHoaDonThanhToans = other.ChiTietHoaDonThanhToans?.ToList() ?? new List<ChiTietHoaDonThanhToan>();
+
+        KhachHang = other.KhachHang;
+
+        DaNhanVoucher = other.DaNhanVoucher;
+        DaThuHoacGhiNo = other.DaThuHoacGhiNo;
+
+        LastModified = other.LastModified;
+        DeletedAt = other.DeletedAt;
+        IsDeleted = other.IsDeleted;
+    }
 }
-
-

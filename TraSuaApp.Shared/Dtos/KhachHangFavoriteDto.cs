@@ -9,5 +9,5 @@ public class KhachHangFavoriteDto
     public int DiemThangNay { get; set; }
     public int DiemThangTruoc { get; set; }
     public decimal TongNo { get; set; }
-    public List<ChiTietHoaDonDto> TopChiTiets { get; set; } = new();
+    //    public List<ChiTietHoaDonDto> TopChiTiets { get; set; } = new();
 }

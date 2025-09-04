@@ -16,6 +16,8 @@ namespace TraSuaApp.WpfClient.Controls
 
         public NumericTextBox()
         {
+            FontWeight = FontWeights.Medium;
+
             PreviewTextInput += OnPreviewTextInput;
             TextChanged += OnTextChanged;
             GotFocus += OnGotFocus;

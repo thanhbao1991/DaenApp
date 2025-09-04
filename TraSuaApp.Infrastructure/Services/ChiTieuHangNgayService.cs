@@ -51,8 +51,8 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
             DonGia = dto.DonGia,
             BillThang = dto.BillThang,
             ThanhTien = dto.ThanhTien,
-            Ngay = now.Date,
-            NgayGio = now,
+            Ngay = dto.Ngay,
+            NgayGio = dto.NgayGio,
             NguyenLieuId = dto.NguyenLieuId,
             CreatedAt = now,
             LastModified = now,
@@ -103,8 +103,8 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
         entity.BillThang = dto.BillThang;
         entity.DonGia = dto.DonGia;
         entity.ThanhTien = dto.ThanhTien;
-        //entity.Ngay = now.Date;
-        //entity.NgayGio = now;
+        entity.Ngay = dto.Ngay;
+        entity.NgayGio = dto.NgayGio;
         entity.NguyenLieuId = dto.NguyenLieuId;
         entity.LastModified = now;
 

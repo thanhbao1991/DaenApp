@@ -83,7 +83,8 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new SanPhamEdit()
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight,                 Owner = this
+                Height = this.ActualHeight,
+                Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.SanPhams.ReloadAsync();
@@ -99,7 +100,8 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new SanPhamEdit(selected)
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight,                 Owner = this
+                Height = this.ActualHeight,
+                Owner = this
             };
             if (window.ShowDialog() == true)
                 await AppProviders.SanPhams.ReloadAsync();
@@ -145,7 +147,8 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new SanPhamEdit(selected)
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight,                 Owner = this
+                Height = this.ActualHeight,
+                Owner = this
             };
             if (window.ShowDialog() == true)
                 _ = AppProviders.SanPhams.ReloadAsync();

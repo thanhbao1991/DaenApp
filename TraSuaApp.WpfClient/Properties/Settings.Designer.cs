@@ -58,7 +58,23 @@ namespace TraSuaApp.WpfClient.Properties {
                 this["Luu"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AutoLogin
+        {
+            get
+            {
+                return ((bool)(this["AutoLogin"]));
+            }
+            set
+            {
+                this["AutoLogin"] = value;
+            }
+        }
+
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -70,6 +86,7 @@ namespace TraSuaApp.WpfClient.Properties {
                 this["Token"] = value;
             }
         }
+
     }
 }
 

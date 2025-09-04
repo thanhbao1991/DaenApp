@@ -7,12 +7,32 @@
     xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
     xmlns:fa="clr-namespace:FontAwesome.Sharp;assembly=FontAwesome.Sharp"
     xmlns:local="clr-namespace:TraSuaApp.WpfClient.Helpers"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
     Exit="Application_Exit">
     <Application.Resources>
         <!--  Converter  -->
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <conveter:RowStyleMultiConverter x:Key="RowStyleMultiConverter" />
         <conveter:NullOrEmptyOrDefaultToVisibilityConverter x:Key="NullOrEmptyOrDefaultToVisibilityConverter" />
+        <conveter:SkipFirstConverter x:Key="SkipFirstConverter" />
+        <conveter:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter" />
+        <conveter:NotNullToBoolConverter x:Key="NotNullToBoolConverter" />
+        <conveter:BoolToHiddenConverter x:Key="BoolToHiddenConverter" />
+        <conveter:InverseBoolConverter x:Key="InverseBoolConverter" />
         <conveter:SoDienThoaiConverter x:Key="SoDienThoaiConverter" />
+        <conveter:BoolToVisibilityConverterWithInvert x:Key="BoolToVisibilityConverterWithInvert" />
+        <conveter:BoolToRowDetailsConverter x:Key="BoolToRowDetailsConverter" />
+
+
+        <sys:Double x:Key="FontSizeSmall">12</sys:Double>
+        <sys:Double x:Key="FontSizeNormal">14</sys:Double>
+        <sys:Double x:Key="FontSizeLarge">18</sys:Double>
+        <sys:Double x:Key="FontSizeBig">22</sys:Double>
+        <sys:Double x:Key="FontSizeXXX">80</sys:Double>
+
+
+
+
         <Style TargetType="TabItem">
             <Setter Property="Padding" Value="12,6" />
             <Setter Property="Background" Value="Transparent" />
@@ -63,7 +83,6 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Foreground" Value="Black" />
-            <Setter Property="FontSize" Value="16" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -101,12 +120,10 @@
         <Style x:Key="SearchTextBoxStyle" TargetType="TextBox">
             <Setter Property="Padding" Value="10,0" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="FontSize" Value="14" />
         </Style>
         <Style x:Key="SearchHintTextStyle" TargetType="TextBlock">
             <Setter Property="Margin" Value="12,0,0,0" />
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="FontSize" Value="14" />
             <Setter Property="Foreground" Value="Gray" />
             <Setter Property="IsHitTestVisible" Value="False" />
         </Style>
@@ -119,14 +136,12 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FontSize" Value="14" />
             <Setter Property="Foreground" Value="#888" />
             <Setter Property="Content" Value="✖" />
         </Style>
         <Style x:Key="TitleTextStyle" TargetType="TextBlock">
             <Setter Property="Margin" Value="10,5" />
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="FontSize" Value="20" />
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="Foreground" Value="#333" />
         </Style>
@@ -177,6 +192,7 @@
         <!--  Style cho Window chỉnh sửa  -->
         <Style x:Key="EditWindowStyle" TargetType="Window">
             <Setter Property="AllowsTransparency" Value="True" />
+            <Setter Property="FontSize" Value="{StaticResource FontSizeNormal}" />
             <Setter Property="Background" Value="#99000000" />
             <Setter Property="ResizeMode" Value="NoResize" />
             <Setter Property="SizeToContent" Value="Manual" />
@@ -205,7 +221,6 @@
         <Style x:Key="EditTitleTextStyle" TargetType="TextBlock">
             <Setter Property="Margin" Value="10,5" />
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="FontSize" Value="20" />
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="Foreground" Value="#333" />
         </Style>
@@ -276,9 +291,6 @@
         <Style x:Key="ErrorTextBlock" TargetType="TextBlock">
             <Setter Property="Foreground" Value="Red" />
             <Setter Property="TextWrapping" Value="Wrap" />
-
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontStyle" Value="Italic" />
             <Setter Property="Margin" Value="0,0,0,5" />
         </Style>
 
@@ -302,7 +314,6 @@
                             Padding="8"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            FontSize="12"
                             Foreground="{TemplateBinding Foreground}"
                             Text="❌" />
                     </ControlTemplate>
@@ -348,6 +359,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="CheckedIcon" Property="Visibility" Value="Visible" />
+                                <Setter Property="FontWeight" Value="Medium" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -356,12 +368,13 @@
         </Style>
 
         <Style TargetType="{x:Type GroupBox}">
-            <Setter Property="BorderBrush" Value="WhiteSmoke" />
-            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
         <!--  Base input style  -->
         <Style x:Key="BaseInputStyle" TargetType="Control">
             <Setter Property="Height" Value="32" />
+            <Setter Property="FontWeight" Value="Medium" />
             <Setter Property="Padding" Value="10,0,10,0" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>

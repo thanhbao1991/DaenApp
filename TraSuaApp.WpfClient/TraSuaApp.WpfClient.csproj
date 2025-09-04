@@ -39,6 +39,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Controls\LoadingButton.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Controls\NumericUpDown.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -107,6 +110,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <BaseOutputPath>D:\Denn</BaseOutputPath>
   </PropertyGroup>
 
 </Project>

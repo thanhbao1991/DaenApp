@@ -2,7 +2,7 @@
     x:Class="TraSuaApp.WpfClient.Controls.NumericUpDown"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls">
+    xmlns:local="clr-namespace:TraSuaApp.WpfClient.Controls">
     <Grid>
         <!--  Nút trừ  -->
         <Button
@@ -12,15 +12,22 @@
             Click="Minus_Click"
             Content="➖"
             Focusable="False"
+            Foreground="Black"
             IsTabStop="False"
             Style="{StaticResource XoaButtonStyle}" />
-
-        <!--  TextBox nhập số  -->
-        <ctrl:NumericTextBox
+        <!--  Ô nhập số lượng  -->
+        <local:NumericTextBox
             x:Name="txtValue"
+            Grid.Column="1"
+            MinWidth="80"
             HorizontalAlignment="Stretch"
-            HorizontalContentAlignment="Center" />
-
+            VerticalAlignment="Center"
+            HorizontalContentAlignment="Center"
+            VerticalContentAlignment="Center"
+            BorderBrush="Transparent"
+            FontWeight="Medium"
+            Foreground="Blue"
+            Text="{Binding Value, RelativeSource={RelativeSource AncestorType={x:Type local:NumericUpDown}}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
         <!--  Nút cộng  -->
         <Button
             Grid.Column="2"
@@ -29,6 +36,7 @@
             Click="Plus_Click"
             Content="➕"
             Focusable="False"
+            Foreground="Black"
             IsTabStop="False"
             Style="{StaticResource XoaButtonStyle}" />
     </Grid>

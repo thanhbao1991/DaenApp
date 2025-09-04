@@ -4,6 +4,7 @@ using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
+using TraSuaApp.WpfClient.Hubs;
 
 namespace TraSuaApp.WpfClient.Providers;
 
@@ -14,7 +15,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
 
     private readonly ISignalRClient? _signalR;
     private readonly string _entityName = (new T()).ApiRoute;
-    private System.Timers.Timer? _timer;
+    private System.Timers.Timer? _fallbackTimer;
 
     public BaseDataProvider(ISignalRClient? signalR = null)
     {
@@ -27,10 +28,11 @@ public class BaseDataProvider<T> where T : DtoBase, new()
 
         if (_signalR != null)
         {
-            await _signalR.ConnectAsync();
-
+            // Đăng ký nhận realtime update
             _signalR.Subscribe("EntityChanged", async (string entityName, string action, string id, string senderConnectionId) =>
             {
+                System.Diagnostics.Debug.WriteLine($"🟟 Nhận signal: {entityName}-{action}-{id}");
+
                 if (!string.Equals(entityName, _entityName, StringComparison.OrdinalIgnoreCase))
                     return;
 
@@ -52,17 +54,48 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                             OnSignalReceived(item);
                     }
 
+                    // 🟟 Thông báo rõ ràng hơn cho Hóa đơn
                     if (TuDien._tableFriendlyNames.TryGetValue(entityName, out var friendlyName))
                     {
-                        NotiHelper.Show($"Cập nhật {GetActionVerb(action)} {friendlyName.ToLower()}.");
+                        string message = $"{GetActionVerb(action)} {friendlyName.ToLower()}.";
+
+                        if (entityName.Equals("HoaDon", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var hoaDon = Items.OfType<HoaDonDto>().FirstOrDefault(x => x.Id.ToString() == id);
+                            if (hoaDon != null)
+                            {
+                                message = action switch
+                                {
+                                    "created" => $"➕ Đơn mới: {hoaDon.MaHoaDon} - {hoaDon.TenKhachHangText ?? hoaDon.TenBan}",
+                                    "updated" => $"✏️ Sửa đơn: {hoaDon.MaHoaDon} - {hoaDon.TenKhachHangText ?? hoaDon.TenBan}",
+                                    "deleted" => $"🟟️ Xoá đơn: {hoaDon.MaHoaDon} - {hoaDon.TenKhachHangText ?? hoaDon.TenBan}",
+                                    "restored" => $"♻️ Khôi phục đơn: {hoaDon.MaHoaDon} - {hoaDon.TenKhachHangText ?? hoaDon.TenBan}",
+                                    _ => message
+                                };
+                            }
+                        }
+
+                        NotiHelper.Show(message);
                     }
                 });
             });
-        }
 
-        _timer = new System.Timers.Timer(60000);
-        _timer.Elapsed += async (_, _) => await ReloadAsync();
-        // _timer.Start();
+            // Khi mất kết nối SignalR → bật fallback timer
+            _signalR.OnDisconnected(() =>
+            {
+                NotiHelper.ShowError("⚠️ Mất kết nối SignalR. Sẽ tự reload mỗi 5 phút...");
+                System.Diagnostics.Debug.WriteLine("⚠️ SignalR Disconnected");
+                StartFallbackTimer();
+            });
+
+            // Khi kết nối lại → tắt fallback timer
+            _signalR.OnReconnected(() =>
+            {
+                NotiHelper.Show("✅ Đã kết nối lại SignalR.");
+                System.Diagnostics.Debug.WriteLine("✅ SignalR Reconnected");
+                StopFallbackTimer();
+            });
+        }
     }
 
     private string GetActionVerb(string action)
@@ -79,7 +112,6 @@ public class BaseDataProvider<T> where T : DtoBase, new()
 
     public async Task ReloadAsync()
     {
-
         try
         {
             var response = await ApiClient.GetAsync($"/api/{_entityName}");
@@ -94,11 +126,14 @@ public class BaseDataProvider<T> where T : DtoBase, new()
 
                     OnChanged?.Invoke();
                 });
+
+                System.Diagnostics.Debug.WriteLine($"🟟 Reload {_entityName} thành công ({result.Data.Count} items).");
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
+            System.Diagnostics.Debug.WriteLine($"❌ Reload {_entityName} lỗi: {ex.Message}");
         }
     }
 
@@ -138,8 +173,15 @@ public class BaseDataProvider<T> where T : DtoBase, new()
             var existing = Items.FirstOrDefault(x => x.Id == item.Id);
             if (existing != null)
             {
-                var index = Items.IndexOf(existing);
-                Items[index] = item;
+                if (existing is HoaDonDto hoaDon && item is HoaDonDto newHoaDon)
+                {
+                    hoaDon.CopyFrom(newHoaDon); // giữ nguyên reference
+                }
+                else
+                {
+                    var index = Items.IndexOf(existing);
+                    Items[index] = item;
+                }
             }
             else
             {
@@ -148,5 +190,29 @@ public class BaseDataProvider<T> where T : DtoBase, new()
 
             OnChanged?.Invoke();
         });
+    }
+
+    private void StartFallbackTimer()
+    {
+        if (_fallbackTimer != null) return;
+
+        _fallbackTimer = new System.Timers.Timer(5 * 60 * 1000); // 5 phút
+        _fallbackTimer.AutoReset = true;
+        _fallbackTimer.Elapsed += async (_, _) =>
+        {
+            System.Diagnostics.Debug.WriteLine($"⏰ Fallback reload {_entityName}...");
+            await ReloadAsync();
+        };
+        _fallbackTimer.Start();
+    }
+
+    private void StopFallbackTimer()
+    {
+        if (_fallbackTimer != null)
+        {
+            _fallbackTimer.Stop();
+            _fallbackTimer.Dispose();
+            _fallbackTimer = null;
+        }
     }
 }

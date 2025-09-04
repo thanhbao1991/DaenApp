@@ -6,8 +6,8 @@ namespace TraSuaApp.Shared.Dtos;
 public class ChiTietHoaDonDto : DtoBase, INotifyPropertyChanged
 {
     public DateTime NgayGio { get; set; }
-    private string? _dinhLuong;
 
+    private string? _dinhLuong;
     public string? DinhLuong
     {
         get => _dinhLuong;
@@ -21,28 +21,73 @@ public class ChiTietHoaDonDto : DtoBase, INotifyPropertyChanged
         }
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
+    private int _soLuong;
+    public int SoLuong
+    {
+        get => _soLuong;
+        set
+        {
+            if (_soLuong != value)
+            {
+                _soLuong = value;
+                OnPropertyChanged(nameof(SoLuong));
+                OnPropertyChanged(nameof(ThanhTien));
+            }
+        }
+    }
 
-    protected void OnPropertyChanged(string propertyName) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    public Guid HoaDonId { get; set; }       // ✅ Thêm thuộc tính này
-    public Guid SanPhamIdBienThe { get; set; }
-    public int SoLuong { get; set; }
-    public decimal DonGia { get; set; }
+    private decimal _donGia;
+    public decimal DonGia
+    {
+        get => _donGia;
+        set
+        {
+            if (_donGia != value)
+            {
+                _donGia = value;
+                OnPropertyChanged(nameof(DonGia));
+                OnPropertyChanged(nameof(ThanhTien));
+            }
+        }
+    }
+
+    private string? _noteText;
+    public string? NoteText
+    {
+        get => _noteText;
+        set
+        {
+            if (_noteText != value)
+            {
+                _noteText = value;
+                OnPropertyChanged(nameof(NoteText));
+            }
+        }
+    }
+
+
     public required string TenSanPham { get; set; }
     public required string TenBienThe { get; set; }
+
     public string? ToppingText { get; set; }
-    public string? NoteText { get; set; }
+
+    public Guid HoaDonId { get; set; }
+    public Guid SanPhamIdBienThe { get; set; }
+
     public override string TimKiem =>
         TextSearchHelper.NormalizeText($"{TenSanPham} {TenBienThe} {TenSanPham.Replace(" ", "")}") + " " +
         TextSearchHelper.GetShortName(TenSanPham ?? "");
 
     public virtual List<SanPhamBienTheDto> BienTheList { get; set; } = new List<SanPhamBienTheDto>();
-    public override string ApiRoute => "ChiTietHoaDon";
-
     public virtual List<ToppingDto> ToppingDtos { get; set; } = new List<ToppingDto>();
 
-    public decimal TongTienTopping => ToppingDtos?.Sum(x => x.Gia * x.SoLuong) ?? 0;
-    public decimal ThanhTien => (DonGia * SoLuong) + TongTienTopping;
-}
+    public override string ApiRoute => "ChiTietHoaDon";
 
+    public decimal TongTienTopping => ToppingDtos?.Sum(x => x.Gia * x.SoLuong) ?? 0;
+
+    public decimal ThanhTien => (DonGia * SoLuong) + TongTienTopping;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged(string propertyName) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+}

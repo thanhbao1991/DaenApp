@@ -61,7 +61,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 TenTextBox.Focus();
             }
 
-            _ = TTSHelper.DownloadAndPlayGoogleTTSAsync(Model.TenPhuongThucThanhToan);
 
         }
 
@@ -122,7 +121,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 return;
             }
 
-            await TTSHelper.DownloadAndPlayGoogleTTSAsync(Model.TenPhuongThucThanhToan);
 
             DialogResult = true;
             Close();
@@ -140,14 +138,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
             if (e.Key == Key.Enter)
             {
-                if (Keyboard.FocusedElement is Button) return;
+                SaveButton_Click(null, null);
 
-                var request = new TraversalRequest(FocusNavigationDirection.Next);
-                if (Keyboard.FocusedElement is UIElement element)
-                {
-                    element.MoveFocus(request);
-                    e.Handled = true;
-                }
             }
         }
         public static SolidColorBrush MakeBrush(SolidColorBrush brush, double opacity = 1.0)

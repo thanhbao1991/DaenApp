@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using TraSuaApp.Shared.Config;
 
 namespace TraSuaApp.WpfClient.Helpers
 {
@@ -9,7 +10,7 @@ namespace TraSuaApp.WpfClient.Helpers
     {
         private static readonly HttpClient _httpClient = new HttpClient
         {
-            BaseAddress = new Uri("http://localhost:5093") // ✅ Đổi lại theo cấu hình thực tế nếu cần
+            BaseAddress = new Uri(Config.ApiBaseUrl)
         };
 
         public static string? ConnectionId { get; set; }

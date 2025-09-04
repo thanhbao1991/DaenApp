@@ -1,5 +1,4 @@
 ﻿using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
@@ -51,12 +50,13 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 DonGiaTextBox.Value = dto.DonGia;
                 ThanhTienTextBox.Value = dto.ThanhTien;
                 BillThangCheckBox.IsChecked = dto.BillThang == true ? true : false;
+                NgayDatePicker.SelectedDate = dto.Ngay;
             }
             else
             {
                 NguyenLieuComboBox.SearchTextBox.Focus();
+                NgayDatePicker.SelectedDate = DateTime.Today; // mặc định hôm nay
             }
-
             if (Model.IsDeleted)
             {
                 SaveButton.Content = "Khôi phục";
@@ -79,14 +79,14 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 Close();
                 return;
             }
-            if (e.Key == Key.Enter && !(Keyboard.FocusedElement is Button))
+
+            if (e.Key == Key.Enter)
             {
-                var req = new TraversalRequest(FocusNavigationDirection.Next);
-                if (Keyboard.FocusedElement is UIElement el)
-                {
-                    el.MoveFocus(req);
-                    e.Handled = true;
-                }
+                if (NguyenLieuComboBox.IsPopupOpen)
+                    return;
+
+
+                SaveButton_Click(SaveButton, new RoutedEventArgs());
             }
         }
 
@@ -109,6 +109,13 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             Model.SoLuong = SoLuongTextBox.Value;
             Model.ThanhTien = ThanhTienTextBox.Value;
             Model.BillThang = BillThangCheckBox.IsChecked == true ? true : false;
+            Model.Ngay = NgayDatePicker.SelectedDate ?? DateTime.Today;  // lấy ngày người dùng chọn
+            Model.NgayGio = Model.Ngay == DateTime.Today ?
+                DateTime.Now : Model.Ngay.AddDays(1).AddMinutes(-1);
+
+
+
+
             Result<ChiTieuHangNgayDto> result;
             if (Model.Id == Guid.Empty)
                 result = await _api.CreateAsync(Model);

@@ -3,6 +3,7 @@ using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Domain.Interfaces;
 using TraSuaApp.Infrastructure.Repositories;
+using TraSuaApp.Shared.Config;
 namespace TraSuaApp.Infrastructure.Data;
 
 public partial class AppDbContext : DbContext, IAppDbContext
@@ -78,7 +79,7 @@ public partial class AppDbContext : DbContext, IAppDbContext
     public virtual DbSet<Voucher> Vouchers { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer("Server=.;Database=TraSuaAppDb;Trusted_Connection=True;TrustServerCertificate=True");
+        => optionsBuilder.UseSqlServer(Config.ConnectionString);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

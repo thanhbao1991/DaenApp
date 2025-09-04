@@ -1,18 +1,17 @@
-﻿using TraSuaApp.Shared.Helpers;
-
-namespace TraSuaApp.Shared.Dtos;
+﻿namespace TraSuaApp.Shared.Dtos;
 
 public class ChiTietHoaDonNoDto : DtoBase
 {
-    public override string TimKiem =>
-string.Join(" ", new[] {
-        Ten,
-        Ten?.Replace(" ", ""),
-        Ngay.ToString("dd-MM-yyyy")
-}
-.Where(s => !string.IsNullOrEmpty(s))
-.Select(s => TextSearchHelper.NormalizeText(s))
-) + " " + TextSearchHelper.GetShortName(Ten ?? "");
+    //    public override string TimKiem =>
+    //string.Join(" ", new[] {
+    //        Ten,
+    //        Ten?.Replace(" ", ""),
+    //        Ngay.ToString("dd-MM-yyyy")
+    //}
+    //.Where(s => !string.IsNullOrEmpty(s))
+    //.Select(s => TextSearchHelper.NormalizeText(s))
+    //) + " " + TextSearchHelper.GetShortName(Ten ?? "");
+    public bool IsToday => Ngay == DateTime.Today;
 
 
     public override string ApiRoute => "ChiTietHoaDonNo";
@@ -27,6 +26,5 @@ string.Join(" ", new[] {
     public string? GhiChu { get; set; }
 
     public Guid HoaDonId { get; set; }
-    public bool IsToday => Ngay == DateTime.Today;
     public Guid? KhachHangId { get; set; }
 }

@@ -18,7 +18,12 @@ namespace TraSuaApp.WpfClient.Controls
             InitializeComponent();
         }
 
-        public bool IsPopupOpen => ListBoxResults.Items.Count > 0;
+        public bool IsPopupOpen
+        {
+            get => Popup.IsOpen;
+            set => Popup.IsOpen = value;
+        }
+
         public bool SuppressPopup { get; set; } = false;
 
         public void SetSelectedKhachHang(KhachHangDto kh)
@@ -124,7 +129,7 @@ namespace TraSuaApp.WpfClient.Controls
                 .Where(x => x.Score > 0)
                 .OrderByDescending(x => x.Score)
                 .ThenBy(x => x.KhachHang.Ten)
-                .Take(50)
+                .Take(20)
                 .Select(x => x.KhachHang)
                 .ToList();
 
@@ -149,35 +154,109 @@ namespace TraSuaApp.WpfClient.Controls
             KhachHangSelected?.Invoke(kh);
         }
 
+
+
         private void SearchBox_And_ListBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (sender == SearchTextBox && e.Key == Key.Down && ListBoxResults.Items.Count > 0)
+            //if (sender == SearchTextBox && e.Key == Key.Down && ListBoxResults.Items.Count > 0)
+            //{
+            //    ListBoxResults.Focus();
+            //    ListBoxResults.SelectedIndex = 0;
+            //    e.Handled = true;
+            //}
+            //else if (e.Key == Key.Enter)
+            //{
+            //    KhachHangDto? kh = null;
+
+            //    if (sender == SearchTextBox && ListBoxResults.Items.Count > 0)
+            //        kh = ListBoxResults.Items[0] as KhachHangDto;
+            //    else if (sender == ListBoxResults && ListBoxResults.SelectedItem is KhachHangDto selected)
+            //        kh = selected;
+
+            //    if (kh != null)
+            //    {
+            //        Select(kh);            // chọn khách hàng
+            //        Popup.IsOpen = false;  // đóng popup
+            //        e.Handled = true;      // chặn không cho Enter chạy lên Window
+            //    }
+            //}
+            //else if (e.Key == Key.Escape)
+            //{
+            //    Popup.IsOpen = false;
+            //    SearchTextBox.Focus();
+            //    KhachHangCleared?.Invoke();
+            //    e.Handled = true;
+            //}
+        }
+        private void Root_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Down && Popup.IsOpen && ListBoxResults.Items.Count > 0)
             {
-                ListBoxResults.Focus();
-                ListBoxResults.SelectedIndex = 0;
-                e.Handled = true;
+                if (SearchTextBox.IsKeyboardFocusWithin)
+                {
+                    ListBoxResults.Focus();
+                    ListBoxResults.SelectedIndex = 0;
+                    e.Handled = true;
+                }
+                else if (ListBoxResults.IsKeyboardFocusWithin)
+                {
+                    int index = ListBoxResults.SelectedIndex;
+                    if (index < ListBoxResults.Items.Count - 1)
+                    {
+                        ListBoxResults.SelectedIndex = index + 1;
+                        ListBoxResults.ScrollIntoView(ListBoxResults.SelectedItem);
+                        e.Handled = true;
+                    }
+                }
+            }
+            else if (e.Key == Key.Up && Popup.IsOpen && ListBoxResults.Items.Count > 0)
+            {
+                if (ListBoxResults.IsKeyboardFocusWithin)
+                {
+                    int index = ListBoxResults.SelectedIndex;
+                    if (index > 0)
+                    {
+                        ListBoxResults.SelectedIndex = index - 1;
+                        ListBoxResults.ScrollIntoView(ListBoxResults.SelectedItem);
+                        e.Handled = true;
+                    }
+                    else
+                    {
+                        SearchTextBox.Focus();
+                        e.Handled = true;
+                    }
+                }
             }
             else if (e.Key == Key.Enter)
             {
-                KhachHangDto? kh = null;
-                if (sender == SearchTextBox && ListBoxResults.Items.Count > 0)
-                    kh = ListBoxResults.Items[0] as KhachHangDto;
-                else if (sender == ListBoxResults && ListBoxResults.SelectedItem is KhachHangDto selected)
-                    kh = selected;
-
-                if (kh != null)
+                if (Popup.IsOpen)
                 {
-                    Select(kh);
-                    e.Handled = true;
+                    KhachHangDto? item = null;
+
+                    if (ListBoxResults.SelectedItem is KhachHangDto selected)
+                        item = selected;
+                    else if (ListBoxResults.Items.Count > 0)
+                        item = ListBoxResults.Items[0] as KhachHangDto;
+
+                    if (item != null)
+                    {
+                        Select(item);
+                        Popup.IsOpen = false;
+                        e.Handled = true;
+                    }
                 }
             }
             else if (e.Key == Key.Escape)
             {
-                Popup.IsOpen = false;
-                SearchTextBox.Focus();
-                KhachHangCleared?.Invoke();
-                e.Handled = true;
+                if (Popup.IsOpen)
+                {
+                    Popup.IsOpen = false;
+                    SearchTextBox.Focus();
+                    KhachHangCleared?.Invoke();
+                    e.Handled = true;
+                }
             }
         }
+
     }
 }

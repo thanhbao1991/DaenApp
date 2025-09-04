@@ -1,5 +1,4 @@
 ﻿using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
@@ -83,14 +82,8 @@ namespace TraSuaApp.WpfClient.AdminViews
 
             if (e.Key == Key.Enter)
             {
-                if (Keyboard.FocusedElement is Button) return;
+                SaveButton_Click(null, null);
 
-                var request = new TraversalRequest(FocusNavigationDirection.Next);
-                if (Keyboard.FocusedElement is UIElement element)
-                {
-                    element.MoveFocus(request);
-                    e.Handled = true;
-                }
             }
         }
     }

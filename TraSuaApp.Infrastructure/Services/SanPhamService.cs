@@ -51,6 +51,34 @@ namespace TraSuaApp.Infrastructure.Services
         }
 
 
+        public async Task<Result<SanPhamDto>> UpdateSingleAsync(Guid id, SanPhamDto dto)
+        {
+            var entity = await _context.SanPhams
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+            if (entity == null)
+                return Result<SanPhamDto>.Failure("Không tìm thấy hóa đơn.");
+
+            if (dto.LastModified < entity.LastModified)
+                return Result<SanPhamDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+
+            var now = DateTime.Now;
+            var before = ToDto(entity);
+
+            entity.DaBan = dto.DaBan;
+            entity.LastModified = dto.LastModified;
+
+            await _context.SaveChangesAsync();
+
+
+            var after = ToDto(entity);
+            return Result<SanPhamDto>.Success(after, "Cập nhật hóa đơn thành công.")
+                            .WithId(id)
+                            .WithBefore(before)
+                            .WithAfter(after);
+        }
+
+
         public async Task<Result<SanPhamDto>> CreateAsync(SanPhamDto dto)
         {
             var entity = new SanPham

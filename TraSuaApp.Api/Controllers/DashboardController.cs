@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Infrastructure.Data;
+using TraSuaApp.Infrastructure.Services; // 🟟 thêm
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Services;
 
@@ -34,10 +35,7 @@ namespace TraSuaApp.Api.Controllers
                     Ngay = g.Key.Ngay,
                     TenSanPham = g.Key.TenSanPham ?? "",
                     SoLuong = g.Sum(x => x.SoLuong),
-                    DoanhThu = g.Sum(x => x.ThanhTien),
-                    TyLeDoanhThu = tongDoanhThu == 0
-                        ? "0%"
-                        : (Math.Round((g.Sum(x => x.ThanhTien) / tongDoanhThu) * 100, 2).ToString("0.00") + "%")
+                    DoanhThu = g.Sum(x => x.ThanhTien)
                 })
                 .OrderByDescending(x => x.DoanhThu)
                 .ToListAsync();
@@ -51,7 +49,6 @@ namespace TraSuaApp.Api.Controllers
                     TenSanPham = x.TenSanPham,
                     SoLuong = x.SoLuong,
                     DoanhThu = x.DoanhThu,
-                    TyLeDoanhThu = x.TyLeDoanhThu
                 })
                 .ToList();
 
@@ -86,7 +83,7 @@ namespace TraSuaApp.Api.Controllers
                 })
                 .ToListAsync();
 
-            // Sau khi lấy dữ liệu gọn, mới tính "Thứ" ở ngoài (không ảnh hưởng hiệu năng nhiều)
+            // Sau khi lấy dữ liệu gọn, mới tính "Thứ" ở ngoài
             foreach (var item in detailedHeatmap)
             {
                 item.Thu = GetThuVietnamese(item.Date.DayOfWeek);
@@ -96,7 +93,7 @@ namespace TraSuaApp.Api.Controllers
             var prediction = await GeminiService.DuDoanGioDongKhachAsync(detailedHeatmap);
             return new DashboardDto
             {
-                PredictedPeak = prediction// ✅ Thêm dòng này
+                PredictedPeak = prediction
             };
         }
 
@@ -107,31 +104,29 @@ namespace TraSuaApp.Api.Controllers
                 return BadRequest("KhachHangId không hợp lệ.");
 
             var history = await (
-      from ct in _db.ChiTietHoaDons.AsNoTracking()
-      join h in _db.HoaDons.AsNoTracking() on ct.HoaDonId equals h.Id
-      where h.KhachHangId == khachHangId
-          && !h.IsDeleted
-      //&& ((ct.NoteText ?? "") != "" || (ct.ToppingText ?? "") != "")
-      orderby h.NgayGio descending, ct.CreatedAt descending
-      select new ChiTietHoaDonDto
-      {
-          Id = ct.Id,
-          SoLuong = ct.SoLuong,
-          DonGia = ct.DonGia,
-          //ThanhTien = ct.ThanhTien,
-          SanPhamIdBienThe = ct.SanPhamBienTheId,
-          HoaDonId = ct.HoaDonId,
-          NoteText = ct.NoteText,
-          ToppingText = ct.ToppingText,
-          CreatedAt = ct.CreatedAt,
-          DeletedAt = ct.DeletedAt,
-          IsDeleted = ct.IsDeleted,
-          LastModified = ct.LastModified,
-          TenBienThe = ct.TenBienThe,
-          TenSanPham = ct.TenSanPham,
-          NgayGio = h.NgayGio
-      }
-  ).ToListAsync();
+                from ct in _db.ChiTietHoaDons.AsNoTracking()
+                join h in _db.HoaDons.AsNoTracking() on ct.HoaDonId equals h.Id
+                where h.KhachHangId == khachHangId
+                      && !h.IsDeleted
+                orderby h.NgayGio descending, ct.CreatedAt descending
+                select new ChiTietHoaDonDto
+                {
+                    Id = ct.Id,
+                    SoLuong = ct.SoLuong,
+                    DonGia = ct.DonGia,
+                    SanPhamIdBienThe = ct.SanPhamBienTheId,
+                    HoaDonId = ct.HoaDonId,
+                    NoteText = ct.NoteText,
+                    ToppingText = ct.ToppingText,
+                    CreatedAt = ct.CreatedAt,
+                    DeletedAt = ct.DeletedAt,
+                    IsDeleted = ct.IsDeleted,
+                    LastModified = ct.LastModified,
+                    TenBienThe = ct.TenBienThe,
+                    TenSanPham = ct.TenSanPham,
+                    NgayGio = h.NgayGio
+                }
+            ).ToListAsync();
 
             return new DashboardDto
             {
@@ -150,99 +145,54 @@ namespace TraSuaApp.Api.Controllers
 
             if (kh == null) return NotFound("Không tìm thấy khách hàng.");
 
-
             // 🟟 Top chi tiết
             var threeMonthsAgo = DateTime.Now.AddMonths(-3);
 
-            var topChiTiets = await (
-                from ct in _db.ChiTietHoaDons.AsNoTracking()
-                join h in _db.HoaDons.AsNoTracking() on ct.HoaDonId equals h.Id
-                join bt in _db.SanPhamBienThes.AsNoTracking() on ct.SanPhamBienTheId equals bt.Id
-                join sp in _db.SanPhams.AsNoTracking() on bt.SanPhamId equals sp.Id
-                where h.KhachHangId == khachHangId
-                      && !h.IsDeleted
-                      && !ct.IsDeleted
-                      && h.NgayGio >= threeMonthsAgo   // 🟟 chỉ lấy đơn trong 3 tháng gần đây
-                group ct by new { bt.Id, sp.Ten, bt.TenBienThe, bt.GiaBan } into g
-                orderby g.Sum(x => x.SoLuong) descending
-                select new ChiTietHoaDonDto
-                {
-                    SanPhamIdBienThe = g.Key.Id,
-                    TenSanPham = g.Key.Ten ?? "",        // 🟟 lấy tên mới nhất từ SanPhams
-                    TenBienThe = g.Key.TenBienThe ?? "", // 🟟 lấy tên mới nhất từ SanPhamBienThes
-                    DonGia = g.Key.GiaBan,           // 🟟 giá hiện tại của biến thể
-                    SoLuong = 0
-                }
-            )
-            .Take(3) // 🟟 chỉ lấy tối đa 2 món
-            .ToListAsync();
-
+            //var topChiTiets = await (
+            //    from ct in _db.ChiTietHoaDons.AsNoTracking()
+            //    join h in _db.HoaDons.AsNoTracking() on ct.HoaDonId equals h.Id
+            //    join bt in _db.SanPhamBienThes.AsNoTracking() on ct.SanPhamBienTheId equals bt.Id
+            //    join sp in _db.SanPhams.AsNoTracking() on bt.SanPhamId equals sp.Id
+            //    where h.KhachHangId == khachHangId
+            //          && !h.IsDeleted
+            //          && !ct.IsDeleted
+            //          && h.NgayGio >= threeMonthsAgo
+            //    group ct by new { bt.Id, sp.Ten, bt.TenBienThe, bt.GiaBan } into g
+            //    orderby g.Sum(x => x.SoLuong) descending
+            //    select new ChiTietHoaDonDto
+            //    {
+            //        SanPhamIdBienThe = g.Key.Id,
+            //        TenSanPham = g.Key.Ten ?? "",
+            //        TenBienThe = g.Key.TenBienThe ?? "",
+            //        DonGia = g.Key.GiaBan,
+            //        SoLuong = 0
+            //    }
+            //)
+            //.Take(2)
+            //.ToListAsync();
 
             // 🟟 Tính điểm thưởng
-            int diemThangNay = 0, diemThangTruoc = 0;
-            if (kh.DuocNhanVoucher)
-            {
-                var now = DateTime.Now;
-                var firstDayCurrent = new DateTime(now.Year, now.Month, 1);
-                diemThangNay = await _db.ChiTietHoaDonPoints.AsNoTracking()
-                    .Where(p => p.KhachHangId == khachHangId && p.Ngay >= firstDayCurrent && p.Ngay <= now.Date)
-                    .SumAsync(p => (int?)p.DiemThayDoi) ?? 0;
-
-                var firstDayPrev = firstDayCurrent.AddMonths(-1);
-                var lastDayPrev = firstDayCurrent.AddDays(-1);
-                diemThangTruoc = await _db.ChiTietHoaDonPoints.AsNoTracking()
-                    .Where(p => p.KhachHangId == khachHangId && p.Ngay >= firstDayPrev && p.Ngay <= lastDayPrev)
-                    .SumAsync(p => (int?)p.DiemThayDoi) ?? 0;
-            }
-            else
-            {
-                diemThangNay = diemThangTruoc = -1;
-            }
+            (int diemThangNay, int diemThangTruoc) =
+                await LoyaltyService.TinhDiemThangAsync(_db, khachHangId, DateTime.Now, kh.DuocNhanVoucher);
 
             // 🟟 Tính tổng nợ
-            var congNoQuery = _db.ChiTietHoaDonNos.AsNoTracking()
-                .Where(h => h.KhachHangId == khachHangId && !h.IsDeleted);
+            var tongNo = await LoyaltyService.TinhTongNoKhachHangAsync(_db, khachHangId);
 
-            var resultNo = await congNoQuery
-                .Select(h => new
-                {
-                    ConLai = h.SoTienNo - (_db.ChiTietHoaDonThanhToans
-                                            .Where(t => t.ChiTietHoaDonNoId == h.Id && !t.IsDeleted)
-                                            .Sum(t => (decimal?)t.SoTien) ?? 0)
-                })
-                .ToListAsync();
-
-            var tongNo = resultNo.Sum(x => x.ConLai > 0 ? x.ConLai : 0);
-
-            /// 🟟 Kiểm tra khách hàng đã nhận voucher trong tháng này chưa
-            bool daNhanVoucher = false;
-            if (kh.DuocNhanVoucher)
-            {
-                var now = DateTime.Now;
-                var firstDayCurrent = new DateTime(now.Year, now.Month, 1);
-
-                daNhanVoucher = await (
-                    from v in _db.ChiTietHoaDonVouchers.AsNoTracking()
-                    join h in _db.HoaDons.AsNoTracking() on v.HoaDonId equals h.Id
-                    where h.KhachHangId == khachHangId
-                          && !h.IsDeleted
-                          && !v.IsDeleted
-                          && v.CreatedAt >= firstDayCurrent
-                          && v.CreatedAt <= now
-                    select v
-                ).AnyAsync();
-            }
+            // 🟟 Kiểm tra khách hàng đã nhận voucher trong tháng này chưa
+            bool daNhanVoucher = kh.DuocNhanVoucher
+                ? await LoyaltyService.DaNhanVoucherTrongThangAsync(_db, khachHangId, DateTime.Now)
+                : false;
 
             // 🟟 Trả về DTO gộp
             return new KhachHangFavoriteDto
             {
                 KhachHangId = kh.Id,
                 DuocNhanVoucher = kh.DuocNhanVoucher,
-                DaNhanVoucher = daNhanVoucher, // ✅ đã sửa lại đúng cách
+                DaNhanVoucher = daNhanVoucher,
                 DiemThangNay = diemThangNay,
                 DiemThangTruoc = diemThangTruoc,
                 TongNo = tongNo,
-                TopChiTiets = topChiTiets
+                //TopChiTiets = topChiTiets
             };
         }
 

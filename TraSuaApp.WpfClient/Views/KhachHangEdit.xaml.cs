@@ -399,17 +399,8 @@ namespace TraSuaApp.WpfClient.SettingsViews
             else
             if (e.Key == Key.Enter)
             {
-                if (Keyboard.FocusedElement is Button
-                    )
-                    return;
+                SaveButton_Click(null, null);
 
-                var request = new TraversalRequest(FocusNavigationDirection.Next);
-                var element = Keyboard.FocusedElement as UIElement;
-                if (element != null)
-                {
-                    element.MoveFocus(request);
-                    e.Handled = true;
-                }
             }
         }
 

@@ -2,8 +2,11 @@
     x:Class="TraSuaApp.WpfClient.Controls.SanPhamSearchBox"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    PreviewKeyDown="Root_PreviewKeyDown"
     x:Name="Root">
+
     <Grid>
+        <!--  Ô nhập tìm kiếm  -->
         <Grid>
             <TextBox
                 x:Name="SearchTextBox"
@@ -21,6 +24,7 @@
                 Visibility="Collapsed" />
         </Grid>
 
+        <!--  Popup kết quả  -->
         <Popup
             x:Name="Popup"
             AllowsTransparency="True"
@@ -36,21 +40,81 @@
                 BorderThickness="1">
                 <ListBox
                     x:Name="ListBoxResults"
-                    Width="310"
-                    MaxHeight="310"
+                    MinWidth="300"
                     BorderBrush="Transparent"
                     MouseLeftButtonUp="ListBoxResults_MouseLeftButtonUp"
-                    PreviewKeyDown="SearchBox_And_ListBox_PreviewKeyDown"
-                    ScrollViewer.HorizontalScrollBarVisibility="Hidden">
+                    PreviewKeyDown="SearchBox_And_ListBox_PreviewKeyDown">
 
+                    <!--  Mỗi sản phẩm 1 dòng  -->
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel>
-                                <TextBlock FontWeight="Bold" Text="{Binding Ten}" />
-                                <TextBlock
-                                    FontSize="12"
-                                    Foreground="Gray"
-                                    Text="{Binding TimKiem}" />
+                            <StackPanel Orientation="Horizontal">
+                                <Button
+                                    Name="UpButton"
+                                    Click="MoveButton_Click"
+                                    Content="▲"
+                                    Style="{StaticResource ThemButtonStyle}"
+                                    Tag="{Binding BienThes[0].SanPhamId}" />
+                                <Button
+                                    Click="MoveButton_Click"
+                                    Content="▼"
+                                    Style="{StaticResource XoaButtonStyle}"
+                                    Tag="{Binding BienThes[0].SanPhamId}" />
+
+                                <!--  Biến thể đầu tiên  -->
+                                <Button
+                                    Width="200"
+                                    Height="32"
+                                    HorizontalContentAlignment="Left"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="1"
+                                    Click="BienThe_Click"
+                                    FontWeight="Medium"
+                                    Tag="{Binding BienThes[0]}">
+                                    <TextBlock>
+                                        <Run Text="{Binding TenSanPham}" />
+                                        <!--<Run Text=" " />
+                                        <Run Text="{Binding BienThes[0].TenBienThe}" />
+                                        <Run Text=" " />
+                                        <Run
+                                            FontWeight="Bold"
+                                            Foreground="DarkRed"
+                                            Text="{Binding BienThes[0].GiaBan, StringFormat={}{0:N0} đ}" />-->
+                                    </TextBlock>
+                                </Button>
+
+                                <!--  Các biến thể còn lại  -->
+                                <ItemsControl ItemsSource="{Binding BienThes, Converter={StaticResource SkipFirstConverter}}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button
+                                                Width="60"
+                                                Height="32"
+                                                HorizontalContentAlignment="Right"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent"
+                                                BorderThickness="1"
+                                                Click="BienThe_Click"
+                                                FontWeight="Medium"
+                                                Tag="{Binding}">
+                                                <TextBlock>
+                                                    <!--<Run Text="{Binding TenBienThe}" />
+                                                    <Run Text=" " />-->
+                                                    <Run
+                                                        FontWeight="Bold"
+                                                        Foreground="DarkRed"
+                                                        Text="{Binding GiaBan, StringFormat={}{0:N0} đ}" />
+                                                </TextBlock>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

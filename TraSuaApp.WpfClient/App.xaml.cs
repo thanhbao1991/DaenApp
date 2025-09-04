@@ -23,6 +23,7 @@ namespace TraSuaApp.WpfClient
         }
 
         protected override async void OnStartup(StartupEventArgs e)
+
         {
             const string mutexName = "TraSuaApp_WpfClient_OnlyOneInstance";
             _mutex = new Mutex(true, mutexName, out bool isNewInstance);
@@ -53,7 +54,7 @@ namespace TraSuaApp.WpfClient
             if (login.ShowDialog() == true)
             {
                 // ✅ bật loading ngay trong login
-                login.SetLoading(true);
+                //0login.SetLoading(true);
                 try
                 {
                     await AppProviders.InitializeAsync();
@@ -61,7 +62,7 @@ namespace TraSuaApp.WpfClient
                 }
                 finally
                 {
-                    login.SetLoading(false);
+                    //0login.SetLoading(false);
                     login.Close();
                 }
             }

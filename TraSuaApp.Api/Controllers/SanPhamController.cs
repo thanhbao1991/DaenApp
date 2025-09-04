@@ -48,6 +48,17 @@ public class SanPhamController : BaseApiController
             ? Result<SanPhamDto?>.Failure($"Không tìm thấy {_friendlyName}.")
             : Result<SanPhamDto?>.Success(data: result);
     }
+
+    [HttpPut("{id}/single")]
+    public async Task<ActionResult<Result<SanPhamDto>>> UpdateSingle(Guid id, SanPhamDto dto)
+    {
+        var result = await _service.UpdateSingleAsync(id, dto);
+        if (result.IsSuccess)
+            await NotifyClients("updated", id);
+
+        return result;
+    }
+
     [HttpPost]
     public async Task<ActionResult<Result<SanPhamDto>>> Create(SanPhamDto dto)
     {

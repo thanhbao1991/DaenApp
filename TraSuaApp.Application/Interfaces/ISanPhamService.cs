@@ -5,6 +5,8 @@ namespace TraSuaApp.Application.Interfaces;
 
 public interface ISanPhamService
 {
+    Task<Result<SanPhamDto>> UpdateSingleAsync(Guid id, SanPhamDto dto);
+
     Task<Result<SanPhamDto>> RestoreAsync(Guid id);
     Task<List<SanPhamDto>> GetAllAsync();
     Task<SanPhamDto?> GetByIdAsync(Guid id);

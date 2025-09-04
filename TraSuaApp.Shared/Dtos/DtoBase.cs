@@ -17,6 +17,7 @@ public abstract class DtoBase
     public abstract string ApiRoute { get; }
 
     public virtual string TimKiem =>
+        $"{Ten.ToLower()} " +
         TextSearchHelper.NormalizeText($"{Ten}") + " " +
         TextSearchHelper.NormalizeText($"{Ten.Replace(" ", "")}") + " " +
         TextSearchHelper.GetShortName(Ten ?? "");

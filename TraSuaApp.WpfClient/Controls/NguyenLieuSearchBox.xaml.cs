@@ -25,7 +25,12 @@ namespace TraSuaApp.WpfClient.Controls
             SearchTextBox.Text = sp.Ten;
         }
 
-        public bool IsPopupOpen => ListBoxResults.Items.Count > 0;
+        public bool IsPopupOpen
+        {
+            get => Popup.IsOpen;
+            set => Popup.IsOpen = value;
+        }
+
         public void SetTextWithoutPopup(string text)
         {
             SuppressPopup = true;
@@ -69,7 +74,7 @@ namespace TraSuaApp.WpfClient.Controls
                 .Where(sp => (sp.TimKiem ?? "").Contains(keyword)
                      || parts.All(p => (sp.TimKiem ?? "").Contains(p))
                 )
-                .Take(50)
+                .Take(20)
                 .OrderBy(x => x.Ten)
                 .ToList();
 
@@ -97,43 +102,43 @@ namespace TraSuaApp.WpfClient.Controls
 
         private void SearchBox_And_ListBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            // Nếu đang ở TextBox và nhấn phím xuống
-            if (sender == SearchTextBox && e.Key == Key.Down && ListBoxResults.Items.Count > 0)
-            {
-                ListBoxResults.Focus();
-                ListBoxResults.SelectedIndex = 0;
-                e.Handled = true;
-            }
-            // Nếu nhấn Enter
-            else if (e.Key == Key.Enter)
-            {
-                NguyenLieuDto? sp = null;
+            //// Nếu đang ở TextBox và nhấn phím xuống
+            //if (sender == SearchTextBox && e.Key == Key.Down && ListBoxResults.Items.Count > 0)
+            //{
+            //    ListBoxResults.Focus();
+            //    ListBoxResults.SelectedIndex = 0;
+            //    e.Handled = true;
+            //}
+            //// Nếu nhấn Enter
+            //else if (e.Key == Key.Enter)
+            //{
+            //    NguyenLieuDto? sp = null;
 
-                if (sender == SearchTextBox && ListBoxResults.Items.Count > 0)
-                {
-                    // Lấy kết quả đầu tiên
-                    sp = ListBoxResults.Items[0] as NguyenLieuDto;
-                }
-                else if (sender == ListBoxResults && ListBoxResults.SelectedItem is NguyenLieuDto selected)
-                {
-                    // Lấy mục đang chọn
-                    sp = selected;
-                }
+            //    if (sender == SearchTextBox && ListBoxResults.Items.Count > 0)
+            //    {
+            //        // Lấy kết quả đầu tiên
+            //        sp = ListBoxResults.Items[0] as NguyenLieuDto;
+            //    }
+            //    else if (sender == ListBoxResults && ListBoxResults.SelectedItem is NguyenLieuDto selected)
+            //    {
+            //        // Lấy mục đang chọn
+            //        sp = selected;
+            //    }
 
-                if (sp != null)
-                {
-                    Select(sp);
-                    e.Handled = true;
-                }
-            }
-            // Nếu nhấn Escape
-            else if (e.Key == Key.Escape)
-            {
-                Popup.IsOpen = false;
-                SearchTextBox.Focus();
-                NguyenLieuCleared?.Invoke();
-                e.Handled = true;
-            }
+            //    if (sp != null)
+            //    {
+            //        Select(sp);
+            //        e.Handled = true;
+            //    }
+            //}
+            //// Nếu nhấn Escape
+            //else if (e.Key == Key.Escape)
+            //{
+            //    Popup.IsOpen = false;
+            //    SearchTextBox.Focus();
+            //    NguyenLieuCleared?.Invoke();
+            //    e.Handled = true;
+            //}
         }
 
         public void SetSelectedNguyenLieuById(Guid id)
@@ -149,6 +154,74 @@ namespace TraSuaApp.WpfClient.Controls
             }
         }
 
+        private void Root_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Down && Popup.IsOpen && ListBoxResults.Items.Count > 0)
+            {
+                if (SearchTextBox.IsKeyboardFocusWithin)
+                {
+                    ListBoxResults.Focus();
+                    ListBoxResults.SelectedIndex = 0;
+                    e.Handled = true;
+                }
+                else if (ListBoxResults.IsKeyboardFocusWithin)
+                {
+                    int index = ListBoxResults.SelectedIndex;
+                    if (index < ListBoxResults.Items.Count - 1)
+                    {
+                        ListBoxResults.SelectedIndex = index + 1;
+                        ListBoxResults.ScrollIntoView(ListBoxResults.SelectedItem);
+                        e.Handled = true;
+                    }
+                }
+            }
+            else if (e.Key == Key.Up && Popup.IsOpen && ListBoxResults.Items.Count > 0)
+            {
+                if (ListBoxResults.IsKeyboardFocusWithin)
+                {
+                    int index = ListBoxResults.SelectedIndex;
+                    if (index > 0)
+                    {
+                        ListBoxResults.SelectedIndex = index - 1;
+                        ListBoxResults.ScrollIntoView(ListBoxResults.SelectedItem);
+                        e.Handled = true;
+                    }
+                    else
+                    {
+                        SearchTextBox.Focus();
+                        e.Handled = true;
+                    }
+                }
+            }
+            else if (e.Key == Key.Enter)
+            {
+                if (Popup.IsOpen)
+                {
+                    NguyenLieuDto? item = null;
 
+                    if (ListBoxResults.SelectedItem is NguyenLieuDto selected)
+                        item = selected;
+                    else if (ListBoxResults.Items.Count > 0)
+                        item = ListBoxResults.Items[0] as NguyenLieuDto;
+
+                    if (item != null)
+                    {
+                        Select(item);
+                        Popup.IsOpen = false;
+                        e.Handled = true;
+                    }
+                }
+            }
+            else if (e.Key == Key.Escape)
+            {
+                if (Popup.IsOpen)
+                {
+                    Popup.IsOpen = false;
+                    SearchTextBox.Focus();
+                    NguyenLieuCleared?.Invoke();
+                    e.Handled = true;
+                }
+            }
+        }
     }
 }
