@@ -168,14 +168,14 @@ public class HoaDonController : BaseApiController
     }
 
     // 🟟 Khách đã trả nợ
-    [HttpPost("shipperXX/{id}")]
+    [HttpPost("shipper99/{id}")]
     [AllowAnonymous]
-    public async Task<ActionResult<Result<HoaDonDto>>> TraNo(Guid id)
+    public async Task<ActionResult<Result<HoaDonDto>>> TraNo(Guid id, [FromBody] decimal soTien)
     {
-        var result = await _service.TraNoAsync(id);
+        var result = await _service.TraNoAsync(id, soTien);
         if (result.IsSuccess && result.Data != null)
-            await NotifyClients("updated", result.Data.Id);   // bắn signal cập nhật
+            await NotifyClients("updated", result.Data.Id); // bắn signal cập nhật
+
         return result;
     }
-
 }

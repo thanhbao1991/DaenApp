@@ -553,25 +553,25 @@
             x:Key="AddButtonStyle"
             BasedOn="{StaticResource BaseButtonStyle}"
             TargetType="Button">
-            <Setter Property="Background" Value="#4CAF50" />
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
         </Style>
         <Style
             x:Key="EditButtonStyle"
             BasedOn="{StaticResource BaseButtonStyle}"
             TargetType="Button">
-            <Setter Property="Background" Value="#2196F3" />
+            <Setter Property="Background" Value="{StaticResource SuccessBrush}" />
         </Style>
         <Style
             x:Key="DeleteButtonStyle"
             BasedOn="{StaticResource BaseButtonStyle}"
             TargetType="Button">
-            <Setter Property="Background" Value="#F44336" />
+            <Setter Property="Background" Value="{StaticResource DangerBrush}" />
         </Style>
         <Style
             x:Key="ReloadButtonStyle"
             BasedOn="{StaticResource BaseButtonStyle}"
             TargetType="Button">
-            <Setter Property="Background" Value="#FF9800" />
+            <Setter Property="Background" Value="{StaticResource WarningBrush}" />
         </Style>
 
         <!--  Base style cho các nút nhỏ  -->
@@ -587,26 +587,26 @@
             x:Key="ThemButtonStyle"
             BasedOn="{StaticResource BaseSmallButtonStyle}"
             TargetType="Button">
-            <Setter Property="Foreground" Value="#4CAF50" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
         </Style>
         <Style
             x:Key="SuaButtonStyle"
             BasedOn="{StaticResource BaseSmallButtonStyle}"
             TargetType="Button">
-            <Setter Property="Foreground" Value="#2196F3" />
+            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
         </Style>
         <Style
             x:Key="TaiLaiButtonStyle"
             BasedOn="{StaticResource BaseSmallButtonStyle}"
             TargetType="Button">
-            <Setter Property="Foreground" Value="#FF9800" />
+            <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
         </Style>
 
         <Style
             x:Key="XoaButtonStyle"
             BasedOn="{StaticResource BaseSmallButtonStyle}"
             TargetType="Button">
-            <Setter Property="Foreground" Value="#F44336" />
+            <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
         </Style>
 
         <!--  DataGrid styles  -->

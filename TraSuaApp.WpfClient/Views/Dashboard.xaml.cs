@@ -1,8 +1,10 @@
 ﻿using System.ComponentModel;
+using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Json;
 using System.Reflection;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -89,10 +91,15 @@ namespace TraSuaApp.WpfClient.Views
         private readonly DebounceManager _debouncer = new();
 
         private CancellationTokenSource _cts = new();
+        private readonly QuickOrderService _quickOrder;
+
 
         public Dashboard()
         {
             InitializeComponent();
+            NotiHelper.TargetTextBlock = ThongBaoTextBlock;
+            _gpt = new GPTService(Config.apiChatGptKey);
+            _quickOrder = new QuickOrderService(Config.apiChatGptKey);
             DataContext = this;
             _baoDonPlayer = new MediaPlayer();
             var uri = new Uri("pack://application:,,,/Resources/ring3.wav");
@@ -169,7 +176,7 @@ namespace TraSuaApp.WpfClient.Views
 
             foreach (var hd in dsDenHan)
             {
-                MessageBox.Show($"⏰ Đến giờ hẹn: {hd.Ten} ({hd.TongTien:N0}đ)");
+                NotiHelper.Show($"⏰ Đến giờ hẹn: {hd.Ten} ({hd.TongTien:N0}đ)");
 
                 hd.NgayHen = null;
                 var api = new HoaDonApi();
@@ -221,8 +228,17 @@ namespace TraSuaApp.WpfClient.Views
         private void SearchHoaDonTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _debouncer.Debounce("HoaDon", 300, ApplyHoaDonFilter);
-        }
 
+            if (sender is TextBox tb)
+            {
+                // đếm số dòng hiện tại trong TextBox
+                int lineCount = tb.LineCount;
+                if (lineCount < 1) lineCount = 1;
+
+                // mỗi dòng cao khoảng 32px
+                tb.Height = 32 * lineCount;
+            }
+        }
         private void SearchChiTietHoaDonTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _debouncer.Debounce("ChiTietHoaDon", 300, () =>
@@ -253,110 +269,6 @@ namespace TraSuaApp.WpfClient.Views
                 tongTien = sourceList.Sum(x => x.ThanhTien);
             });
         }
-
-
-
-
-
-
-
-        //    public class DebounceDispatcher
-        //{
-        //    private CancellationTokenSource? _cts;
-
-        //    public void Debounce(int milliseconds, Action action)
-        //    {
-        //        _cts?.Cancel();
-        //        _cts = new CancellationTokenSource();
-
-        //        Task.Delay(milliseconds, _cts.Token)
-        //            .ContinueWith(t =>
-        //            {
-        //                if (!t.IsCanceled) action();
-        //            }, TaskScheduler.FromCurrentSynchronizationContext());
-        //    }
-        //}
-        //public partial class Dashboard : Window
-        //{
-        //   private MediaPlayer _baoDonPlayer;
-        //   private DispatcherTimer _mainTimer;
-
-        //public Dashboard()
-        //{
-        //    InitializeComponent();
-        //    _baoDonPlayer = new MediaPlayer();
-        //    var uri = new Uri("pack://application:,,,/Resources/ring3.wav"); //
-        //    _baoDonPlayer.Open(uri); // đường dẫn file
-        //    _baoDonPlayer.Volume = 0.8; // âm lượng 0.0 → 1.0
-        //    _baoDonPlayer.MediaEnded += (s, e) =>
-        //    {
-        //        _baoDonPlayer.Position = TimeSpan.Zero;
-        //        _baoDonPlayer.Play();
-        //    };
-        //    _mainTimer = new DispatcherTimer();
-        //    _mainTimer.Interval = TimeSpan.FromSeconds(2); // tick mỗi 10 giây
-        //    _mainTimer.Tick += async (s, e) => await MainTimer_Tick();
-        //    _mainTimer.Start();
-
-        //    Loaded += Dashboard_Loaded;
-
-        //    this.MaxHeight = SystemParameters.MaximizedPrimaryScreenHeight;
-        //    this.MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
-        //    GenerateMenu("Admin", AdminMenu);
-        //    GenerateMenu("HoaDon", HoaDonMenu);
-        //    GenerateMenu("Settings", SettingsMenu);
-        //    for (int h = 6; h < 22; h++) GioCombo.Items.Add(h.ToString("D2"));
-        //    for (int m = 0; m < 60; m += 10) PhutCombo.Items.Add(m.ToString("D2")); // bước 5 phút
-        //}
-        //private async Task MainTimer_Tick()
-        //{
-        //    // 🟟 Báo đơn
-        //    if (_fullHoaDonList.Any(hd => hd.BaoDon))
-        //    {
-        //        if (_baoDonPlayer.Position == TimeSpan.Zero || _baoDonPlayer.CanPause)
-        //        {
-        //            _baoDonPlayer.Play();
-        //        }
-        //    }
-        //    else
-        //    {
-        //        _baoDonPlayer.Stop();
-        //    }
-
-        //    // 🟟 Refresh giờ hiển thị (mỗi 1 phút mới cần)
-        //    if (DateTime.Now.Second < 2) // tick đầu phút
-        //    {
-        //        foreach (var item in _fullHoaDonList)
-        //            item.RefreshGioHienThi();
-        //    }
-
-        //    // 🟟 Check đơn hẹn giờ
-        //    var dsDenHan = _fullHoaDonList
-        //        .Where(h => h.NgayHen.HasValue && h.NgayHen.Value <= DateTime.Now)
-        //        .ToList();
-
-        //    foreach (var hd in dsDenHan)
-        //    {
-        //        // ⚠️ Không dùng MessageBox spam liên tục
-        //        MessageBox.Show($"⏰ Đến giờ hẹn: {hd.Ten} ({hd.TongTien:N0}đ)");
-
-        //        hd.NgayHen = null;
-        //        var api = new HoaDonApi();
-        //        await api.UpdateSingleAsync(hd.Id, hd);
-        //    }
-
-        //    // 🟟 Công việc nội bộ (mỗi 15 phút mới đọc lại)
-        //    if (DateTime.Now.Minute % 10 == 0 && AppProviders.CongViecNoiBos != null)
-        //    {
-        //        var congViec = _fullCongViecNoiBoList
-        //            .Where(cv => !cv.DaHoanThanh)
-        //            .OrderBy(x => x.NgayGio)
-        //            .FirstOrDefault();
-
-        //        if (congViec != null)
-        //            await TTSHelper.DownloadAndPlayGoogleTTSAsync(congViec.Ten);
-        //    }
-        //}
 
         private async Task<bool> WaitForDataAsync(Func<bool> condition, int timeoutMs = 5000)
         {
@@ -397,28 +309,7 @@ namespace TraSuaApp.WpfClient.Views
             });
         }
 
-        //0    private DispatcherTimer _updateSummaryTimer = new();
         private List<ChiTietHoaDonDto> _fullChiTietHoaDonList = new();
-        //    private CancellationTokenSource _cts = new();
-
-        //private void ScheduleUpdateDashboardSummary()
-        //{
-        //    if (_updateSummaryTimer == null)
-        //    {
-        //        _updateSummaryTimer = new DispatcherTimer
-        //        {
-        //            Interval = TimeSpan.FromMilliseconds(500) // debounce 0.5s
-        //        };
-        //        _updateSummaryTimer.Tick += async (s, e) =>
-        //        {
-        //            _updateSummaryTimer.Stop();
-        //            await UpdateDashboardSummary();
-        //        };
-        //    }
-
-        //    _updateSummaryTimer.Stop();
-        //    _updateSummaryTimer.Start();
-        //}
         private async Task BindAllProviders()
         {
             var providers = new List<(Func<bool> wait, Action<Action> subscribe, Action reload, string name)>
@@ -614,7 +505,7 @@ namespace TraSuaApp.WpfClient.Views
         {
             if (CongViecNoiBoDataGrid.SelectedItem is not CongViecNoiBoDto selected)
                 return;
-            var confirm = MessageBox.Show(
+            var confirm = System.Windows.MessageBox.Show(
                $"Bạn có chắc chắn muốn xoá '{selected.Ten}'?",
                "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
@@ -750,7 +641,7 @@ namespace TraSuaApp.WpfClient.Views
             if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected)
                 return;
 
-            var confirm = MessageBox.Show(
+            var confirm = System.Windows.MessageBox.Show(
                $"Bạn có chắc chắn muốn xoá '{selected.Ten}'?",
                "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
@@ -1169,8 +1060,9 @@ namespace TraSuaApp.WpfClient.Views
 
             var groups = AppProviders.ChiTietHoaDonThanhToans.Items
                 .Where(x => !x.IsDeleted && x.Ngay == today)
-                .Where(x => x.LoaiThanhToan.ToLower() == "trả nợ qua ngày")
-                .Where(x => x.TenPhuongThucThanhToan?.ToLower() == "tiền mặt")
+                .Where(x => x.LoaiThanhToan == "Trả nợ qua ngày")
+                //   .Where(x => x.GhiChu != "Shipper")
+                .Where(x => x.TenPhuongThucThanhToan == "Tiền mặt")
                 .GroupBy(x => x.KhachHangId)
                 .Select(g => (Label: g.FirstOrDefault()?.Ten ?? "Khách lạ", Value: g.Sum(x => x.SoTien)))
                 .OrderByDescending(g => g.Value)
@@ -1209,10 +1101,9 @@ namespace TraSuaApp.WpfClient.Views
 
             decimal tongTraNo = AppProviders.ChiTietHoaDonThanhToans.Items
                 .Where(x => !x.IsDeleted && x.Ngay == today)
-                .Where(x =>
-            x.LoaiThanhToan == "Trả nợ qua ngày"
-            &&
-            x.TenPhuongThucThanhToan?.ToLower().Contains("tiền mặt") == true
+                .Where(x => x.LoaiThanhToan == "Trả nợ qua ngày"
+            && x.TenPhuongThucThanhToan == "Tiền mặt"
+            && x.GhiChu != "Shipper"
             )
             .Sum(x => x.SoTien);
             // Hiển thị số tiền mặt mang về (tongTatCa) ở trên cùng
@@ -1820,16 +1711,25 @@ namespace TraSuaApp.WpfClient.Views
             selected.DinhLuong = sp == null ? "" : sp.DinhLuong;
         }
 
-        string oldConn = "Server=192.168.1.85;Database=DennCoffee;user=sa;password=baothanh1991;TrustServerCertificate=True";
+
         private DateTime today;
+
+        private readonly GPTService _gpt;
 
         private async void MenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var importer = new KhachHangImporter(oldConn, Config.ConnectionString);
-            await importer.ImportAsync();
+            //try
+            //{
+            //    string reply = await _gpt.AskAsync("xin chào");
+            //    MessageBox.Show(reply, "GPT-4o-mini");
+            //}
+            //catch (Exception ex)
+            //{
+            //    MessageBox.Show("❌ Lỗi: " + ex.Message);
+            //}
 
-            var importer2 = new HoaDonImporter(oldConn, Config.ConnectionString);
-            await importer2.ImportTodayAsync();
+
+
         }
 
         private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2542,18 +2442,6 @@ namespace TraSuaApp.WpfClient.Views
             _congViecTimer.Stop();
             _updateSummaryTimer.Stop();
         }
-
-        private void HoaDonDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
-        {
-            if (e.Row.DataContext is HoaDonDto hd)
-            {
-                // Tìm IconBlock trong template
-                if (e.Row.FindName("StatusIcon") is IconBlock icon)
-                {
-                    UpdateStatusIconStyle(hd, icon);
-                }
-            }
-        }
         private void UpdateStatusIconStyle(HoaDonDto hd, IconBlock icon)
         {
             // Ẩn mặc định
@@ -2605,7 +2493,6 @@ namespace TraSuaApp.WpfClient.Views
                 icon.BeginAnimation(UIElement.OpacityProperty, blink);
             }
         }
-
         private void StatusIcon_Loaded(object sender, RoutedEventArgs e)
         {
             if (sender is IconBlock icon && icon.DataContext is HoaDonDto hd)
@@ -2613,7 +2500,6 @@ namespace TraSuaApp.WpfClient.Views
                 ApplyStatusIcon(hd, icon);
             }
         }
-
         private void ApplyStatusIcon(HoaDonDto hd, IconBlock icon)
         {
             // Reset
@@ -2664,6 +2550,50 @@ namespace TraSuaApp.WpfClient.Views
                 RepeatBehavior = RepeatBehavior.Forever
             };
             icon.BeginAnimation(UIElement.OpacityProperty, blink);
+        }
+
+
+
+        private async void QuickOrderButton_Click()
+        {
+            if (string.IsNullOrEmpty(SearchHoaDonTextBox.Text)) return;
+            string input = SearchHoaDonTextBox.Text;
+            var menu = AppProviders.SanPhams.Items.Where(x => x.NgungBan == false).Select(x => x.Ten).ToList();
+            var items = await _quickOrder.ParseQuickOrderAsync(input, menu);
+            if (!items.Any())
+            {
+                MessageBox.Show("❌ Không nhận diện được món nào.");
+                return;
+            }
+
+            var dto = new HoaDonDto
+            {
+                PhanLoai = "Ship",
+                GhiChu = JsonSerializer.Serialize(items) // truyền order GPT qua GhiChu
+            };
+
+            var window = new HoaDonEdit(dto)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                Owner = this,
+            };
+
+            if (window.ShowDialog() == true)
+                await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
+        }
+        private async void AddAIButton_Click(object sender, RoutedEventArgs e)
+        {
+            await SafeButtonHandlerAsync(AppButton, async _ =>
+            {
+                QuickOrderButton_Click();
+                SearchHoaDonTextBox.Clear();
+
+            });
+        }
+        private void SearchHoaDonTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            SearchHoaDonTextBox.Height = 32;
         }
     }
 }

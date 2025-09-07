@@ -28,5 +28,6 @@
         public static string ApiBaseUrl { get; }
         public static string ConnectionString { get; }
         public static string SignalRHubUrl { get; } // 🟟 thêm property cho SignalR
+        public static string apiChatGptKey = "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";
     }
 }

@@ -6,7 +6,10 @@
 
   <ItemGroup>
     <None Remove="Images\viettin007.jpg" />
+    <None Remove="Resources\chuyen-khoan.wav" />
+    <None Remove="Resources\ghi-no.wav" />
     <None Remove="Resources\ring3.wav" />
+    <None Remove="Resources\tien-mat.wav" />
   </ItemGroup>
 
   <ItemGroup>
@@ -14,10 +17,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Resources\ghi-no.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="FontAwesome.Sharp" Version="6.6.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="OpenAI" Version="2.4.0" />
     <PackageReference Include="Selenium.WebDriver" Version="4.35.0" />
     <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="139.0.7258.6800" />
   </ItemGroup>
@@ -33,9 +43,15 @@
     <Resource Include="Images\viettin007.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
-    <Resource Include="Resources\ring3.wav">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Resource>
+    <Content Include="Resources\chuyen-khoan.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\ring3.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\tien-mat.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

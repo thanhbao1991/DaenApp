@@ -556,7 +556,7 @@
 
                 <GroupBox
                     Name="ToppingGroupBox"
-                    Margin="0,0,-200,0"
+                    Margin="0,0,-230,0"
                     HorizontalAlignment="Right"
                     Foreground="WhiteSmoke"
                     Header="Topping">

@@ -1,4 +1,5 @@
-﻿using System.Windows.Forms;
+﻿using System.Windows.Controls;
+using System.Windows.Forms;
 
 public static class NotiHelper
 {
@@ -33,4 +34,26 @@ public static class NotiHelper
         //notify.ShowBalloonTip(4000);
         //Task.Delay(5000).ContinueWith(_ => notify.Dispose());
     }
+
+
+
+
+
+
+    public static TextBlock? TargetTextBlock { get; set; }
+
+    public static void ShowSilient(string message)
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+          {
+              if (TargetTextBlock != null)
+              {
+                  TargetTextBlock.Text = $"{message}";
+                  TargetTextBlock.Foreground = System.Windows.Media.Brushes.Green;
+              }
+          });
+    }
+
+
+
 }

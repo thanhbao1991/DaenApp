@@ -99,9 +99,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 SanPhamSearchBox.SearchTextBox.SelectAll();
             };
 
-
-
-
             KhachHangSearchBox.KhachHangList = _khachHangsList;
             KhachHangSearchBox.KhachHangSelected += async kh =>
             {
@@ -187,6 +184,65 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             {
                 // ✅ Sửa hóa đơn
                 Model = dto;
+
+                if (!string.IsNullOrEmpty(Model.GhiChu) && Model.GhiChu.Trim().StartsWith("["))
+                {
+                    try
+                    {
+                        var items = System.Text.Json.JsonSerializer.Deserialize<List<QuickOrderDto>>(Model.GhiChu);
+                        if (items != null)
+                        {
+                            foreach (var item in items)
+                            {
+                                var sp = _sanPhamList.FirstOrDefault(x => x.Ten == item.TenMon);
+                                if (sp != null)
+                                {
+                                    // tìm biến thể theo BienThe
+                                    var bienThe = sp.BienThe.FirstOrDefault(bt =>
+                                        bt.TenBienThe.Equals(item.BienThe, StringComparison.OrdinalIgnoreCase));
+
+                                    if (bienThe == null)
+                                    {
+                                        // fallback: lấy biến thể mặc định (Size chuẩn) hoặc FirstOrDefault
+                                        bienThe = sp.BienThe.FirstOrDefault(bt => bt.MacDinh)
+                                                  ?? sp.BienThe.FirstOrDefault();
+                                    }
+
+                                    if (bienThe != null)
+                                    {
+                                        Model.ChiTietHoaDons.Add(new ChiTietHoaDonDto
+                                        {
+                                            Id = Guid.NewGuid(),
+                                            HoaDonId = Model.Id,
+                                            SanPhamIdBienThe = bienThe.Id,
+                                            TenSanPham = sp.Ten,
+                                            TenBienThe = bienThe.TenBienThe,
+                                            DonGia = bienThe.GiaBan,
+                                            SoLuong = item.SoLuong,
+                                            Stt = 0,
+                                            BienTheList = _bienTheList.Where(x => x.SanPhamId == sp.Id).ToList(),
+                                            ToppingDtos = new List<ToppingDto>()
+                                        });
+                                    }
+                                }
+                            }
+
+                            // đánh lại STT
+                            int stt = 1;
+                            foreach (var c in Model.ChiTietHoaDons)
+                            {
+                                c.Stt = stt++;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("❌ Lỗi parse QuickOrder JSON: " + ex.Message);
+                    }
+                }
+
+
+
                 foreach (var ct in Model.ChiTietHoaDons)
                 {
                     var bienThe = _bienTheList.FirstOrDefault(bt => bt.Id == ct.SanPhamIdBienThe);

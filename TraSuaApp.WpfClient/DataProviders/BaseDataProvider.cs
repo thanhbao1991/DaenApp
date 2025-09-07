@@ -64,18 +64,27 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                             var hoaDon = Items.OfType<HoaDonDto>().FirstOrDefault(x => x.Id.ToString() == id);
                             if (hoaDon != null)
                             {
-                                message = action switch
+                                if (hoaDon.NguoiShip == "Khánh")
                                 {
-                                    "created" => $"➕ Đơn mới: {hoaDon.MaHoaDon} - {hoaDon.TenKhachHangText ?? hoaDon.TenBan}",
-                                    "updated" => $"✏️ Sửa đơn: {hoaDon.MaHoaDon} - {hoaDon.TenKhachHangText ?? hoaDon.TenBan}",
-                                    "deleted" => $"🟟️ Xoá đơn: {hoaDon.MaHoaDon} - {hoaDon.TenKhachHangText ?? hoaDon.TenBan}",
-                                    "restored" => $"♻️ Khôi phục đơn: {hoaDon.MaHoaDon} - {hoaDon.TenKhachHangText ?? hoaDon.TenBan}",
-                                    _ => message
-                                };
+                                    if (hoaDon.GhiChuShipper == "đưa tiền mặt")
+                                    {
+                                        AudioHelper.Play("tien-mat.wav");
+                                        NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                    }
+                                    else if (hoaDon.GhiChuShipper == "nói là chuyển khoản")
+                                    {
+                                        AudioHelper.Play("chuyen-khoan.wav");
+                                        NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                    }
+                                    else if (hoaDon.GhiChuShipper == "nói nợ")
+                                    {
+                                        AudioHelper.Play("ghi-no.wav");
+                                        NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                    }
+                                }
                             }
-                        }
 
-                        // NotiHelper.Show(message);
+                        }
                     }
                 });
             });

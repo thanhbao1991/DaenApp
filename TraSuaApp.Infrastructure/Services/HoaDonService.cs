@@ -1009,9 +1009,9 @@ public class HoaDonService : IHoaDonService
     public async Task<Result<HoaDonDto>> ThuTienMatAsync(Guid id)
     {
         var entity = await _context.HoaDons
-            .Include(x => x.ChiTietHoaDonThanhToans)
-            .Include(x => x.ChiTietHoaDonNos)
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+         .Include(x => x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted))
+            .Include(x => x.ChiTietHoaDonNos.Where(n => !n.IsDeleted))
+              .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
         if (entity == null)
             return Result<HoaDonDto>.Failure("Không tìm thấy hoá đơn.");
@@ -1087,14 +1087,129 @@ public class HoaDonService : IHoaDonService
             .WithBefore(before)
             .WithAfter(after);
     }
-    public Task<Result<HoaDonDto>> TraNoAsync(Guid id)
-        => CapNhatGhiChuShipperAsync(id, "trả nợ");
+    public async Task<Result<HoaDonDto>> TraNoAsync(Guid id, decimal soTienKhachDua)
+    {
+        var entity = await _context.HoaDons
+            .Include(x => x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted))
+            .Include(x => x.ChiTietHoaDonNos.Where(n => !n.IsDeleted))
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+        if (entity == null)
+            return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
+
+        var now = DateTime.Now;
+        var before = ToDto(entity);
+
+        if (entity.KhachHangId == null)
+            return Result<HoaDonDto>.Failure("Hoá đơn này không có khách hàng, không thể trả nợ.");
+
+        // 🟟 Tiền khách đưa nhập theo NGÀN đồng → đổi sang đồng
+        decimal soTienThucTe = soTienKhachDua * 1000;
+
+        // 🟟 Tính số tiền còn lại của đơn hôm nay (chỉ để kiểm tra, không tạo thanh toán cho đơn này nữa)
+        decimal daThu = entity.ChiTietHoaDonThanhToans
+            .Where(t => t.GhiChu == "Shipper")
+            .Sum(t => t.SoTien);
+
+        // Nếu khách đưa < Còn lại của đơn hôm nay ⇒ chặn
+        decimal soTienTraNo = soTienThucTe - daThu;
+        if (soTienTraNo <= 0)
+            return Result<HoaDonDto>.Failure("Khách không đưa dư sau phần đã thu của đơn hôm nay.");
+
+        var khId = entity.KhachHangId.Value;
+
+        // Tính tổng nợ cũ (không tính chính hóa đơn hiện tại)
+        var tongNoCu = await LoyaltyService.TinhTongNoKhachHangAsync(_context, khId, entity.Id);
+        if (tongNoCu <= 0)
+            return Result<HoaDonDto>.Failure("Khách hàng không còn nợ để trả.");
+
+        decimal soTienCon = Math.Min(soTienTraNo, tongNoCu);
+        decimal traNoCu = 0;
+
+        // 🟟 Lấy phương thức "Tiền mặt"
+        var pm = await _context.PhuongThucThanhToans
+            .Where(p => !p.IsDeleted && p.Ten == "Tiền mặt")
+            .Select(p => new { p.Id, p.Ten })
+            .FirstOrDefaultAsync();
+
+        if (pm == null)
+            return Result<HoaDonDto>.Failure("Không tìm thấy phương thức thanh toán 'Tiền mặt'.");
+
+        // 🟟 Duyệt các dòng nợ cũ (FIFO) và cấn trừ
+        var noConLaiList = await _context.ChiTietHoaDonNos
+            .Where(n => !n.IsDeleted && n.KhachHangId == khId && n.HoaDonId != entity.Id)
+            .Select(n => new
+            {
+                No = n,
+                DaTra = _context.ChiTietHoaDonThanhToans
+                    .Where(t => !t.IsDeleted && t.ChiTietHoaDonNoId == n.Id)
+                    .Sum(t => (decimal?)t.SoTien) ?? 0
+            })
+            .OrderBy(x => x.No.NgayGio)
+            .ToListAsync();
+
+        foreach (var x in noConLaiList)
+        {
+            var soNoCon = x.No.SoTienNo - x.DaTra;
+            if (soNoCon <= 0) continue;
+
+            var tra = Math.Min(soTienCon, soNoCon);
+            if (tra <= 0) break;
+
+            _context.ChiTietHoaDonThanhToans.Add(new ChiTietHoaDonThanhToan
+            {
+                Id = Guid.NewGuid(),
+                HoaDonId = x.No.HoaDonId, // gắn vào hóa đơn nợ cũ
+                KhachHangId = khId,
+                Ngay = now.Date,
+                NgayGio = now,
+                SoTien = tra,
+                LoaiThanhToan = x.No.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
+                PhuongThucThanhToanId = pm.Id,
+                TenPhuongThucThanhToan = pm.Ten, // luôn là Tiền mặt
+                GhiChu = $"Shipper",
+                CreatedAt = now,
+                LastModified = now,
+                IsDeleted = false,
+                ChiTietHoaDonNoId = x.No.Id
+            });
+
+            traNoCu += tra;
+            soTienCon -= tra;
+
+            if (soTienCon <= 0) break;
+        }
+
+        if (traNoCu <= 0)
+        {
+            return Result<HoaDonDto>.Failure("Khách đưa chỉ đủ trả đơn hôm nay, không có dư để trả nợ.");
+        }
+
+        // 🟟 Cập nhật GhiChuShipper cho hóa đơn hiện tại (chỉ để hiển thị)
+        entity.GhiChuShipper = $"Trả nợ: {traNoCu:N0} đ";
+        entity.LastModified = now;
+
+        await _context.SaveChangesAsync();
+
+        var after = ToDto(entity);
+
+        // 🟟 Gửi thông báo Discord
+        await DiscordService.SendAsync(
+            DiscordEventType.DuyKhanh,
+            $"• {entity.TenKhachHangText}: Trả nợ {traNoCu:N0} đ"
+        );
+
+        return Result<HoaDonDto>.Success(after, "Đã ghi nhận khách trả nợ.")
+            .WithId(entity.Id)
+            .WithBefore(before)
+            .WithAfter(after);
+    }
     public async Task<Result<HoaDonDto>> GhiNoAsync(Guid id)
     {
         var entity = await _context.HoaDons
-            .Include(x => x.ChiTietHoaDonThanhToans)
-            .Include(x => x.ChiTietHoaDonNos)
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+         .Include(x => x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted))
+            .Include(x => x.ChiTietHoaDonNos.Where(n => !n.IsDeleted))
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
         if (entity == null)
             return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
@@ -1146,9 +1261,9 @@ public class HoaDonService : IHoaDonService
     public async Task<Result<HoaDonDto>> ThuChuyenKhoanAsync(Guid id)
     {
         var entity = await _context.HoaDons
-            .Include(x => x.ChiTietHoaDonThanhToans)
-            .Include(x => x.ChiTietHoaDonNos)
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+          .Include(x => x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted))
+            .Include(x => x.ChiTietHoaDonNos.Where(n => !n.IsDeleted))
+               .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
         if (entity == null)
             return Result<HoaDonDto>.Failure("Không tìm thấy hoá đơn.");

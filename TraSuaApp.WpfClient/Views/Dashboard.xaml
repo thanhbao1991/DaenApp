@@ -183,26 +183,39 @@
                             <ColumnDefinition Width="2*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
+
                         <TextBox
                             x:Name="SearchHoaDonTextBox"
                             Grid.Column="1"
-                            Grid.ColumnSpan="3"
-                            Padding="350,0,0,0"
+                            Grid.ColumnSpan="2"
+                            AcceptsReturn="True"
+                            LostFocus="SearchHoaDonTextBox_LostFocus"
                             TextChanged="SearchHoaDonTextBox_TextChanged" />
-
                         <StackPanel
                             Grid.Column="1"
-                            Grid.ColumnSpan="3"
-                            HorizontalAlignment="Left"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
                             Panel.ZIndex="1"
                             Orientation="Horizontal">
+                            <Button
+                                Margin="8,0,0,0"
+                                HorizontalAlignment="Left"
+                                Panel.ZIndex="1"
+                                Click="AddAIButton_Click"
+                                Foreground="{StaticResource DarkBrush}"
+                                Style="{StaticResource XoaButtonStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa:IconBlock Margin="0,0,5,0" Icon="Robot" />
+                                    <TextBlock Text="Order Nhanh" />
+                                </StackPanel>
+                            </Button>
+
                             <Button
                                 HorizontalAlignment="Left"
                                 Panel.ZIndex="1"
                                 Click="AddTaiChoButton_Click"
                                 FontSize="{StaticResource FontSizeLarge}"
-                                Foreground="Green"
-                                Style="{StaticResource ThemButtonStyle}">
+                                Style="{StaticResource SuaButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconBlock Margin="0,0,5,0" Icon="Chair" />
                                     <TextBlock Text="Tại chỗ" />
@@ -215,27 +228,25 @@
                                 Panel.ZIndex="1"
                                 Click="AddMuaVeButton_Click"
                                 FontSize="{StaticResource FontSizeLarge}"
-                                Foreground="Indigo"
-                                Style="{StaticResource SuaButtonStyle}">
+                                Style="{StaticResource TaiLaiButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconBlock Margin="0,0,5,0" Icon="ShoppingBag" />
                                     <TextBlock Text="Mua về" />
                                 </StackPanel>
                             </Button>
-
                             <Button
                                 Margin="8,0,0,0"
                                 HorizontalAlignment="Left"
                                 Panel.ZIndex="1"
                                 Click="AddShipButton_Click"
                                 FontSize="{StaticResource FontSizeLarge}"
-                                Foreground="Orange"
-                                Style="{StaticResource TaiLaiButtonStyle}">
+                                Style="{StaticResource ThemButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconBlock Margin="0,0,5,0" Icon="Motorcycle" />
                                     <TextBlock Text="Ship" />
                                 </StackPanel>
                             </Button>
+
 
                             <Button
                                 Margin="8,0,0,0"
@@ -243,14 +254,16 @@
                                 Panel.ZIndex="1"
                                 Click="AddAppButton_Click"
                                 FontSize="{StaticResource FontSizeLarge}"
-                                Foreground="Red"
                                 Style="{StaticResource XoaButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconBlock Margin="0,0,5,0" Icon="Mobile" />
                                     <TextBlock Text="App" />
                                 </StackPanel>
                             </Button>
+
+
                         </StackPanel>
+
                         <DataGrid
                             x:Name="HoaDonDataGrid"
                             Grid.Row="1"
@@ -259,7 +272,8 @@
                             FontWeight="Bold"
                             IsReadOnly="True"
                             MouseDoubleClick="HoaDonDataGrid_MouseDoubleClick"
-                            SelectionChanged="HoaDonDataGrid_SelectionChangedAsync">
+                            SelectionChanged="HoaDonDataGrid_SelectionChangedAsync"
+                            Visibility="Visible">
                             <DataGrid.RowStyle>
                                 <Style TargetType="DataGridRow">
                                     <Style.Triggers>
@@ -282,13 +296,15 @@
                                 <DataGridTemplateColumn Width="48" Header="Trạng thái">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <fa:IconBlock
-                                                x:Name="StatusIcon"
-                                                Width="18"
-                                                Height="18"
-                                                Loaded="StatusIcon_Loaded"
-                                                Opacity="1"
-                                                Visibility="Collapsed" />
+                                            <Grid Height="32">
+                                                <fa:IconBlock
+                                                    x:Name="StatusIcon"
+                                                    Width="20"
+                                                    Height="20"
+                                                    Loaded="StatusIcon_Loaded"
+                                                    Opacity="1"
+                                                    Visibility="Collapsed" />
+                                            </Grid>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
@@ -301,7 +317,6 @@
                                             <Setter Property="Background" Value="{Binding RowBackground}" />
                                             <Setter Property="Foreground" Value="{Binding RowForeground}" />
                                             <Style.Triggers>
-                                                <!--  Nếu ConLai = 0 thì gạch ngang chữ  -->
                                                 <DataTrigger Binding="{Binding DaThuHoacGhiNo}" Value="True">
                                                     <Setter Property="TextDecorations" Value="Strikethrough" />
                                                 </DataTrigger>
@@ -317,11 +332,11 @@
                                     <DataGridTextColumn.ElementStyle>
                                         <Style BasedOn="{StaticResource CenterTextCellStyle}" TargetType="TextBlock">
                                             <Style.Triggers>
-                                -->
-                                <!--<DataTrigger Binding="{Binding TrangThai}" Value="Tiền mặt">
+
+                                                <DataTrigger Binding="{Binding TrangThai}" Value="Tiền mặt">
                                                     <Setter Property="Background" Value="LightGreen" />
-                                                </DataTrigger>-->
-                                <!--
+                                                </DataTrigger>
+
                                                 <DataTrigger Binding="{Binding DaThuHoacGhiNo}" Value="True">
                                                     <Setter Property="TextDecorations" Value="Strikethrough" />
                                                 </DataTrigger>
@@ -373,6 +388,7 @@
 
                             </DataGrid.Columns>
                         </DataGrid>
+
                         <Grid
                             Grid.Row="0"
                             Grid.RowSpan="2"
