@@ -8,8 +8,10 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using FontAwesome.Sharp;
 using TraSuaApp.Shared.Config;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
@@ -370,7 +372,7 @@ namespace TraSuaApp.WpfClient.Views
         {
             try
             {
-                today = DateTime.Today;
+                today = DateTime.Today.AddDays(0);
 
                 // 🟟 Khởi tạo providers
                 await BindAllProviders();
@@ -910,7 +912,7 @@ namespace TraSuaApp.WpfClient.Views
         private void ReloadChiTietHoaDonThanhToanUI()
         {
             _fullChiTietHoaDonThanhToanList = AppProviders.ChiTietHoaDonThanhToans.Items
-             .Where(x => !x.IsDeleted && x.Ngay <= today)
+             .Where(x => !x.IsDeleted && x.Ngay == today)
                 .OrderByDescending(x => x.NgayGio)
                 .ToList();
             ApplyChiTietHoaDonThanhToanFilter();
@@ -1023,7 +1025,7 @@ namespace TraSuaApp.WpfClient.Views
         {
             _fullChiTieuHangNgayList = AppProviders.ChiTieuHangNgays.Items
                   .Where(x => !x.IsDeleted)
-                 .Where(x => x.Ngay <= today)
+                 .Where(x => x.Ngay == today)
                 // .OrderBy(x => x.BillThang)
                 .OrderByDescending(x => x.NgayGio)
                 .ToList();
@@ -1127,7 +1129,7 @@ namespace TraSuaApp.WpfClient.Views
             var hoaDonChuaThu = AppProviders.HoaDons.Items
                 .Where(x => !x.IsDeleted && x.Ngay == today)
                 .Where(x => x.ConLai > 0 && (x.TrangThai == "Chưa thu" || x.TrangThai == "Thu một phần"))
-                .OrderByDescending(x => x.TongTien)
+                .OrderByDescending(x => x.NgayGio)
                 .Select(hd => (Label: hd.KhachHangId != null ? hd.TenKhachHangText : hd.TenBan, Value: hd.ConLai))
                 .ToList();
 
@@ -1185,23 +1187,30 @@ namespace TraSuaApp.WpfClient.Views
 
             decimal tongTienMat = AppProviders.ChiTietHoaDonThanhToans.Items
                 .Where(x => !x.IsDeleted && x.Ngay == today)
-                .Where(x => x.LoaiThanhToan.ToLower() == "trong ngày")
-                .Where(x => x.TenPhuongThucThanhToan?.ToLower() == "tiền mặt")
+                .Where(x => x.TenPhuongThucThanhToan == "Tiền mặt")
+                .Where(x => x.LoaiThanhToan == "Trong ngày" || x.LoaiThanhToan == "Trả nợ trong ngày")
+                .Where(x => x.GhiChu != "Shipper")
                 .Sum(x => x.SoTien);
             decimal tongChiTieu = AppProviders.ChiTieuHangNgays.Items
                 .Where(x => !x.IsDeleted && x.Ngay == today)
                 .Where(x => !x.BillThang)
                 .Sum(x => x.ThanhTien);
+            decimal tongKhanh = AppProviders.ChiTietHoaDonThanhToans.Items
+              .Where(x => !x.IsDeleted && x.Ngay == today)
+                .Where(x => x.TenPhuongThucThanhToan == "Tiền mặt")
+                .Where(x => x.LoaiThanhToan == "Trong ngày" || x.LoaiThanhToan == "Trả nợ trong ngày")
+                .Where(x => x.GhiChu == "Shipper")
+                .Sum(x => x.SoTien);
             decimal tongChuaThu = AppProviders.HoaDons.Items
-                .Where(x => !x.IsDeleted && x.Ngay == today)
-                .Where(x => x.ConLai > 0 && (x.TrangThai == "Chưa thu" || x.TrangThai == "Thu một phần"))
-                .Sum(g => g.ConLai);
+               .Where(x => !x.IsDeleted && x.Ngay == today)
+               .Where(x => x.ConLai > 0 && (x.TrangThai == "Chưa thu" || x.TrangThai == "Thu một phần"))
+               .Sum(g => g.ConLai);
             decimal tongTatCa = tongTienMat - tongChiTieu + tongChuaThu;
 
             decimal tongTraNo = AppProviders.ChiTietHoaDonThanhToans.Items
                 .Where(x => !x.IsDeleted && x.Ngay == today)
                 .Where(x =>
-            x.LoaiThanhToan?.ToLower().Contains("trả nợ") == true
+            x.LoaiThanhToan == "Trả nợ qua ngày"
             &&
             x.TenPhuongThucThanhToan?.ToLower().Contains("tiền mặt") == true
             )
@@ -1243,11 +1252,12 @@ namespace TraSuaApp.WpfClient.Views
 
             MangVeStackPanel.Children.Add(tongTienMatGrid);
 
+
+
             // Hiển thị tổng chi tiêu
             var tongChuaThuGrid = new Grid();
             tongChuaThuGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             tongChuaThuGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
             var tongChuaThuLabel = new TextBlock
             {
                 Text = "Chưa thu:",
@@ -1259,13 +1269,32 @@ namespace TraSuaApp.WpfClient.Views
                 FontWeight = FontWeights.Bold,
                 TextAlignment = TextAlignment.Right
             };
-
             Grid.SetColumn(tongChuaThuLabel, 0);
             Grid.SetColumn(tongChuaThuValue, 1);
             tongChuaThuGrid.Children.Add(tongChuaThuLabel);
             tongChuaThuGrid.Children.Add(tongChuaThuValue);
-
             MangVeStackPanel.Children.Add(tongChuaThuGrid);
+
+            // Hiển thị tổng chi tiêu
+            var tongKhanhGrid = new Grid();
+            tongKhanhGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            tongKhanhGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var tongKhanhLabel = new TextBlock
+            {
+                Text = "Khánh:",
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            var tongKhanhValue = new TextBlock
+            {
+                Text = $"{tongKhanh:N0} đ",
+                FontWeight = FontWeights.Bold,
+                TextAlignment = TextAlignment.Right
+            };
+            Grid.SetColumn(tongKhanhLabel, 0);
+            Grid.SetColumn(tongKhanhValue, 1);
+            tongKhanhGrid.Children.Add(tongKhanhLabel);
+            tongKhanhGrid.Children.Add(tongKhanhValue);
+            MangVeStackPanel.Children.Add(tongKhanhGrid);
 
 
 
@@ -1282,7 +1311,7 @@ namespace TraSuaApp.WpfClient.Views
             };
             var tongChiTieuValue = new TextBlock
             {
-                Text = $"{-tongChiTieu:N0} đ",
+                Text = $"{tongChiTieu:N0} đ",
                 FontWeight = FontWeights.Bold,
                 TextAlignment = TextAlignment.Right
             };
@@ -1500,8 +1529,7 @@ namespace TraSuaApp.WpfClient.Views
                 TongSoSanPhamTextBlock.Visibility = Visibility.Visible;
                 TongSoSanPhamTextBlock.Text = string.Empty;
                 ChiTietHoaDonListBox.ItemsSource = null;
-                ChiTietHoaDonListBox.Background = Brushes.WhiteSmoke;
-                TongNoKhachHangTextBlock.Text = "0 ₫";
+
 
                 if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
                     return;
@@ -1533,8 +1561,16 @@ namespace TraSuaApp.WpfClient.Views
 
                 // Cập nhật UI
                 ChiTietHoaDonListBox.ItemsSource = hd.ChiTietHoaDons;
-                ChiTietHoaDonListBox.Background = hd.TongNoKhachHang > 0 ? Brushes.IndianRed : Brushes.WhiteSmoke;
-                TongNoKhachHangTextBlock.Text = $"Công nợ: {hd.TongNoKhachHang:N0} ₫\nTổng: {hd.TongNoKhachHang + hd.ConLai:N0} ₫";
+                ThongTinThanhToanTextBlock.Foreground = Brushes.Black;
+                UpdateThongTinThanhToanStyle(hd);
+                // gán DataContext cho GroupBox để trigger màu
+                ThongTinThanhToanGroupBox.DataContext = hd;
+
+                // build footer text
+                ThongTinThanhToanTextBlock.Text = CleanFooterText(
+                    HoaDonPrinter.BuildFooterContent(hd, includeLine: false));
+
+
                 TongSoSanPhamTextBlock.Text = hd.ChiTietHoaDons
                     .Where(ct =>
                     {
@@ -1554,23 +1590,25 @@ namespace TraSuaApp.WpfClient.Views
                     .Sum(ct => ct.SoLuong)
                     .ToString("N0");
 
-                // 🟟 Đọc toàn bộ chi tiết hoá đơn
                 foreach (var ct in hd.ChiTietHoaDons)
                 {
                     if (token.IsCancellationRequested)
                         return;
 
-                    string soLuongChu = NumberToVietnamese(ct.SoLuong);
-                    string text = $"{soLuongChu} {ct.TenSanPham}";
-                    await TTSHelper.DownloadAndPlayGoogleTTSAsync(text);
-
+                    // 🟟 Chỉ đọc món có ghi chú
                     if (!string.IsNullOrEmpty(ct.NoteText))
                     {
-                        await Task.Delay(200, token);
-                        await TTSHelper.DownloadAndPlayGoogleTTSAsync(ct.NoteText.Replace("#", ""));
-                    }
+                        string soLuongChu = NumberToVietnamese(ct.SoLuong);
+                        string text = $"{soLuongChu} {ct.TenSanPham}";
 
-                    await Task.Delay(300, token);
+                        await TTSHelper.DownloadAndPlayGoogleTTSAsync(text);
+
+                        await Task.Delay(200, token);
+
+                        await TTSHelper.DownloadAndPlayGoogleTTSAsync(ct.NoteText.Replace("#", ""));
+
+                        await Task.Delay(400, token);
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -1580,6 +1618,86 @@ namespace TraSuaApp.WpfClient.Views
             catch (Exception ex)
             {
                 NotiHelper.ShowError($"Lỗi: {ex.Message}");
+            }
+        }
+        private void UpdateThongTinThanhToanStyle(HoaDonDto hd)
+        {
+            // mặc định
+            ThongTinThanhToanGroupBox.Background = Brushes.LightGray;
+            ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+
+            // Ưu tiên: nếu còn nợ khách hàng > 0 thì luôn hiển thị đỏ nhạt
+            if (hd.TongNoKhachHang > 0)
+            {
+                ThongTinThanhToanGroupBox.Background = Brushes.LightCoral;
+                ThongTinThanhToanGroupBox.Foreground = Brushes.White;
+                return; // dừng ở đây, không xét tiếp
+            }
+
+            // Nếu không có công nợ, xét tiếp theo trạng thái
+            switch (hd.TrangThai)
+            {
+                case "Tiền mặt":
+                    ThongTinThanhToanGroupBox.Background = Brushes.LightGreen;
+                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+                    break;
+
+                case "Chuyển khoản":
+                    ThongTinThanhToanGroupBox.Background = Brushes.LightYellow;
+                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+                    break;
+
+                case "Banking Nhã":
+                    ThongTinThanhToanGroupBox.Background = Brushes.Gold;
+                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+                    break;
+
+                case "Chuyển khoản + Tiền mặt":
+                    ThongTinThanhToanGroupBox.Background = new LinearGradientBrush
+                    {
+                        StartPoint = new Point(0, 0),
+                        EndPoint = new Point(1, 0),
+                        GradientStops = new GradientStopCollection
+                {
+                    new GradientStop(Colors.LightGreen, 0.0),
+                    new GradientStop(Colors.LightGreen, 0.5),
+                    new GradientStop(Colors.LightYellow, 0.5),
+                    new GradientStop(Colors.LightYellow, 1.0)
+                }
+                    };
+                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+                    break;
+
+                case "Banking Nhã + Tiền mặt":
+                    ThongTinThanhToanGroupBox.Background = new LinearGradientBrush
+                    {
+                        StartPoint = new Point(0, 0),
+                        EndPoint = new Point(1, 0),
+                        GradientStops = new GradientStopCollection
+                {
+                    new GradientStop(Colors.LightGreen, 0.0),
+                    new GradientStop(Colors.LightGreen, 0.5),
+                    new GradientStop(Colors.Gold, 0.5),
+                    new GradientStop(Colors.Gold, 1.0)
+                }
+                    };
+                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+                    break;
+
+                case "Thu một phần":
+                    ThongTinThanhToanGroupBox.Background = Brushes.PaleTurquoise;
+                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+                    break;
+
+                case "Nợ một phần":
+                    ThongTinThanhToanGroupBox.Background = Brushes.LightPink;
+                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black; // đỏ nhạt → chữ đen vẫn đọc được
+                    break;
+
+                case "Ghi nợ":
+                    ThongTinThanhToanGroupBox.Background = Brushes.LightCoral;
+                    ThongTinThanhToanGroupBox.Foreground = Brushes.White;
+                    break;
             }
         }
         private string NumberToVietnamese(int number)
@@ -1608,108 +1726,17 @@ namespace TraSuaApp.WpfClient.Views
 
             return number.ToString();
         }
-
-        //private async void HoaDonDataGrid_SelectionChangedAsync(object sender, SelectionChangedEventArgs e)
-        //{
-        //    try
-        //    {
-        //        // Hủy tác vụ cũ nếu có
-        //        _cts?.Cancel();
-        //        _cts = new CancellationTokenSource();
-        //        var token = _cts.Token;
-
-        //        // Reset UI
-        //        SearchChiTietHoaDonTextBox.Visibility = Visibility.Collapsed;
-        //        TongSoSanPhamTextBlock.Visibility = Visibility.Visible;
-        //        TongSoSanPhamTextBlock.Text = string.Empty;
-        //        ChiTietHoaDonListBox.ItemsSource = null;
-        //        ChiTietHoaDonListBox.Background = Brushes.WhiteSmoke;
-        //        TongNoKhachHangTextBlock.Text = "0 ₫";
-
-        //        if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
-        //            return;
-
-        //        var api = new HoaDonApi();
-        //        var getResult = await api.GetByIdAsync(selected.Id);
-        //        if (!getResult.IsSuccess || getResult.Data == null)
-        //        {
-        //            NotiHelper.ShowError($"Lỗi: {getResult.Message}");
-        //            return;
-        //        }
-
-        //        var hd = getResult.Data;
-
-        //        // Tắt báo đơn ngay
-        //        if (selected.BaoDon == true)
-        //        {
-        //            selected.BaoDon = false;
-        //            var updateResult = await api.UpdateSingleAsync(selected.Id, selected);
-
-        //            if (!updateResult.IsSuccess)
-        //                NotiHelper.ShowError($"Lỗi: {updateResult.Message}");
-
-        //            else
-        //            {
-        //                await AppProviders.HoaDons.ReloadAsync();
-        //                ReloadHoaDonUI();
-        //            }
-        //        }
-
-        //        // Cập nhật UI
-        //        ChiTietHoaDonListBox.ItemsSource = hd.ChiTietHoaDons;
-        //        ChiTietHoaDonListBox.Background = hd.TongNoKhachHang > 0 ? Brushes.IndianRed : Brushes.WhiteSmoke;
-        //        TongNoKhachHangTextBlock.Text = $"Công nợ: {hd.TongNoKhachHang:N0} ₫\nTổng: {hd.TongNoKhachHang + hd.ConLai:N0} ₫";
-        //        TongSoSanPhamTextBlock.Text = hd.ChiTietHoaDons
-        //            .Where(ct =>
-        //            {
-        //                var bienThe = AppProviders.SanPhams.Items
-        //                    .SelectMany(sp => sp.BienThe)
-        //                    .FirstOrDefault(bt => bt.Id == ct.SanPhamIdBienThe);
-
-        //                if (bienThe == null) return false;
-
-        //                var sp = AppProviders.SanPhams.Items.FirstOrDefault(s => s.Id == bienThe.SanPhamId);
-        //                if (sp == null) return false;
-
-        //                return sp.TenNhomSanPham != "Thuốc lá"
-        //                    && sp.TenNhomSanPham != "Ăn vặt"
-        //                    && sp.TenNhomSanPham != "Nước lon"; // thêm điều kiện loại trừ nếu cần
-        //            })
-        //            .Sum(ct => ct.SoLuong)
-        //            .ToString("N0");
-
-        //        // Đọc lần lượt từng sản phẩm
-        //        foreach (var ct in hd.ChiTietHoaDons)
-        //        {
-        //            if (token.IsCancellationRequested)
-        //                return; // dừng ngay nếu đã chuyển hóa đơn khác
-
-        //            await TTSHelper.DownloadAndPlayGoogleTTSAsync(ct.TenSanPham);
-        //            if (!string.IsNullOrEmpty(ct.NoteText))
-        //            {
-        //                await Task.Delay(100);
-        //                await TTSHelper.DownloadAndPlayGoogleTTSAsync(ct.NoteText.Replace("#", ""));
-        //            }
-        //            await Task.Delay(300, token); // delay có thể bị hủy
-        //        }
-        //    }
-        //    catch (OperationCanceledException)
-        //    {
-        //        // Bị hủy -> bỏ qua, không báo lỗi
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        NotiHelper.ShowError($"Lỗi: {ex.Message}");
-
-        //    }
-        //}
-
-
-
-        //private void ShowError(string message)
-        //{
-        //    NotiHelper.Show($"Lỗi: {message}");
-        //}
+        // Thêm vào lớp hỗ trợ của bạn (có thể trong Dashboard.xaml.cs)
+        private string CleanFooterText(string content)
+        {
+            // gộp nhiều khoảng trắng thành 1 khoảng trắng
+            var text = System.Text.RegularExpressions.Regex.Replace(content, "[ \t]+", " ");
+            // gộp nhiều dòng trống liên tiếp thành 1 dòng trống
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\n\s*\n", "\n");
+            // bỏ khoảng trắng thừa cuối dòng
+            text = string.Join("\n", text.Split('\n').Select(l => l.TrimEnd()));
+            return text.Trim();
+        }
         private async void HoaDonDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected) return;
@@ -1743,7 +1770,6 @@ namespace TraSuaApp.WpfClient.Views
         private void ApplyHoaDonFilter()
         {
             string keyword = SearchHoaDonTextBox.Text.Trim().ToLower();
-            decimal tongTien = 0;
             List<HoaDonDto> sourceList;
 
             if (string.IsNullOrWhiteSpace(keyword))
@@ -1757,14 +1783,7 @@ namespace TraSuaApp.WpfClient.Views
                     .ToList();
             }
 
-            // Sắp xếp: các hoá đơn "Chưa thu" lên đầu
-            sourceList = sourceList
-    .OrderByDescending(x => x.UuTien) // (1) Ưu tiên true lên trước
-    .ThenBy(x => x.PhanLoai == "Ship" && x.NgayShip == null ? 0 : 1) // (2) Ship chưa đi lên trước
-    .ThenBy(x => !x.TrangThai.Contains("nợ") && x.ConLai > 0 ? 0 : 1) // (3) Chưa thu tiền lên trước
-    .ThenByDescending(x => x.NgayGio) // (4) Thời gian mới nhất
-    .ToList();
-            // Gán số thứ tự
+            // 🟟 Không sort ở đây nữa, chỉ gán STT
             int stt = 1;
             foreach (var item in sourceList)
             {
@@ -1772,21 +1791,23 @@ namespace TraSuaApp.WpfClient.Views
             }
 
             HoaDonDataGrid.ItemsSource = sourceList;
-            tongTien = sourceList.Sum(x => x.ThanhTien);
-            TongTienHoaDonTextBlock.Header = $"{tongTien:N0} đ";
+            //TongTienHoaDonTextBlock.Header = $"{sourceList.Sum(x => x.ThanhTien):N0} đ";
         }
         private void ReloadHoaDonUI()
         {
             _fullHoaDonList = AppProviders.HoaDons.Items
-            .Where(x => !x.IsDeleted
-         && (x.Ngay == today
-             || x.TrangThai == "Chưa thu"
-             || x.TrangThai == "Thu một phần"))
-                .OrderByDescending(x => x.NgayGio)
+                .Where(x => !x.IsDeleted && (x.Ngay == today
+                || x.DaThuHoacGhiNo == false
+                ))
+                .OrderByDescending(x => x.UuTien)       // Blue lên đầu
+                .ThenByDescending(x => x.IsBlue)        // Ưu tiên
+                .ThenBy(x => x.TrangThai == "Chưa thu" || x.TrangThai ==
+    "Thu một phần" ? 0 : 1)
+                .ThenByDescending(x => x.NgayGio)       // Mới nhất
                 .ToList();
+
             ApplyHoaDonFilter();
         }
-
 
         private void ChiTietHoaDonListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -2122,6 +2143,7 @@ namespace TraSuaApp.WpfClient.Views
         }
         private async void F5aButton_Click(object sender, RoutedEventArgs e)
         {
+            return;
             if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected)
             {
                 NotiHelper.Show("Vui lòng chọn công nợ!");
@@ -2207,6 +2229,7 @@ namespace TraSuaApp.WpfClient.Views
                 var imageFiles = Directory.GetFiles(folderPath, "*.*")
                                           .Where(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
                                                    || f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+                                                   || f.EndsWith(".jfif", StringComparison.OrdinalIgnoreCase)
                                                    || f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
                                                    || f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase))
                                           .ToList();
@@ -2249,6 +2272,33 @@ namespace TraSuaApp.WpfClient.Views
         {
             await SafeButtonHandlerAsync(EscButton, async selected =>
             {
+                var confirm = MessageBox.Show(
+         $"Nếu shipper là Khánh chọn YES\nNếu không phải chọn NO\nHuỷ bỏ chọn CANCEL",
+         "QUAN TRỌNG:",
+         MessageBoxButton.YesNoCancel,
+         MessageBoxImage.Question
+     );
+
+                if (confirm == MessageBoxResult.Yes)
+                {
+                    // Người dùng chọn YES
+                    selected!.NguoiShip = "Khánh";
+
+                }
+                else if (confirm == MessageBoxResult.No)
+                {
+                    // Người dùng chọn NO
+                    selected!.NguoiShip = null;
+
+                }
+                else if (confirm == MessageBoxResult.Cancel)
+                {
+                    // Người dùng chọn CANCEL -> bỏ qua hành động
+                    return;
+                }
+
+
+
                 selected!.NgayShip = DateTime.Now;
                 var api = new HoaDonApi();
                 var result = await api.UpdateSingleAsync(selected.Id, selected);
@@ -2302,6 +2352,7 @@ namespace TraSuaApp.WpfClient.Views
         }
         private async void F5Button_Click(object sender, RoutedEventArgs e)
         {
+            return;
             await SafeButtonHandlerAsync(F5Button, async selected =>
             {
                 if (selected!.ConLai == 0) { NotiHelper.Show("Hoá đơn đã thu đủ!"); return; }
@@ -2377,10 +2428,14 @@ namespace TraSuaApp.WpfClient.Views
                 if (selected.TrangThai.ToLower().Contains("nợ")) { NotiHelper.Show("Hoá đơn đã ghi nợ!"); return; }
                 if (selected.KhachHangId == null) { NotiHelper.Show("Hoá đơn chưa có thông tin khách hàng!"); return; }
 
+                var now = DateTime.Now;
+                var trongngay = now.Date == selected.Ngay;
+
                 var dto = new ChiTietHoaDonNoDto
                 {
-                    Ngay = DateTime.Now.Date,
-                    NgayGio = DateTime.Now,
+                    Ngay = trongngay ? now.Date : selected.Ngay,
+                    NgayGio = trongngay ? now : selected.Ngay.AddDays(1).AddMinutes(-1),
+
                     HoaDonId = selected.Id,
                     KhachHangId = selected.KhachHangId,
                     Ten = $"{selected.Ten}",
@@ -2486,6 +2541,129 @@ namespace TraSuaApp.WpfClient.Views
             _baoDonTimer.Stop();
             _congViecTimer.Stop();
             _updateSummaryTimer.Stop();
+        }
+
+        private void HoaDonDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            if (e.Row.DataContext is HoaDonDto hd)
+            {
+                // Tìm IconBlock trong template
+                if (e.Row.FindName("StatusIcon") is IconBlock icon)
+                {
+                    UpdateStatusIconStyle(hd, icon);
+                }
+            }
+        }
+        private void UpdateStatusIconStyle(HoaDonDto hd, IconBlock icon)
+        {
+            // Ẩn mặc định
+            icon.Visibility = Visibility.Collapsed;
+            icon.Opacity = 1; // reset khi không nhấp nháy
+
+            if (hd == null) return;
+            if (hd.DaThuHoacGhiNo) return; // đã thu/ghi nợ thì không hiện icon
+
+            // Mặc định bật hiển thị
+            icon.Visibility = Visibility.Visible;
+
+            // Chọn icon + màu theo PhanLoai
+            switch (hd.PhanLoai)
+            {
+                case "App":
+                    icon.Icon = FontAwesome.Sharp.IconChar.Mobile;
+                    icon.Foreground = Brushes.Red;
+                    break;
+
+                case "Tại Chỗ":
+                    icon.Icon = FontAwesome.Sharp.IconChar.Chair;
+                    icon.Foreground = Brushes.Green;
+                    break;
+
+                case "MV":
+                    icon.Icon = FontAwesome.Sharp.IconChar.ShoppingBag;
+                    icon.Foreground = Brushes.Indigo;
+                    break;
+
+                case "Ship":
+                    icon.Icon = FontAwesome.Sharp.IconChar.Motorcycle; // hoặc Scooter
+                    icon.Foreground = Brushes.Orange;
+                    break;
+            }
+
+            // 🟟 Nếu chưa thu/ghi nợ thì cho nhấp nháy
+            if (!hd.DaThuHoacGhiNo)
+            {
+                var blink = new System.Windows.Media.Animation.DoubleAnimation
+                {
+                    From = 1.0,
+                    To = 0.2,
+                    Duration = TimeSpan.FromSeconds(0.5),
+                    AutoReverse = true,
+                    RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
+                };
+
+                icon.BeginAnimation(UIElement.OpacityProperty, blink);
+            }
+        }
+
+        private void StatusIcon_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is IconBlock icon && icon.DataContext is HoaDonDto hd)
+            {
+                ApplyStatusIcon(hd, icon);
+            }
+        }
+
+        private void ApplyStatusIcon(HoaDonDto hd, IconBlock icon)
+        {
+            // Reset
+            icon.Visibility = Visibility.Collapsed;
+            icon.BeginAnimation(UIElement.OpacityProperty, null);
+            icon.Opacity = 1;
+
+            if (hd == null || hd.DaThuHoacGhiNo) return;
+
+            icon.Visibility = Visibility.Visible;
+
+            // ⚠ Dùng tên IconChar CHẮC CHẮN có trong FA6:
+            // App        → MobileScreenButton
+            // Tại Chỗ    → Chair
+            // MV         → BagShopping
+            // Ship (moto)→ Motorcycle
+            switch (hd.PhanLoai)
+            {
+                case "App":
+                    icon.Icon = IconChar.MobileScreenButton;
+                    icon.Foreground = Brushes.Red;
+                    break;
+                case "Tại Chỗ":
+                    icon.Icon = IconChar.Chair;
+                    icon.Foreground = Brushes.Green;
+                    break;
+                case "MV":
+                    icon.Icon = IconChar.BagShopping;
+                    icon.Foreground = Brushes.Indigo;
+                    break;
+                case "Ship":
+                    icon.Icon = IconChar.Motorcycle;
+                    icon.Foreground = Brushes.Orange;
+                    break;
+                default:
+                    icon.Icon = IconChar.Circle; // fallback
+                    icon.Foreground = Brushes.Gray;
+                    break;
+            }
+
+            // Nhấp nháy (Opacity)
+            var blink = new DoubleAnimation
+            {
+                From = 1.0,
+                To = 0.2,
+                Duration = TimeSpan.FromSeconds(0.5),
+                AutoReverse = true,
+                RepeatBehavior = RepeatBehavior.Forever
+            };
+            icon.BeginAnimation(UIElement.OpacityProperty, blink);
         }
     }
 }

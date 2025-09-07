@@ -1,10 +1,87 @@
 ﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
 using TraSuaApp.Domain.Entities;
 
 namespace TraSuaApp.Shared.Dtos;
 
 public class HoaDonDto : DtoBase, INotifyPropertyChanged
 {
+    [NotMapped]
+    public string RowBackground
+    {
+        get
+        {
+            if (PhanLoai == "Ship")
+            {
+                if (NgayShip == null)
+                    return "Blue"; // chưa đi ship
+                if (DaThuHoacGhiNo == false)
+                    return "Transparent"; // đi ship + chưa thu
+                else
+                {
+                    if (ConLai > 0)
+                        return "Transparent";
+                }
+                return "Transparent"; // đi ship + đã thu
+            }
+            else
+            {
+                if (DaThuHoacGhiNo == false)
+                    return "Blue";
+                else
+                {
+                    if (ConLai > 0)
+                        return "Transparent";
+                }
+                return "Transparent";
+            }
+        }
+    }
+    public string RowForeground
+    {
+        get
+        {
+            if (PhanLoai == "Ship")
+            {
+                if (NgayShip == null)
+                    return "White"; // chưa đi ship
+                if (DaThuHoacGhiNo == false)
+                    return "Black"; // đi ship + chưa thu
+                else
+                {
+                    if (ConLai > 0)
+                        return "IndianRed";
+                }
+                return "Black"; // đi ship + đã thu
+            }
+            else
+            {
+                if (DaThuHoacGhiNo == false)
+                    return "White";
+                else
+                {
+                    if (ConLai > 0)
+                        return "IndianRed";
+                }
+                return "Black";
+            }
+
+        }
+    }
+    public bool IsBlue
+    {
+        get
+        {
+            if (PhanLoai == "Ship")
+            {
+                return NgayShip == null;  // chưa đi ship
+            }
+            else
+            {
+                return DaThuHoacGhiNo == false; // chưa thu tại chỗ
+            }
+        }
+    }
     [DefaultValue(false)]
     public bool UuTien { get; set; }
     [DefaultValue(false)]
@@ -15,6 +92,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public int DiemThangTruoc { get; set; }
 
     public DateTime? NgayShip { get; set; }
+    public string? NguoiShip { get; set; }
     public DateTime? NgayRa { get; set; }
 
     public string GioHienThi
@@ -50,6 +128,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public string TrangThai { get; set; } = null!;
 
     public string? DiaChiText { get; set; }
+    public string? GhiChuShipper { get; set; }
     public string? SoDienThoaiText { get; set; }
     public string? TenKhachHangText { get; set; }
     public string? GhiChu { get; set; }

@@ -43,7 +43,7 @@ builder.Services.AddAuthentication(opt =>
 })
 .AddJwtBearer(opt =>
 {
-    opt.RequireHttpsMetadata = true;   // 🟟 bật HTTPS khi production
+    opt.RequireHttpsMetadata = false;   // 🟟 tắt bắt buộc HTTPS
     opt.SaveToken = true;
     opt.TokenValidationParameters = new TokenValidationParameters
     {
@@ -56,13 +56,16 @@ builder.Services.AddAuthentication(opt =>
 });
 builder.Services.AddAuthorization();
 
-// 🟟 CORS (cho phép WPF client gọi API từ ngoài)
+// 🟟 CORS (cho phép web chạy thật + localhost)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader());
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins(
+                "http://www.denncoffee.uk:7131", // web chạy domain
+                "http://localhost:7131"          // chạy dev local
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod());
 });
 
 builder.Services.AddSignalR();
@@ -76,21 +79,18 @@ app.UseMiddleware<LogMiddleware>();
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/error"); // xử lý exception chung
-    app.UseHsts();                     // thêm HSTS cho HTTPS
+    app.UseExceptionHandler("/error");
 }
 
-// 🟟 Redirect HTTP -> HTTPS
-app.UseHttpsRedirection();
+// ❌ Không dùng HTTPS redirection khi chỉ chạy HTTP
 
 // 🟟 CORS cho client
-app.UseCors("AllowAll");
+app.UseCors("AllowFrontend");
 
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
 
 app.MapControllers();
 app.MapHub<SignalRHub>("/hub/entity");

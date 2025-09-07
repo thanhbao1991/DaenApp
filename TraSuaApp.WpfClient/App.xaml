@@ -30,6 +30,24 @@
         <sys:Double x:Key="FontSizeBig">22</sys:Double>
         <sys:Double x:Key="FontSizeXXX">80</sys:Double>
 
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#0d6efd" />
+        <SolidColorBrush x:Key="SuccessBrush" Color="#198754" />
+        <SolidColorBrush x:Key="WarningBrush" Color="#ffc107" />
+        <SolidColorBrush x:Key="DangerBrush" Color="#dc3545" />
+        <SolidColorBrush x:Key="SecondaryBrush" Color="#6c757d" />
+        <SolidColorBrush x:Key="InfoBrush" Color="#0dcaf0" />
+        <SolidColorBrush x:Key="LightBrush" Color="#f8f9fa" />
+        <SolidColorBrush x:Key="DarkBrush" Color="#212529" />
+
+        <!--  Foreground tương ứng  -->
+        <SolidColorBrush x:Key="PrimaryForeground" Color="White" />
+        <SolidColorBrush x:Key="SuccessForeground" Color="White" />
+        <SolidColorBrush x:Key="WarningForeground" Color="Black" />
+        <SolidColorBrush x:Key="DangerForeground" Color="White" />
+        <SolidColorBrush x:Key="SecondaryForeground" Color="White" />
+        <SolidColorBrush x:Key="InfoForeground" Color="Black" />
+        <SolidColorBrush x:Key="LightForeground" Color="Black" />
+        <SolidColorBrush x:Key="DarkForeground" Color="White" />
 
 
 

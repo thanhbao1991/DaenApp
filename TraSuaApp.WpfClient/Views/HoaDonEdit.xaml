@@ -411,7 +411,7 @@
                                                     Padding="8"
                                                     HorizontalAlignment="Center"
                                                     VerticalAlignment="Center"
-                                                    FontSize="{StaticResource FontSizeBig}" 
+                                                    FontSize="{StaticResource FontSizeBig}"
                                                     FontWeight="Medium"
                                                     Foreground="White"
                                                     Text="{Binding SoLuong}" />
@@ -428,7 +428,7 @@
                                                         <!--  Ngày giờ  -->
                                                         <TextBlock
                                                             HorizontalAlignment="Right"
-                                                           FontSize="{StaticResource FontSizeSmall}" 
+                                                            FontSize="{StaticResource FontSizeSmall}"
                                                             Text="{Binding NgayGio, StringFormat=dd-MM-yyyy HH:mm}"
                                                             Visibility="{Binding NgayGio, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
                                                         <!--  Tên sản phẩm + biến thể  -->
@@ -512,7 +512,7 @@
                                                         <!--  Topping  -->
                                                         <TextBlock
                                                             Margin="0,0,0,2"
-                                                            FontSize="{StaticResource FontSizeSmall}" 
+                                                            FontSize="{StaticResource FontSizeSmall}"
                                                             Foreground="DarkGreen"
                                                             Text="{Binding ToppingText}"
                                                             TextWrapping="Wrap"
@@ -523,12 +523,11 @@
                                                             AcceptsReturn="True"
                                                             Background="Transparent"
                                                             BorderBrush="Transparent"
-                                                            FontSize="{StaticResource FontSizeSmall}" 
+                                                            FontSize="{StaticResource FontSizeSmall}"
                                                             FontStyle="Italic"
                                                             Foreground="DarkOrange"
                                                             GotFocus="ChiTietItem_Focus"
-                                                            Text=
-                                                            "{Binding NoteText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            Text="{Binding NoteText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                             TextWrapping="Wrap"
                                                             Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
                                                     </StackPanel>

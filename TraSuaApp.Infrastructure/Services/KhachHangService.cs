@@ -163,7 +163,7 @@ public class KhachHangService : IKhachHangService
                 IsDefault = a.IsDefault
             }).ToList()
         };
-
+        StringHelper.NormalizeAllStrings(entity);
         foreach (var p in entity.KhachHangPhones)
             p.KhachHangId = entity.Id;
         foreach (var a in entity.KhachHangAddresses)
@@ -256,6 +256,7 @@ public class KhachHangService : IKhachHangService
             }
         }
 
+        StringHelper.NormalizeAllStrings(entity);
         await _context.SaveChangesAsync();
 
         var after = await GetByIdAsync(id);

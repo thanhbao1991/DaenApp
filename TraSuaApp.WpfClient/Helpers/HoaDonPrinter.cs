@@ -9,11 +9,64 @@ namespace TraSuaApp.WpfClient.Helpers
 {
     public static class HoaDonPrinter
     {
+        // ===== Hàm build phần Footer (tài chính) cho UI và In =====
+        public static string BuildFooterContent(HoaDonDto hoaDon, bool includeLine = true)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            if (hoaDon.KhachHangId != null)
+            {
+                //      sb.AppendLine($"Khách hàng: {hoaDon.TenKhachHangText} - {hoaDon.DiaChiText} - {FormatPhone(hoaDon.SoDienThoaiText)}");
+
+                var starText = StarHelper.GetStarText(hoaDon.DiemThangNay);
+                if (!string.IsNullOrEmpty(starText))
+                    sb.AppendLine($"Điểm tháng này: {starText}");
+
+                var starText2 = StarHelper.GetStarText(hoaDon.DiemThangTruoc);
+                if (!string.IsNullOrEmpty(starText2))
+                    sb.AppendLine($"Điểm tháng trước: {starText2}");
+            }
+
+            if (includeLine) sb.AppendLine("---------------------------");
+
+            if (hoaDon.GiamGia > 0)
+            {
+                AddRow(sb, "TỔNG CỘNG:", hoaDon.TongTien);
+                AddRow(sb, "Giảm giá:", hoaDon.GiamGia);
+                AddRow(sb, "Thành tiền:", hoaDon.ThanhTien);
+            }
+            else
+            {
+                AddRow(sb, "Thành tiền:", hoaDon.ThanhTien);
+            }
+
+            if (hoaDon.DaThu > 0)
+            {
+                AddRow(sb, "Đã thu:", hoaDon.DaThu);
+                AddRow(sb, "Còn lại:", hoaDon.ConLai);
+            }
+
+            if (hoaDon.TongNoKhachHang > 0)
+            {
+                if (includeLine) sb.AppendLine("---------------------------");
+                AddRow(sb, "Công nợ:", hoaDon.TongNoKhachHang);
+                if (hoaDon.TongNoKhachHang != hoaDon.ConLai)
+                {
+                    AddRow(sb, "TỔNG:", hoaDon.TongNoKhachHang + hoaDon.ConLai);
+                }
+            }
+
+            if (includeLine) sb.AppendLine("===========================");
+
+            return sb.ToString();
+        }
+
+        // ===== Hàm build full bill (header + chi tiết + footer) =====
         private static string BuildContent(HoaDonDto hoaDon)
         {
             StringBuilder sb = new StringBuilder();
 
-            // ===== Header =====
+            // Header
             AddCenterText(sb, "ĐENN", true);
             AddCenterText(sb, "02 Lý Thường Kiệt");
             AddCenterText(sb, "0889 664 007");
@@ -27,16 +80,14 @@ namespace TraSuaApp.WpfClient.Helpers
                 if (!string.IsNullOrEmpty(starText))
                     sb.AppendLine($"Điểm tháng này: {starText}");
 
-
                 var starText2 = StarHelper.GetStarText(hoaDon.DiemThangTruoc);
                 if (!string.IsNullOrEmpty(starText2))
                     sb.AppendLine($"Điểm tháng trước: {starText2}");
-
             }
             sb.AppendLine("---------------------------");
             sb.AppendLine();
 
-            // ===== Chi tiết =====
+            // Chi tiết món
             int stt = 1;
             foreach (var item in hoaDon.ChiTietHoaDons)
             {
@@ -65,33 +116,10 @@ namespace TraSuaApp.WpfClient.Helpers
                 sb.AppendLine();
             }
 
-            // ===== Footer =====
-            sb.AppendLine("---------------------------");
-            if (hoaDon.GiamGia > 0)
-            {
-                AddRow(sb, "TỔNG CỘNG:", hoaDon.TongTien);
-                AddRow(sb, "Giảm giá:", hoaDon.GiamGia);
-                AddRow(sb, "Thành tiền:", hoaDon.ThanhTien);
-            }
-            else
-            {
-                AddRow(sb, "Thành tiền:", hoaDon.ThanhTien);
-            }
+            // Footer
+            sb.Append(BuildFooterContent(hoaDon, true));
 
-            if (hoaDon.DaThu > 0)
-            {
-                AddRow(sb, "Đã thu:", hoaDon.DaThu);
-                AddRow(sb, "Còn lại:", hoaDon.ConLai);
-            }
-            if (hoaDon.TongNoKhachHang > 0)
-            {
-                sb.AppendLine("---------------------------");
-                AddRow(sb, "Công nợ:", hoaDon.TongNoKhachHang);
-                AddRow(sb, "TỔNG:", hoaDon.TongNoKhachHang + hoaDon.ConLai);
-
-            }
-            sb.AppendLine("===========================");
-
+            // Cảm ơn
             AddCenterText(sb, "Cảm ơn quý khách!");
             AddCenterText(sb, "Hẹn gặp lại ♥");
             sb.AppendLine();
@@ -100,7 +128,6 @@ namespace TraSuaApp.WpfClient.Helpers
         }
 
         // ===== Public Methods =====
-
         public static void Print(HoaDonDto hoaDon)
         {
             var content = BuildContent(hoaDon);
@@ -124,7 +151,6 @@ namespace TraSuaApp.WpfClient.Helpers
                 FontFamily = new System.Windows.Media.FontFamily("Consolas"),
                 FontSize = 13,
                 Height = 400,
-
                 IsReadOnly = true,
                 TextWrapping = TextWrapping.Wrap,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -136,7 +162,7 @@ namespace TraSuaApp.WpfClient.Helpers
                 Title = "Xem trước hóa đơn",
                 Owner = owner,
                 Width = 300,
-                ResizeMode = ResizeMode.NoResize,           // ❌ bỏ Min/Max
+                ResizeMode = ResizeMode.NoResize,
                 WindowStyle = WindowStyle.SingleBorderWindow,
                 SizeToContent = SizeToContent.Height,
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -147,7 +173,6 @@ namespace TraSuaApp.WpfClient.Helpers
         }
 
         // ===== Helpers =====
-
         private static string FormatPhone(string? phone)
         {
             if (string.IsNullOrWhiteSpace(phone))

@@ -27,7 +27,7 @@ public static class LoyaltyService
 
         // Điểm tháng này
         int diemThangNay = await db.ChiTietHoaDonPoints.AsNoTracking()
-            .Where(p => p.KhachHangId == khachHangId &&
+            .Where(p => !p.IsDeleted && p.KhachHangId == khachHangId &&
                         p.Ngay >= firstDayCurrent &&
                         p.Ngay <= now.Date)
             .SumAsync(p => (int?)p.DiemThayDoi) ?? 0;
@@ -36,7 +36,7 @@ public static class LoyaltyService
         var firstDayPrev = firstDayCurrent.AddMonths(-1);
         var lastDayPrev = firstDayCurrent.AddDays(-1);
         int diemThangTruoc = await db.ChiTietHoaDonPoints.AsNoTracking()
-            .Where(p => p.KhachHangId == khachHangId &&
+            .Where(p => !p.IsDeleted && p.KhachHangId == khachHangId &&
                         p.Ngay >= firstDayPrev &&
                         p.Ngay <= lastDayPrev)
             .SumAsync(p => (int?)p.DiemThayDoi) ?? 0;

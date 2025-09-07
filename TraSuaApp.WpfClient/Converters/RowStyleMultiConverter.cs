@@ -59,22 +59,22 @@ namespace TraSuaApp.WpfClient.Converters
                 if (phanLoai == "Ship")
                 {
                     if (ngayShip == null)
-                        return Brushes.Blue;
+                        return Brushes.LightSkyBlue;
                     else
                     {
                         if (DaThuHoacGhiNo)
-                            return Brushes.Black;
+                            return Brushes.Transparent;
                         else
-                            return Brushes.Orange;
+                            return Brushes.LightBlue;
                     }
                 }
                 if (phanLoai == "App" && !DaThuHoacGhiNo)
-                    return Brushes.Red;
+                    return Brushes.LightPink;
                 if (phanLoai == "Tại Chỗ" && !DaThuHoacGhiNo)
-                    return Brushes.Green;
+                    return Brushes.LightGreen;
                 if (phanLoai == "MV" && !DaThuHoacGhiNo)
-                    return Brushes.Indigo;
-                return Brushes.Black;
+                    return Brushes.LightYellow;
+                return Brushes.Transparent;
             }
 
             // điều kiện font weight

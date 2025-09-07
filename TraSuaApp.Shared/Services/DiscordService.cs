@@ -25,12 +25,14 @@ namespace TraSuaApp.Shared.Services
             "https://discord.com/api/webhooks/1407602320656695387/lFpXgcQ3SS2GrDvlNI_IqY6mCHHNvdbqYOFvajKE2l-4KmVQWaJNf1qTul5LToUOKJd1";
 
         private static readonly string TraNoWebhookUrl = "https://discord.com/api/webhooks/1407923083070935162/ApVIOUwIJuOKxX1YSC1ntg-b3pQkcKQmByq51A-X68Qtppnyfz0FAmw_68a62K2kj58L";
+        private static readonly string DaGiaoHangWebhookUrl = "https://discord.com/api/webhooks/1407602585048715355/lIYnieakxN_uILGkgDlMXHK4CJtz9CKcIrryylABBUYJJbkGfux6wpqrxorMtMC2s2cP";
 
         public static Task SendAsync(DiscordEventType eventType, string message)
         {
             string url = eventType switch
             {
                 DiscordEventType.Admin => AdminWebhookUrl,
+                DiscordEventType.DuyKhanh => DaGiaoHangWebhookUrl,
                 DiscordEventType.DiShip => DiShipWebhookUrl,
                 DiscordEventType.NhanDon => NhanDonWebhookUrl,
                 DiscordEventType.HenGio => HenGioWebhookUrl,

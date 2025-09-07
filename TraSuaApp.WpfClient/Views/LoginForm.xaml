@@ -97,7 +97,7 @@
 
                 <Button
                     x:Name="LoginButton"
-                    Margin="0 20 0 0"
+                    Margin="0,20,0,0"
                     Click="LoginButton_Click"
                     Content="Đăng nhập"
                     Style="{StaticResource EditButtonStyle}" />

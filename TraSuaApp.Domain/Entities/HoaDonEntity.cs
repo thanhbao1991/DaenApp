@@ -14,6 +14,7 @@ public partial class HoaDon
     public DateTime? NgayShip { get; set; }
     public DateTime? NgayRa { get; set; }
     public string? GhiChu { get; set; }
+    public string? NguoiShip { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -34,7 +35,7 @@ public partial class HoaDon
 
     public string? MaHoaDon { get; set; }
 
-    // public string? TrangThai { get; set; }
+    public string? GhiChuShipper { get; set; }
 
     public Guid? VoucherId { get; set; }
 

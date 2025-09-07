@@ -75,7 +75,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                             }
                         }
 
-                        NotiHelper.Show(message);
+                        // NotiHelper.Show(message);
                     }
                 });
             });

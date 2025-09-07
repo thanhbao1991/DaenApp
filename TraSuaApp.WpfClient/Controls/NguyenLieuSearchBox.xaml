@@ -1,9 +1,9 @@
 ﻿<UserControl
     x:Class="TraSuaApp.WpfClient.Controls.NguyenLieuSearchBox"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    PreviewKeyDown="Root_PreviewKeyDown"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    x:Name="Root">
+    x:Name="Root"
+    PreviewKeyDown="Root_PreviewKeyDown">
     <Grid>
         <Grid>
             <TextBox
@@ -49,7 +49,7 @@
                             <StackPanel>
                                 <TextBlock FontWeight="Bold" Text="{Binding Ten}" />
                                 <TextBlock
-                                    FontSize="{StaticResource FontSizeSmall}" 
+                                    FontSize="{StaticResource FontSizeSmall}"
                                     Foreground="Gray"
                                     Text="{Binding TimKiem}" />
                             </StackPanel>

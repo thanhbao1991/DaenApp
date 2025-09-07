@@ -2,8 +2,8 @@
     x:Class="TraSuaApp.WpfClient.Controls.SanPhamSearchBox"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    PreviewKeyDown="Root_PreviewKeyDown"
-    x:Name="Root">
+    x:Name="Root"
+    PreviewKeyDown="Root_PreviewKeyDown">
 
     <Grid>
         <!--  Ô nhập tìm kiếm  -->

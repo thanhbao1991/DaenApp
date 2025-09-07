@@ -111,4 +111,71 @@ public class HoaDonController : BaseApiController
         var list = await _service.GetUpdatedSince(lastSync);
         return Result<List<HoaDonDto>>.Success(list);
     }
+
+
+
+
+
+
+
+
+    // 🟟 Lấy danh sách hóa đơn dành cho shipper
+    [HttpGet("shipper")]
+    [AllowAnonymous]
+
+    public async Task<ActionResult<Result<List<HoaDonDto>>>> GetForShipper()
+    {
+        var list = await _service.GetForShipperAsync();
+        return Result<List<HoaDonDto>>.Success(list);
+    }
+
+
+
+
+
+
+    // 🟟 Thu tiền mặt
+    [HttpPost("shipperf1/{id}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<Result<HoaDonDto>>> ThuTienMat(Guid id)
+    {
+        var result = await _service.ThuTienMatAsync(id);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("updated", result.Data.Id);   // bắn signal cập nhật
+        return result;
+    }
+
+    // 🟟 Thu chuyển khoản
+    [HttpPost("shipperf4/{id}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<Result<HoaDonDto>>> ThuChuyenKhoan(Guid id)
+    {
+        var result = await _service.ThuChuyenKhoanAsync(id);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("updated", result.Data.Id);   // bắn signal cập nhật
+        return result;
+    }
+
+    // 🟟 Ghi nợ
+    [HttpPost("shipper12/{id}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<Result<HoaDonDto>>> GhiNo(Guid id)
+    {
+        var result = await _service.GhiNoAsync(id);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("updated", result.Data.Id);   // bắn signal cập nhật
+        return result;
+    }
+
+    // 🟟 Khách đã trả nợ
+    [HttpPost("shipperXX/{id}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<Result<HoaDonDto>>> TraNo(Guid id)
+    {
+        var result = await _service.TraNoAsync(id);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("updated", result.Data.Id);   // bắn signal cập nhật
+        return result;
+    }
+
 }

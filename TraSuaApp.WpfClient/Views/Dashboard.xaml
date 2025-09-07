@@ -256,34 +256,20 @@
                             Grid.Row="1"
                             Grid.Column="1"
                             AutoGenerateColumns="False"
+                            FontWeight="Bold"
                             IsReadOnly="True"
                             MouseDoubleClick="HoaDonDataGrid_MouseDoubleClick"
                             SelectionChanged="HoaDonDataGrid_SelectionChangedAsync">
                             <DataGrid.RowStyle>
                                 <Style TargetType="DataGridRow">
-                                    <Setter Property="Foreground">
-                                        <Setter.Value>
-                                            <MultiBinding Converter="{StaticResource RowStyleMultiConverter}" ConverterParameter="Foreground">
-                                                <Binding Path="NgayShip" />
-                                                <Binding Path="PhanLoai" />
-                                                <Binding Path="TrangThai" />
-                                                <Binding Path="DaThuHoacGhiNo" />
-                                            </MultiBinding>
-                                        </Setter.Value>
-                                    </Setter>
-                                    <Setter Property="FontWeight">
-                                        <Setter.Value>
-                                            <MultiBinding Converter="{StaticResource RowStyleMultiConverter}" ConverterParameter="FontWeight">
-                                                <Binding Path="NgayShip" />
-                                                <Binding Path="PhanLoai" />
-                                                <Binding Path="TrangThai" />
-                                                <Binding Path="DaThuHoacGhiNo" />
-
-                                            </MultiBinding>
-                                        </Setter.Value>
-                                    </Setter>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DaThuHoacGhiNo}" Value="True">
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
                                 </Style>
                             </DataGrid.RowStyle>
+
                             <DataGrid.Columns>
                                 <DataGridTextColumn
                                     Binding="{Binding Stt}"
@@ -293,110 +279,52 @@
                                     Binding="{Binding GioHienThi}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Giờ" />
-                                <DataGridTemplateColumn Width="auto" Header="">
+                                <DataGridTemplateColumn Width="48" Header="Trạng thái">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <StackPanel
-                                                Height="32"
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Stretch"
-                                                Orientation="Horizontal">
-                                                <fa:IconImage
-                                                    x:Name="StatusIcon"
-                                                    Width="16"
-                                                    Height="16"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center" />
-                                                <fa:IconBlock Icon="Bell" Visibility="{Binding BaoDon, Converter={StaticResource BoolToVisibilityConverter}}" />
-                                                <fa:IconBlock Icon="Star" Visibility="{Binding UuTien, Converter={StaticResource BoolToVisibilityConverter}}" />
-                                                <fa:IconBlock Icon="Clock" Visibility="{Binding NgayHen, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-                                            </StackPanel>
-                                            <DataTemplate.Triggers>
-                                                <!--  Nếu PhanLoai = Ship và NgayShip = null  -->
-                                                <MultiDataTrigger>
-                                                    <MultiDataTrigger.Conditions>
-                                                        <Condition Binding="{Binding PhanLoai}" Value="Ship" />
-                                                        <Condition Binding="{Binding NgayShip}" Value="{x:Null}" />
-                                                    </MultiDataTrigger.Conditions>
-                                                    <Setter TargetName="StatusIcon" Property="Icon" Value="Utensils" />
-                                                    <Setter TargetName="StatusIcon" Property="Foreground" Value="Blue" />
-                                                    <Setter TargetName="StatusIcon" Property="Visibility" Value="Visible" />
-                                                </MultiDataTrigger>
-
-                                                <MultiDataTrigger>
-                                                    <MultiDataTrigger.Conditions>
-                                                        <Condition Binding="{Binding PhanLoai}" Value="Ship" />
-                                                        <Condition Binding="{Binding DaThuHoacGhiNo}" Value="False" />
-                                                        <Condition Binding="{Binding NgayShip, Converter={StaticResource NotNullToBoolConverter}}" Value="True" />
-                                                    </MultiDataTrigger.Conditions>
-                                                    <Setter TargetName="StatusIcon" Property="Icon" Value="Motorcycle" />
-                                                    <Setter TargetName="StatusIcon" Property="Foreground" Value="Orange" />
-                                                    <Setter TargetName="StatusIcon" Property="Visibility" Value="Visible" />
-                                                </MultiDataTrigger>
-
-                                                <MultiDataTrigger>
-                                                    <MultiDataTrigger.Conditions>
-                                                        <Condition Binding="{Binding PhanLoai}" Value="Ship" />
-                                                        <Condition Binding="{Binding NgayShip, Converter={StaticResource NotNullToBoolConverter}}" Value="True" />
-                                                        <Condition Binding="{Binding DaThuHoacGhiNo}" Value="True" />
-                                                    </MultiDataTrigger.Conditions>
-                                                    <Setter TargetName="StatusIcon" Property="Visibility" Value="Collapsed" />
-                                                </MultiDataTrigger>
-
-                                                <MultiDataTrigger>
-                                                    <MultiDataTrigger.Conditions>
-                                                        <Condition Binding="{Binding PhanLoai}" Value="App" />
-                                                        <Condition Binding="{Binding DaThuHoacGhiNo}" Value="False" />
-                                                    </MultiDataTrigger.Conditions>
-                                                    <Setter TargetName="StatusIcon" Property="Icon" Value="Mobile" />
-                                                    <Setter TargetName="StatusIcon" Property="Foreground" Value="Red" />
-                                                    <Setter TargetName="StatusIcon" Property="Visibility" Value="Visible" />
-                                                </MultiDataTrigger>
-
-                                                <MultiDataTrigger>
-                                                    <MultiDataTrigger.Conditions>
-                                                        <Condition Binding="{Binding PhanLoai}" Value="Tại Chỗ" />
-                                                        <Condition Binding="{Binding DaThuHoacGhiNo}" Value="False" />
-                                                    </MultiDataTrigger.Conditions>
-                                                    <Setter TargetName="StatusIcon" Property="Icon" Value="Chair" />
-                                                    <Setter TargetName="StatusIcon" Property="Foreground" Value="Green" />
-                                                    <Setter TargetName="StatusIcon" Property="Visibility" Value="Visible" />
-                                                </MultiDataTrigger>
-
-                                                <MultiDataTrigger>
-                                                    <MultiDataTrigger.Conditions>
-                                                        <Condition Binding="{Binding PhanLoai}" Value="MV" />
-                                                        <Condition Binding="{Binding DaThuHoacGhiNo}" Value="False" />
-                                                    </MultiDataTrigger.Conditions>
-                                                    <Setter TargetName="StatusIcon" Property="Icon" Value="ShoppingBag" />
-                                                    <Setter TargetName="StatusIcon" Property="Foreground" Value="Indigo" />
-                                                    <Setter TargetName="StatusIcon" Property="Visibility" Value="Visible" />
-                                                </MultiDataTrigger>
-                                            </DataTemplate.Triggers>
-
+                                            <fa:IconBlock
+                                                x:Name="StatusIcon"
+                                                Width="18"
+                                                Height="18"
+                                                Loaded="StatusIcon_Loaded"
+                                                Opacity="1"
+                                                Visibility="Collapsed" />
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn
                                     Width="*"
                                     Binding="{Binding Ten}"
-                                    ElementStyle="{StaticResource LeftTextCellStyle}"
-                                    Header="Tên bàn/khách" />
-                                <DataGridTextColumn
+                                    Header="Tên bàn/khách">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style BasedOn="{StaticResource LeftTextCellStyle}" TargetType="TextBlock">
+                                            <Setter Property="Background" Value="{Binding RowBackground}" />
+                                            <Setter Property="Foreground" Value="{Binding RowForeground}" />
+                                            <Style.Triggers>
+                                                <!--  Nếu ConLai = 0 thì gạch ngang chữ  -->
+                                                <DataTrigger Binding="{Binding DaThuHoacGhiNo}" Value="True">
+                                                    <Setter Property="TextDecorations" Value="Strikethrough" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+
+                                <!--<DataGridTextColumn
                                     x:Name="TongTienHoaDonTextBlock"
                                     Binding="{Binding ThanhTien, StringFormat=N0}"
-                                    ElementStyle="{StaticResource RightTextCellStyle}"
-                                    Header="Thành tiền" />
-                                <DataGridTextColumn
-                                    Binding="{Binding DaThu, StringFormat=N0}"
-                                    Header="Đã thu"
-                                    Visibility="{Binding ElementName=NgayHoaDonDataGridTextColumn, Path=Visibility}">
+                                    Header="Thành tiền">
                                     <DataGridTextColumn.ElementStyle>
                                         <Style BasedOn="{StaticResource CenterTextCellStyle}" TargetType="TextBlock">
                                             <Style.Triggers>
-                                                <!--<DataTrigger Binding="{Binding TrangThai}" Value="Tiền mặt">
+                                -->
+                                <!--<DataTrigger Binding="{Binding TrangThai}" Value="Tiền mặt">
                                                     <Setter Property="Background" Value="LightGreen" />
                                                 </DataTrigger>-->
+                                <!--
+                                                <DataTrigger Binding="{Binding DaThuHoacGhiNo}" Value="True">
+                                                    <Setter Property="TextDecorations" Value="Strikethrough" />
+                                                </DataTrigger>
                                                 <DataTrigger Binding="{Binding TrangThai}" Value="Chuyển khoản">
                                                     <Setter Property="Background" Value="LightYellow" />
                                                 </DataTrigger>
@@ -430,17 +358,6 @@
                                                 <DataTrigger Binding="{Binding TrangThai}" Value="Thu một phần">
                                                     <Setter Property="Background" Value="PaleTurquoise" />
                                                 </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn
-                                    Binding="{Binding ConLai, StringFormat=N0}"
-                                    Header="Còn lại"
-                                    Visibility="{Binding ElementName=NgayHoaDonDataGridTextColumn, Path=Visibility}">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style BasedOn="{StaticResource CenterTextCellStyle}" TargetType="TextBlock">
-                                            <Style.Triggers>
                                                 <DataTrigger Binding="{Binding TrangThai}" Value="Nợ một phần">
                                                     <Setter Property="Background" Value="LightCoral" />
                                                     <Setter Property="Foreground" Value="White" />
@@ -452,7 +369,8 @@
                                             </Style.Triggers>
                                         </Style>
                                     </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
+                                </DataGridTextColumn>-->
+
                             </DataGrid.Columns>
                         </DataGrid>
                         <Grid
@@ -474,7 +392,7 @@
                                             Height="16"
                                             Foreground="White"
                                             Icon="Motorcycle" />
-                                        <TextBlock Margin="5,0,0,0" Text=" Esc - Đi ship" />
+                                        <TextBlock Margin="5,0,0,0" Text=" Esc - KHÁNH" />
                                     </StackPanel>
                                 </Button>
                                 <Button
@@ -542,117 +460,6 @@
                                     </StackPanel>
                                 </Button>
                                 <Button
-                                    Name="F5Button"
-                                    Margin="5"
-                                    Background="Gold"
-                                    Click="F5Button_Click"
-                                    Foreground="Black"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="Black"
-                                            Icon="University" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F5 - Banking Nhã" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F6Button"
-                                    Margin="5"
-                                    Background="DodgerBlue"
-                                    Click="F6Button_Click"
-                                    Foreground="White"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="White"
-                                            Icon="Qrcode" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F6 - Gửi Stk" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F7Button"
-                                    Margin="5"
-                                    Background="DodgerBlue"
-                                    Click="F7Button_Click"
-                                    Foreground="White"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="White"
-                                            Icon="Bell" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F7 - Báo đơn" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F8Button"
-                                    Margin="5"
-                                    Background="DodgerBlue"
-                                    Click="F8Button_Click"
-                                    Foreground="White"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="White"
-                                            Icon="Star" />
-                                        <TextBlock Margin="5,0,0,0" Text="F8 - Ưu tiên" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F9Button"
-                                    Margin="5"
-                                    Background="DodgerBlue"
-                                    Click="F9Button_Click"
-                                    Foreground="White"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="White"
-                                            Icon="Book" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F9 - Gửi Menu" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F10Button"
-                                    Margin="5"
-                                    Background="DodgerBlue"
-                                    Click="F10Button_Click"
-                                    Foreground="White"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="White"
-                                            Icon="Clock" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F10 - Hẹn giờ" />
-                                    </StackPanel>
-                                </Button>
-                                <StackPanel
-                                    Name="HenGioStackPanel"
-                                    Margin="5"
-                                    Visibility="Collapsed">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ComboBox x:Name="GioCombo" />
-                                        <TextBlock VerticalAlignment="Center" Text=":" />
-                                        <ComboBox x:Name="PhutCombo" />
-                                        <Button
-                                            x:Name="OkHenGio"
-                                            Click="OkHenGioButton_Click"
-                                            Content="OK"
-                                            Style="{StaticResource ThemButtonStyle}" />
-                                    </StackPanel>
-                                </StackPanel>
-                                <Button
                                     Name="F12Button"
                                     Margin="5"
                                     Background="IndianRed"
@@ -683,18 +490,126 @@
                                         <TextBlock Margin="5,0,0,0" Text=" Del - Xoá" />
                                     </StackPanel>
                                 </Button>
+
+
                                 <Button
-                                    Name="HisButton"
+                                    Name="F5Button"
                                     Margin="5"
-                                    Background="DodgerBlue"
-                                    Click="HisButton_Click"
-                                    Foreground="White"
+                                    Background="Transparent"
+                                    Click="F5Button_Click"
+                                    Foreground="Black"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="White"
+                                            Foreground="Black"
+                                            Icon="Refresh" />
+                                        <TextBlock Margin="5,0,0,0" Text=" F5 - Làm mới" />
+                                    </StackPanel>
+                                </Button>
+                                <Button
+                                    Name="F6Button"
+                                    Margin="5"
+                                    Background="Transparent"
+                                    Click="F6Button_Click"
+                                    Foreground="Black"
+                                    Style="{StaticResource AddButtonStyle}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:IconImage
+                                            Width="16"
+                                            Height="16"
+                                            Icon="Qrcode" />
+                                        <TextBlock Margin="5,0,0,0" Text=" F6 - Gửi Stk" />
+                                    </StackPanel>
+                                </Button>
+                                <Button
+                                    Name="F7Button"
+                                    Margin="5"
+                                    Background="Transparent"
+                                    Click="F7Button_Click"
+                                    Foreground="Black"
+                                    Style="{StaticResource AddButtonStyle}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:IconImage
+                                            Width="16"
+                                            Height="16"
+                                            Icon="Bell" />
+                                        <TextBlock Margin="5,0,0,0" Text=" F7 - Báo đơn" />
+                                    </StackPanel>
+                                </Button>
+                                <Button
+                                    Name="F8Button"
+                                    Margin="5"
+                                    Background="Transparent"
+                                    Click="F8Button_Click"
+                                    Foreground="Black"
+                                    Style="{StaticResource AddButtonStyle}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:IconImage
+                                            Width="16"
+                                            Height="16"
+                                            Icon="Star" />
+                                        <TextBlock Margin="5,0,0,0" Text="F8 - Ưu tiên" />
+                                    </StackPanel>
+                                </Button>
+                                <Button
+                                    Name="F9Button"
+                                    Margin="5"
+                                    Background="Transparent"
+                                    Click="F9Button_Click"
+                                    Foreground="Black"
+                                    Style="{StaticResource AddButtonStyle}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:IconImage
+                                            Width="16"
+                                            Height="16"
+                                            Icon="Book" />
+                                        <TextBlock Margin="5,0,0,0" Text=" F9 - Gửi Menu" />
+                                    </StackPanel>
+                                </Button>
+                                <Button
+                                    Name="F10Button"
+                                    Margin="5"
+                                    Background="Transparent"
+                                    Click="F10Button_Click"
+                                    Foreground="Black"
+                                    Style="{StaticResource AddButtonStyle}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:IconImage
+                                            Width="16"
+                                            Height="16"
+                                            Icon="Clock" />
+                                        <TextBlock Margin="5,0,0,0" Text=" F10 - Hẹn giờ" />
+                                    </StackPanel>
+                                </Button>
+                                <StackPanel
+                                    Name="HenGioStackPanel"
+                                    Margin="5"
+                                    Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ComboBox x:Name="GioCombo" />
+                                        <TextBlock VerticalAlignment="Center" Text=":" />
+                                        <ComboBox x:Name="PhutCombo" />
+                                        <Button
+                                            x:Name="OkHenGio"
+                                            Click="OkHenGioButton_Click"
+                                            Content="OK"
+                                            Style="{StaticResource ThemButtonStyle}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <Button
+                                    Name="HisButton"
+                                    Margin="5"
+                                    Background="Transparent"
+                                    Click="HisButton_Click"
+                                    Foreground="Black"
+                                    Style="{StaticResource AddButtonStyle}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:IconImage
+                                            Width="16"
+                                            Height="16"
                                             Icon="History" />
                                         <TextBlock Margin="5,0,0,0" Text=" Lịch sử" />
                                     </StackPanel>
@@ -702,10 +617,9 @@
                                 <Button
                                     Name="AppButton"
                                     Margin="5"
-                                    Background="DodgerBlue"
                                     Click="AppButton_Click"
                                     Foreground="White"
-                                    Style="{StaticResource AddButtonStyle}">
+                                    Style="{StaticResource ReloadButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
@@ -717,9 +631,13 @@
                                 </Button>
                             </StackPanel>
                         </Grid>
-                        <Grid Grid.Row="1" Grid.Column="2">
+                        <Grid
+                            Grid.Row="1"
+                            Grid.Column="2"
+                            Background="WhiteSmoke">
                             <Grid.RowDefinitions>
                                 <RowDefinition />
+                                <RowDefinition Height="auto" />
                                 <RowDefinition Height="auto" />
                             </Grid.RowDefinitions>
                             <ListBox
@@ -887,35 +805,43 @@
 
                             </ListBox>
                             <Border
-                                Padding="12,6"
+                                Grid.Row="2"
                                 HorizontalAlignment="Right"
-                                VerticalAlignment="Bottom"
-                                Background="WhiteSmoke"
-                                CornerRadius="12">
+                                VerticalAlignment="Stretch"
+                                Panel.ZIndex="1"
+                                Background="#99ffffff">
+                                <!--  xanh đậm viền  -->
+
                                 <TextBlock
                                     x:Name="TongSoSanPhamTextBlock"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     FontSize="{StaticResource FontSizeXXX}"
                                     FontWeight="Bold"
-                                    Foreground="#4CAF50"
+                                    Foreground="Green"
                                     TextAlignment="Center" />
                             </Border>
-                            <TextBlock
-                                x:Name="TongNoKhachHangTextBlock"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Top"
-                                
-                                FontSize="{StaticResource FontSizeLarge}"
-                                FontWeight="Bold"
-                                Foreground="WhiteSmoke"
-                                Opacity="0.8"
-                                TextAlignment="Right" />
                             <TextBox
                                 x:Name="SearchChiTietHoaDonTextBox"
                                 Grid.Row="1"
                                 TextChanged="SearchChiTietHoaDonTextBox_TextChanged"
                                 Visibility="Collapsed" />
+                            <GroupBox
+                                Name="ThongTinThanhToanGroupBox"
+                                Grid.Row="2"
+                                BorderThickness="0"
+                                FontSize="{StaticResource FontSizeLarge}"
+                                Foreground="Black">
+
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <TextBlock
+                                        x:Name="ThongTinThanhToanTextBlock"
+                                        Padding="8"
+                                        FontSize="{StaticResource FontSizeLarge}"
+                                        FontWeight="Medium"
+                                        TextWrapping="Wrap" />
+                                </ScrollViewer>
+                            </GroupBox>
                         </Grid>
 
                     </Grid>
@@ -1171,7 +1097,8 @@
                                 Background="Gold"
                                 Click="F5aButton_Click"
                                 Foreground="Black"
-                                Style="{StaticResource AddButtonStyle}">
+                                Style="{StaticResource AddButtonStyle}"
+                                Visibility="Collapsed">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconImage
                                         Width="16"
@@ -1257,6 +1184,14 @@
                                     Binding="{Binding GhiChu}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Ghi chú" />
+                                <DataGridTextColumn
+                                    Binding="{Binding CreatedAt, StringFormat=dd-MM-yyyy HH:mm}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Ngày nhập" />
+                                <DataGridTextColumn
+                                    Binding="{Binding LastModified, StringFormat=dd-MM-yyyy HH:mm}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Ngày sửa" />
                                 <DataGridTemplateColumn Header="Xoá">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
