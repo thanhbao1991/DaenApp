@@ -20,5 +20,6 @@ public interface IHoaDonService
     Task<Result<HoaDonDto>> ThuTienMatAsync(Guid id);
     Task<Result<HoaDonDto>> ThuChuyenKhoanAsync(Guid id);
     Task<Result<HoaDonDto>> GhiNoAsync(Guid id);
+    Task<Result<HoaDonDto>> TiNuaChuyenKhoanAsync(Guid id);
     Task<Result<HoaDonDto>> TraNoAsync(Guid id, decimal soTienKhachDua);
 }

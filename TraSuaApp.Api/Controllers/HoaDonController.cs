@@ -122,7 +122,6 @@ public class HoaDonController : BaseApiController
     // 🟟 Lấy danh sách hóa đơn dành cho shipper
     [HttpGet("shipper")]
     [AllowAnonymous]
-
     public async Task<ActionResult<Result<List<HoaDonDto>>>> GetForShipper()
     {
         var list = await _service.GetForShipperAsync();
@@ -155,6 +154,18 @@ public class HoaDonController : BaseApiController
             await NotifyClients("updated", result.Data.Id);   // bắn signal cập nhật
         return result;
     }
+
+    // 🟟 Thu chuyển khoản
+    [HttpPost("shipper55/{id}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<Result<HoaDonDto>>> TiNuaChuyenKhoan(Guid id)
+    {
+        var result = await _service.TiNuaChuyenKhoanAsync(id);
+        if (result.IsSuccess && result.Data != null)
+            await NotifyClients("updated", result.Data.Id);   // bắn signal cập nhật
+        return result;
+    }
+
 
     // 🟟 Ghi nợ
     [HttpPost("shipper12/{id}")]

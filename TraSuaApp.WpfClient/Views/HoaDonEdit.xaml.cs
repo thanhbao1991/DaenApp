@@ -185,48 +185,37 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 // ✅ Sửa hóa đơn
                 Model = dto;
 
-                if (!string.IsNullOrEmpty(Model.GhiChu) && Model.GhiChu.Trim().StartsWith("["))
+                if (!string.IsNullOrEmpty(Model.QuickOrder) && Model.QuickOrder.Trim().StartsWith("["))
                 {
                     try
                     {
-                        var items = System.Text.Json.JsonSerializer.Deserialize<List<QuickOrderDto>>(Model.GhiChu);
+                        var items = System.Text.Json.JsonSerializer.Deserialize<List<QuickOrderDto>>(Model.QuickOrder);
                         if (items != null)
                         {
                             foreach (var item in items)
                             {
-                                var sp = _sanPhamList.FirstOrDefault(x => x.Ten == item.TenMon);
-                                if (sp != null)
+                                var sp = _sanPhamList.FirstOrDefault(x =>
+                                    x.Ten.Equals(item.TenMon, StringComparison.OrdinalIgnoreCase));
+                                if (sp == null) continue;
+
+                                var bienThe = ChonBienTheFallback(sp, item.BienThe);
+                                if (bienThe == null) continue;
+
+                                Model.ChiTietHoaDons.Add(new ChiTietHoaDonDto
                                 {
-                                    // tìm biến thể theo BienThe
-                                    var bienThe = sp.BienThe.FirstOrDefault(bt =>
-                                        bt.TenBienThe.Equals(item.BienThe, StringComparison.OrdinalIgnoreCase));
-
-                                    if (bienThe == null)
-                                    {
-                                        // fallback: lấy biến thể mặc định (Size chuẩn) hoặc FirstOrDefault
-                                        bienThe = sp.BienThe.FirstOrDefault(bt => bt.MacDinh)
-                                                  ?? sp.BienThe.FirstOrDefault();
-                                    }
-
-                                    if (bienThe != null)
-                                    {
-                                        Model.ChiTietHoaDons.Add(new ChiTietHoaDonDto
-                                        {
-                                            Id = Guid.NewGuid(),
-                                            HoaDonId = Model.Id,
-                                            SanPhamIdBienThe = bienThe.Id,
-                                            TenSanPham = sp.Ten,
-                                            TenBienThe = bienThe.TenBienThe,
-                                            DonGia = bienThe.GiaBan,
-                                            SoLuong = item.SoLuong,
-                                            Stt = 0,
-                                            BienTheList = _bienTheList.Where(x => x.SanPhamId == sp.Id).ToList(),
-                                            ToppingDtos = new List<ToppingDto>()
-                                        });
-                                    }
-                                }
+                                    Id = Guid.NewGuid(),
+                                    HoaDonId = Model.Id,
+                                    SanPhamIdBienThe = bienThe.Id,
+                                    TenSanPham = sp.Ten,
+                                    TenBienThe = bienThe.TenBienThe,
+                                    DonGia = bienThe.GiaBan,
+                                    SoLuong = item.SoLuong > 0 ? item.SoLuong : 1,
+                                    Stt = 0,
+                                    BienTheList = _bienTheList.Where(x => x.SanPhamId == sp.Id).ToList(),
+                                    ToppingDtos = new List<ToppingDto>(),
+                                    NoteText = (item.NoteText ?? string.Empty).Trim() // nếu QuickOrderDto chưa có NoteText thì bỏ dòng này
+                                });
                             }
-
                             // đánh lại STT
                             int stt = 1;
                             foreach (var c in Model.ChiTietHoaDons)
@@ -363,6 +352,24 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
             // ✅ Tính lại tổng tiền khi mở form
             CapNhatTongTien();
+        }
+
+        private SanPhamBienTheDto? ChonBienTheFallback(SanPhamDto sp, string? bienTheTenTuLLM)
+        {
+            var match = sp.BienThe.FirstOrDefault(bt =>
+                bt.TenBienThe.Equals(bienTheTenTuLLM ?? "", StringComparison.OrdinalIgnoreCase));
+            if (match != null) return match;
+
+            if (sp.BienThe.Count == 1) return sp.BienThe[0];
+
+            var macDinh = sp.BienThe.FirstOrDefault(bt => bt.MacDinh);
+            if (macDinh != null) return macDinh;
+
+            var sizeChuan = sp.BienThe.FirstOrDefault(bt =>
+                bt.TenBienThe.Equals("Size chuẩn", StringComparison.OrdinalIgnoreCase));
+            if (sizeChuan != null) return sizeChuan;
+
+            return sp.BienThe.FirstOrDefault();
         }
 
         private void UpdateVoucherInModel()

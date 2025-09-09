@@ -5,53 +5,115 @@ namespace TraSuaApp.WpfClient.Services
 {
     public class QuickOrderDto
     {
-        public string TenMon { get; set; } = string.Empty;
-        public string BienThe { get; set; } = "Size chuẩn"; // default
-        public int SoLuong { get; set; } = 1;              // default
+        public string TenMon { get; set; } = string.Empty;     // phải khớp tên sản phẩm trong DB
+        public string BienThe { get; set; } = "Size chuẩn";    // ví dụ: Size chuẩn | Size L
+        public int SoLuong { get; set; } = 1;                  // mặc định 1
+        public string NoteText { get; set; } = "";             // ghi chú thêm: ít ngọt, ít đá, thêm trân châu...
     }
+
     public class QuickOrderService
     {
         private readonly ChatClient _chatClient;
+
+        // ✅ Build menu đúng 1 lần khi app chạy (thread-safe)
+        private static readonly Lazy<string> _menuText = new(() => BuildMenuForGpt(), isThreadSafe: true);
 
         public QuickOrderService(string apiKey)
         {
             _chatClient = new ChatClient("gpt-4o-mini", apiKey);
         }
 
-        public async Task<List<QuickOrderDto>> ParseQuickOrderAsync(string input, IEnumerable<string> menu)
+        /// <summary>
+        /// Build MENU gửi GPT: mỗi BIẾN THỂ là 1 dòng: "Tên món | Size | Giá-đồng"
+        /// Ví dụ:
+        /// Bạc xỉu kem trứng | Size L | 30000
+        /// Bạc xỉu kem trứng | Size chuẩn | 25000
+        /// </summary>
+        private static string BuildMenuForGpt()
         {
-            string systemPrompt = @"
-Bạn là hệ thống POS cho quán trà sữa.
-Nhiệm vụ: Chuẩn hoá text order tự do thành JSON theo MENU.
+            // lấy từ Dashboard/AppProviders như bạn đang dùng
+            var sanPhams = AppProviders.SanPhams.Items
+                .Where(x => !x.NgungBan)
+                .OrderBy(x => x.Ten)
+                .ToList();
 
-Quy tắc:
-- Người dùng có thể viết sai chính tả hoặc viết tắt.
-- Chỉ được chọn tên sản phẩm trong MENU (TenMon) đúng y như trong danh sách, không tự tạo mới.
-- Số lượng có thể được ghi ở **đầu dòng** (ví dụ: '2 trà sữa') hoặc ở **cuối dòng** (ví dụ: 'trà sữa 2 ly').
-- Nếu có số lượng → lấy đúng số đó, nếu không có số lượng → SoLuong = 1.
-- Nếu người dùng ghi size:
-   + 'M', 'chuẩn', 'medium', 'vừa' → BienThe = 'Size chuẩn'
-   + 'L', 'large', 'lon', 'bự' → BienThe = 'Size L'
-- Nếu không ghi size → BienThe = 'Size chuẩn' (mặc định).
-- Output chỉ là JSON array, không thêm chữ nào khác:
+            var lines = new List<string>();
+            foreach (var sp in sanPhams)
+            {
+                if (sp.BienThe == null || sp.BienThe.Count == 0) continue;
+
+                foreach (var bt in sp.BienThe.OrderBy(b => b.TenBienThe))
+                {
+                    var tenSize = string.IsNullOrWhiteSpace(bt.TenBienThe) ? "Size chuẩn" : bt.TenBienThe;
+                    var gia = (long)Math.Round(bt.GiaBan);
+                    if (gia <= 0) continue; // bỏ biến thể chưa set giá để GPT khỏi suy sai
+
+                    lines.Add($"{sp.Ten} | {tenSize} | {gia}");
+                }
+            }
+
+            return string.Join("\n", lines);
+        }
+
+        /// <summary>
+        /// Gọi GPT: giao nguyên văn text + MENU nội bộ. Không alias, không regex.
+        /// </summary>
+        public async Task<List<QuickOrderDto>> ParseQuickOrderAsync(string input)
+        {
+            var menuText = _menuText.Value; // dùng cache
+
+            const string systemPrompt = @"
+Bạn là hệ thống POS. Chuẩn hóa INPUT thành JSON các món có trong MENU.
+
+QUY TẮC MAP:
+- So khớp gần đúng, bỏ dấu, viết thường, chấp nhận lỗi chính tả nhẹ.
+- Dùng giá trong dòng để suy ra Size nếu có:
+  + Nếu giá trùng đúng với 1 biến thể của món → chọn biến thể đó.
+- Cho phép đồng nghĩa:
+  + ""kem trứng"" ≈ ""trứng nướng""
+  + ""tcđđ"" ≈ ""trân châu đường đen""
+  + ""olong"" ≈ ""oolong"" ≈ ""ô long""
+- Nếu tên gần nhất khớp với 1 món trong MENU → vẫn chọn món đó (không được bỏ sót chỉ vì khác chính tả).
+- Mỗi dòng có số lượng → phải sinh đúng 1 item.
+- Nếu không suy ra được size mà dòng có giá → dùng giá để chọn size. Nếu vẫn không rõ → Size Chuẩn.
+
+ĐỊNH DẠNG JSON CHÍNH XÁC:
 [
-  { ""TenMon"": ""<Tên sản phẩm trong MENU>"", ""BienThe"": ""Size chuẩn hoặc Size L"", ""SoLuong"": <số nguyên> }
+  {""TenMon"":""<Tên trong MENU>"", ""BienThe"":""Size Chuẩn|Size L"", ""SoLuong"":<int>, ""GhiChuNguoiDung"":""<chuỗi tự do>""}
 ]
+
+VÍ DỤ BẮT BUỘC (làm theo đúng):
+Input line: ""1 bạc xỉu kem trứng 25k""
+→ {""TenMon"":""Bạc Xỉu Trứng Nướng"",""BienThe"":""Size Chuẩn"",""SoLuong"":1,""GhiChuNguoiDung"":""""}
+
+Input line: ""1 bạc xỉu kem trứng 30k""
+→ {""TenMon"":""Bạc Xỉu Trứng Nướng"",""BienThe"":""Size L"",""SoLuong"":1,""GhiChuNguoiDung"":""""}
 ";
 
-            string userPrompt = "MENU (hãy chọn đúng y tên trong đây):\n- "
-      + string.Join("\n- ", menu)
-      + "\n\nINPUT:\n" + input;
-            var result = await _chatClient.CompleteChatAsync(new ChatMessage[]
-      {
-    new SystemChatMessage(systemPrompt),
-    new UserChatMessage(userPrompt)
-      });
+            string userPrompt = $@"
+MENU (mỗi dòng: Tên món | Size | Giá-đồng):
+{menuText}
 
-            var completion = result.Value;
-            var raw = completion.Content[0].Text;
-            // 🟟 Làm sạch JSON trả về
-            raw = raw.Trim();
+INPUT (nguyên văn):
+{input}
+";
+
+            var opts = new ChatCompletionOptions
+            {
+                Temperature = 0f
+                // Nếu SDK bạn hỗ trợ JSON mode thì bật:
+                // ResponseFormat = ChatResponseFormat.Json
+            };
+
+            var result = await _chatClient.CompleteChatAsync(new ChatMessage[]
+            {
+                new SystemChatMessage(systemPrompt),
+                new UserChatMessage(userPrompt)
+            }, opts);
+
+            var raw = result.Value.Content[0].Text?.Trim() ?? "[]";
+
+            // GPT đôi khi bọc ```json ... ```
             if (raw.StartsWith("```"))
             {
                 int first = raw.IndexOf('\n');
@@ -59,15 +121,27 @@ Quy tắc:
                 if (first >= 0 && last > first)
                     raw = raw.Substring(first, last - first).Trim();
             }
+
+            List<QuickOrderDto> list;
             try
             {
-                return JsonSerializer.Deserialize<List<QuickOrderDto>>(raw,
+                list = JsonSerializer.Deserialize<List<QuickOrderDto>>(raw,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
             }
-            catch
+            catch (Exception ex)
             {
-                return new();
+                throw new Exception($"Không parse được JSON từ GPT: {ex.Message}\nRaw: {raw}");
             }
+
+            // defaults an toàn
+            foreach (var it in list)
+            {
+                if (it.SoLuong <= 0) it.SoLuong = 1;
+                if (string.IsNullOrWhiteSpace(it.BienThe)) it.BienThe = "Size chuẩn";
+                it.NoteText ??= "";
+            }
+
+            return list;
         }
     }
 }

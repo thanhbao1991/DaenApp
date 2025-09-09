@@ -11,9 +11,9 @@ namespace TraSuaApp.Shared.Services
 
         private static readonly string HoaDonDelWebhookUrl = "https://discord.com/api/webhooks/1407602584285351998/S7UaKM6Ag0SydXy62x4Y8BWUFJlG0x3_m2cjIUBGfNIX6xjYPWnDhCgvIg5y-t-Hkcoa";
 
-        private static readonly string CongNoWebhookUrl = "https://discord.com/api/webhooks/1407602329934499971/qWF8nFTIPuixt4Pfc_6Zwf2almtNbPLO1JlBABWQU1LvxW3yxkie2xDz6H9zDpVyBoJi";
+        private static readonly string GhiNoWebhookUrl = "https://discord.com/api/webhooks/1407602329934499971/qWF8nFTIPuixt4Pfc_6Zwf2almtNbPLO1JlBABWQU1LvxW3yxkie2xDz6H9zDpVyBoJi";
 
-        private static readonly string DiShipWebhookUrl =
+        private static readonly string DangGiaoHangWebhookUrl =
             "https://discord.com/api/webhooks/1406106727459586210/jsHzaUiUitSTCx_6jRoLNQd2d5SzKgkoNsd0P0ruNd58kIGh0lDsaFPTFiuM-GkUBjcH";
 
         private static readonly string ThanhToanWebhookUrl =
@@ -33,14 +33,14 @@ namespace TraSuaApp.Shared.Services
             {
                 DiscordEventType.Admin => AdminWebhookUrl,
                 DiscordEventType.DuyKhanh => DaGiaoHangWebhookUrl,
-                DiscordEventType.DiShip => DiShipWebhookUrl,
+                DiscordEventType.DangGiaoHang => DangGiaoHangWebhookUrl,
                 DiscordEventType.NhanDon => NhanDonWebhookUrl,
                 DiscordEventType.HenGio => HenGioWebhookUrl,
                 DiscordEventType.ThanhToan => ThanhToanWebhookUrl,
                 DiscordEventType.TraNo => TraNoWebhookUrl,
                 DiscordEventType.HoaDonNew => HoaDonNewWebhookUrl,
                 DiscordEventType.HoaDonDel => HoaDonDelWebhookUrl,
-                DiscordEventType.CongNo => CongNoWebhookUrl,
+                DiscordEventType.GhiNo => GhiNoWebhookUrl,
                 _ => throw new ArgumentOutOfRangeException(nameof(eventType), eventType, null)
             };
 

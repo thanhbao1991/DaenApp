@@ -140,31 +140,34 @@ public class AppShippingHelperText
                 .Replace("x 1", "", StringComparison.OrdinalIgnoreCase)
                 .Trim();
 
-            var bienTheId = MapSanPhamBienTheId(tenSP, tenBienThe, donGia);
-            var bienThe = _bienTheList.FirstOrDefault(b => b.Id == bienTheId);
-
-            var ct = new ChiTietHoaDonDto
+            Guid bienTheId = MapSanPhamBienTheId(tenSP, tenBienThe, donGia);
+            if (bienTheId != Guid.Empty)
             {
-                Id = Guid.NewGuid(),
-                SanPhamIdBienThe = bienTheId,
-                TenSanPham = tenSP,
-                TenBienThe = tenBienThe ?? "",
-                DonGia = bienThe?.GiaBan ?? donGia, // ưu tiên giá DB
-                SoLuong = soLuong,
-                ToppingDtos = optionsDiv.Skip(1).Select(opt =>
-                {
-                    string name = opt.Text.Trim();
-                    return new ToppingDto
-                    {
-                        Id = MapToppingId(name),
-                        Ten = name,
-                        Gia = GetToppingGia(name),
-                        SoLuong = 1
-                    };
-                }).ToList()
-            };
+                var bienThe = _bienTheList.FirstOrDefault(b => b.Id == bienTheId);
 
-            chiTiets.Add(ct);
+                var ct = new ChiTietHoaDonDto
+                {
+                    Id = Guid.NewGuid(),
+                    SanPhamIdBienThe = bienTheId,
+                    TenSanPham = tenSP,
+                    TenBienThe = tenBienThe ?? "",
+                    DonGia = bienThe?.GiaBan ?? donGia, // ưu tiên giá DB
+                    SoLuong = soLuong,
+                    ToppingDtos = optionsDiv.Skip(1).Select(opt =>
+                    {
+                        string name = opt.Text.Trim();
+                        return new ToppingDto
+                        {
+                            Id = MapToppingId(name),
+                            Ten = name,
+                            Gia = GetToppingGia(name),
+                            SoLuong = 1
+                        };
+                    }).ToList()
+                };
+
+                chiTiets.Add(ct);
+            }
         }
 
         var now = DateTime.Now;
@@ -229,7 +232,7 @@ public class AppShippingHelperText
         if (sp == null)
         {
             MessageBox.Show(
-                $"⚠️ Không tìm thấy sản phẩm: {tenSanPham}",
+                $"Vui lòng tự nhập thêm món: {tenSanPham}",
                 "Cảnh báo mapping sản phẩm",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning

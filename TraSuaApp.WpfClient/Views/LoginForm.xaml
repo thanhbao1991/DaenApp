@@ -28,7 +28,7 @@
             <!--  Thanh tiêu đề  -->
             <Border
                 Grid.Row="0"
-                Background="#2196F3"
+                Background="{StaticResource PrimaryBrush}"
                 CornerRadius="8,8,0,0">
                 <Grid>
                     <TextBlock
@@ -100,7 +100,7 @@
                     Margin="0,20,0,0"
                     Click="LoginButton_Click"
                     Content="Đăng nhập"
-                    Style="{StaticResource EditButtonStyle}" />
+                    Style="{StaticResource AddButtonStyle}" />
 
                 <ProgressBar
                     x:Name="LoginProgressBar"

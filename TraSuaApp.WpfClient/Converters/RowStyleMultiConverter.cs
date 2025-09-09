@@ -72,7 +72,7 @@ namespace TraSuaApp.WpfClient.Converters
                     return Brushes.LightPink;
                 if (phanLoai == "Tại Chỗ" && !DaThuHoacGhiNo)
                     return Brushes.LightGreen;
-                if (phanLoai == "MV" && !DaThuHoacGhiNo)
+                if (phanLoai == "Mv" && !DaThuHoacGhiNo)
                     return Brushes.LightYellow;
                 return Brushes.Transparent;
             }
@@ -96,7 +96,7 @@ namespace TraSuaApp.WpfClient.Converters
                     return FontWeights.Medium;
                 if (phanLoai == "Tại Chỗ" && !DaThuHoacGhiNo)
                     return FontWeights.Medium;
-                if (phanLoai == "MV" && !DaThuHoacGhiNo)
+                if (phanLoai == "Mv" && !DaThuHoacGhiNo)
                     return FontWeights.Medium;
                 return FontWeights.Normal;
             }
@@ -107,4 +107,7 @@ namespace TraSuaApp.WpfClient.Converters
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
             => throw new NotImplementedException();
     }
+
+
+
 }

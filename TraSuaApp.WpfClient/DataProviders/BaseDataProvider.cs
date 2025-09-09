@@ -66,20 +66,35 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                             {
                                 if (hoaDon.NguoiShip == "Khánh")
                                 {
-                                    if (hoaDon.GhiChuShipper == "đưa tiền mặt")
+                                    if (hoaDon.GhiChuShipper != null)
                                     {
-                                        AudioHelper.Play("tien-mat.wav");
-                                        NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                    }
-                                    else if (hoaDon.GhiChuShipper == "nói là chuyển khoản")
-                                    {
-                                        AudioHelper.Play("chuyen-khoan.wav");
-                                        NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                    }
-                                    else if (hoaDon.GhiChuShipper == "nói nợ")
-                                    {
-                                        AudioHelper.Play("ghi-no.wav");
-                                        NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                        var note = hoaDon.GhiChuShipper.ToLower();
+
+                                        if (note.StartsWith("tiền mặt"))
+                                        {
+                                            AudioHelper.Play("tien-mat.mp3");
+                                            NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                        }
+                                        else if (note.StartsWith("chuyển khoản"))
+                                        {
+                                            AudioHelper.Play("chuyen-khoan.mp3");
+                                            NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                        }
+                                        else if (note.StartsWith("ghi nợ"))
+                                        {
+                                            AudioHelper.Play("ghi-no.mp3");
+                                            NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                        }
+                                        else if (note.StartsWith("tí nữa chuyển khoản"))
+                                        {
+                                            AudioHelper.Play("chuyen-khoan-sau.mp3"); // thêm file âm thanh riêng nếu cần
+                                            NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                        }
+                                        else if (note.Contains("trả nợ"))
+                                        {
+                                            AudioHelper.Play("tra-no.mp3"); // thêm file âm thanh riêng nếu cần
+                                            NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                        }
                                     }
                                 }
                             }
@@ -100,7 +115,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
             // Khi kết nối lại → tắt fallback timer
             _signalR.OnReconnected(() =>
             {
-                NotiHelper.Show("✅ Đã kết nối lại SignalR.");
+                // NotiHelper.Show("✅ Đã kết nối lại SignalR.");
                 System.Diagnostics.Debug.WriteLine("✅ SignalR Reconnected");
                 StopFallbackTimer();
             });

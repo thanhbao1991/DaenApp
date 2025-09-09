@@ -105,12 +105,12 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         if (entity.ChiTietHoaDonNoId != null)
             await DiscordService.SendAsync(
                 DiscordEventType.TraNo,
-                $"{dto.Ten}\n{entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({GhiChu})"
+                $"{entity.SoTien:N0}đ {dto.Ten}"
             );
         else
             await DiscordService.SendAsync(
                 DiscordEventType.ThanhToan,
-                $"{dto.Ten}\n{entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({GhiChu})"
+                $"{entity.SoTien:N0}đ {dto.Ten}"
             );
 
         return Result<ChiTietHoaDonThanhToanDto>.Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
@@ -177,12 +177,12 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         if (entity.ChiTietHoaDonNoId != null)
             await DiscordService.SendAsync(
                 DiscordEventType.TraNo,
-                $"[Chỉnh sửa]\n{dto.Ten} - {entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({GhiChu})"
+                $"[Chỉnh sửa] {entity.SoTien:N0}đ {dto.Ten}"
             );
         else
             await DiscordService.SendAsync(
                 DiscordEventType.ThanhToan,
-                $"[Chỉnh sửa]\n{dto.Ten} - {entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({GhiChu})"
+                $"[Chỉnh sửa] {entity.SoTien:N0}đ {dto.Ten}"
             );
 
         return Result<ChiTietHoaDonThanhToanDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
@@ -211,12 +211,12 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         if (entity.ChiTietHoaDonNoId != null)
             await DiscordService.SendAsync(
                 DiscordEventType.TraNo,
-                $"[Xoá]\n{entity.Id} - {entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({entity.GhiChu})"
+                $"[Xoá] {entity.SoTien:N0}đ {entity.Id}"
             );
         else
             await DiscordService.SendAsync(
                 DiscordEventType.ThanhToan,
-                $"[Xoá]\n{entity.Id} - {entity.SoTien:N0}đ {entity.TenPhuongThucThanhToan} ({entity.GhiChu})"
+                $"[Xoá] {entity.SoTien:N0}đ {entity.Id} "
             );
 
 

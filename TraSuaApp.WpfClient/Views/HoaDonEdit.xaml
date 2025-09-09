@@ -19,7 +19,10 @@
                 Duration="0:0:0.4" />
         </Storyboard>
     </Window.Resources>
-    <Border Style="{StaticResource EditFormBorderStyle}">
+    <Border
+        Margin="-50,25,-50,25"
+        VerticalAlignment="Stretch"
+        Style="{StaticResource EditFormBorderStyle}">
         <Grid Margin="16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />

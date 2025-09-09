@@ -70,6 +70,7 @@ public class HoaDonService : IHoaDonService
             GiamGia = entity.GiamGia,
             ThanhTien = entity.ThanhTien,
             GhiChu = entity.GhiChu,
+            GhiChuShipper = entity.GhiChuShipper,
             CreatedAt = entity.CreatedAt,
             LastModified = entity.LastModified,
             DaThu = daThu,
@@ -94,6 +95,7 @@ public class HoaDonService : IHoaDonService
             NgayRa = dto.NgayRa,
             PhanLoai = dto.PhanLoai,
             GhiChu = dto.GhiChu,
+            GhiChuShipper = dto.GhiChuShipper,
             NgayShip = dto.NgayShip,
             NguoiShip = dto.NguoiShip,
             NgayHen = dto.NgayHen,
@@ -137,7 +139,7 @@ public class HoaDonService : IHoaDonService
 
             tenBan = dto.PhanLoai switch
             {
-                "MV" => $"MV {stt}",
+                "Mv" => $"Mv {stt}",
                 "Ship" => $"Ship {stt}",
                 "App" => $"App {stt}",
                 _ => entity?.TenBan ?? ""
@@ -152,11 +154,9 @@ public class HoaDonService : IHoaDonService
         await _context.SaveChangesAsync();
 
         await DiscordService.SendAsync(
-            DiscordEventType.HoaDonNew,
-            $"🟟 Đơn mới: {entity.MaHoaDon}\n" +
-            $"Khách: {entity.KhachHang?.Ten ?? entity.TenBan}\n" +
-            $"Tổng tiền: {entity.ThanhTien:N0} đ"
-        );
+         DiscordEventType.HoaDonNew,
+         $"{(entity.KhachHang?.Ten ?? entity.TenBan)} {entity.ThanhTien:N0} đ"
+     );
 
         var after = ToDto(entity);
         return Result<HoaDonDto>.Success(after, "Đã thêm hóa đơn thành công.")
@@ -191,6 +191,7 @@ public class HoaDonService : IHoaDonService
         entity.NgayHen = dto.NgayHen;
         entity.NgayRa = dto.NgayRa;
         entity.GhiChu = dto.GhiChu;
+        entity.GhiChuShipper = dto.GhiChuShipper;
         entity.DiaChiText = dto.DiaChiText;
         entity.SoDienThoaiText = dto.SoDienThoaiText;
         entity.VoucherId = dto.VoucherId;
@@ -224,7 +225,7 @@ public class HoaDonService : IHoaDonService
 
             tenBan = dto.PhanLoai switch
             {
-                "MV" => $"MV {stt}",
+                "Mv" => $"Mv {stt}",
                 "Ship" => $"Ship {stt}",
                 "App" => $"App {stt}",
                 _ => entity?.TenBan ?? ""
@@ -308,6 +309,7 @@ public class HoaDonService : IHoaDonService
                 x.GiamGia,
                 x.ThanhTien,
                 x.GhiChu,
+                x.GhiChuShipper,
                 x.CreatedAt,
                 x.LastModified,
 
@@ -387,6 +389,8 @@ public class HoaDonService : IHoaDonService
             GiamGia = h.GiamGia,
             ThanhTien = h.ThanhTien,
             GhiChu = h.GhiChu,
+
+            GhiChuShipper = h.GhiChuShipper,
             CreatedAt = h.CreatedAt,
             LastModified = h.LastModified,
             DaThu = h.DaThu,
@@ -482,7 +486,7 @@ public class HoaDonService : IHoaDonService
         var after = ToDto(entity);
 
         if (before.NgayShip == null && after.NgayShip != null)
-            await DiscordService.SendAsync(DiscordEventType.DiShip, $"{entity.TenKhachHangText} đã được giao hàng");
+            await DiscordService.SendAsync(DiscordEventType.DangGiaoHang, $"{entity.TenKhachHangText} {entity.DiaChiText}");
         if (before.BaoDon == true && after.BaoDon == false)
             await DiscordService.SendAsync(DiscordEventType.NhanDon, $"{entity.TenKhachHangText} đã nhận đơn");
         if (before.NgayHen != null && after.NgayHen == null)
@@ -865,6 +869,7 @@ public class HoaDonService : IHoaDonService
                 h.GiamGia,
                 h.ThanhTien,
                 h.GhiChu,
+                h.GhiChuShipper,
                 h.CreatedAt,
                 h.LastModified,
 
@@ -899,6 +904,7 @@ public class HoaDonService : IHoaDonService
             GiamGia = h.GiamGia,
             ThanhTien = h.ThanhTien,
             GhiChu = h.GhiChu,
+            GhiChuShipper = h.GhiChuShipper,
             CreatedAt = h.CreatedAt,
             LastModified = h.LastModified,
             DaThu = h.DaThu,
@@ -931,6 +937,7 @@ public class HoaDonService : IHoaDonService
                 x.DiaChiText,
                 x.SoDienThoaiText,
                 x.ThanhTien,
+                x.GhiChu,
                 x.GhiChuShipper,
                 DaThu = x.ChiTietHoaDonThanhToans
                             .Where(t => !t.IsDeleted)
@@ -962,6 +969,7 @@ public class HoaDonService : IHoaDonService
                 NgayGio = h.NgayGio,
                 NgayShip = h.NgayShip,
                 NguoiShip = h.NguoiShip,
+                GhiChu = h.GhiChu,
                 GhiChuShipper = h.GhiChuShipper,
             };
 
@@ -976,35 +984,6 @@ public class HoaDonService : IHoaDonService
 
         return result;
     }
-    private async Task<Result<HoaDonDto>> CapNhatGhiChuShipperAsync(Guid id, string ghiChu)
-    {
-        var entity = await _context.HoaDons
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-
-        if (entity == null)
-            return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
-
-        var now = DateTime.Now;
-        var before = ToDto(entity);
-
-        entity.GhiChuShipper = ghiChu;
-        await _context.SaveChangesAsync();
-
-        var after = ToDto(entity);
-
-        await DiscordService.SendAsync(
-            DiscordEventType.DuyKhanh,
-            $"{entity.TenKhachHangText}: {entity.GhiChuShipper}"
-        );
-
-        return Result<HoaDonDto>.Success(after, "Cập nhật hóa đơn thành công.")
-            .WithId(id)
-            .WithBefore(before)
-            .WithAfter(after);
-    }
-
-
-
 
     public async Task<Result<HoaDonDto>> ThuTienMatAsync(Guid id)
     {
@@ -1068,7 +1047,7 @@ public class HoaDonService : IHoaDonService
         }
 
         // 2) Cập nhật ghi chú shipper (chuẩn F1)
-        entity.GhiChuShipper = "đưa tiền mặt";
+        entity.GhiChuShipper = $"Tiền mặt: {soTienThu:N0} đ";
         entity.LastModified = now;
 
         await _context.SaveChangesAsync();
@@ -1078,7 +1057,7 @@ public class HoaDonService : IHoaDonService
         // 3) Discord như các flow khác
         await DiscordService.SendAsync(
             DiscordEventType.DuyKhanh,
-            $"{entity.TenKhachHangText}: {entity.GhiChuShipper}"
+            $"{entity.TenKhachHangText} {entity.GhiChuShipper}"
         );
 
         // 4) Trả kết quả (Controller đã NotifyClients("updated", id) nên SignalR ok)
@@ -1186,7 +1165,9 @@ public class HoaDonService : IHoaDonService
         }
 
         // 🟟 Cập nhật GhiChuShipper cho hóa đơn hiện tại (chỉ để hiển thị)
-        entity.GhiChuShipper = $"Trả nợ: {traNoCu:N0} đ";
+        // 2️⃣ Cập nhật GhiChuShipper (giữ lại thông tin cũ + thêm trả nợ)
+        var ghiChuCu = string.IsNullOrWhiteSpace(entity.GhiChuShipper) ? "" : entity.GhiChuShipper + " | ";
+        entity.GhiChuShipper = $"{ghiChuCu}Trả nợ: {traNoCu:N0} đ";
         entity.LastModified = now;
 
         await _context.SaveChangesAsync();
@@ -1196,7 +1177,7 @@ public class HoaDonService : IHoaDonService
         // 🟟 Gửi thông báo Discord
         await DiscordService.SendAsync(
             DiscordEventType.DuyKhanh,
-            $"• {entity.TenKhachHangText}: Trả nợ {traNoCu:N0} đ"
+            $"{entity.TenKhachHangText} {entity.GhiChuShipper}"
         );
 
         return Result<HoaDonDto>.Success(after, "Đã ghi nhận khách trả nợ.")
@@ -1243,7 +1224,7 @@ public class HoaDonService : IHoaDonService
         }
 
         // 3️⃣ Cập nhật GhiChuShipper
-        entity.GhiChuShipper = "nói nợ";
+        entity.GhiChuShipper = $"Ghi nợ: {soTienNo:N0} đ";
         entity.LastModified = now;
 
         await _context.SaveChangesAsync();
@@ -1252,7 +1233,7 @@ public class HoaDonService : IHoaDonService
 
         await DiscordService.SendAsync(
             DiscordEventType.DuyKhanh,
-            $"• {entity.TenKhachHangText} nợ {soTienNo:N0} đ"
+            $"{entity.TenKhachHangText} {entity.GhiChuShipper}"
         );
 
         return Result<HoaDonDto>.Success(after, "Đã ghi nợ cho hóa đơn.")
@@ -1314,7 +1295,7 @@ public class HoaDonService : IHoaDonService
         }
 
         // 2) Cập nhật ghi chú shipper (chuẩn F4)
-        entity.GhiChuShipper = "nói là chuyển khoản";
+        entity.GhiChuShipper = $"Chuyển khoản: {soTienThu:N0} đ";
         entity.LastModified = now;
 
         await _context.SaveChangesAsync();
@@ -1324,7 +1305,7 @@ public class HoaDonService : IHoaDonService
         // 3) Gửi thông báo ra Discord
         await DiscordService.SendAsync(
             DiscordEventType.DuyKhanh,
-            $"{entity.TenKhachHangText}: {entity.GhiChuShipper}"
+            $"{entity.TenKhachHangText} {entity.GhiChuShipper}"
         );
 
         // 4) Trả kết quả
@@ -1333,4 +1314,37 @@ public class HoaDonService : IHoaDonService
             .WithBefore(before)
             .WithAfter(after);
     }
+    public async Task<Result<HoaDonDto>> TiNuaChuyenKhoanAsync(Guid id)
+    {
+        var entity = await _context.HoaDons
+          .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+        if (entity == null)
+            return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
+
+        var now = DateTime.Now;
+        var before = ToDto(entity);
+
+        decimal daThu = await _context.ChiTietHoaDonThanhToans
+    .Where(t => !t.IsDeleted && t.HoaDonId == entity.Id)
+    .SumAsync(t => (decimal?)t.SoTien) ?? 0;
+
+        decimal conLai = entity.ThanhTien - daThu;
+        entity.GhiChuShipper = $"Tí nữa chuyển khoản: {conLai:N0} đ";
+        entity.LastModified = now;
+        await _context.SaveChangesAsync();
+
+        var after = ToDto(entity);
+
+        await DiscordService.SendAsync(
+            DiscordEventType.DuyKhanh,
+            $"{entity.TenKhachHangText} {entity.GhiChuShipper}"
+        );
+
+        return Result<HoaDonDto>.Success(after, "Cập nhật hóa đơn thành công.")
+            .WithId(id)
+            .WithBefore(before)
+            .WithAfter(after);
+    }
+
 }

@@ -60,8 +60,8 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         await _context.SaveChangesAsync();
 
         await DiscordService.SendAsync(
-            DiscordEventType.CongNo,
-            $"{dto.Ten}\nSố tiền nợ: {dto.SoTienNo:N0} đ\nGhi chú: {dto.GhiChu}"
+            DiscordEventType.GhiNo,
+            $"{dto.Ten} {dto.SoTienNo:N0} đ"
         );
 
         var after = ToDto(entity);
@@ -94,8 +94,8 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         var after = ToDto(entity);
 
         await DiscordService.SendAsync(
-    DiscordEventType.CongNo,
-    $"[Chỉnh sửa]\n{after.Ten}\nSố tiền nợ: {after.SoTienNo:N0} đ\nGhi chú: {after.GhiChu}"
+    DiscordEventType.GhiNo,
+    $"[Chỉnh sửa] {after.Ten} {after.SoTienNo:N0} đ"
 );
 
         return Result<ChiTietHoaDonNoDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
@@ -270,8 +270,8 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         await _context.SaveChangesAsync();
 
         await DiscordService.SendAsync(
-    DiscordEventType.CongNo,
-    $"[Xoá]\n{before.Ten}\nSố tiền nợ: {before.SoTienNo:N0} đ\nGhi chú: {before.GhiChu}"
+    DiscordEventType.GhiNo,
+    $"[Xoá] {before.Ten} {before.SoTienNo:N0} đ"
 );
 
         return Result<ChiTietHoaDonNoDto>.Success(before, $"Xoá {_friendlyName.ToLower()} thành công.")

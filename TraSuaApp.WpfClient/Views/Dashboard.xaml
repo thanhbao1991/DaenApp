@@ -9,6 +9,7 @@
     Background="Transparent"
     Closing="Window_Closing"
     FontSize="{StaticResource FontSizeNormal}"
+    FontWeight="Medium"
     PreviewKeyDown="Window_PreviewKeyDown"
     WindowStartupLocation="CenterScreen"
     WindowState="Maximized"
@@ -22,8 +23,9 @@
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
                 Panel.ZIndex="2"
+                FontSize="{StaticResource FontSizeLarge}"
                 FontWeight="Bold"
-                Foreground="Red"
+                Foreground="{StaticResource InfoBrush}"
                 Text="Dashboard" />
             <ProgressBar
                 x:Name="ProgressBar"
@@ -293,7 +295,7 @@
                                     Binding="{Binding GioHienThi}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Giờ" />
-                                <DataGridTemplateColumn Width="48" Header="Trạng thái">
+                                <DataGridTemplateColumn Width="48" Header="">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Grid Height="32">
@@ -309,7 +311,7 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn
-                                    Width="*"
+                                    Width="2*"
                                     Binding="{Binding Ten}"
                                     Header="Tên bàn/khách">
                                     <DataGridTextColumn.ElementStyle>
@@ -324,67 +326,11 @@
                                         </Style>
                                     </DataGridTextColumn.ElementStyle>
                                 </DataGridTextColumn>
-
-                                <!--<DataGridTextColumn
-                                    x:Name="TongTienHoaDonTextBlock"
-                                    Binding="{Binding ThanhTien, StringFormat=N0}"
-                                    Header="Thành tiền">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style BasedOn="{StaticResource CenterTextCellStyle}" TargetType="TextBlock">
-                                            <Style.Triggers>
-
-                                                <DataTrigger Binding="{Binding TrangThai}" Value="Tiền mặt">
-                                                    <Setter Property="Background" Value="LightGreen" />
-                                                </DataTrigger>
-
-                                                <DataTrigger Binding="{Binding DaThuHoacGhiNo}" Value="True">
-                                                    <Setter Property="TextDecorations" Value="Strikethrough" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding TrangThai}" Value="Chuyển khoản">
-                                                    <Setter Property="Background" Value="LightYellow" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding TrangThai}" Value="Banking Nhã">
-                                                    <Setter Property="Background" Value="Gold" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding TrangThai}" Value="Chuyển khoản + Tiền mặt">
-                                                    <Setter Property="Background">
-                                                        <Setter.Value>
-                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                <GradientStop Offset="0.0" Color="LightGreen" />
-                                                                <GradientStop Offset="0.5" Color="LightGreen" />
-                                                                <GradientStop Offset="0.5" Color="LightYellow" />
-                                                                <GradientStop Offset="1.0" Color="LightYellow" />
-                                                            </LinearGradientBrush>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding TrangThai}" Value="Banking Nhã + Tiền mặt">
-                                                    <Setter Property="Background">
-                                                        <Setter.Value>
-                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                <GradientStop Offset="0.0" Color="LightGreen" />
-                                                                <GradientStop Offset="0.5" Color="LightGreen" />
-                                                                <GradientStop Offset="0.5" Color="Gold" />
-                                                                <GradientStop Offset="1.0" Color="Gold" />
-                                                            </LinearGradientBrush>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding TrangThai}" Value="Thu một phần">
-                                                    <Setter Property="Background" Value="PaleTurquoise" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding TrangThai}" Value="Nợ một phần">
-                                                    <Setter Property="Background" Value="LightCoral" />
-                                                    <Setter Property="Foreground" Value="White" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding TrangThai}" Value="Ghi nợ">
-                                                    <Setter Property="Background" Value="IndianRed" />
-                                                    <Setter Property="Foreground" Value="White" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>-->
+                                <DataGridTextColumn
+                                    Width="*"
+                                    Binding="{Binding GhiChuShipper}"
+                                    ElementStyle="{StaticResource RightTextCellStyle}"
+                                    Header="Shipper" />
 
                             </DataGrid.Columns>
                         </DataGrid>
@@ -650,15 +596,27 @@
                         <Grid
                             Grid.Row="1"
                             Grid.Column="2"
-                            Background="WhiteSmoke">
+                            Background="{Binding ElementName=ThongTinThanhToanGroupBox, Path=Background}">
+
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="auto" />
                                 <RowDefinition />
                                 <RowDefinition Height="auto" />
                                 <RowDefinition Height="auto" />
                             </Grid.RowDefinitions>
+                            <TextBlock
+                                x:Name="TenHoaDonTextBlock"
+                                Padding="8"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontSize="{StaticResource FontSizeLarge}"
+                                FontWeight="Bold"
+                                Foreground="{Binding ElementName=ThongTinThanhToanGroupBox, Path=Foreground}"
+                                TextAlignment="Center" />
                             <ListBox
                                 x:Name="ChiTietHoaDonListBox"
-                                Background="WhiteSmoke"
+                                Grid.Row="1"
+                                Background="Transparent"
                                 BorderThickness="0"
                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -692,7 +650,7 @@
                                                 BorderBrush="LightGray"
                                                 BorderThickness="0,1,1,1"
                                                 CornerRadius="0,4,4,0">
-                                                <Grid>
+                                                <Grid VerticalAlignment="Center">
                                                     <StackPanel>
                                                         <!--  Ngày giờ  -->
                                                         <TextBlock
@@ -735,9 +693,16 @@
                                                                     </Style>
                                                                 </TextBlock.Style>
                                                             </TextBlock>
+                                                            <TextBlock
+                                                                Margin="4,0,0,0"
+                                                                HorizontalAlignment="Right"
+                                                                VerticalAlignment="Center"
+                                                                FontWeight="Bold"
+                                                                Foreground="DarkRed"
+                                                                Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
+
                                                         </StackPanel>
-                                                        <Grid
-                                                            Margin="0,2,0,2"
+                                                        <!--<Grid
                                                             Grid.IsSharedSizeScope="True"
                                                             IsEnabled="False"
                                                             IsHitTestVisible="False">
@@ -746,41 +711,27 @@
                                                                 <ColumnDefinition Width="auto" SharedSizeGroup="ColGia" />
                                                                 <ColumnDefinition Width="auto" SharedSizeGroup="ColTT" />
                                                             </Grid.ColumnDefinitions>
-                                                            <!--  Số lượng kèm nút +/-  -->
                                                             <StackPanel
                                                                 Grid.Column="0"
                                                                 HorizontalAlignment="Center"
                                                                 Orientation="Horizontal">
-                                                                <!--  Số lượng  -->
                                                                 <ctrl:NumericUpDown Grid.Column="0" Value="{Binding SoLuong, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                                             </StackPanel>
-                                                            <!--  Đơn giá  -->
                                                             <ctrl:MoneyTextBox
                                                                 Grid.Column="1"
                                                                 HorizontalContentAlignment="Right"
                                                                 VerticalContentAlignment="Center"
                                                                 BorderBrush="Transparent"
                                                                 Value="{Binding DonGia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
-                                                            <!--  Thành tiền  -->
-                                                            <TextBlock
-                                                                Grid.Column="2"
-                                                                HorizontalAlignment="Right"
-                                                                VerticalAlignment="Center"
-                                                                FontWeight="Bold"
-                                                                Foreground="DarkRed"
-                                                                Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
-                                                        </Grid>
+                                                        </Grid>-->
 
                                                         <!--  Topping  -->
                                                         <TextBlock
-                                                            Margin="0,0,0,2"
                                                             FontSize="{StaticResource FontSizeSmall}"
                                                             Foreground="DarkGreen"
                                                             Text="{Binding ToppingText}"
                                                             TextWrapping="Wrap"
                                                             Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-
                                                         <!--  Ghi chú  -->
                                                         <TextBox
                                                             AcceptsReturn="True"
@@ -820,44 +771,42 @@
                                 </ListBox.ItemTemplate>
 
                             </ListBox>
-                            <Border
-                                Grid.Row="2"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Stretch"
-                                Panel.ZIndex="1"
-                                Background="#99ffffff">
-                                <!--  xanh đậm viền  -->
-
-                                <TextBlock
-                                    x:Name="TongSoSanPhamTextBlock"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    FontSize="{StaticResource FontSizeXXX}"
-                                    FontWeight="Bold"
-                                    Foreground="Green"
-                                    TextAlignment="Center" />
-                            </Border>
                             <TextBox
                                 x:Name="SearchChiTietHoaDonTextBox"
-                                Grid.Row="1"
+                                Grid.Row="2"
                                 TextChanged="SearchChiTietHoaDonTextBox_TextChanged"
                                 Visibility="Collapsed" />
                             <GroupBox
                                 Name="ThongTinThanhToanGroupBox"
-                                Grid.Row="2"
+                                Grid.Row="3"
                                 BorderThickness="0"
-                                FontSize="{StaticResource FontSizeLarge}"
                                 Foreground="Black">
 
-                                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                    <TextBlock
-                                        x:Name="ThongTinThanhToanTextBlock"
-                                        Padding="8"
-                                        FontSize="{StaticResource FontSizeLarge}"
-                                        FontWeight="Medium"
-                                        TextWrapping="Wrap" />
+                                <ScrollViewer
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Bottom"
+                                    VerticalScrollBarVisibility="Auto">
+                                    <StackPanel x:Name="ThongTinThanhToanPanel" />
                                 </ScrollViewer>
                             </GroupBox>
+                            <Border
+                                Grid.Row="2"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Panel.ZIndex="1"
+                                Background="Transparent">
+                                <!--  xanh đậm viền  -->
+                                <TextBlock
+                                    x:Name="TongSoSanPhamTextBlock"
+                                    Padding="8"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontSize="{StaticResource FontSizeXXX}"
+                                    FontWeight="Bold"
+                                    Foreground="{Binding ElementName=TenHoaDonTextBlock, Path=Foreground}"
+                                    TextAlignment="Center" />
+                            </Border>
+
                         </Grid>
 
                     </Grid>

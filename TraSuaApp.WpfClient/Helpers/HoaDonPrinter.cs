@@ -197,6 +197,8 @@ namespace TraSuaApp.WpfClient.Helpers
             sb.AppendLine(leftPart + new string(' ', space) + rightPart);
         }
 
+
+
         private static void AddCenterText(StringBuilder sb, string text, bool bold = false, int width = 32)
         {
             int space = (width - text.Length) / 2;

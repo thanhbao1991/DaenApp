@@ -55,7 +55,7 @@ public static class AppProviders
         }
         catch (Exception ex)
         {
-            NotiHelper.ShowError($"❌ Không thể kết nối Sever Đồng Bộ: {ex.Message}");
+            //NotiHelper.ShowError($"❌ Không thể kết nối Sever Đồng Bộ: {ex.Message}");
         }
 
         CurrentConnectionId = await signalR.GetConnectionId();
@@ -64,12 +64,12 @@ public static class AppProviders
         // 🟟 handle mất kết nối / kết nối lại
         signalR.OnDisconnected(() =>
         {
-            NotiHelper.ShowError("⚠️ Mất kết nối Sever Đồng Bộ. Dữ liệu sẽ reload định kỳ 5 phút.");
+            // NotiHelper.ShowError("⚠️ Mất kết nối Sever Đồng Bộ. Dữ liệu sẽ reload định kỳ 5 phút.");
         });
 
         signalR.OnReconnected(() =>
         {
-            NotiHelper.Show("✅ Đã kết nối lại Sever Đồng Bộ.");
+            // NotiHelper.Show("✅ Đã kết nối lại Sever Đồng Bộ.");
         });
 
         KhachHangs = new KhachHangDataProvider(signalR);

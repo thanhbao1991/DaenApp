@@ -128,10 +128,11 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public string TrangThai { get; set; } = null!;
 
     public string? DiaChiText { get; set; }
-    public string? GhiChuShipper { get; set; }
     public string? SoDienThoaiText { get; set; }
     public string? TenKhachHangText { get; set; }
     public string? GhiChu { get; set; }
+    public string? QuickOrder { get; set; }
+    public string? GhiChuShipper { get; set; }
 
     public decimal TongTien { get; set; }
     public decimal GiamGia { get; set; }
@@ -181,6 +182,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
         SoDienThoaiText = other.SoDienThoaiText;
         TenKhachHangText = other.TenKhachHangText;
         GhiChu = other.GhiChu;
+        GhiChuShipper = other.GhiChuShipper;
 
         TongTien = other.TongTien;
         GiamGia = other.GiamGia;

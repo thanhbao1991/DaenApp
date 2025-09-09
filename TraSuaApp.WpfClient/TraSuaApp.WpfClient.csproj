@@ -1,25 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <Compile Remove="index.cs" />
     <Compile Remove="MainWindow.xaml.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="Images\viettin007.jpg" />
-    <None Remove="Resources\chuyen-khoan.wav" />
-    <None Remove="Resources\ghi-no.wav" />
+    <None Remove="Resources\chuyen-khoan-sau.mp3" />
+    <None Remove="Resources\chuyen-khoan.mp3" />
+    <None Remove="Resources\ghi-no.mp3" />
     <None Remove="Resources\ring3.wav" />
-    <None Remove="Resources\tien-mat.wav" />
+    <None Remove="Resources\tien-mat.mp3" />
   </ItemGroup>
 
   <ItemGroup>
     <Page Remove="MainWindow.xaml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Resources\ghi-no.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -43,15 +39,25 @@
     <Resource Include="Images\viettin007.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
-    <Content Include="Resources\chuyen-khoan.wav">
+    <Content Include="Resources\chuyen-khoan-sau.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\chuyen-khoan.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\ghi-no.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\ring3.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\tien-mat.wav">
+    <Content Include="Resources\tien-mat.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="index.cs" />
   </ItemGroup>
 
   <ItemGroup>
