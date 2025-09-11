@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Infrastructure.Data;
+using TraSuaApp.Infrastructure;
 using TraSuaApp.Infrastructure.Services; // 🟟 thêm
 using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Services;
 
 namespace TraSuaApp.Api.Controllers
 {
@@ -59,43 +58,6 @@ namespace TraSuaApp.Api.Controllers
         }
 
         [HttpGet("dubao")]
-        public async Task<ActionResult<DashboardDto>> GetDuBaoToday()
-        {
-            var recentStart = DateTime.Today.AddMonths(-2);
-            var recentEnd = DateTime.Today;
-
-            var detailedHeatmap = await _db.HoaDons
-                .Where(x => x.Ngay >= recentStart && x.Ngay < recentEnd && !x.IsDeleted)
-                .GroupBy(x => new
-                {
-                    Date = x.NgayGio.Date,
-                    Hour = x.NgayGio.Hour,
-                    Minute = (x.NgayGio.Minute / 10) * 10
-                })
-                .Select(g => new TimeStat
-                {
-                    Date = g.Key.Date,
-                    Hour = g.Key.Hour,
-                    Minute = g.Key.Minute,
-                    SoDon = g.Count(),
-                    DoanhThu = g.Sum(x => x.ThanhTien),
-                    Thu = "" // Tạm để trống, lát xử lý tiếp ở ngoài
-                })
-                .ToListAsync();
-
-            // Sau khi lấy dữ liệu gọn, mới tính "Thứ" ở ngoài
-            foreach (var item in detailedHeatmap)
-            {
-                item.Thu = GetThuVietnamese(item.Date.DayOfWeek);
-            }
-
-            // Gọi GPT
-            var prediction = await GeminiService.DuDoanGioDongKhachAsync(detailedHeatmap);
-            return new DashboardDto
-            {
-                PredictedPeak = prediction
-            };
-        }
 
         [HttpGet("lichsu-khachhang/{khachHangId}")]
         public async Task<ActionResult<DashboardDto>> GetLichSuKhachHang(Guid khachHangId)

@@ -4,6 +4,20 @@ using System.Windows.Data;
 
 namespace TraSuaApp.WpfClient.Converters
 {
+    [ValueConversion(typeof(bool), typeof(Visibility))]
+    public class InverseBoolToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool b && !b) return Visibility.Visible; // false -> hiện
+            return Visibility.Collapsed; // true -> ẩn
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
     public class BoolToHiddenConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

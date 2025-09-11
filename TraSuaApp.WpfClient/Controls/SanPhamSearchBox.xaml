@@ -40,7 +40,7 @@
                 BorderThickness="1">
                 <ListBox
                     x:Name="ListBoxResults"
-                    MinWidth="300"
+                    MinWidth="350"
                     BorderBrush="Transparent"
                     MouseLeftButtonUp="ListBoxResults_MouseLeftButtonUp"
                     PreviewKeyDown="SearchBox_And_ListBox_PreviewKeyDown">
@@ -48,23 +48,12 @@
                     <!--  Mỗi sản phẩm 1 dòng  -->
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <Button
-                                    Name="UpButton"
-                                    Click="MoveButton_Click"
-                                    Content="▲"
-                                    Style="{StaticResource ThemButtonStyle}"
-                                    Tag="{Binding BienThes[0].SanPhamId}" />
-                                <Button
-                                    Click="MoveButton_Click"
-                                    Content="▼"
-                                    Style="{StaticResource XoaButtonStyle}"
-                                    Tag="{Binding BienThes[0].SanPhamId}" />
+                            <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
 
                                 <!--  Biến thể đầu tiên  -->
                                 <Button
-                                    Width="200"
                                     Height="32"
+                                    MinWidth="250"
                                     HorizontalContentAlignment="Left"
                                     Background="Transparent"
                                     BorderBrush="Transparent"
@@ -115,6 +104,19 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                                <Button
+                                    Name="UpButton"
+                                    Margin="8,0,0,0"
+                                    Click="MoveButton_Click"
+                                    Content="▲"
+                                    Style="{StaticResource ThemButtonStyle}"
+                                    Tag="{Binding BienThes[0].SanPhamId}" />
+                                <Button
+                                    Click="MoveButton_Click"
+                                    Content="▼"
+                                    Style="{StaticResource XoaButtonStyle}"
+                                    Tag="{Binding BienThes[0].SanPhamId}" />
+
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

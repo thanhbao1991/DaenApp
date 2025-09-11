@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Infrastructure.Data;
 
 namespace TraSuaApp.Infrastructure.Services;
 

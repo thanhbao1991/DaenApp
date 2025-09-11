@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
-using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
@@ -603,9 +602,45 @@ public class HoaDonService : IHoaDonService
                 .Include(bt => bt.SanPham)
                 .FirstOrDefaultAsync(bt => bt.Id == ct.SanPhamIdBienThe);
 
-            //    decimal donGia = bienThe?.GiaBan ?? ct.DonGia;
-            decimal donGia = ct.DonGia > 0 ? ct.DonGia : (bienThe?.GiaBan ?? 0);
+            //decimal donGia = ct.DonGia > 0 ? ct.DonGia : (bienThe?.GiaBan ?? 0);
+            //decimal thanhTienSP = donGia * ct.SoLuong;
+
+            // Trong AddChiTietAsync, ngay sau khi có bienThe và donGia
+            decimal giaMacDinh = bienThe?.GiaBan ?? 0;
+            decimal donGia = ct.DonGia > 0 ? ct.DonGia : giaMacDinh;
             decimal thanhTienSP = donGia * ct.SoLuong;
+
+            // 🟟 Bổ sung: Nếu khách có giá riêng khác với mặc định → lưu/ cập nhật vào bảng KhachHangGiaBan
+            if (dto.KhachHangId != null && bienThe != null && donGia != giaMacDinh)
+            {
+                var existingCustom = await _context.KhachHangGiaBans
+                    .FirstOrDefaultAsync(x =>
+                        x.KhachHangId == dto.KhachHangId.Value &&
+                        x.SanPhamBienTheId == bienThe.Id &&
+                        !x.IsDeleted);
+
+                if (existingCustom == null)
+                {
+                    var newCustom = new KhachHangGiaBan
+                    {
+                        Id = Guid.NewGuid(),
+                        KhachHangId = dto.KhachHangId.Value,
+                        SanPhamBienTheId = bienThe.Id,
+                        GiaBan = donGia,
+                        CreatedAt = now,
+                        LastModified = now,
+                        IsDeleted = false
+                    };
+                    _context.KhachHangGiaBans.Add(newCustom);
+                }
+                else if (existingCustom.GiaBan != donGia)
+                {
+                    existingCustom.GiaBan = donGia;
+                    existingCustom.LastModified = now;
+                }
+            }
+
+
 
             decimal tienToppingSP = 0;
             Guid chiTietId = Guid.NewGuid();
@@ -994,7 +1029,10 @@ public class HoaDonService : IHoaDonService
 
         if (entity == null)
             return Result<HoaDonDto>.Failure("Không tìm thấy hoá đơn.");
-
+        if (!string.IsNullOrEmpty(entity.GhiChuShipper))
+        {
+            return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
+        }
         var now = DateTime.Now;
         var before = ToDto(entity);
 
@@ -1194,7 +1232,10 @@ public class HoaDonService : IHoaDonService
 
         if (entity == null)
             return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
-
+        if (!string.IsNullOrEmpty(entity.GhiChuShipper))
+        {
+            return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
+        }
         var now = DateTime.Now;
         var before = ToDto(entity);
 
@@ -1248,7 +1289,10 @@ public class HoaDonService : IHoaDonService
 
         if (entity == null)
             return Result<HoaDonDto>.Failure("Không tìm thấy hoá đơn.");
-
+        if (!string.IsNullOrEmpty(entity.GhiChuShipper))
+        {
+            return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
+        }
         var now = DateTime.Now;
         var before = ToDto(entity);
 
@@ -1321,7 +1365,10 @@ public class HoaDonService : IHoaDonService
 
         if (entity == null)
             return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
-
+        if (!string.IsNullOrEmpty(entity.GhiChuShipper))
+        {
+            return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
+        }
         var now = DateTime.Now;
         var before = ToDto(entity);
 

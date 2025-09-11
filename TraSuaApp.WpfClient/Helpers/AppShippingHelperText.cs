@@ -126,6 +126,7 @@ public class AppShippingHelperText
         foreach (var item in itemElements)
         {
             string tenSP = item.FindElement(By.CssSelector("div.product-name > span.name")).Text.Trim();
+
             string qtyText = item.FindElement(By.CssSelector("div.product-order > span.quantity-badge"))
                                  .Text.Replace("x", "").Trim();
             int soLuong = int.TryParse(qtyText, out int qty) ? qty : 1;
@@ -136,9 +137,13 @@ public class AppShippingHelperText
 
             // Option (biến thể + topping)
             var optionsDiv = item.FindElements(By.CssSelector("div.product-name > div > div"));
-            string? tenBienThe = optionsDiv.FirstOrDefault()?.Text
-                .Replace("x 1", "", StringComparison.OrdinalIgnoreCase)
-                .Trim();
+            string? tenBienThe = optionsDiv.FirstOrDefault()?.Text;
+            if (!string.IsNullOrEmpty(tenBienThe))
+            {
+                tenBienThe = TextSearchHelper.NormalizeText(tenBienThe).ToLower()
+                    .Replace("x 1", "", StringComparison.OrdinalIgnoreCase)
+                    .Trim();
+            }
 
             Guid bienTheId = MapSanPhamBienTheId(tenSP, tenBienThe, donGia);
             if (bienTheId != Guid.Empty)
@@ -155,7 +160,7 @@ public class AppShippingHelperText
                     SoLuong = soLuong,
                     ToppingDtos = optionsDiv.Skip(1).Select(opt =>
                     {
-                        string name = opt.Text.Trim();
+                        string name = TextSearchHelper.NormalizeText(opt.Text).ToLower();
                         return new ToppingDto
                         {
                             Id = MapToppingId(name),
@@ -223,11 +228,11 @@ public class AppShippingHelperText
         File.WriteAllText(_cookieFile, JsonSerializer.Serialize(cookies));
     }
 
-    // --- Mapping helper ---
     private Guid MapSanPhamBienTheId(string tenSanPham, string? tenBienThe, decimal donGiaWeb)
     {
         var sp = _sanPhamList.FirstOrDefault(x =>
-            TextSearchHelper.NormalizeText(x.Ten) == TextSearchHelper.NormalizeText(tenSanPham));
+            TextSearchHelper.NormalizeText(x.Ten).ToLower() ==
+            TextSearchHelper.NormalizeText(tenSanPham).ToLower());
 
         if (sp == null)
         {
@@ -237,37 +242,31 @@ public class AppShippingHelperText
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning
             );
-            DiscordService.SendAsync(TraSuaApp.Shared.Enums.DiscordEventType.Admin, $"{tenSanPham} AppShippingError");
+            DiscordService.SendAsync(TraSuaApp.Shared.Enums.DiscordEventType.Admin,
+                $"{tenSanPham} AppShippingError");
             return Guid.Empty;
         }
 
-        // Normalize biến thể
         if (!string.IsNullOrEmpty(tenBienThe))
-            tenBienThe = tenBienThe.Replace("x 1", "", StringComparison.OrdinalIgnoreCase).Trim();
+            tenBienThe = TextSearchHelper.NormalizeText(tenBienThe).ToLower()
+                .Replace("x 1", "", StringComparison.OrdinalIgnoreCase)
+                .Trim();
 
-        // 1. Ưu tiên match tên biến thể
         var bienThe = _bienTheList.Where(b => b.SanPhamId == sp.Id)
-            .FirstOrDefault(b => string.Equals(b.TenBienThe?.Trim(), tenBienThe?.Trim(), StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(b =>
+                TextSearchHelper.NormalizeText(b.TenBienThe ?? "").ToLower() ==
+                (tenBienThe ?? "").ToLower());
 
-        // 2. Nếu không match tên → thử tìm biến thể trùng giá
         if (bienThe == null && donGiaWeb > 0)
         {
             bienThe = sp.BienThe.FirstOrDefault(b => b.GiaBan == donGiaWeb);
         }
 
-        // 3. Nếu vẫn không có → lấy biến thể mặc định
         if (bienThe == null)
         {
             bienThe = sp.BienThe.FirstOrDefault(b => b.MacDinh);
         }
 
-        // 4. Nếu vẫn không có → lấy biến thể đầu
-        if (bienThe == null)
-        {
-            bienThe = sp.BienThe.FirstOrDefault();
-        }
-
-        // 5. Nếu vẫn không có nữa → trả Guid.Empty
         if (bienThe == null)
         {
             MessageBox.Show(
@@ -281,17 +280,22 @@ public class AppShippingHelperText
 
         return bienThe.Id;
     }
+
     private Guid MapToppingId(string tenTopping)
     {
         var tp = _toppingList.FirstOrDefault(t =>
-            TextSearchHelper.NormalizeText(t.Ten) == TextSearchHelper.NormalizeText(tenTopping));
+            TextSearchHelper.NormalizeText(t.Ten).ToLower() ==
+            TextSearchHelper.NormalizeText(tenTopping).ToLower());
+
         return tp?.Id ?? Guid.Empty;
     }
 
     private decimal GetToppingGia(string tenTopping)
     {
         return _toppingList
-            .FirstOrDefault(t => TextSearchHelper.NormalizeText(t.Ten) == TextSearchHelper.NormalizeText(tenTopping))
+            .FirstOrDefault(t =>
+                TextSearchHelper.NormalizeText(t.Ten).ToLower() ==
+                TextSearchHelper.NormalizeText(tenTopping).ToLower())
             ?.Gia ?? 0;
     }
 }

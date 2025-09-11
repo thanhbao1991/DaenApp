@@ -6,6 +6,8 @@ namespace TraSuaApp.Shared.Dtos;
 
 public class HoaDonDto : DtoBase, INotifyPropertyChanged
 {
+
+
     [NotMapped]
     public string RowBackground
     {
@@ -131,7 +133,6 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public string? SoDienThoaiText { get; set; }
     public string? TenKhachHangText { get; set; }
     public string? GhiChu { get; set; }
-    public string? QuickOrder { get; set; }
     public string? GhiChuShipper { get; set; }
 
     public decimal TongTien { get; set; }

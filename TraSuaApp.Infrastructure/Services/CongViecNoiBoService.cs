@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
-using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
@@ -26,13 +25,14 @@ public class CongViecNoiBoService : ICongViecNoiBoService
             Ten = entity.Ten,
             DaHoanThanh = entity.DaHoanThanh,
             NgayGio = entity.NgayGio,
+            NgayCanhBao = entity.NgayCanhBao,   // ✅
+            XNgayCanhBao = entity.XNgayCanhBao, // ✅
             CreatedAt = entity.CreatedAt,
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
         };
     }
-
 
     public async Task<Result<CongViecNoiBoDto>> CreateAsync(CongViecNoiBoDto dto)
     {
@@ -51,11 +51,12 @@ public class CongViecNoiBoService : ICongViecNoiBoService
             Ten = dto.Ten.Trim(),
             DaHoanThanh = dto.DaHoanThanh,
             NgayGio = dto.NgayGio,
+            NgayCanhBao = dto.NgayCanhBao,     // ✅
+            XNgayCanhBao = dto.XNgayCanhBao,   // ✅
             CreatedAt = DateTime.Now,
             LastModified = DateTime.Now,
             IsDeleted = false,
         };
-
 
         _context.CongViecNoiBos.Add(entity);
         await _context.SaveChangesAsync();
@@ -68,7 +69,6 @@ public class CongViecNoiBoService : ICongViecNoiBoService
 
     public async Task<Result<CongViecNoiBoDto>> UpdateAsync(Guid id, CongViecNoiBoDto dto)
     {
-
         bool daTonTai = _context.CongViecNoiBos
             .Any(x => x.Id != dto.Id &&
             x.Ten.ToLower() == dto.Ten.ToLower());
@@ -93,6 +93,8 @@ public class CongViecNoiBoService : ICongViecNoiBoService
         entity.Ten = dto.Ten.Trim();
         entity.DaHoanThanh = dto.DaHoanThanh;
         entity.NgayGio = dto.NgayGio;
+        entity.NgayCanhBao = dto.NgayCanhBao;   // ✅
+        entity.XNgayCanhBao = dto.XNgayCanhBao; // ✅
         entity.LastModified = DateTime.Now;
 
         await _context.SaveChangesAsync();
@@ -159,6 +161,8 @@ public class CongViecNoiBoService : ICongViecNoiBoService
                 Ten = x.Ten,
                 DaHoanThanh = x.DaHoanThanh,
                 NgayGio = x.NgayGio,
+                NgayCanhBao = x.NgayCanhBao,     // ✅
+                XNgayCanhBao = x.XNgayCanhBao,   // ✅
                 CreatedAt = x.CreatedAt,
                 LastModified = x.LastModified,
                 DeletedAt = x.DeletedAt,
@@ -166,6 +170,7 @@ public class CongViecNoiBoService : ICongViecNoiBoService
             })
             .ToListAsync();
     }
+
     public async Task<CongViecNoiBoDto?> GetByIdAsync(Guid id)
     {
         return await _context.CongViecNoiBos.AsNoTracking()
@@ -176,6 +181,8 @@ public class CongViecNoiBoService : ICongViecNoiBoService
                 Ten = x.Ten,
                 DaHoanThanh = x.DaHoanThanh,
                 NgayGio = x.NgayGio,
+                NgayCanhBao = x.NgayCanhBao,     // ✅
+                XNgayCanhBao = x.XNgayCanhBao,   // ✅
                 CreatedAt = x.CreatedAt,
                 LastModified = x.LastModified,
                 DeletedAt = x.DeletedAt,
@@ -183,6 +190,7 @@ public class CongViecNoiBoService : ICongViecNoiBoService
             })
             .FirstOrDefaultAsync();
     }
+
     public async Task<List<CongViecNoiBoDto>> GetUpdatedSince(DateTime lastSync)
     {
         return await _context.CongViecNoiBos.AsNoTracking()
@@ -194,6 +202,8 @@ public class CongViecNoiBoService : ICongViecNoiBoService
                 Ten = x.Ten,
                 DaHoanThanh = x.DaHoanThanh,
                 NgayGio = x.NgayGio,
+                NgayCanhBao = x.NgayCanhBao,     // ✅
+                XNgayCanhBao = x.XNgayCanhBao,   // ✅
                 CreatedAt = x.CreatedAt,
                 LastModified = x.LastModified,
                 DeletedAt = x.DeletedAt,
@@ -201,7 +211,4 @@ public class CongViecNoiBoService : ICongViecNoiBoService
             })
             .ToListAsync();
     }
-
-
-
 }

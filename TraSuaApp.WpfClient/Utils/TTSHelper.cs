@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Media;
 
@@ -16,10 +17,41 @@ public static class TTSHelper
         _player.MediaEnded += Player_MediaEnded;
         _player.MediaFailed += Player_MediaFailed;
     }
+    private static string NormalizeTenSanPham(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return input ?? string.Empty;
+
+        var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        { "Cf", "Cà Phê" },
+        { "Cafe", "Cà Phê" },
+        { "TCĐĐ", "Trân Châu Đường Đen" },
+        { "TCT", "Trân Châu Trắng" },
+        { "TS", "Trà Sữa" },
+        { "S/MV", "" },
+        { "Olong", "Ô Long" },
+    };
+
+        foreach (var kv in replacements)
+        {
+            // Thay thế theo dạng từ nguyên vẹn, không phân biệt hoa/thường
+            input = Regex.Replace(
+                input,
+                $@"\b{Regex.Escape(kv.Key)}\b",
+                kv.Value,
+                RegexOptions.IgnoreCase
+            );
+        }
+
+        return input;
+    }
+
 
     public static async Task DownloadAndPlayGoogleTTSAsync(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
+        text = NormalizeTenSanPham(text);
 
         string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Audio-Files");
         Directory.CreateDirectory(folder);

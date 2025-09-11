@@ -9,6 +9,7 @@
     <None Remove="Images\viettin007.jpg" />
     <None Remove="Resources\chuyen-khoan-sau.mp3" />
     <None Remove="Resources\chuyen-khoan.mp3" />
+    <None Remove="Resources\don-moi.mp3" />
     <None Remove="Resources\ghi-no.mp3" />
     <None Remove="Resources\ring3.wav" />
     <None Remove="Resources\tien-mat.mp3" />
@@ -43,6 +44,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\chuyen-khoan.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\don-moi.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\ghi-no.mp3">

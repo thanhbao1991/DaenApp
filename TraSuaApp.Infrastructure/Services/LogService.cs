@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.Shared.Mappings;

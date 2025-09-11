@@ -6,7 +6,6 @@ using TraSuaApp.Api.Hubs;
 using TraSuaApp.Api.Middleware;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Infrastructure;
-using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);

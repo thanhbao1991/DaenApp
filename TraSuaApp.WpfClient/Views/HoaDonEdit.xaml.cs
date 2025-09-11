@@ -62,12 +62,33 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     SanPhamIdBienThe = bienThe.Id,
                     TenSanPham = sanPham.Ten,
                     TenBienThe = bienThe.TenBienThe,
-                    DonGia = bienThe.GiaBan,
+                    //DonGia = bienThe.GiaBan,
                     SoLuong = 1,
                     Stt = 0,
                     BienTheList = _bienTheList.Where(x => x.SanPhamId == sanPham.Id).ToList(),
                     ToppingDtos = new List<ToppingDto>()
                 };
+                decimal donGia = bienThe.GiaBan;
+                if (Model.KhachHangId != null)
+                {
+                    var customGia = AppProviders.KhachHangGiaBans.Items
+                        .FirstOrDefault(x => x.KhachHangId == Model.KhachHangId.Value
+                                          && x.SanPhamBienTheId == bienThe.Id
+                                          && !x.IsDeleted);
+                    if (customGia != null)
+                    {
+                        donGia = customGia.GiaBan;
+
+                        // 🟟 Thông báo ngay khi thêm món
+                        MessageBox.Show(
+                            $"Đã áp dụng giá riêng cho món: {sanPham.Ten}",
+                            "Thông báo",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information
+                        );
+                    }
+                }
+                ct.DonGia = donGia;
                 ct.PropertyChanged += (s, e) =>
                 {
                     if (e.PropertyName == nameof(ChiTietHoaDonDto.SoLuong) ||
@@ -110,7 +131,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 var sdtList = kh.Phones?.ToList() ?? new();
                 DienThoaiComboBox.ItemsSource = sdtList;
                 DienThoaiComboBox.SelectedItem = sdtList.FirstOrDefault(x => x.IsDefault) ?? sdtList.LastOrDefault();
-
+                VoucherComboBox.IsEnabled = true;
 
                 try
                 {
@@ -155,11 +176,42 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     Debug.WriteLine("Lỗi tải món hay order nhất: " + ex.Message);
                 }
 
+                // 🟟 Cập nhật giá riêng theo khách hàng cho các món đã chọn
+                var dsMonCapNhat = new List<string>();
+
+                foreach (var ct in Model.ChiTietHoaDons)
+                {
+                    var customGia = AppProviders.KhachHangGiaBans.Items
+                        .FirstOrDefault(x => x.KhachHangId == kh.Id
+                                          && x.SanPhamBienTheId == ct.SanPhamIdBienThe
+                                          && !x.IsDeleted);
+                    if (customGia != null)
+                    {
+                        ct.DonGia = customGia.GiaBan;
+                        dsMonCapNhat.Add($"{ct.TenSanPham} ({ct.DonGia})");
+                    }
+                }
+
+                // Nếu có món được cập nhật → thông báo chi tiết
+                if (dsMonCapNhat.Any())
+                {
+                    string msg = "Đã cập nhật giá riêng cho các món:\n- "
+                               + string.Join("\n- ", dsMonCapNhat);
+
+                    MessageBox.Show(
+                        msg,
+                        "Thông báo",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information
+                    );
+                }
+
+                // Refresh lại UI và tổng tiền
+                ChiTietListBox.ItemsSource = null;
+                ChiTietListBox.ItemsSource = Model.ChiTietHoaDons;
+                CapNhatTongTien();
 
                 SanPhamSearchBox.SearchTextBox.Focus();
-
-
-
             };
             KhachHangSearchBox.KhachHangCleared += () =>
             {
@@ -185,50 +237,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 // ✅ Sửa hóa đơn
                 Model = dto;
 
-                if (!string.IsNullOrEmpty(Model.QuickOrder) && Model.QuickOrder.Trim().StartsWith("["))
-                {
-                    try
-                    {
-                        var items = System.Text.Json.JsonSerializer.Deserialize<List<QuickOrderDto>>(Model.QuickOrder);
-                        if (items != null)
-                        {
-                            foreach (var item in items)
-                            {
-                                var sp = _sanPhamList.FirstOrDefault(x =>
-                                    x.Ten.Equals(item.TenMon, StringComparison.OrdinalIgnoreCase));
-                                if (sp == null) continue;
-
-                                var bienThe = ChonBienTheFallback(sp, item.BienThe);
-                                if (bienThe == null) continue;
-
-                                Model.ChiTietHoaDons.Add(new ChiTietHoaDonDto
-                                {
-                                    Id = Guid.NewGuid(),
-                                    HoaDonId = Model.Id,
-                                    SanPhamIdBienThe = bienThe.Id,
-                                    TenSanPham = sp.Ten,
-                                    TenBienThe = bienThe.TenBienThe,
-                                    DonGia = bienThe.GiaBan,
-                                    SoLuong = item.SoLuong > 0 ? item.SoLuong : 1,
-                                    Stt = 0,
-                                    BienTheList = _bienTheList.Where(x => x.SanPhamId == sp.Id).ToList(),
-                                    ToppingDtos = new List<ToppingDto>(),
-                                    NoteText = (item.NoteText ?? string.Empty).Trim() // nếu QuickOrderDto chưa có NoteText thì bỏ dòng này
-                                });
-                            }
-                            // đánh lại STT
-                            int stt = 1;
-                            foreach (var c in Model.ChiTietHoaDons)
-                            {
-                                c.Stt = stt++;
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine("❌ Lỗi parse QuickOrder JSON: " + ex.Message);
-                    }
-                }
 
 
 
@@ -316,7 +324,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                             TenBanComboBox.SelectedItem = Model.TenBan;
                         }
                         break;
-                    case "MV":
+                    case "Mv":
                         MuaVeRadio.IsChecked = true;
                         break;
                     case "Ship":
@@ -407,7 +415,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 if (TaiChoRadio.IsChecked == true)
                     Model.PhanLoai = "Tại Chỗ";
                 else if (MuaVeRadio.IsChecked == true)
-                    Model.PhanLoai = "MV";
+                    Model.PhanLoai = "Mv";
                 else if (ShipRadio.IsChecked == true)
                     Model.PhanLoai = "Ship";
                 else if (AppRadio.IsChecked == true)
@@ -924,12 +932,28 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                             SanPhamIdBienThe = bienThe.Id,
                             TenSanPham = sanPham.Ten,
                             TenBienThe = bienThe.TenBienThe,
-                            DonGia = bienThe.GiaBan, // set khi tạo mới
+                            // DonGia = bienThe.GiaBan, // set khi tạo mới
                             SoLuong = soLuong,
                             BienTheList = _bienTheList.Where(bt => bt.SanPhamId == sanPham.Id).ToList(),
                             ToppingDtos = new List<ToppingDto>(),
                             NoteText = currentNote
                         };
+                        decimal donGia = bienThe.GiaBan;
+                        if (Model.KhachHangId != null)
+                        {
+                            var customGia = AppProviders.KhachHangGiaBans.Items
+                                .FirstOrDefault(x => x.KhachHangId == Model.KhachHangId.Value
+                                                  && x.SanPhamBienTheId == bienThe.Id
+                                                  && !x.IsDeleted);
+                            if (customGia != null)
+                            {
+                                donGia = customGia.GiaBan;
+                            }
+                        }
+                        existing.DonGia = donGia;
+
+
+
                         Model.ChiTietHoaDons.Add(existing);
                         CapNhatToppingChoSanPham();
                     }
@@ -1170,6 +1194,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             if (Model.DaNhanVoucher)
             {
                 MessageBox.Show("Khách hàng đã nhận voucher trong tháng này rồi.", "Thông báo");
+                VoucherComboBox.IsEnabled = false;
                 return;
             }
 

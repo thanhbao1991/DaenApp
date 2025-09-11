@@ -11,9 +11,6 @@ namespace TraSuaApp.WpfClient.Services
             _chatClient = new ChatClient(model, apiKey);
         }
 
-        /// <summary>
-        /// Gửi prompt đến GPT và trả về text trả lời
-        /// </summary>
         public async Task<string> AskAsync(string prompt, string systemPrompt = null)
         {
             var messages = new List<ChatMessage>();

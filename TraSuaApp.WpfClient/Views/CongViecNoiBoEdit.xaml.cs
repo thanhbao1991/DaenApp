@@ -30,6 +30,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
             {
                 Model = dto;
                 TenTextBox.Text = dto.Ten;
+                XNgayCanhBaoTextBox.Value = dto.XNgayCanhBao ?? 0;
             }
             else
             {
@@ -50,6 +51,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
             ErrorTextBlock.Text = "";
 
             Model.Ten = TenTextBox.Text.Trim();
+            Model.XNgayCanhBao = (int)XNgayCanhBaoTextBox.Value;
             Model.DaHoanThanh = false;
             Model.NgayGio = DateTime.Now;
             if (string.IsNullOrWhiteSpace(Model.Ten))

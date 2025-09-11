@@ -31,7 +31,11 @@ namespace TraSuaApp.WpfClient.Tools
                 .Where(f => !f.Contains(".g.i.cs"))
                 .Where(f => !f.Contains(".g.cs"))
                 .Where(f => !f.Contains("2025"))
-                .Where(f => f.EndsWith(".cs") || f.EndsWith(".xaml"))
+                .Where(f => f.EndsWith(".cs")
+                || f.EndsWith(".xaml")
+                || f.EndsWith(".html")
+
+                )
                 .Select(f => new FileInfo(f))
                 .ToList();
 
@@ -111,8 +115,7 @@ namespace TraSuaApp.WpfClient.Tools
                 return;
             }
 
-            string webhookUrl =
-        "https://discord.com/api/webhooks/1385632148387533011/MmRNpkKCoslZwNO2F9uJd_ZCjiaSvXMKeIpQlDP7gpDBwk1HZt1g2nonmEUiOVITaK0H";
+            string webhookUrl = "https://discord.com/api/webhooks/1415629639992217670/RUDcNljSV_thvgiX0eCftW3E7e6u_8pDtHhULWtbvHlZSwLI39NzayQul9XHFDMNbgFA";
             string combined = "";
             foreach (var file in selected)
             {

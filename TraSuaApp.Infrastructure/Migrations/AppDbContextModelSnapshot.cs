@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using TraSuaApp.Infrastructure.Data;
+using TraSuaApp.Infrastructure;
 
 #nullable disable
 
@@ -545,12 +545,18 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<DateTime?>("LastModified")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("NgayCanhBao")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("NgayGio")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Ten")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("XNgayCanhBao")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -760,6 +766,42 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasIndex(new[] { "KhachHangId" }, "IX_ShippingAddresses_KhachHangId");
 
                     b.ToTable("KhachHangAddresses");
+                });
+
+            modelBuilder.Entity("TraSuaApp.Domain.Entities.KhachHangGiaBan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("GiaBan")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("KhachHangId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("LastModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SanPhamBienTheId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KhachHangId");
+
+                    b.HasIndex("SanPhamBienTheId");
+
+                    b.ToTable("KhachHangGiaBans");
                 });
 
             modelBuilder.Entity("TraSuaApp.Domain.Entities.KhachHangPhone", b =>
@@ -1572,6 +1614,25 @@ namespace TraSuaApp.Infrastructure.Migrations
                         .HasConstraintName("FK_KhachHangAddresses_KhachHangs_IdKhachHang");
 
                     b.Navigation("KhachHang");
+                });
+
+            modelBuilder.Entity("TraSuaApp.Domain.Entities.KhachHangGiaBan", b =>
+                {
+                    b.HasOne("TraSuaApp.Domain.Entities.KhachHang", "KhachHang")
+                        .WithMany()
+                        .HasForeignKey("KhachHangId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TraSuaApp.Domain.Entities.SanPhamBienThe", "SanPhamBienThe")
+                        .WithMany()
+                        .HasForeignKey("SanPhamBienTheId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("KhachHang");
+
+                    b.Navigation("SanPhamBienThe");
                 });
 
             modelBuilder.Entity("TraSuaApp.Domain.Entities.KhachHangPhone", b =>

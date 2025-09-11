@@ -17,6 +17,7 @@ public static class AppProviders
     public static HoaDonDataProvider HoaDons { get; private set; } = null!;
 
     public static PhuongThucThanhToanDataProvider PhuongThucThanhToans { get; private set; } = null!;
+    public static KhachHangGiaBanDataProvider KhachHangGiaBans { get; private set; } = null!;
     public static CongViecNoiBoDataProvider CongViecNoiBos { get; private set; } = null!;
     public static ChiTietHoaDonNoDataProvider ChiTietHoaDonNos { get; private set; } = null!;
     public static ChiTietHoaDonThanhToanDataProvider ChiTietHoaDonThanhToans { get; private set; } = null!;
@@ -34,6 +35,8 @@ public static class AppProviders
         if (Toppings != null) await Toppings.ReloadAsync();
         if (KhachHangs != null) await KhachHangs.ReloadAsync();
         if (Vouchers != null) await Vouchers.ReloadAsync();
+        if (KhachHangGiaBans != null) await KhachHangGiaBans.ReloadAsync();
+        if (PhuongThucThanhToans != null) await PhuongThucThanhToans.ReloadAsync();
     }
 
     public static async Task<DashboardDto?> GetDashboardAsync()
@@ -80,6 +83,7 @@ public static class AppProviders
         Vouchers = new VoucherDataProvider(signalR);
         HoaDons = new HoaDonDataProvider(signalR);
         PhuongThucThanhToans = new PhuongThucThanhToanDataProvider(signalR);
+        KhachHangGiaBans = new KhachHangGiaBanDataProvider(signalR);
         CongViecNoiBos = new CongViecNoiBoDataProvider(signalR);
         ChiTietHoaDonNos = new ChiTietHoaDonNoDataProvider(signalR);
         ChiTietHoaDonThanhToans = new ChiTietHoaDonThanhToanDataProvider(signalR);
@@ -96,6 +100,7 @@ public static class AppProviders
            Vouchers.InitializeAsync(),
            HoaDons.InitializeAsync(),
            PhuongThucThanhToans.InitializeAsync(),
+           KhachHangGiaBans.InitializeAsync(),
            CongViecNoiBos.InitializeAsync(),
            ChiTietHoaDonNos.InitializeAsync(),
            ChiTietHoaDonThanhToans.InitializeAsync(),

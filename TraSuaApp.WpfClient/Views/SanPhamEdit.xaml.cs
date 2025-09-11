@@ -189,6 +189,11 @@ namespace TraSuaApp.WpfClient.SettingsViews
                 return;
             }
 
+            Model.Ten = Model.Ten
+               .Replace("TCDĐ", "TCĐĐ")
+               .Replace("TCĐD", "TCĐĐ")
+               .Replace("TCDD", "TCĐĐ")
+               .Trim();
             Model.DinhLuong = DinhLuongTextBox.Text.Trim();
             Model.VietTat = VietTatTextBox.Text.Trim();
             Model.NgungBan = NgungBanCheck.IsChecked == true;

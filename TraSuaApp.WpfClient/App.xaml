@@ -17,11 +17,12 @@
         <conveter:SkipFirstConverter x:Key="SkipFirstConverter" />
         <conveter:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter" />
         <conveter:NotNullToBoolConverter x:Key="NotNullToBoolConverter" />
-        <conveter:BoolToHiddenConverter x:Key="BoolToHiddenConverter" />
         <conveter:InverseBoolConverter x:Key="InverseBoolConverter" />
         <conveter:SoDienThoaiConverter x:Key="SoDienThoaiConverter" />
         <conveter:BoolToVisibilityConverterWithInvert x:Key="BoolToVisibilityConverterWithInvert" />
         <conveter:BoolToRowDetailsConverter x:Key="BoolToRowDetailsConverter" />
+        <conveter:BoolToHiddenConverter x:Key="BoolToHiddenConverter" />
+        <conveter:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" />
 
 
         <sys:Double x:Key="FontSizeSmall">12</sys:Double>

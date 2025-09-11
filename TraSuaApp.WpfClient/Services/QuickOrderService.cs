@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using OpenAI.Chat;
+using TraSuaApp.Shared.Dtos;
 
 namespace TraSuaApp.WpfClient.Services
 {
@@ -23,12 +24,6 @@ namespace TraSuaApp.WpfClient.Services
             _chatClient = new ChatClient("gpt-4o-mini", apiKey);
         }
 
-        /// <summary>
-        /// Build MENU gửi GPT: mỗi BIẾN THỂ là 1 dòng: "Tên món | Size | Giá-đồng"
-        /// Ví dụ:
-        /// Bạc xỉu kem trứng | Size L | 30000
-        /// Bạc xỉu kem trứng | Size chuẩn | 25000
-        /// </summary>
         private static string BuildMenuForGpt()
         {
             // lấy từ Dashboard/AppProviders như bạn đang dùng
@@ -55,9 +50,6 @@ namespace TraSuaApp.WpfClient.Services
             return string.Join("\n", lines);
         }
 
-        /// <summary>
-        /// Gọi GPT: giao nguyên văn text + MENU nội bộ. Không alias, không regex.
-        /// </summary>
         public async Task<List<QuickOrderDto>> ParseQuickOrderAsync(string input)
         {
             var menuText = _menuText.Value; // dùng cache
@@ -76,18 +68,18 @@ QUY TẮC MAP:
 - Nếu tên gần nhất khớp với 1 món trong MENU → vẫn chọn món đó (không được bỏ sót chỉ vì khác chính tả).
 - Mỗi dòng có số lượng → phải sinh đúng 1 item.
 - Nếu không suy ra được size mà dòng có giá → dùng giá để chọn size. Nếu vẫn không rõ → Size Chuẩn.
-
+- Cuối cùng, người dùng có thể nhập nhiều sản phẩm vào một dòng, có thể nhập lung tung, không có quy tắc gì, lúc đó hãy tận dụng trí thông minh của bạn để suy luận.
 ĐỊNH DẠNG JSON CHÍNH XÁC:
 [
-  {""TenMon"":""<Tên trong MENU>"", ""BienThe"":""Size Chuẩn|Size L"", ""SoLuong"":<int>, ""GhiChuNguoiDung"":""<chuỗi tự do>""}
+  {""TenMon"":""<Tên trong MENU>"", ""BienThe"":""Size Chuẩn|Size L"", ""SoLuong"":<int>, ""NoteText"":""<chuỗi tự do>""}
 ]
 
 VÍ DỤ BẮT BUỘC (làm theo đúng):
 Input line: ""1 bạc xỉu kem trứng 25k""
-→ {""TenMon"":""Bạc Xỉu Trứng Nướng"",""BienThe"":""Size Chuẩn"",""SoLuong"":1,""GhiChuNguoiDung"":""""}
+→ {""TenMon"":""Bạc Xỉu Trứng Nướng"",""BienThe"":""Size Chuẩn"",""SoLuong"":1,""NoteText"":""""}
 
 Input line: ""1 bạc xỉu kem trứng 30k""
-→ {""TenMon"":""Bạc Xỉu Trứng Nướng"",""BienThe"":""Size L"",""SoLuong"":1,""GhiChuNguoiDung"":""""}
+→ {""TenMon"":""Bạc Xỉu Trứng Nướng"",""BienThe"":""Size L"",""SoLuong"":1,""NoteText"":""""}
 ";
 
             string userPrompt = $@"
@@ -143,5 +135,79 @@ INPUT (nguyên văn):
 
             return list;
         }
+
+        // QuickOrderService.cs (thêm vào dưới ParseQuickOrderAsync)
+        private static SanPhamBienTheDto? ChonBienTheFallback(SanPhamDto sp, string? bienTheTen)
+        {
+            var match = sp.BienThe.FirstOrDefault(bt =>
+                bt.TenBienThe.Equals(bienTheTen ?? "", StringComparison.OrdinalIgnoreCase));
+            if (match != null) return match;
+
+            if (sp.BienThe.Count == 1) return sp.BienThe[0];
+
+            var macDinh = sp.BienThe.FirstOrDefault(bt => bt.MacDinh);
+            if (macDinh != null) return macDinh;
+
+            var sizeChuan = sp.BienThe.FirstOrDefault(bt =>
+                bt.TenBienThe.Equals("Size chuẩn", StringComparison.OrdinalIgnoreCase));
+            if (sizeChuan != null) return sizeChuan;
+
+            return sp.BienThe.FirstOrDefault();
+        }
+
+        public async Task<List<ChiTietHoaDonDto>> ParseToChiTietAsync(string input)
+        {
+            var items = await ParseQuickOrderAsync(input); // giữ nguyên logic gọi GPT
+            var sanPhams = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
+            var bienTheAll = sanPhams.SelectMany(x => x.BienThe).ToList();
+
+            var list = new List<ChiTietHoaDonDto>();
+            foreach (var it in items)
+            {
+                var sp = sanPhams.FirstOrDefault(x =>
+                    x.Ten.Equals(it.TenMon, StringComparison.OrdinalIgnoreCase));
+                if (sp == null) continue;
+
+                var bt = ChonBienTheFallback(sp, it.BienThe);
+                if (bt == null) continue;
+
+                list.Add(new ChiTietHoaDonDto
+                {
+                    Id = Guid.NewGuid(),
+                    SanPhamIdBienThe = bt.Id,
+                    TenSanPham = sp.Ten,
+                    TenBienThe = bt.TenBienThe,
+                    DonGia = bt.GiaBan,
+                    SoLuong = it.SoLuong > 0 ? it.SoLuong : 1,
+                    Stt = 0, // lát nữa đánh lại
+                    BienTheList = bienTheAll.Where(x => x.SanPhamId == sp.Id).ToList(),
+                    ToppingDtos = new List<ToppingDto>(),
+                    NoteText = it.NoteText ?? ""
+                });
+            }
+
+            // đánh STT
+            int stt = 1;
+            foreach (var ct in list) ct.Stt = stt++;
+
+            return list;
+        }
+
+        public async Task<HoaDonDto> BuildHoaDonFromQuickAsync(string input)
+        {
+            var chiTiets = await ParseToChiTietAsync(input);
+            return new HoaDonDto
+            {
+                Id = Guid.Empty,
+                Ngay = DateTime.Now.Date,
+                CreatedAt = DateTime.Now,
+                LastModified = DateTime.Now,
+                ChiTietHoaDons = chiTiets,
+                ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>(),
+                ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>()
+                // giữ các field khác mặc định; bạn có thể set PhanLoai/TenBan… ở chỗ gọi
+            };
+        }
+
     }
 }

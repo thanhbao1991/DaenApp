@@ -2,6 +2,7 @@
     x:Class="TraSuaApp.WpfClient.SettingsViews.CongViecNoiBoEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
     Style="{StaticResource EditWindowStyle}"
     WindowStartupLocation="CenterScreen">
 
@@ -26,6 +27,11 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBox x:Name="TenTextBox" Width="300" />
                     </StackPanel>
+                </GroupBox>
+
+                <!--  X ngày cảnh báo  -->
+                <GroupBox Margin="0,0,0,5" Header="Số ngày cảnh báo">
+                    <ctrl:NumericUpDown x:Name="XNgayCanhBaoTextBox" HorizontalAlignment="Left" />
                 </GroupBox>
             </StackPanel>
 

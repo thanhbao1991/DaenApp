@@ -7,6 +7,8 @@
     Height="330"
     AllowsTransparency="True"
     Background="Transparent"
+    FontSize="{StaticResource FontSizeNormal}"
+    FontWeight="Medium"
     KeyDown="Window_KeyDown"
     ResizeMode="NoResize"
     WindowStartupLocation="CenterScreen"

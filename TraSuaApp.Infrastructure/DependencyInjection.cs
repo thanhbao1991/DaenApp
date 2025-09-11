@@ -24,6 +24,7 @@ namespace TraSuaApp.Infrastructure
             services.AddScoped<IChiTietHoaDonThanhToanService, ChiTietHoaDonThanhToanService>();
             services.AddScoped<INguyenLieuService, NguyenLieuService>();
             services.AddScoped<IChiTieuHangNgayService, ChiTieuHangNgayService>();
+            services.AddScoped<IKhachHangGiaBanService, KhachHangGiaBanService>();
 
 
 

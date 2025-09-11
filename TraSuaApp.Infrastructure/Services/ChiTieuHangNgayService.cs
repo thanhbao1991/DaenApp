@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Application.Interfaces;
-using TraSuaApp.Infrastructure.Data;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
