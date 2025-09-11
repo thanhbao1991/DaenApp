@@ -11,6 +11,7 @@ namespace TraSuaApp.WpfClient.Helpers
         private static readonly HttpClient _httpClient = new HttpClient
         {
             BaseAddress = new Uri(Config.ApiBaseUrl)
+            //tonthoigian
         };
 
         public static string? ConnectionId { get; set; }
