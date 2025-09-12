@@ -1,0 +1,65 @@
+﻿html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+  font-family: "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-variant-numeric: tabular-nums;
+  /* Căn số đều */
+
+}
+
+.so-tien {
+  text-align: right;
+  font-family: system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.ngay-thang {
+  text-align: left;
+  font-family: system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+td.center-middle {
+  vertical-align: middle;
+  text-align: center;
+}
+
+.text-front {
+  position: relative;
+  z-index: 1;
+}
+
+button,
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+button,
+input[type="number"] {
+  font-size: 16px !important;
+  touch-action: manipulation;
+}

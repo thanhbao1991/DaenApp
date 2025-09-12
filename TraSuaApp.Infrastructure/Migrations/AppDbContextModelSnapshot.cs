@@ -718,6 +718,9 @@ namespace TraSuaApp.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("ThuTu")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex(new[] { "IsDeleted", "LastModified" }, "IX_KhachHangs_IsDeleted_LastModified")

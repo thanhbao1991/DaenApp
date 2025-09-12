@@ -56,6 +56,15 @@ public class KhachHangController : BaseApiController
             await NotifyClients("created", result.Data.Id);
         return result;
     }
+    [HttpPut("{id}/single")]
+    public async Task<ActionResult<Result<KhachHangDto>>> UpdateSingle(Guid id, KhachHangDto dto)
+    {
+        var result = await _service.UpdateSingleAsync(id, dto);
+        if (result.IsSuccess)
+            await NotifyClients("updated", id);
+
+        return result;
+    }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<Result<KhachHangDto>>> Update(Guid id, KhachHangDto dto)

@@ -1,0 +1,147 @@
+@model TraSuaAppWeb.Pages.DanhSachHoaDonModel
+
+<div class="modal-header">
+    <button type="button" class="btn btn-light" onclick="captureImage()">
+        Lưu Hình Ảnh &#x1F4F7;
+    </button>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<div id="imagePreview" style="margin-top: 10px;"></div>
+
+<div id="modalContent" class="timeline-container mt-4 p-3 border rounded bg-light" style="background:#f9f9f9">
+
+    @for (int i = 0; i < Model.HoaDonList.Count; i++)
+    {
+        var item = Model.HoaDonList[i];
+        string tien = "";
+        string time = "";
+
+        switch (Model.Flag)
+        {
+            case 0:
+                // tất cả bill nợ
+                time = item.NgayHoaDon.ToString("dd/MM");
+                tien = item.TienNo.ToString("N0");
+                break;
+            case 1:
+                // banking trong ngày
+                time = item.NgayHoaDon.ToString("HH:mm");
+                tien = item.TienBank.ToString("N0");
+                break;
+            case 2:
+                // nợ trong ngày
+                time = item.NgayHoaDon.ToString("HH:mm");
+                tien = item.TienNo.ToString("N0");
+                break;
+            case 3:
+                // trả nợ bank trong ngày
+                time = item.NgayHoaDon.ToString("dd/MM");
+                tien = item.TienBank.ToString("N0");
+                break;
+            case 4:
+                // trả nợ tiền trong ngày
+                time = item.NgayHoaDon.ToString("dd/MM");
+                tien = item.TienNo.ToString("N0");
+                break;
+            default:
+                // bill nợ khách hàng
+                time = item.NgayHoaDon.ToString("dd/MM");
+                tien = item.ConLai.ToString("N0");
+                break;
+        }
+
+
+        <div class="timeline-item d-flex mx-3" data-id="@item.IdHoaDon" onclick="chonHoaDon(this)">
+            <div class="timeline-time text-end pe-2 small text-muted">
+                <div>@time</div>
+                @* <div>@time</div> *@
+            </div>
+
+            <div class="timeline-line position-relative">
+                <div class="timeline-dot bg-white border border-primary"></div>
+            </div>
+
+            <div class="timeline-content d-flex justify-content-between align-items-center py-2">
+                <span class="text-muted">&#x1F9D1;&#x200D;&#x1F4BC;@item.ThongTinHoaDon</span>
+                <span class="fw-bold text-danger">@tien</span>
+            </div>
+        </div>
+    }
+
+    <div class="border-top mt-4 pt-2 d-flex justify-content-between fw-bold text-danger">
+        <span>Tổng</span>
+        <span>@Model.TongTien.ToString("N0") đ</span>
+    </div>
+</div>
+<div class="text-end mt-4">
+    <button class="btn btn-warning" onclick="capNhatBankingNhieu()">
+        &#x1F4B3; Banking các đơn đã chọn
+    </button>
+</div>
+<form method="post" style="display:none">
+    @Html.AntiForgeryToken()
+</form>
+<style>
+    .timeline-container {
+        font-size: 0.9rem;
+    }
+
+    .timeline-item {
+        align-items: stretch;
+        display: flex;
+    }
+
+    .timeline-time {
+        text-align: right;
+        padding-right: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        /* canh giữa theo chiều dọc */
+    }
+
+    .timeline-line {
+        width: 20px;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+    }
+
+    .timeline-line::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1px;
+        opacity: 0.5;
+        background-color: #0d6efd;
+        z-index: 1;
+    }
+
+
+    .timeline-dot {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #fff;
+        border: 2px solid #0d6efd;
+        z-index: 2;
+    }
+
+    .timeline-dot.selected {
+        background-color: #0d6efd !important;
+    }
+
+    .timeline-content {
+        flex: 1;
+        padding-left: 10px;
+    }
+</style>

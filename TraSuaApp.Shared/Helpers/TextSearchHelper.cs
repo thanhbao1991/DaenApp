@@ -107,5 +107,10 @@ namespace TraSuaApp.Shared.Helpers
                 .Where(x => !string.IsNullOrWhiteSpace(getText(x)) && IsMatch(keyword, getText(x)!))
                 .ToList();
         }
+
+        public static string? NormalizeText(object value)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

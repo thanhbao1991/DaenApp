@@ -12,9 +12,10 @@ public class TaiKhoanDto : DtoBase
     public string? TenHienThi { get; set; }
     public string? VaiTro { get; set; }
     public bool IsActive { get; set; }
+    public string TimKiem =>
+     $"{Ten?.ToLower() ?? ""} " +
+     TextSearchHelper.NormalizeText(Ten ?? "") + " " +
+     TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+     TextSearchHelper.GetShortName(Ten ?? "");
 
-    public override string TimKiem =>
-    TextSearchHelper.NormalizeText($"{TenDangNhap}") + " " +
-    TextSearchHelper.NormalizeText($"{TenHienThi}") + " " +
-    TextSearchHelper.GetShortName(TenHienThi ?? "");
 }

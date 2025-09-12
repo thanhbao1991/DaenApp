@@ -1,4 +1,6 @@
-﻿namespace TraSuaApp.Shared.Dtos;
+﻿using TraSuaApp.Shared.Helpers;
+
+namespace TraSuaApp.Shared.Dtos;
 
 public class ToppingDto : DtoBase
 {
@@ -8,6 +10,11 @@ public class ToppingDto : DtoBase
 
     public virtual List<Guid> NhomSanPhams { get; set; } = new List<Guid>();
     public int SoLuong { get; set; }
+    public string TimKiem =>
+       $"{Ten?.ToLower() ?? ""} " +
+       TextSearchHelper.NormalizeText(Ten ?? "") + " " +
+       TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+       TextSearchHelper.GetShortName(Ten ?? "");
 
 }
 

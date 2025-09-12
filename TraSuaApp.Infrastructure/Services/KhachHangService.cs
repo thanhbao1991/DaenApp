@@ -18,6 +18,33 @@ public class KhachHangService : IKhachHangService
     {
         _context = context;
     }
+    public async Task<Result<KhachHangDto>> UpdateSingleAsync(Guid id, KhachHangDto dto)
+    {
+        var entity = await _context.KhachHangs
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+        if (entity == null)
+            return Result<KhachHangDto>.Failure("Không tìm thấy sản phẩm.");
+
+        if (dto.LastModified < entity.LastModified)
+            return Result<KhachHangDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+
+        var now = DateTime.Now;
+        var before = ToDto(entity);
+
+        entity.ThuTu = dto.ThuTu;
+        entity.LastModified = dto.LastModified;
+
+        await _context.SaveChangesAsync();
+
+
+        var after = ToDto(entity);
+        return Result<KhachHangDto>.Success(after, "Cập nhật hóa đơn thành công.")
+                        .WithId(id)
+                        .WithBefore(before)
+                        .WithAfter(after);
+    }
+
 
     private string NormalizePhone(string input)
     {
@@ -45,7 +72,7 @@ public class KhachHangService : IKhachHangService
             LastModified = entity.LastModified,
             CreatedAt = entity.CreatedAt,
             DeletedAt = entity.DeletedAt,
-
+            ThuTu = entity.ThuTu,
             DuocNhanVoucher = entity.DuocNhanVoucher,
             Phones = entity.KhachHangPhones.Select(p => new KhachHangPhoneDto
             {
@@ -148,6 +175,7 @@ public class KhachHangService : IKhachHangService
             IsDeleted = false,
             LastModified = DateTime.Now,
             CreatedAt = DateTime.Now,
+            ThuTu = 0,
             DuocNhanVoucher = dto.DuocNhanVoucher,
             KhachHangPhones = dto.Phones.Select(p => new KhachHangPhone
             {
@@ -325,6 +353,7 @@ public class KhachHangService : IKhachHangService
                 LastModified = entity.LastModified,
                 CreatedAt = entity.CreatedAt,
                 DeletedAt = entity.DeletedAt,
+                ThuTu = entity.ThuTu,
                 DuocNhanVoucher = entity.DuocNhanVoucher,
                 Phones = entity.KhachHangPhones
                     .Select(p => new KhachHangPhoneDto
@@ -360,6 +389,7 @@ public class KhachHangService : IKhachHangService
                 LastModified = entity.LastModified,
                 CreatedAt = entity.CreatedAt,
                 DeletedAt = entity.DeletedAt,
+                ThuTu = entity.ThuTu,
                 DuocNhanVoucher = entity.DuocNhanVoucher,
                 Phones = entity.KhachHangPhones
                     .Select(p => new KhachHangPhoneDto

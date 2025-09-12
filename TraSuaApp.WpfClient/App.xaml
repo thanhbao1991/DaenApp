@@ -645,6 +645,7 @@
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
 
+
         <Style TargetType="DataGrid">
             <Setter Property="AlternatingRowBackground" Value="#f0f0f0" />
             <Setter Property="RowBackground" Value="#f6f6f6" />
@@ -663,7 +664,30 @@
             <Setter Property="SelectionMode" Value="Single" />
             <Setter Property="SelectionUnit" Value="FullRow" />
             <Setter Property="CellStyle" Value="{StaticResource MiddleCellStyle}" />
+
+            <!--  Virtualization  -->
+            <Setter Property="EnableRowVirtualization" Value="True" />
+            <Setter Property="EnableColumnVirtualization" Value="True" />
+            <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+            <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+            <Setter Property="ScrollViewer.IsDeferredScrollingEnabled" Value="True" />
+
         </Style>
+        <Style TargetType="{x:Type ListBox}">
+            <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+            <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+            <Setter Property="ScrollViewer.IsDeferredScrollingEnabled" Value="True" />
+            <Setter Property="ItemsPanel">
+                <Setter.Value>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </Application.Resources>
 </Application>
 

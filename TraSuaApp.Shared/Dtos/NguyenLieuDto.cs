@@ -1,4 +1,6 @@
-﻿namespace TraSuaApp.Shared.Dtos
+﻿using TraSuaApp.Shared.Helpers;
+
+namespace TraSuaApp.Shared.Dtos
 {
     public class NguyenLieuDto : DtoBase
     {
@@ -12,6 +14,11 @@
         public decimal GiaNhap { get; set; }
 
         public bool DangSuDung { get; set; }
+        public string TimKiem =>
+     $"{Ten?.ToLower() ?? ""} " +
+     TextSearchHelper.NormalizeText(Ten ?? "") + " " +
+     TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+     TextSearchHelper.GetShortName(Ten ?? "");
 
     }
 }

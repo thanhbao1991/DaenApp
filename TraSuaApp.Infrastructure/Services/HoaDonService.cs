@@ -681,7 +681,9 @@ public class HoaDonService : IHoaDonService
                 SoLuong = ct.SoLuong,
                 DonGia = donGia,
 
-                ThanhTien = thanhTienSP,
+                // ThanhTien = thanhTienSP,
+                ThanhTien = thanhTienSP + tienToppingSP,
+
                 TenSanPham = bienThe?.SanPham?.Ten ?? string.Empty,
                 TenBienThe = bienThe?.TenBienThe ?? string.Empty,
                 ToppingText = ct.ToppingText ?? "",

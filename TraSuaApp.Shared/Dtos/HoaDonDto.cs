@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using TraSuaApp.Domain.Entities;
+using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Shared.Dtos;
 
@@ -151,6 +152,12 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public DateTime? NgayHen { get; set; }
     public bool DaNhanVoucher { get; set; }
     public bool DaThuHoacGhiNo { get; set; }
+    public string TimKiem =>
+        $"{Ten?.ToLower() ?? ""} " +
+        TextSearchHelper.NormalizeText(Ten ?? "") + " " +
+        TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+        TextSearchHelper.GetShortName(Ten ?? "");
+
 
     // 🟟 Hàm đồng bộ dữ liệu khi nhận update từ SignalR
     public void CopyFrom(HoaDonDto other)

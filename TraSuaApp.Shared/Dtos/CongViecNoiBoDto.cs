@@ -1,4 +1,6 @@
-﻿namespace TraSuaApp.Shared.Dtos;
+﻿using TraSuaApp.Shared.Helpers;
+
+namespace TraSuaApp.Shared.Dtos;
 
 public class CongViecNoiBoDto : DtoBase
 {
@@ -16,4 +18,10 @@ public class CongViecNoiBoDto : DtoBase
     public DateTime? DeletedAt { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? LastModified { get; set; }
+    public string TimKiem =>
+       $"{Ten?.ToLower() ?? ""} " +
+       TextSearchHelper.NormalizeText(Ten ?? "") + " " +
+       TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+       TextSearchHelper.GetShortName(Ten ?? "");
+
 }

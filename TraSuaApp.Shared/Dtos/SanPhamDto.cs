@@ -37,22 +37,16 @@ public class SanPhamDto : DtoBase
         }
     }
 
-    [NotMapped]
-    public override string TimKiem
-    {
-        get
-        {
-            var ten = TextSearchHelper.NormalizeText(Ten ?? "");
-            var tenNhom = TextSearchHelper.NormalizeText(TenNhomSanPham ?? "");
-
-            // Ghép tên và tên nhóm lại, ngăn cách bằng khoảng trắng
-            return $"{ten} {tenNhom}".Trim();
-        }
-    }
 
     public virtual List<SanPhamBienTheDto> BienThe { get; set; } = new List<SanPhamBienTheDto>();
     public NhomSanPhamDto? NhomSanPham { get; set; }
     public virtual List<SanPhamBienTheDto> SanPhamBienThes { get; set; } = new List<SanPhamBienTheDto>();
+    public string TimKiem =>
+        $"{Ten?.ToLower() ?? ""} " +
+        TextSearchHelper.NormalizeText(Ten ?? "") + " " +
+        TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+        TextSearchHelper.GetShortName(Ten ?? "");
+
 }
 
 

@@ -1,0 +1,282 @@
+﻿@page
+@model TraSuaAppWeb.Pages.DoanhThuNgayModel
+@{
+    ViewData["Title"] = "Doanh Thu Ngày";
+    var ngay = Model.Ngay;
+    var thang = Model.Thang;
+    var nam = Model.Nam;
+
+    var currentDate = new DateTime(nam, thang, ngay);
+    var ngayTruoc = currentDate.AddDays(-1);
+    var ngaySau = currentDate.AddDays(1);
+}
+<div class="modal fade" id="hoaDonModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-body" id="hoaDonContent">
+                <p>Đang tải dữ liệu...</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="chiTietModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-body" id="chiTietContent">
+                <p>Đang tải dữ liệu...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a class="btn btn-outline-primary" href="?Ngay=@ngayTruoc.Day&Thang=@ngayTruoc.Month&Nam=@ngayTruoc.Year">← Ngày
+        trước</a>
+    <button type="button" class="btn btn-light" onclick="captureImage()">
+        @ngay/@thang/@nam &#x1F4F7;
+    </button>
+    <a class="btn btn-outline-primary" href="?Ngay=@ngaySau.Day&Thang=@ngaySau.Month&Nam=@ngaySau.Year">Ngày sau →</a>
+</div>
+
+<div id="imagePreview" style="margin-top: 10px;"></div>
+
+<div id="modalContent" class="container mt-3">
+    <div style="position: relative; width: 300px; height: 300px; margin: auto;">
+        <canvas id="doughnutChart" width="300" height="300"></canvas>
+        <div style="position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%);
+                    text-align: center; font-size: 13px; font-weight: bold; color: #333;
+                    pointer-events: none;">
+            <p>@String.Format("{0:N0}", Model.TongDoanhThu)☺</p>
+            <p>@String.Format("{0:N0}", Model.TongTienMat)&#x1F4B5;</p>
+        </div>
+    </div>
+
+    <table class="table table-sm table-bordered text-nowrap align-middle text-end mt-3">
+        <tr>
+            <td class="bg-light fw-bold text-start">Chi Tiêu</td>
+            <td class="so-tien">
+                <a class="text-decoration-none" href="javascript:void(0)" onclick="xemChiTiet(@Model.id_ChiTieu,0)">
+                    @string.Format("{0:N0}", Model.TongChiTieu)
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td class="bg-light fw-bold text-start">Banking</td>
+            <td class="so-tien">
+                <a class="text-decoration-none" href="javascript:void(0)"
+                    onclick="xemHoaDon(1,@Model.Ngay, @Model.Thang, @Model.Nam)">
+                    @string.Format("{0:N0}", Model.TongChuyenKhoan)
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td class="bg-light fw-bold text-start">Ghi Nợ</td>
+            <td class="so-tien">
+                <a class="text-decoration-none" href="javascript:void(0)"
+                    onclick="xemHoaDon(2,@Model.Ngay, @Model.Thang, @Model.Nam)">
+                    @string.Format("{0:N0}", Model.TongTienNo)
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td class="text-start">
+                <a class="text-decoration-none" href="javascript:void(0)"
+                    onclick="xemHoaDon(0,@Model.Ngay, @Model.Thang, @Model.Nam)">
+                    Tổng Nợ
+                </a>
+            </td>
+            <td class="so-tien">
+                <a class="text-decoration-none" href="javascript:void(0)" onclick="xemChiTiet(@Model.id_viec_lam, 0 
+                )">
+                    @string.Format("{0:N0} Việc Làm", Model.HoaDonList.FirstOrDefault(x => x.IdHoaDon ==
+                    @Model.id_viec_lam)?.TongTien)
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td class="text-start">
+                <a class="text-decoration-none" href="javascript:void(0)"
+                    onclick="xemHoaDon(3,@Model.Ngay, @Model.Thang, @Model.Nam)">
+                    Trả Nợ Banking
+                </a>
+            </td>
+            <td class="text-end">
+                <a class="text-decoration-none" href="javascript:void(0)"
+                    onclick="xemHoaDon(4,@Model.Ngay, @Model.Thang, @Model.Nam)">
+                    Trả Nợ Tiền Mặt
+                </a>
+            </td>
+        </tr>
+    </table>
+
+    @* === BẢNG ĐƠN HÀNG CHÍNH === *@
+    <table class="table table-sm table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Giờ</th>
+                <th>Bàn</th>
+                <th class="text-end">Tiền</th>
+            </tr>
+            <tr>
+                <td class="center-middle text-danger">
+                    <a asp-page="/TaoHoaDon">@Model.TongSoDon</a>
+                </td>
+                <td></td>
+                <td class="center-middle text-end text-danger" style="font-variant-numeric: tabular-nums;"
+                    data-bs-toggle="tooltip" data-bs-html="true"
+                    title="Thu: @String.Format("{0:N0}", Model.TongDaThu / 1000)<br>Còn: @String.Format("{0:N0}", Model.TongConLai / 1000)">
+                    @String.Format("{0:N0}", Model.TongDoanhThu / 1000)
+                </td>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.HoaDonList.Where(x => x.IdNhomHoaDon < 10))
+                        {
+                        string hienThiThoiGian = item.DaThanhToan
+                        ? item.NgayHoaDon.ToString("HH:mm")
+                        : $"{(int)((item.NgayShip ?? DateTime.Now) - item.NgayHoaDon).TotalMinutes}'";
+
+            string iconTrangThai = "";
+            bool isShip = item.IdNhomHoaDon == 3;
+            bool daDiShip = item.NgayShip != null;
+
+            if (!item.DaThanhToan)
+            {
+                if (item.BaoDon) iconTrangThai = "\uD83D\uDD14";
+                else if (item.IdNhomHoaDon == 1) iconTrangThai = "\uD83E\uDE91";
+                else if (item.IdNhomHoaDon == 2) iconTrangThai = "\uD83D\uDECD";
+                else if (item.IdNhomHoaDon == 4) iconTrangThai = "\uD83D\uDCF1";
+                else if (isShip && daDiShip) iconTrangThai = "\uD83D\uDEF5";
+                else if (isShip) iconTrangThai = "\uD83D\uDC69\u200D\uD83C\uDF73";
+            }
+
+            string hienThiText;
+
+            if (isShip)
+            {
+                if (daDiShip)
+                    hienThiText = item.ThongTinHoaDon;
+                else
+                    hienThiText = item.ThongTinHoaDon + " (" + item.DiaChiShip + ")";
+            }
+            else
+            {
+                hienThiText = item.ThongTinHoaDon;
+            }
+
+            var tien = GetThongTinTien(item);
+            <tr>
+                <td class="center-middle">@hienThiThoiGian</td>
+                <td>
+                    <span style="font-size: 1.2rem; margin-right: 4px;">@iconTrangThai</span>
+                    <a class="text-decoration-none" href="javascript:void(0)"
+                        onclick="xemHoaDon(@item.IdKhachHang, @Model.Ngay, @Model.Thang, @Model.Nam)">
+                        @hienThiText
+                    </a>
+                </td>
+                <td class="so-tien text-end" style="background-color:@tien.MauNen" data-bs-toggle="tooltip"
+                    data-bs-html="true" title="@tien.Tooltip">
+                    <a class="text-decoration-none" href="javascript:void(0)" onclick="xemChiTiet(@item.IdHoaDon,1)">
+                        @tien.SoTien
+                    </a>
+                </td>
+            </tr>
+                        }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script>
+        const ctx = document.getElementById('doughnutChart').getContext('2d');
+        const data = {
+            labels: ['Tại chỗ', 'Mua về', 'Ship', 'App'],
+            datasets: [{
+                data: [@Model.TaiCho, @Model.MuaVe, @Model.DiShip, @Model.AppShipping],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)'
+                ],
+                borderColor: ['white', 'white', 'white', 'white'],
+                borderWidth: 1
+            }]
+        };
+        const config = {
+            type: 'doughnut',
+            data: data,
+            options: {
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false },
+                    datalabels: {
+                        color: '#000',
+                        font: { weight: 'bold' },
+                        align: 'center',
+                        anchor: 'center',
+                        textAlign: 'center',
+                        lineHeight: 1.2,
+                        formatter: function (value, context) {
+                            const icons = ['\uD83E\uDE91', '\uD83D\uDECD', '\uD83D\uDEF5', '\uD83D\uDCF1'];
+                            return value.toLocaleString('vi-VN') + '\n' + icons[context.dataIndex];
+                        }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        };
+        new Chart(ctx, config);
+    </script>
+}
+
+@functions {
+    public class TienHienThi
+    {
+        public string MauNen { get; set; } = string.Empty;
+        public string SoTien { get; set; } = string.Empty;
+        public string Tooltip { get; set; } = string.Empty;
+    }
+
+    public TienHienThi GetThongTinTien(dynamic item)
+    {
+        var r = new TienHienThi();
+
+        if (item.TienBank > 0)
+        {
+            r.MauNen = "#ffffcc";
+
+            if (item.tien_mat > 0)
+            {
+                r.SoTien = item.DaThu.ToString("N0");
+                r.Tooltip = $"Tiền mặt: {item.tien_mat:N0} <br>Chuyển khoản: {item.TienBank:N0}";
+            }
+            else
+            {
+                r.SoTien = item.TienBank.ToString("N0");
+                r.Tooltip = "Đã thu bằng chuyển khoản";
+            }
+        }
+        else if (!item.DaThanhToan)
+        {
+            r.MauNen = "white";
+            r.SoTien = item.TongTien.ToString("N0");
+            r.Tooltip = "Chưa thanh toán";
+        }
+        else if (item.TienNo > 0)
+        {
+            r.MauNen = "#ffcccc";
+            r.SoTien = item.ConLai.ToString("N0");
+            r.Tooltip = "Khách còn nợ";
+        }
+        else
+        {
+            r.MauNen = "#ffffff";
+            r.SoTien = item.tien_mat.ToString("N0");
+            r.Tooltip = "Đã thu bằng tiền mặt";
+        }
+        return r;
+    }
+}

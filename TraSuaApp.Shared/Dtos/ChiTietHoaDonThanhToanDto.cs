@@ -8,21 +8,6 @@ public class ChiTietHoaDonThanhToanDto : DtoBase
 
     public bool IsToday => Ngay == DateTime.Today;
 
-    public override string TimKiem =>
-    string.Join(" ", new[] {
-        Ten,
-        TenPhuongThucThanhToan,
-        LoaiThanhToan,
-        GhiChu,
-
-        Ten?.Replace(" ", ""),
-        TenPhuongThucThanhToan?.Replace(" ", ""),
-        LoaiThanhToan?.Replace(" ", ""),
-        GhiChu?.Replace(" ", ""),
-    }
-    .Where(s => !string.IsNullOrEmpty(s))
-    .Select(s => TextSearchHelper.NormalizeText(s))
-    ) + " " + TextSearchHelper.GetShortName(Ten ?? "");
 
     public string LoaiThanhToan { get; set; }
     public Guid? ChiTietHoaDonNoId { get; set; }
@@ -39,4 +24,11 @@ public class ChiTietHoaDonThanhToanDto : DtoBase
     // Thông tin hiển thị
     public string TenPhuongThucThanhToan { get; set; } = null!;
     public string? GhiChu { get; set; }
+
+    public string TimKiem =>
+    $"{Ten?.ToLower() ?? ""} " +
+    TextSearchHelper.NormalizeText(Ten ?? "") + " " +
+    TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+    TextSearchHelper.GetShortName(Ten ?? "");
+
 }

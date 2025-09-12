@@ -1,0 +1,136 @@
+﻿@page
+@model TraSuaAppWeb.Pages.DoanhThuThangModel
+@{
+    ViewData["Title"] = "Doanh Thu Tháng";
+}
+@{
+    var thang = Model.Thang;
+    var nam = Model.Nam;
+
+    var thangTruoc = thang == 1 ? 12 : thang - 1;
+    var namTruoc = thang == 1 ? nam - 1 : nam;
+
+    var thangSau = thang == 12 ? 1 : thang + 1;
+    var namSau = thang == 12 ? nam + 1 : nam;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a class="btn btn-outline-primary" href="?Thang=@thangTruoc&Nam=@namTruoc">← Tháng trước</a>
+    <h5 class="mb-0">@thang/@nam</h5>
+    <a class="btn btn-outline-primary" href="?Thang=@thangSau&Nam=@namSau">Tháng sau →</a>
+</div>
+<canvas id="chartDoanhThu" height="100"></canvas>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const labels = [@Html.Raw(string.Join(",", Model.DoanhThuTheoNgay.Select(d => $"'{d.Ngay:dd/MM}'")))];
+        const doanhThuData = [@string.Join(",", Model.DoanhThuTheoNgay.Select(d => d.TongTien))];
+
+        new Chart(document.getElementById('chartDoanhThu').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Doanh Thu',
+                        data: doanhThuData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false // 🟟 Ẩn phần chú thích
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+}
+<div class="container mt-3">
+    <table class="table table-sm table-bordered text-nowrap align-middle text-end">
+        <tr>
+            <td class="bg-light fw-bold text-start">Lợi Nhuận</td>
+            <td style="font-variant-numeric: tabular-nums;">
+                @string.Format("{0:N0}", Model.TongDoanhThu - Model.TongChiTieu)
+            </td>
+            <td class="bg-light fw-bold text-start">Tại Chỗ</td>
+            <td style="font-variant-numeric: tabular-nums;">
+                @string.Format("{0:N0}", Model.DoanhThuTheoNgay.Sum(x => x.TaiCho))
+            </td>
+        </tr>
+        <tr>
+            <td class="bg-light fw-bold text-start">Banking</td>
+            <td style="font-variant-numeric: tabular-nums;">
+                @string.Format("{0:N0}", Model.TongChuyenKhoan)
+            </td>
+            <td class="bg-light fw-bold text-start">Mua Về</td>
+            <td style="font-variant-numeric: tabular-nums;">
+                @string.Format("{0:N0}", Model.DoanhThuTheoNgay.Sum(x => x.MuaVe))
+            </td>
+        </tr>
+        <tr>
+            <td class="bg-light fw-bold text-start">Tiền Mặt</td>
+            <td style="font-variant-numeric: tabular-nums;">
+                @string.Format("{0:N0}", Model.TongTienMat)
+            </td>
+            <td class="bg-light fw-bold text-start">Ship</td>
+            <td style="font-variant-numeric: tabular-nums;">
+                @string.Format("{0:N0}", Model.DoanhThuTheoNgay.Sum(x => x.DiShip))
+            </td>
+        </tr>
+        <tr>
+            <td class="bg-light fw-bold text-start">Ghi Nợ</td>
+            <td style="font-variant-numeric: tabular-nums;">
+                @string.Format("{0:N0}", Model.TongTienNo)
+            </td>
+            <td class="bg-light fw-bold text-start">App</td>
+            <td style="font-variant-numeric: tabular-nums;">
+                @string.Format("{0:N0}", Model.DoanhThuTheoNgay.Sum(x => x.AppShipping))
+            </td>
+        </tr>
+    </table>
+    <table class="table table-sm table-bordered">
+        <thead class="table-light">
+        <tr>
+            <th>Ngày</th>
+                <th>Số đơn</th>
+            <th class="text-end">Doanh thu</th>
+            <th class="text-end">Chi tiêu</th>
+        </tr>
+    </thead>
+        <tbody>
+                    <tr>
+            <td></td>
+                <td class="text-end " style="font-variant-numeric: tabular-nums;">
+                        @string.Format("{0:N0}", Model.TongSoDon)
+            </td>
+            <td class="text-end " style="font-variant-numeric: tabular-nums;">
+                        @string.Format("{0:N0}", Model.TongDoanhThu)
+            </td>
+            <td class="text-end " style="font-variant-numeric: tabular-nums;">
+                        @string.Format("{0:N0}", Model.TongChiTieu)
+            </td>
+        </tr>
+        @foreach (var item in Model.DoanhThuTheoNgay.OrderByDescending(x=>x.Ngay))
+        {
+            <tr>
+                    <td class="ngay-thang">
+        <a asp-page="/DoanhThuNgay" asp-route-ngay="@item.Ngay.ToString("yyyy-MM-dd")">
+                                @item.Ngay.ToString("dd/MM")
+        </a>
+    </td>
+                <td class="so-tien" >@item.SoDon</td>
+                    <td class="so-tien">@item.TongTien.ToString("N0")</td>
+                        <td class="so-tien">@item.ChiTieu.ToString("N0")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

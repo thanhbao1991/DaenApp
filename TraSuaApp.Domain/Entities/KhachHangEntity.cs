@@ -5,7 +5,7 @@ public partial class KhachHang
     public Guid Id { get; set; }
 
     public string Ten { get; set; } = null!;
-
+    public int ThuTu { get; set; }
     public bool DuocNhanVoucher { get; set; }
 
     public bool IsDeleted { get; set; }

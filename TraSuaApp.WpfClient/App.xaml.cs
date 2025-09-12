@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Diagnostics;
+using System.Windows;
 using System.Windows.Controls;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.Views;
@@ -28,11 +29,32 @@ namespace TraSuaApp.WpfClient
             const string mutexName = "TraSuaApp_WpfClient_OnlyOneInstance";
             _mutex = new Mutex(true, mutexName, out bool isNewInstance);
 
+
             if (!isNewInstance)
             {
-                Shutdown();
-                return;
+                try
+                {
+                    // Lấy process hiện tại
+                    var current = Process.GetCurrentProcess();
+
+                    // Tìm các process khác cùng tên nhưng khác Id
+                    var others = Process.GetProcessesByName(current.ProcessName)
+                                        .Where(p => p.Id != current.Id);
+
+                    foreach (var p in others)
+                    {
+                        try
+                        {
+                            p.Kill();
+                            p.WaitForExit(2000); // chờ thoát hẳn
+                        }
+                        catch { /* ignore */ }
+                    }
+                }
+                catch { /* ignore */ }
             }
+
+
 
             // Tự động select all khi focus TextBox / PasswordBox
             EventManager.RegisterClassHandler(typeof(TextBox),

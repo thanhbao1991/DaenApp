@@ -1,0 +1,37 @@
+﻿@page
+@model TraSuaAppWeb.Pages.ShipperModel
+@{
+    ViewData["Title"] = "Shipper";
+}
+@{
+    ViewData["HideMenu"] = true; // hoặc false nếu muốn hiện menu
+}
+<table class="table table-sm table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>Khách Hàng</th>
+            <th class="text-end">Địa chỉ</th>
+            @* <th>Tiền</th> *@
+            <th class="text-end"> Điện Thoại</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.HoaDonList)
+        {
+            <tr>
+                <td style="background-color:@(item.TienBank > 0 ? "#ffcc" : "transparent")">
+                    @item.ThongTinHoaDon</td>
+                <td style="background-color:@(item.TienBank > 0 ? "#ffcc" : "transparent")">
+                    @item.DiaChiShip</td>
+                @* <td style="background-color:@(item.TienBank > 0 ? "#ffcc" : "transparent")">
+                    @item.ConLai.ToString("N0")</td> *@
+                <td style="background-color:@(item.TienNo > 0 ? "#ffcccc" : "transparent")">
+                    <a href="tel:@item.DienThoaiShip" class="text-decoration-none text-primary">
+                        @item.DienThoaiShip
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+</div>

@@ -174,7 +174,7 @@
 
                                         <!--  Cột Giá trị  -->
                                         <DataGridTextColumn
-                                            Width="100"
+                                            Width="110"
                                             Binding="{Binding GiaTri, StringFormat=N0}"
                                             Header="">
                                             <DataGridTextColumn.ElementStyle>
@@ -629,111 +629,120 @@
                             Grid.Column="2"
                             Background="{Binding ElementName=ThongTinThanhToanGroupBox, Path=Background}">
 
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="auto" />
-                                <RowDefinition />
-                                <RowDefinition Height="auto" />
-                                <RowDefinition Height="auto" />
-                            </Grid.RowDefinitions>
-                            <TextBlock
-                                x:Name="TenHoaDonTextBlock"
-                                Padding="8"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                FontSize="{StaticResource FontSizeLarge}"
-                                FontWeight="Bold"
-                                Foreground="{Binding ElementName=ThongTinThanhToanGroupBox, Path=Foreground}"
-                                TextAlignment="Center" />
-                            <ListBox
-                                x:Name="ChiTietHoaDonListBox"
-                                Grid.Row="1"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                SelectionChanged="ChiTietHoaDonListBox_SelectionChanged">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="40" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <Border
-                                                Grid.Column="0"
-                                                Background="Gray"
-                                                BorderBrush="LightGray"
-                                                BorderThickness="1,1,0,1"
-                                                CornerRadius="4,0,0,4">
-                                                <TextBlock
-                                                    Padding="8"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center"
-                                                    FontSize="{StaticResource FontSizeBig}"
-                                                    FontWeight="Medium"
-                                                    Foreground="White"
-                                                    Text="{Binding SoLuong}" />
-                                            </Border>
-                                            <Border
-                                                Grid.Column="1"
-                                                Padding="8"
-                                                Background="White"
-                                                BorderBrush="LightGray"
-                                                BorderThickness="0,1,1,1"
-                                                CornerRadius="0,4,4,0">
-                                                <Grid VerticalAlignment="Center">
-                                                    <StackPanel>
-                                                        <!--  Ngày giờ  -->
-                                                        <TextBlock
-                                                            HorizontalAlignment="Right"
-                                                            FontSize="{StaticResource FontSizeSmall}"
-                                                            Text="{Binding NgayGio, StringFormat=dd-MM-yyyy HH:mm}"
-                                                            Visibility="{Binding NgayGio, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-                                                        <!--  Tên sản phẩm + biến thể  -->
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <TextBlock
-                                                                FontWeight="Bold"
-                                                                Foreground="Blue"
-                                                                Text="{Binding TenSanPham}" />
-                                                            <TextBlock
-                                                                Margin="4,0,0,0"
-                                                                FontWeight="Medium"
-                                                                Foreground="Red"
-                                                                Text="{Binding TenBienThe}">
-                                                                <TextBlock.Style>
-                                                                    <Style TargetType="TextBlock">
-                                                                        <Setter Property="Visibility" Value="Visible" />
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding TenBienThe}" Value="Size Chuẩn">
-                                                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                                            </DataTrigger>
-                                                                            <DataTrigger Binding="{Binding TenBienThe}" Value="Size L">
-                                                                                <DataTrigger.EnterActions>
-                                                                                    <BeginStoryboard>
-                                                                                        <Storyboard AutoReverse="True" RepeatBehavior="Forever">
-                                                                                            <DoubleAnimation
-                                                                                                Storyboard.TargetProperty="Opacity"
-                                                                                                From="1.0"
-                                                                                                To="0.3"
-                                                                                                Duration="0:0:0.5" />
-                                                                                        </Storyboard>
-                                                                                    </BeginStoryboard>
-                                                                                </DataTrigger.EnterActions>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </TextBlock.Style>
-                                                            </TextBlock>
-                                                            <TextBlock
-                                                                Margin="4,0,0,0"
-                                                                HorizontalAlignment="Right"
-                                                                VerticalAlignment="Center"
-                                                                FontWeight="Bold"
-                                                                Foreground="DarkRed"
-                                                                Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
+                            <ScrollViewer
+                                x:Name="ThongTinThanhToanGroupBox"
+                                HorizontalScrollBarVisibility="Disabled"
+                                VerticalScrollBarVisibility="Auto">
 
-                                                        </StackPanel>
-                                                        <!--<Grid
+                                <StackPanel>
+                                    <TextBlock
+                                        x:Name="TenHoaDonTextBlock"
+                                        Padding="8"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Center"
+                                        Background="#99999999"
+                                        FontSize="{StaticResource FontSizeLarge}"
+                                        FontWeight="Bold"
+                                        Foreground="{Binding ElementName=ThongTinThanhToanGroupBox, Path=Foreground}"
+                                        TextAlignment="Left" />
+
+                                    <TextBox
+                                        x:Name="SearchChiTietHoaDonTextBox"
+                                        Grid.Row="2"
+                                        Opacity=".8"
+                                        TextChanged="SearchChiTietHoaDonTextBox_TextChanged"
+                                        Visibility="Collapsed" />
+                                    <ListBox
+                                        x:Name="ChiTietHoaDonListBox"
+                                        Grid.Row="1"
+                                        Margin="0,8,0,0"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                        SelectionChanged="ChiTietHoaDonListBox_SelectionChanged">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="40" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border
+                                                        Grid.Column="0"
+                                                        Background="Gray"
+                                                        BorderBrush="LightGray"
+                                                        BorderThickness="1,1,0,1"
+                                                        CornerRadius="4,0,0,4">
+                                                        <TextBlock
+                                                            Padding="8"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center"
+                                                            FontSize="{StaticResource FontSizeBig}"
+                                                            FontWeight="Medium"
+                                                            Foreground="White"
+                                                            Text="{Binding SoLuong}" />
+                                                    </Border>
+                                                    <Border
+                                                        Grid.Column="1"
+                                                        Padding="8"
+                                                        Background="White"
+                                                        BorderBrush="LightGray"
+                                                        BorderThickness="0,1,1,1"
+                                                        CornerRadius="0,4,4,0">
+                                                        <Grid VerticalAlignment="Center">
+                                                            <StackPanel>
+                                                                <!--  Ngày giờ  -->
+                                                                <TextBlock
+                                                                    HorizontalAlignment="Right"
+                                                                    FontSize="{StaticResource FontSizeSmall}"
+                                                                    Text="{Binding NgayGio, StringFormat=dd-MM-yyyy HH:mm}"
+                                                                    Visibility="{Binding NgayGio, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+                                                                <!--  Tên sản phẩm + biến thể  -->
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <TextBlock
+                                                                        FontWeight="Bold"
+                                                                        Foreground="Blue"
+                                                                        Text="{Binding TenSanPham}" />
+                                                                    <TextBlock
+                                                                        Margin="4,0,0,0"
+                                                                        FontWeight="Medium"
+                                                                        Foreground="Red"
+                                                                        Text="{Binding TenBienThe}">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="TextBlock">
+                                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding TenBienThe}" Value="Size Chuẩn">
+                                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                                    </DataTrigger>
+                                                                                    <DataTrigger Binding="{Binding TenBienThe}" Value="Size L">
+                                                                                        <DataTrigger.EnterActions>
+                                                                                            <BeginStoryboard>
+                                                                                                <Storyboard AutoReverse="True" RepeatBehavior="Forever">
+                                                                                                    <DoubleAnimation
+                                                                                                        Storyboard.TargetProperty="Opacity"
+                                                                                                        From="1.0"
+                                                                                                        To="0.3"
+                                                                                                        Duration="0:0:0.5" />
+                                                                                                </Storyboard>
+                                                                                            </BeginStoryboard>
+                                                                                        </DataTrigger.EnterActions>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
+                                                                    <TextBlock
+                                                                        Margin="4,0,0,0"
+                                                                        HorizontalAlignment="Right"
+                                                                        VerticalAlignment="Center"
+                                                                        FontWeight="Bold"
+                                                                        Foreground="DarkRed"
+                                                                        Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
+
+                                                                </StackPanel>
+                                                                <!--<Grid
                                                             Grid.IsSharedSizeScope="True"
                                                             IsEnabled="False"
                                                             IsHitTestVisible="False">
@@ -756,90 +765,72 @@
                                                                 Value="{Binding DonGia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                                         </Grid>-->
 
-                                                        <!--  Topping  -->
-                                                        <TextBlock
-                                                            FontSize="{StaticResource FontSizeSmall}"
-                                                            Foreground="DarkGreen"
-                                                            Text="{Binding ToppingText}"
-                                                            TextWrapping="Wrap"
-                                                            Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-                                                        <!--  Ghi chú  -->
-                                                        <TextBox
-                                                            AcceptsReturn="True"
-                                                            Background="Transparent"
-                                                            BorderBrush="Transparent"
-                                                            FontSize="{StaticResource FontSizeNormal}"
-                                                            FontStyle="Italic"
-                                                            Foreground="DarkRed"
-                                                            Text="{Binding NoteText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                            TextWrapping="Wrap"
-                                                            Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+                                                                <!--  Topping  -->
+                                                                <TextBlock
+                                                                    FontSize="{StaticResource FontSizeSmall}"
+                                                                    Foreground="DarkGreen"
+                                                                    Text="{Binding ToppingText}"
+                                                                    TextWrapping="Wrap"
+                                                                    Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+                                                                <!--  Ghi chú  -->
+                                                                <TextBox
+                                                                    AcceptsReturn="True"
+                                                                    Background="Transparent"
+                                                                    BorderBrush="Transparent"
+                                                                    FontSize="{StaticResource FontSizeNormal}"
+                                                                    FontStyle="Italic"
+                                                                    Foreground="DarkRed"
+                                                                    Text="{Binding NoteText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                    TextWrapping="Wrap"
+                                                                    Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
 
-                                                        <TextBlock
-                                                            Margin="0,0,0,2"
-                                                            FontSize="{StaticResource FontSizeSmall}"
-                                                            Foreground="DarkBlue"
-                                                            Text="{Binding DinhLuong}"
-                                                            TextWrapping="Wrap"
-                                                            Visibility="{Binding DinhLuong, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-
-
-                                                    </StackPanel>
-                                                    <!--  Nút Xóa  -->
-                                                    <Button
-                                                        Grid.Column="2"
-                                                        HorizontalAlignment="Right"
-                                                        VerticalAlignment="Top"
-                                                        Style="{StaticResource ClearXButtonStyle}"
-                                                        Tag="{Binding}"
-                                                        Visibility="Collapsed" />
+                                                                <TextBlock
+                                                                    Margin="0,0,0,2"
+                                                                    FontSize="{StaticResource FontSizeSmall}"
+                                                                    Foreground="DarkBlue"
+                                                                    Text="{Binding DinhLuong}"
+                                                                    TextWrapping="Wrap"
+                                                                    Visibility="{Binding DinhLuong, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
 
 
+                                                            </StackPanel>
+                                                            <!--  Nút Xóa  -->
+                                                            <Button
+                                                                Grid.Column="2"
+                                                                HorizontalAlignment="Right"
+                                                                VerticalAlignment="Top"
+                                                                Style="{StaticResource ClearXButtonStyle}"
+                                                                Tag="{Binding}"
+                                                                Visibility="Collapsed" />
+
+
+                                                        </Grid>
+                                                    </Border>
                                                 </Grid>
-                                            </Border>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
 
-                            </ListBox>
-                            <TextBox
-                                x:Name="SearchChiTietHoaDonTextBox"
-                                Grid.Row="2"
-                                TextChanged="SearchChiTietHoaDonTextBox_TextChanged"
-                                Visibility="Collapsed" />
-                            <GroupBox
-                                Name="ThongTinThanhToanGroupBox"
-                                Grid.Row="3"
-                                BorderThickness="0"
-                                Foreground="Black">
+                                    </ListBox>
+                                    <Grid>
+                                        <Border
+                                            Margin="8"
+                                            Background="#99999999"
+                                            CornerRadius="8">
+                                            <StackPanel x:Name="ThongTinThanhToanPanel" Margin="8" />
+                                        </Border>
 
-                                <ScrollViewer
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Bottom"
-                                    VerticalScrollBarVisibility="Auto">
-                                    <StackPanel x:Name="ThongTinThanhToanPanel" />
-                                </ScrollViewer>
-                            </GroupBox>
-                            <Border
-                                Grid.Row="2"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                Panel.ZIndex="1"
-                                Background="Transparent">
-                                <!--  xanh đậm viền  -->
-                                <TextBlock
-                                    x:Name="TongSoSanPhamTextBlock"
-                                    Padding="8"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    FontSize="{StaticResource FontSizeXXX}"
-                                    FontWeight="Bold"
-                                    Foreground="{Binding ElementName=TenHoaDonTextBlock, Path=Foreground}"
-                                    TextAlignment="Center" />
-                            </Border>
-
+                                        <TextBlock
+                                            x:Name="TongSoSanPhamTextBlock"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            FontSize="{StaticResource FontSizeXXX}"
+                                            FontWeight="Bold"
+                                            Foreground="{Binding ElementName=TenHoaDonTextBlock, Path=Foreground}"
+                                            TextAlignment="Center" />
+                                    </Grid>
+                                </StackPanel>
+                            </ScrollViewer>
                         </Grid>
-
                     </Grid>
                 </TabItem>
                 <TabItem Header="Thanh toán hôm nay" Tag="ChiTietHoaDonThanhToan">

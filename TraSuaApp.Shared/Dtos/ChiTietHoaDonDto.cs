@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel;
-using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Shared.Dtos;
 
 public class ChiTietHoaDonDto : DtoBase, INotifyPropertyChanged
 {
+
     public DateTime NgayGio { get; set; }
 
     private string? _dinhLuong;
@@ -74,9 +74,6 @@ public class ChiTietHoaDonDto : DtoBase, INotifyPropertyChanged
     public Guid HoaDonId { get; set; }
     public Guid SanPhamIdBienThe { get; set; }
 
-    public override string TimKiem =>
-        TextSearchHelper.NormalizeText($"{TenSanPham} {TenBienThe} {TenSanPham.Replace(" ", "")}") + " " +
-        TextSearchHelper.GetShortName(TenSanPham ?? "");
 
     public virtual List<SanPhamBienTheDto> BienTheList { get; set; } = new List<SanPhamBienTheDto>();
     public virtual List<ToppingDto> ToppingDtos { get; set; } = new List<ToppingDto>();

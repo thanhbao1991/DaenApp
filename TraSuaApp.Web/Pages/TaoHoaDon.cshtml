@@ -1,0 +1,411 @@
+@page
+@model TraSuaAppWeb.Pages.TaoHoaDonModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<form method="post">
+    <!-- Tìm khách hàng -->
+    <div class="position-relative mb-3">
+        <label>Tìm khách hàng</label>
+        <input id="khachHangInput" type="text" class="form-control no-underline" autocomplete="off"
+            placeholder="Gõ để tìm...">
+        <input type="hidden" id="idKhachHang" name="HoaDon.IdKhachHang">
+        <input type="hidden" id="thongTinHoaDonInput" name="HoaDon.ThongTinHoaDon">
+        <ul id="listKhachHang" class="autocomplete-list"></ul>
+    </div>
+
+    <!-- Địa chỉ & điện thoại -->
+    <div class="row mb-3">
+        <div class="col">
+            <label>Địa chỉ giao hàng</label>
+            <input type="text" id="diaChiShipInput" name="HoaDon.DiaChiShip" class="form-control no-underline" />
+        </div>
+        <div class="col">
+            <label>Điện thoại</label>
+            <input type="text" id="dienThoaiShipInput" name="HoaDon.DienThoaiShip"
+                class="form-control no-underline" />
+        </div>
+    </div>
+
+    <!-- Chi tiết sản phẩm -->
+    <table class="table table-bordered" id="chiTietTable">
+        <thead>
+            <tr>
+                <th>Món</th>
+                <th class="text-end">SL</th>
+                <th class="text-end">Giá</th>
+                <th>Note</th>
+                <th class="text-end">Tiền</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="productRows"></tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3">
+                    <!-- Nhóm hóa đơn -->
+                    <input type="hidden" id="idNhomHoaDon" name="HoaDon.IdNhomHoaDon" value="3" />
+                    <div id="nhomHoaDonIcons" class="fs-5" style="cursor: pointer;" title="Loại hóa đơn">
+                        <span id="nhomIcon"></span>
+                    </div>
+                </td>
+                <td class="text-end fw-bold">Tổng:</td>
+                <td class="text-end align-middle fw-bold"><span id="tongTienText">0</span></td>
+                <td>
+                    <input type="checkbox" id="baoDonCheckbox" name="HoaDon.BaoDon" value="true"
+                        style="display: none;" />
+                    <span id="bellIcon" style="cursor: pointer;">&#128276;</span>
+                    <span id="noBellIcon" style="cursor: pointer;">&#128277;</span>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="d-flex justify-content-between mt-4">
+        <!-- Nút chụp ảnh -->
+        <button type="button" class="btn btn-light" onclick="captureImage()">
+            Lưu Hình Ảnh &#x1F4F7;
+        </button>
+        <!-- Nút lưu hoá đơn -->
+        <button type="button" class="btn btn-primary" onclick="xacNhanLuu()"> Lưu Hóa Đơn
+        </button>
+    </div>
+
+
+    <!-- Tóm tắt đơn hàng -->
+    <div id="imagePreview" style="margin-top: 10px;"></div>
+    <div id="modalContent" class="mt-4 p-3 border rounded bg-light">
+        <div>
+            &#129489; <span id="summaryKhachHang">-</span>
+            &#127968; <span id="summaryDiaChi">-</span>
+            &#128222; <span id="summaryDienThoai">-</span>
+        </div>
+        <div class="mt-2">
+            <ul id="summarySanPham" class="ps-3 mb-0"></ul>
+        </div>
+        <div class="mt-2 fw-bold">Tổng tiền: <span id="summaryTongTien">0</span> đ</div>
+    </div>
+</form>
+<form method="post" style="display: none">
+    @Html.AntiForgeryToken()
+</form>
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        const khachHangData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.KhachHangList));
+        const sanPhamData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SanPhamList));
+        let rowIndex = 0;
+
+        async function xacNhanLuu() {
+            const form = document.querySelector('form[method="post"]:not([style*="display: none"])');
+
+            // Lấy ID khách hàng
+            const idKhach = parseInt(document.getElementById("idKhachHang").value) || 0;
+            if (idKhach <= 0) {
+                if (!confirm("Chưa chọn khách hàng. Bạn có chắc chắn muốn lưu hóa đơn này?")) return;
+                return form.submit();
+            }
+
+            // Gom dữ liệu sản phẩm
+            const sanPhams = [];
+            $('#productRows tr').each(function () {
+                const id = parseInt($(this).find('input[type=hidden]').val());
+                const gia = parseInt($(this).find('.price-input').val());
+                if (id > 0 && gia > 0)
+                    sanPhams.push({ IdSanPham: id, DonGia: gia });
+            });
+
+            if (sanPhams.length === 0) {
+                if (!confirm("Chưa có sản phẩm nào. Bạn có chắc chắn muốn lưu?")) return;
+                return form.submit();
+            }
+
+            // Gửi yêu cầu kiểm tra giá
+            const res = await fetch("?handler=KiemTraGia", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({ idKhachHang: idKhach, sanPhams })
+            });
+
+            if (!res.ok) {
+                if (!confirm("Lỗi khi kiểm tra giá. Tiếp tục lưu?")) return;
+                return form.submit();
+            }
+
+            const data = await res.json();
+
+            if (Array.isArray(data) && data.length > 0) {
+                const list = data.map(x => `• ${x.TenSanPham}\n   - Giá cũ: ${x.gia_cu.toLocaleString()} đ\n   - Giá mới: ${x.gia_moi.toLocaleString()} đ`).join('\n\n');
+                if (!confirm(`⚠️ Giá hiện tại khác lần mua gần nhất:\n\n${list}\n\nBạn có chắc chắn muốn lưu?`)) return;
+            }
+
+            // Không có vấn đề gì thì gửi form
+            form.submit();
+        }
+        function addRow() {
+            const currentIndex = rowIndex;
+            $('#productRows').append(`
+                                                                        <tr data-index="${currentIndex}">
+                                                                            <td>
+                                                                                <input type="text" class="form-control sp-input no-underline" autocomplete="off" placeholder="Gõ tên sản phẩm...">
+                                                                                <input type="hidden" name="ChiTietHoaDonList[${currentIndex}].IdSanPham">
+                                                                                <ul class="autocomplete-list list-sp"></ul>
+                                                                            </td>
+                                                                            <td>
+                                                                                <input name="ChiTietHoaDonList[${currentIndex}].SoLuong" type="number"
+                                                                                       class="form-control qty-input text-end" value="1" style="width: 40px;" />
+                                                                            </td>
+                                                                            <td>
+                                                                                <input name="ChiTietHoaDonList[${currentIndex}].DonGia" type="number"
+                                                                                       class="form-control price-input text-end" value="0" style="width: 42px;" />
+                                                                            </td>
+                                                                            <td>
+                                                                                <input type="text" name="ChiTietHoaDonList[${currentIndex}].GhiChu" class="form-control no-underline">
+                                                                            </td>
+                                                                            <td class="text-end tien-input align-middle">0</td>
+                                                                            <td>
+                                                                                <button type="button" class="btn btn-danger btn-sm"
+                                                                                        onclick="$(this).closest('tr').remove();calcTotal();updateSummary();">X</button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    `);
+            rowIndex++;
+        }
+
+        function calcTotal() {
+            let sum = 0;
+            $('#productRows tr').each(function () {
+                const qty = +$(this).find('.qty-input').val() || 0;
+                const price = +$(this).find('.price-input').val() || 0;
+                const line = qty * price;
+                $(this).find('.tien-input').text(line.toLocaleString('vi-VN'));
+                sum += line;
+            });
+            $('#tongTienText').text(sum.toLocaleString('vi-VN'));
+            updateSummary();
+        }
+
+        function updateSummary() {
+            $('#summaryKhachHang').text($('#khachHangInput').val() || '-');
+            $('#summaryDienThoai').text($('#dienThoaiShipInput').val() || '-');
+            $('#summaryDiaChi').text($('#diaChiShipInput').val() || '-');
+
+            const $ul = $('#summarySanPham').empty();
+            $('#productRows tr').each(function () {
+                const tenSP = $(this).find('.sp-input').val() || '---';
+                const sl = parseInt($(this).find('.qty-input').val()) || 0;
+                const gia = parseInt($(this).find('.price-input').val()) || 0;
+                const ghiChu = $(this).find('input[name*=".GhiChu"]').val() || '';
+
+                if (!(sl === 1 && gia === 0) && gia !== 0) {
+                    const text = `${sl} ${tenSP} x ${gia.toLocaleString('vi-VN')}${ghiChu ? ` (${ghiChu})` : ''}`;
+                    $('<li>').text(text).appendTo($ul);
+                }
+            });
+
+            $('#summaryTongTien').text($('#tongTienText').text());
+        }
+
+        $('#khachHangInput').on('input', function () {
+            const q = this.value.trim().toLowerCase();
+            const list = khachHangData.filter(k => k.TimKiem.toLowerCase().includes(q)).slice(0, 5);
+            const ul = $('#listKhachHang').empty();
+            list.forEach(k => $('<li>')
+                .text(`${k.TenKhachHang} (${k.DiaChi})`)
+                .on('click', () => {
+                    $('#khachHangInput').val(k.TenKhachHang);
+                    $('#idKhachHang').val(k.IdKhachHang);
+                    $('#thongTinHoaDonInput').val(k.TenKhachHang);
+                    $('#diaChiShipInput').val(k.DiaChi);
+                    $('#dienThoaiShipInput').val(k.DienThoai);
+                    ul.empty();
+                    updateSummary();
+                })
+                .appendTo(ul));
+        });
+
+        $(document).on('input', '.sp-input', function () {
+            const input = this;
+            const $input = $(input);
+            const offset = $input.offset();
+            const q = input.value.trim().toLowerCase();
+
+            let $ul = $('#global-product-list');
+            if ($ul.length === 0) {
+                $ul = $('<ul id="global-product-list" class="autocomplete-list"></ul>').appendTo('body');
+            }
+
+            $ul.empty().Hide();
+            const matched = sanPhamData.filter(p => p.TimKiem.toLowerCase().includes(q)).slice(0, 6);
+            if (matched.length === 0) return;
+
+            matched.forEach(sp => {
+                const $li = $('<li>').css({ display: 'flex', justifyContent: 'space-between', alignItems: 'center' });
+
+                const $ten = $('<span>')
+                    .text(`${sp.TenSanPham} (${sp.DonGia.toLocaleString('vi-VN')})`)
+                    .css({ flex: '1', cursor: 'pointer' })
+                    .on('click', () => {
+                        $input.val(sp.TenSanPham);
+                        const tr = $input.closest('tr');
+                        tr.find('input[type=hidden]').val(sp.IdSanPham);
+                        tr.find('.price-input').val(sp.DonGia);
+                        tr.find('input[name*=".GhiChu"]').val(""); // xoá ghi chú
+                        $ul.Hide();
+                        calcTotal();
+                        updateSummary();
+                        if (tr.is(':last-child')) addRow();
+                    });
+
+                const $btn = $('<button>')
+                    .addClass('btn btn-sm btn-outline-primary ms-2')
+                    .text('Size L')
+                    .on('click', (e) => {
+                        e.stopPropagation();
+                        $input.val(sp.TenSanPham);
+                        const tr = $input.closest('tr');
+                        tr.find('input[type=hidden]').val(sp.IdSanPham);
+                        tr.find('.price-input').val(sp.DonGia + 5000);
+                        tr.find('input[name*=".GhiChu"]').val("#Size L");
+                        $ul.Hide();
+                        calcTotal();
+                        updateSummary();
+                        if (tr.is(':last-child')) addRow();
+                    });
+
+                $li.append($ten).append($btn).appendTo($ul);
+            });
+
+            $ul.css({
+                top: offset.top + $input.outerHeight(),
+                left: offset.left,
+                display: 'block'
+            });
+        });
+
+        $(document).on('click', function (e) {
+            if (!$(e.target).closest('.sp-input, #global-product-list').length) {
+                $('#global-product-list').Hide();
+            }
+        });
+
+        $(document).on('input', '.qty-input, .price-input, input[name*=".GhiChu"]', function () {
+            calcTotal();
+        });
+
+        $(addRow);
+        $('#dienThoaiShipInput, #diaChiShipInput, #khachHangInput').on('input', updateSummary);
+        $(document).on('focus', 'input[type="text"], input[type="number"], textarea', function () {
+            const input = this;
+            setTimeout(() => input.select(), 50);
+        });
+
+
+        const checkbox = document.getElementById('baoDonCheckbox');
+        const bell = document.getElementById('bellIcon');
+        const noBell = document.getElementById('noBellIcon');
+
+        function updateBellIcon() {
+            bell.style.display = checkbox.checked ? 'inline' : 'none';
+            noBell.style.display = checkbox.checked ? 'none' : 'inline';
+        }
+
+        bell.addEventListener('click', () => {
+            checkbox.checked = false;
+            updateBellIcon();
+        });
+
+        noBell.addEventListener('click', () => {
+            checkbox.checked = true;
+            updateBellIcon();
+        });
+
+        // Gọi khi trang tải
+        updateBellIcon();
+
+
+        const nhomHoaDonList = [
+            //      { id: 1, icon: '\uD83E\uDE91', title: 'Ngồi tại chỗ' },   // 🟟
+            { id: 2, icon: '\uD83D\uDECD', title: 'Mua mang về' },    // 🟟️
+            { id: 3, icon: '\uD83D\uDEF5', title: 'Giao tận nơi' },   // 🟟
+            { id: 4, icon: '\uD83D\uDCF1', title: 'Qua app' }         // 🟟
+        ];
+
+        function updateNhomIcon(id) {
+            const item = nhomHoaDonList.find(x => x.id === id);
+            if (!item) return;
+            document.getElementById('idNhomHoaDon').value = item.id;
+            const iconEl = document.getElementById('nhomIcon');
+            iconEl.textContent = item.icon;
+            iconEl.title = item.title;
+        }
+
+        document.getElementById('nhomHoaDonIcons').addEventListener('click', function () {
+            let current = parseInt(document.getElementById('idNhomHoaDon').value) || 1;
+            let next = current >= 4 ? 2 : current + 1;
+            updateNhomIcon(next);
+        });
+
+        // Khởi tạo mặc định là "Giao tận nơi" (id = 3)
+        updateNhomIcon(3);
+    </script>
+
+    <style>
+        .autocomplete-list {
+            position: fixed !important;
+            background: #fff;
+            border: 1px solid #ccc;
+            max-height: 200px;
+            overflow-y: auto;
+            min-width: 300px;
+            width: auto;
+            z-index: 9999;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .autocomplete-list li {
+            padding: 8px 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .autocomplete-list li:hover {
+            background: #f1f1f1;
+        }
+
+        .autocomplete-list:empty {
+            display: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+
+
+        #summarySanPham li {
+            margin-bottom: 4px;
+        }
+
+        #bellIcon,
+        #noBellIcon {
+            font-size: 1.5rem;
+            color: red;
+            display: none;
+        }
+
+        #nhomIcon {
+            font-size: 1.5rem;
+            color: red;
+        }
+
+        .autocomplete-list button {
+            white-space: nowrap;
+            font-size: 0.8rem;
+            padding: 2px 6px;
+        }
+    </style>
+}

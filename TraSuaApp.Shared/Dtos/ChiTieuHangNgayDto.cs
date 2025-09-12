@@ -1,4 +1,6 @@
-﻿namespace TraSuaApp.Shared.Dtos;
+﻿using TraSuaApp.Shared.Helpers;
+
+namespace TraSuaApp.Shared.Dtos;
 
 public class ChiTieuHangNgayDto : DtoBase
 {
@@ -14,4 +16,10 @@ public class ChiTieuHangNgayDto : DtoBase
     public DateTime NgayGio { get; set; }
     public Guid NguyenLieuId { get; set; }
     public bool BillThang { get; set; }
+    public string TimKiem =>
+        $"{Ten?.ToLower() ?? ""} " +
+        TextSearchHelper.NormalizeText(Ten ?? "") + " " +
+        TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+        TextSearchHelper.GetShortName(Ten ?? "");
+
 }

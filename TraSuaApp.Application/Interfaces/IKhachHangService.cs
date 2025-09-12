@@ -10,6 +10,7 @@ public interface IKhachHangService
     Task<KhachHangDto?> GetByIdAsync(Guid id);
     Task<Result<KhachHangDto>> CreateAsync(KhachHangDto dto);
     Task<Result<KhachHangDto>> UpdateAsync(Guid id, KhachHangDto dto);
+    Task<Result<KhachHangDto>> UpdateSingleAsync(Guid id, KhachHangDto dto);
     Task<Result<KhachHangDto>> DeleteAsync(Guid id);
 
     // 🟟 API đồng bộ

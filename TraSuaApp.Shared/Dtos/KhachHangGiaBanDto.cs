@@ -1,4 +1,6 @@
-﻿namespace TraSuaApp.Shared.Dtos;
+﻿using TraSuaApp.Shared.Helpers;
+
+namespace TraSuaApp.Shared.Dtos;
 
 public class KhachHangGiaBanDto : DtoBase
 {
@@ -12,8 +14,11 @@ public class KhachHangGiaBanDto : DtoBase
     public string? TenKhachHang { get; set; }
     public string? TenSanPham { get; set; }
     public string? TenBienThe { get; set; }
-
-
+    public string TimKiem =>
+    $"{Ten?.ToLower() ?? ""} " +
+    TextSearchHelper.NormalizeText(Ten ?? "") + " " +
+    TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+    TextSearchHelper.GetShortName(Ten ?? "");
 
 }
 

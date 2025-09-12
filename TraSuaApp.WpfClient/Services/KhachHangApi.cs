@@ -10,6 +10,10 @@ public class KhachHangApi : BaseApi, IKhachHangApi
     private const string BASE_URL = "/api/KhachHang";
 
     public KhachHangApi() : base(TuDien._tableFriendlyNames["KhachHang"]) { }
+    public async Task<Result<KhachHangDto>> UpdateSingleAsync(Guid id, KhachHangDto dto)
+    {
+        return await PutAsync<KhachHangDto>($"{BASE_URL}/{id}/single", dto);
+    }
 
     public async Task<Result<List<KhachHangDto>>> GetAllAsync()
     {

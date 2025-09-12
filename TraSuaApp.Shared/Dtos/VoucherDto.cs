@@ -1,4 +1,6 @@
-﻿namespace TraSuaApp.Shared.Dtos;
+﻿using TraSuaApp.Shared.Helpers;
+
+namespace TraSuaApp.Shared.Dtos;
 
 public class VoucherDto : DtoBase
 {
@@ -18,6 +20,11 @@ public class VoucherDto : DtoBase
 
     public bool DangSuDung { get; set; }
     public virtual List<Guid> NhomSanPhamIds { get; set; } = new List<Guid>();
+    public string TimKiem =>
+       $"{Ten?.ToLower() ?? ""} " +
+       TextSearchHelper.NormalizeText(Ten ?? "") + " " +
+       TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+       TextSearchHelper.GetShortName(Ten ?? "");
 
 }
 
