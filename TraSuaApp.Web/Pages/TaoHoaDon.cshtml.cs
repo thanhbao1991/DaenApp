@@ -1,11 +1,8 @@
 #nullable disable
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Shared.Logging;
 using TraSuaAppWeb.Data;
-using TraSuaAppWeb.Hubs;
 using TraSuaAppWeb.Models;
 
 namespace TraSuaAppWeb.Pages
@@ -31,13 +28,11 @@ namespace TraSuaAppWeb.Pages
     public class TaoHoaDonModel : PageModel
     {
         private readonly AppDbContext _context;
-        private readonly IHubContext<HoaDonHub> _hubContext;
 
         public TaoHoaDonModel(AppDbContext context
-        , IHubContext<HoaDonHub> hubContext)
+        )
         {
             _context = context;
-            _hubContext = hubContext;
         }
         [BindProperty] public required HoaDon HoaDon { get; set; }
         [BindProperty] public required List<ChiTietHoaDon> ChiTietHoaDonList { get; set; }
@@ -86,7 +81,7 @@ namespace TraSuaAppWeb.Pages
             }
             catch (Exception ex)
             {
-                await ErrorLogger.LogAsync(ex);
+
                 return new JsonResult(new { success = false });
             }
         }
@@ -118,12 +113,6 @@ namespace TraSuaAppWeb.Pages
 
             HoaDon.ConLai = HoaDon.TongTien;
             await _context.SaveChangesAsync();
-            await _hubContext.Clients.All.SendAsync("HoaDonMoi", new
-            {
-                id = HoaDon.IdHoaDon,
-                ten_khach = HoaDon.ThongTinHoaDon,
-                tong_tien = HoaDon.TongTien
-            });
 
             return RedirectToPage("DoanhThuNgay");
         }
