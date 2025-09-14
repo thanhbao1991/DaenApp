@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using TraSuaApp.Shared.Logging;
 using TraSuaAppWeb.Data;
+using TraSuaAppWeb.Hubs;
 using TraSuaAppWeb.Models;
 
 namespace TraSuaAppWeb.Pages
@@ -10,12 +13,14 @@ namespace TraSuaAppWeb.Pages
     public class ChiTietHoaDonModel : PageModel
     {
         private readonly AppDbContext _context;
+        private readonly IHubContext<HoaDonHub> _hubContext;
 
         public ChiTietHoaDonModel(AppDbContext context
-        )
+        , IHubContext<HoaDonHub> hubContext)
 
         {
             _context = context;
+            _hubContext = hubContext;
 
         }
         public List<ChiTietHoaDon> ChiTietHoaDonList { get; set; } = new();
@@ -47,6 +52,7 @@ namespace TraSuaAppWeb.Pages
             }
             catch (Exception ex)
             {
+                _ = ErrorLogger.LogAsync(ex);
 
                 return new ContentResult
                 {
@@ -81,11 +87,18 @@ namespace TraSuaAppWeb.Pages
 
                 await _context.SaveChangesAsync();
 
+                await _hubContext.Clients.All.SendAsync("BankingMoi", new
+                {
+                    id = hoaDon.IdHoaDon,
+                    ten_khach = hoaDon.ThongTinHoaDon,
+                    tong_tien = hoaDon.TienBank
+                });
 
                 return RedirectToPage("DoanhThuNgay");
             }
             catch (Exception ex)
             {
+                _ = ErrorLogger.LogAsync(ex);
                 return new JsonResult(new { success = false });
             }
         }
@@ -109,11 +122,18 @@ namespace TraSuaAppWeb.Pages
 
                 await _context.SaveChangesAsync();
 
+                await _hubContext.Clients.All.SendAsync("GhiNoMoi", new
+                {
+                    id = hoaDon.IdHoaDon,
+                    ten_khach = hoaDon.ThongTinHoaDon,
+                    tong_tien = hoaDon.TienNo
+                });
 
                 return RedirectToPage("DoanhThuNgay");
             }
             catch (Exception ex)
             {
+                _ = ErrorLogger.LogAsync(ex);
                 return new JsonResult(new { success = false });
             }
         }

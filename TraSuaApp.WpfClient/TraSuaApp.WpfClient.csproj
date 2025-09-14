@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <Compile Remove="index.cs" />
     <Compile Remove="MainWindow.xaml.cs" />
   </ItemGroup>
 
@@ -57,6 +58,10 @@
     <Content Include="Resources\tien-mat.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="index.cs" />
   </ItemGroup>
 
   <ItemGroup>

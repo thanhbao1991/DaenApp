@@ -246,22 +246,22 @@
     @* Phat hien hoa don moi*@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.0/signalr.min.js"></script>
     <script>
-        // const connection = new signalR.HubConnectionBuilder()
-        //     .withUrl("/hoadonhub")
-        //     .build();
-        // connection.on("BankingMoi", function (hoaDon) {
-        //     alert(`Banking Mới\n${hoaDon.ten_khach} - ${hoaDon.tong_tien.toLocaleString()}₫`);
-        // });
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/hoadonhub")
+            .build();
+        connection.on("BankingMoi", function (hoaDon) {
+            alert(`Banking Mới\n${hoaDon.ten_khach} - ${hoaDon.tong_tien.toLocaleString()}₫`);
+        });
 
-        // connection.on("GhiNoMoi", function (hoaDon) {
-        //     alert(`Ghi Nợ Mới\n${hoaDon.ten_khach} - ${hoaDon.tong_tien.toLocaleString()}₫`);
-        // });
+        connection.on("GhiNoMoi", function (hoaDon) {
+            alert(`Ghi Nợ Mới\n${hoaDon.ten_khach} - ${hoaDon.tong_tien.toLocaleString()}₫`);
+        });
 
-        // connection.on("HoaDonMoi", function (hoaDon) {
-        //     alert(`Hoá Đơn Mới\n${hoaDon.ten_khach} - ${hoaDon.tong_tien.toLocaleString()}₫`);
-        //     // Hoặc cập nhật danh sách hóa đơn, DOM...
-        // });
-        // connection.start().catch(err => console.error(err.toString()));
+        connection.on("HoaDonMoi", function (hoaDon) {
+            alert(`Hoá Đơn Mới\n${hoaDon.ten_khach} - ${hoaDon.tong_tien.toLocaleString()}₫`);
+            // Hoặc cập nhật danh sách hóa đơn, DOM...
+        });
+        connection.start().catch(err => console.error(err.toString()));
     </script>
 
     @* thong bao loi *@

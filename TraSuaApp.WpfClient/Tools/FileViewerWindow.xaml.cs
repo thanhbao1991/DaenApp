@@ -34,7 +34,6 @@ namespace TraSuaApp.WpfClient.Tools
                 .Where(f => f.EndsWith(".cs")
                 || f.EndsWith(".xaml")
                 || f.EndsWith(".html")
-                || f.EndsWith(".cshtml")
 
                 )
                 .Select(f => new FileInfo(f))

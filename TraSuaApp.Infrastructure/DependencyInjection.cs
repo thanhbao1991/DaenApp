@@ -8,7 +8,7 @@ namespace TraSuaApp.Infrastructure
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
         {
-            services.AddScoped<IDoanhThuService, DoanhThuService>();
+            // Đăng ký tất cả các service tại đây
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITaiKhoanService, TaiKhoanService>();
             services.AddScoped<INhomSanPhamService, NhomSanPhamService>();

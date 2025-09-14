@@ -1,52 +1,46 @@
 using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Shared.Config; // ⚡ import Config
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Services;
+using TraSuaApp.Shared.Logging;
 using TraSuaAppWeb.Data;
+using TraSuaAppWeb.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Service
+// Cấu hình dịch vụ
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(Config.ConnectionString)); // ⚡ dùng ConnectionString từ Config
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 
-// 🟟 Đăng ký HttpClient cho API backend
-builder.Services.AddHttpClient("Api", client =>
-{
-    client.BaseAddress = new Uri("http://api.denncoffee.uk");
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-});
-
-
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+// 🟟 Bind DiscordWebhookOptions & Init logger
+var webhookOptions = new DiscordWebhookOptions();
+builder.Configuration.GetSection("Discord").Bind(webhookOptions);
+DiscordLogger.Init(webhookOptions);
+
 
 var app = builder.Build();
 
 // ======================
 // BẮT LỖI TOÀN CỤC
 // ======================
-AppDomain.CurrentDomain.UnhandledException += async (sender, e) =>
+AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
 {
     var ex = e.ExceptionObject as Exception;
-    if (ex != null)
-    {
-        await DiscordService.SendAsync(DiscordEventType.Admin, $"🟟 **Web UnhandledException**\n```{ex}```");
-    }
+    ErrorLogger.LogSync(ex?.ToString());
 };
 
-TaskScheduler.UnobservedTaskException += async (sender, e) =>
+TaskScheduler.UnobservedTaskException += (sender, e) =>
 {
-    if (e.Exception != null)
-    {
-        await DiscordService.SendAsync(DiscordEventType.Admin, $"⚠️ **Web UnobservedTaskException**\n```{e.Exception}```");
-    }
+    ErrorLogger.LogSync(e.Exception.ToString());
 };
 
+// ======================
 // Middleware
+// ======================
+
 // ⚠️ Tạm tắt HTTPS nếu chưa dùng SSL thật
 // if (!app.Environment.IsDevelopment())
 //     app.UseHttpsRedirection();
@@ -56,5 +50,6 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapRazorPages();
+app.MapHub<HoaDonHub>("/hoadonhub");
 
 app.Run();
