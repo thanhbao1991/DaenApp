@@ -173,23 +173,8 @@ namespace TraSuaApp.WpfClient.Controls
             }
 
             var results = KhachHangList
-                .Select(kh =>
-                {
-                    int score = 0;
-
-                    foreach (var token in kh.TimKiemTokens)
-                    {
-                        if (token == keyword) score += 500;
-                        else if (token.StartsWith(keyword)) score += 300;
-                        else if (token.Contains(keyword)) score += 100;
-                    }
-
-                    return new { kh, score };
-                })
-
-                   .Where(x => x.score > 0)
-                .OrderByDescending(x => x.kh.ThuTu)
-                .Select(x => x.kh)
+                   .Where(x => x.TimKiem.Contains(keyword))
+                .OrderByDescending(x => x.ThuTu)
                 .ToList();
 
             ListBoxResults.ItemsSource = results;
