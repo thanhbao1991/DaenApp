@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Shared.Logging;
 using TraSuaAppWeb.Data;
 using TraSuaAppWeb.Hubs;
 using TraSuaAppWeb.Models;

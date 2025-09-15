@@ -10,6 +10,7 @@
     var ngayTruoc = currentDate.AddDays(-1);
     var ngaySau = currentDate.AddDays(1);
 }
+
 <div class="modal fade" id="hoaDonModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
@@ -19,6 +20,7 @@
         </div>
     </div>
 </div>
+
 <div class="modal fade" id="chiTietModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
@@ -30,8 +32,7 @@
 </div>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <a class="btn btn-outline-primary" href="?Ngay=@ngayTruoc.Day&Thang=@ngayTruoc.Month&Nam=@ngayTruoc.Year">← Ngày
-        trước</a>
+    <a class="btn btn-outline-primary" href="?Ngay=@ngayTruoc.Day&Thang=@ngayTruoc.Month&Nam=@ngayTruoc.Year">← Ngày trước</a>
     <button type="button" class="btn btn-light" onclick="captureImage()">
         @ngay/@thang/@nam &#x1F4F7;
     </button>
@@ -46,8 +47,8 @@
         <div style="position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%);
                     text-align: center; font-size: 13px; font-weight: bold; color: #333;
                     pointer-events: none;">
-            <p>@String.Format("{0:N0}", Model.TongDoanhThu)☺</p>
-            <p>@String.Format("{0:N0}", Model.TongTienMat)&#x1F4B5;</p>
+            <p>@String.Format("{0:N0}", Model.Data?.TongDoanhThu ?? 0)☺</p>
+            <p>@String.Format("{0:N0}", Model.Data?.TongTienMat ?? 0)&#x1F4B5;</p>
         </div>
     </div>
 
@@ -55,54 +56,54 @@
         <tr>
             <td class="bg-light fw-bold text-start">Chi Tiêu</td>
             <td class="so-tien">
-                <a class="text-decoration-none" href="javascript:void(0)" onclick="xemChiTiet(@Model.id_ChiTieu,0)">
-                    @string.Format("{0:N0}", Model.TongChiTieu)
+                <a class="text-decoration-none" href="javascript:void(0)" onclick="xemChiTiet('',0)">
+                    @string.Format("{0:N0}", Model.Data?.TongChiTieu ?? 0)
                 </a>
             </td>
         </tr>
         <tr>
             <td class="bg-light fw-bold text-start">Banking</td>
             <td class="so-tien">
-                <a class="text-decoration-none" href="javascript:void(0)"
-                    onclick="xemHoaDon(1,@Model.Ngay, @Model.Thang, @Model.Nam)">
-                    @string.Format("{0:N0}", Model.TongChuyenKhoan)
+                <a class="text-decoration-none" href="javascript:void(0)" onclick="xemHoaDon(1,@Model.Ngay,@Model.Thang,@Model.Nam)">
+                    @string.Format("{0:N0}", Model.Data?.TongChuyenKhoan ?? 0)
                 </a>
             </td>
         </tr>
         <tr>
             <td class="bg-light fw-bold text-start">Ghi Nợ</td>
             <td class="so-tien">
-                <a class="text-decoration-none" href="javascript:void(0)"
-                    onclick="xemHoaDon(2,@Model.Ngay, @Model.Thang, @Model.Nam)">
-                    @string.Format("{0:N0}", Model.TongTienNo)
+                <a class="text-decoration-none" href="javascript:void(0)" onclick="xemHoaDon(2,@Model.Ngay,@Model.Thang,@Model.Nam)">
+                    @string.Format("{0:N0}", Model.Data?.TongTienNo ?? 0)
                 </a>
             </td>
         </tr>
         <tr>
-            <td class="text-start">
-                <a class="text-decoration-none" href="javascript:void(0)"
-                    onclick="xemHoaDon(0,@Model.Ngay, @Model.Thang, @Model.Nam)">
-                    Tổng Nợ
-                </a>
+            <td class="bg-light fw-bold text-start">Chưa làm</td>
+            <td class="so-tien text-start">
+                <ul class="mb-0">
+                    @foreach (var task in (Model.Data?.ViecChuaLam ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        <li>@task.Trim()</li>
+                    }
+                </ul>
             </td>
+        </tr>
+        <tr>
+            <td class="bg-light fw-bold text-start">Tổng nợ</td>
             <td class="so-tien">
-                <a class="text-decoration-none" href="javascript:void(0)" onclick="xemChiTiet(@Model.id_viec_lam, 0 
-                )">
-                    @string.Format("{0:N0} Việc Làm", Model.HoaDonList.FirstOrDefault(x => x.IdHoaDon ==
-                    @Model.id_viec_lam)?.TongTien)
+                <a class="text-decoration-none" href="javascript:void(0)" onclick="xemHoaDon(2,@Model.Ngay,@Model.Thang,@Model.Nam)">
+                    @string.Format("{0:N0}", Model.Data?.TongCongNo ?? 0)
                 </a>
             </td>
         </tr>
         <tr>
             <td class="text-start">
-                <a class="text-decoration-none" href="javascript:void(0)"
-                    onclick="xemHoaDon(3,@Model.Ngay, @Model.Thang, @Model.Nam)">
+                <a class="text-decoration-none" href="javascript:void(0)" onclick="xemHoaDon(3,@Model.Ngay,@Model.Thang,@Model.Nam)">
                     Trả Nợ Banking
                 </a>
             </td>
             <td class="text-end">
-                <a class="text-decoration-none" href="javascript:void(0)"
-                    onclick="xemHoaDon(4,@Model.Ngay, @Model.Thang, @Model.Nam)">
+                <a class="text-decoration-none" href="javascript:void(0)" onclick="xemHoaDon(4,@Model.Ngay,@Model.Thang,@Model.Nam)">
                     Trả Nợ Tiền Mặt
                 </a>
             </td>
@@ -119,72 +120,63 @@
             </tr>
             <tr>
                 <td class="center-middle text-danger">
-                    <a asp-page="/TaoHoaDon">@Model.TongSoDon</a>
+                    <a asp-page="/TaoHoaDon">@Model.Data?.TongSoDon</a>
                 </td>
                 <td></td>
                 <td class="center-middle text-end text-danger" style="font-variant-numeric: tabular-nums;"
                     data-bs-toggle="tooltip" data-bs-html="true"
-                    title="Thu: @String.Format("{0:N0}", Model.TongDaThu / 1000)<br>Còn: @String.Format("{0:N0}", Model.TongConLai / 1000)">
-                    @String.Format("{0:N0}", Model.TongDoanhThu / 1000)
+                    title="Thu: @String.Format("{0:N0}", (Model.Data?.TongDaThu ?? 0) / 1000)<br>Còn: @String.Format("{0:N0}", (Model.Data?.TongConLai ?? 0) / 1000)">
+                    @String.Format("{0:N0}", (Model.Data?.TongDoanhThu ?? 0) / 1000)
                 </td>
             </tr>
         </thead>
         <tbody>
-            @foreach (var item in Model.HoaDonList.Where(x => x.IdNhomHoaDon < 10))
-                        {
-                        string hienThiThoiGian = item.DaThanhToan
-                        ? item.NgayHoaDon.ToString("HH:mm")
-                        : $"{(int)((item.NgayShip ?? DateTime.Now) - item.NgayHoaDon).TotalMinutes}'";
-
-            string iconTrangThai = "";
-            bool isShip = item.IdNhomHoaDon == 3;
-            bool daDiShip = item.NgayShip != null;
-
-            if (!item.DaThanhToan)
+            @if (Model.Data?.HoaDons != null)
             {
-                if (item.BaoDon) iconTrangThai = "\uD83D\uDD14";
-                else if (item.IdNhomHoaDon == 1) iconTrangThai = "\uD83E\uDE91";
-                else if (item.IdNhomHoaDon == 2) iconTrangThai = "\uD83D\uDECD";
-                else if (item.IdNhomHoaDon == 4) iconTrangThai = "\uD83D\uDCF1";
-                else if (isShip && daDiShip) iconTrangThai = "\uD83D\uDEF5";
-                else if (isShip) iconTrangThai = "\uD83D\uDC69\u200D\uD83C\uDF73";
-            }
+                foreach (var item in Model.Data.HoaDons.Where(x => x.PhanLoai is "Mv" or "Ship" or "App" or "TaiCho"))
+                {
+                    string hienThiThoiGian = item.DaThanhToan
+                    ? item.NgayHoaDon.ToString("HH:mm")
+                    : $"{(int)((item.NgayShip ?? DateTime.Now) - item.NgayHoaDon).TotalMinutes}'";
 
-            string hienThiText;
+                    string iconTrangThai = "";
+                    bool isShip = item.PhanLoai == "Ship";
+                    bool daDiShip = item.NgayShip != null;
 
-            if (isShip)
-            {
-                if (daDiShip)
-                    hienThiText = item.ThongTinHoaDon;
-                else
-                    hienThiText = item.ThongTinHoaDon + " (" + item.DiaChiShip + ")";
-            }
-            else
-            {
-                hienThiText = item.ThongTinHoaDon;
-            }
+                    if (!item.DaThanhToan)
+                    {
+                        if (item.BaoDon) iconTrangThai = "\uD83D\uDD14"; // 🟟
+                        else if (item.PhanLoai == "TaiCho") iconTrangThai = "\uD83E\uDE91"; // 🟟‍🟟
+                        else if (item.PhanLoai == "Mv") iconTrangThai = "\uD83D\uDECD"; // 🟟
+                        else if (item.PhanLoai == "App") iconTrangThai = "\uD83D\uDCF1"; // 🟟
+                        else if (isShip && daDiShip) iconTrangThai = "\uD83D\uDEF5"; // 🟟
+                        else if (isShip) iconTrangThai = "\uD83D\uDC69\u200D\uD83C\uDF73"; // 🟟‍🟟
+                    }
 
-            var tien = GetThongTinTien(item);
-            <tr>
-                <td class="center-middle">@hienThiThoiGian</td>
-                <td>
-                    <span style="font-size: 1.2rem; margin-right: 4px;">@iconTrangThai</span>
-                    <a class="text-decoration-none" href="javascript:void(0)"
-                        onclick="xemHoaDon(@item.IdKhachHang, @Model.Ngay, @Model.Thang, @Model.Nam)">
-                        @hienThiText
-                    </a>
-                </td>
-                <td class="so-tien text-end" style="background-color:@tien.MauNen" data-bs-toggle="tooltip"
-                    data-bs-html="true" title="@tien.Tooltip">
-                    <a class="text-decoration-none" href="javascript:void(0)" onclick="xemChiTiet(@item.IdHoaDon,1)">
-                        @tien.SoTien
-                    </a>
-                </td>
-            </tr>
-                        }
+                    string hienThiText = item.ThongTinHoaDon;
+
+                    var tien = GetThongTinTien(item);
+                    <tr>
+                        <td class="center-middle">@hienThiThoiGian</td>
+                        <td>
+                            <span style="font-size: 1.2rem; margin-right: 4px;">@iconTrangThai</span>
+                            <a class="text-decoration-none" href="javascript:void(0)" onclick="xemHoaDon('@item.IdKhachHang',@Model.Ngay,@Model.Thang,@Model.Nam)">
+                                @hienThiText
+                            </a>
+                        </td>
+                        <td class="so-tien text-end" style="background-color:@tien.MauNen" data-bs-toggle="tooltip" data-bs-html="true" title="@tien.Tooltip">
+                            <a class="text-decoration-none" href="javascript:void(0)" onclick="xemChiTiet('@item.Id',1)">
+                                @tien.SoTien
+                            </a>
+                        </td>
+                    </tr>
+                }
+            }
         </tbody>
     </table>
 </div>
+
+@await Html.PartialAsync("_DoanhThuScripts")
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -194,7 +186,7 @@
         const data = {
             labels: ['Tại chỗ', 'Mua về', 'Ship', 'App'],
             datasets: [{
-                data: [@Model.TaiCho, @Model.MuaVe, @Model.DiShip, @Model.AppShipping],
+                data: [@Model.Data?.TaiCho ?? 0, @Model.Data?.MuaVe ?? 0, @Model.Data?.DiShip ?? 0, @Model.Data?.AppShipping ?? 0],
                 backgroundColor: [
                     'rgba(255, 99, 132, 0.7)',
                     'rgba(54, 162, 235, 0.7)',
@@ -240,7 +232,7 @@
         public string Tooltip { get; set; } = string.Empty;
     }
 
-    public TienHienThi GetThongTinTien(dynamic item)
+    public TienHienThi GetThongTinTien(TraSuaApp.Shared.Dtos.DoanhThuHoaDonDto item)
     {
         var r = new TienHienThi();
 
@@ -248,10 +240,10 @@
         {
             r.MauNen = "#ffffcc";
 
-            if (item.tien_mat > 0)
+            if (item.TienMat > 0)
             {
                 r.SoTien = item.DaThu.ToString("N0");
-                r.Tooltip = $"Tiền mặt: {item.tien_mat:N0} <br>Chuyển khoản: {item.TienBank:N0}";
+                r.Tooltip = $"Tiền mặt: {item.TienMat:N0} <br>Chuyển khoản: {item.TienBank:N0}";
             }
             else
             {
@@ -274,7 +266,7 @@
         else
         {
             r.MauNen = "#ffffff";
-            r.SoTien = item.tien_mat.ToString("N0");
+            r.SoTien = item.TienMat.ToString("N0");
             r.Tooltip = "Đã thu bằng tiền mặt";
         }
         return r;

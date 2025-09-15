@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Shared.Logging;
 using TraSuaAppWeb.Data;
 using TraSuaAppWeb.Models;
 
