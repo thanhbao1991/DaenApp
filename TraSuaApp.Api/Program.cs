@@ -28,7 +28,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
 // 🟟 Add AutoMapper & Services
-builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddInfrastructureServices();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
