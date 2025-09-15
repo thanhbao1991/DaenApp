@@ -61,3 +61,14 @@ public class DoanhThuThangItemDto
     public decimal DiShip { get; set; }
     public decimal AppShipping { get; set; }
 }
+
+// 🟟 DTO mới
+public class DoanhThuChiTietHoaDonDto
+{
+    public Guid Id { get; set; }
+    public string TenSanPham { get; set; } = "";
+    public int SoLuong { get; set; }
+    public decimal DonGia { get; set; }
+    public decimal ThanhTien { get; set; }
+    public string? GhiChu { get; set; }
+}

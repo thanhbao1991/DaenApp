@@ -133,39 +133,74 @@
         <tbody>
             @if (Model.Data?.HoaDons != null)
             {
-                foreach (var item in Model.Data.HoaDons.Where(x => x.PhanLoai is "Mv" or "Ship" or "App" or "TaiCho"))
+                foreach (var item in Model.Data.HoaDons
+                .Where(x => x.PhanLoai is "Mv" or "Ship" or "App" or "TaiCho")
+                .OrderByDescending(x => x.PhanLoai == "Ship" && x.NgayShip == null) // Ship chưa đi lên đầu
+                .ThenByDescending(x => x.NgayHoaDon))                               // Mới nhất trước
                 {
-                    string hienThiThoiGian = item.DaThanhToan
-                    ? item.NgayHoaDon.ToString("HH:mm")
-                    : $"{(int)((item.NgayShip ?? DateTime.Now) - item.NgayHoaDon).TotalMinutes}'";
-
-                    string iconTrangThai = "";
-                    bool isShip = item.PhanLoai == "Ship";
-                    bool daDiShip = item.NgayShip != null;
-
-                    if (!item.DaThanhToan)
+                    // 🟟 Thời gian
+                    string hienThiThoiGian;
+                    if (item.PhanLoai == "Ship")
                     {
-                        if (item.BaoDon) iconTrangThai = "\uD83D\uDD14"; // 🟟
-                        else if (item.PhanLoai == "TaiCho") iconTrangThai = "\uD83E\uDE91"; // 🟟‍🟟
-                        else if (item.PhanLoai == "Mv") iconTrangThai = "\uD83D\uDECD"; // 🟟
-                        else if (item.PhanLoai == "App") iconTrangThai = "\uD83D\uDCF1"; // 🟟
-                        else if (isShip && daDiShip) iconTrangThai = "\uD83D\uDEF5"; // 🟟
-                        else if (isShip) iconTrangThai = "\uD83D\uDC69\u200D\uD83C\uDF73"; // 🟟‍🟟
+                        if (item.NgayShip == null)
+                        {
+                            hienThiThoiGian = $"{(int)(DateTime.Now - item.NgayHoaDon).TotalMinutes}'";
+                        }
+                        else
+                        {
+                            hienThiThoiGian = item.NgayHoaDon.ToString("HH:mm");
+                        }
+                    }
+                    else
+                    {
+                        hienThiThoiGian = item.NgayHoaDon.ToString("HH:mm");
+                    }
+
+                    // 🟟 Icon
+                    string iconTrangThai = "";
+                    if (item.BaoDon)
+                    {
+                        iconTrangThai = "\uD83D\uDD14"; // 🟟
+                    }
+                    else if (item.PhanLoai == "TaiCho")
+                    {
+                        iconTrangThai = "\uD83E\uDE91"; // 🟟
+                    }
+                    else if (item.PhanLoai == "Mv")
+                    {
+                        iconTrangThai = "\uD83D\uDECD"; // 🟟
+                    }
+                    else if (item.PhanLoai == "App")
+                    {
+                        iconTrangThai = "\uD83D\uDCF1"; // 🟟
+                    }
+                    else if (item.PhanLoai == "Ship")
+                    {
+                        if (item.NgayShip == null)
+                        {
+                            iconTrangThai = "\uD83D\uDC69\u200D\uD83C\uDF73"; // 🟟‍🟟 chưa đi ship
+                        }
+                        else
+                        {
+                            iconTrangThai = "\uD83D\uDEF5"; // 🟟 đã đi ship
+                        }
                     }
 
                     string hienThiText = item.ThongTinHoaDon;
-
                     var tien = GetThongTinTien(item);
+
                     <tr>
                         <td class="center-middle">@hienThiThoiGian</td>
                         <td>
                             <span style="font-size: 1.2rem; margin-right: 4px;">@iconTrangThai</span>
-                            <a class="text-decoration-none" href="javascript:void(0)" onclick="xemHoaDon('@item.IdKhachHang',@Model.Ngay,@Model.Thang,@Model.Nam)">
+                            <a class="text-decoration-none" href="javascript:void(0)"
+                               onclick="xemHoaDon('@item.IdKhachHang',@Model.Ngay,@Model.Thang,@Model.Nam)">
                                 @hienThiText
                             </a>
                         </td>
-                        <td class="so-tien text-end" style="background-color:@tien.MauNen" data-bs-toggle="tooltip" data-bs-html="true" title="@tien.Tooltip">
-                            <a class="text-decoration-none" href="javascript:void(0)" onclick="xemChiTiet('@item.Id',1)">
+                        <td class="so-tien text-end" style="background-color:@tien.MauNen"
+                            data-bs-toggle="tooltip" data-bs-html="true" title="@tien.Tooltip">
+                            <a class="text-decoration-none" href="javascript:void(0)" onclick="xemChiTiet('@item.Id')">
                                 @tien.SoTien
                             </a>
                         </td>
@@ -173,6 +208,7 @@
                 }
             }
         </tbody>
+    
     </table>
 </div>
 

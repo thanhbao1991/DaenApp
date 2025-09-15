@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -10,11 +11,15 @@ using TraSuaApp.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 🟟 Đọc cấu hình Api BaseUrl từ appsettings
+var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"];
+
 // 🟟 Add Controllers + JSON config
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+        options.JsonSerializerOptions.Encoder =
+            System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
     });
 
 builder.Services.AddControllers(options =>
@@ -31,6 +36,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddInfrastructureServices();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
+
+// 🟟 Đăng ký HttpClient (nếu cần gọi ra ngoài)
+if (!string.IsNullOrEmpty(apiBaseUrl))
+{
+    builder.Services.AddHttpClient("Api", client =>
+    {
+        client.BaseAddress = new Uri(apiBaseUrl);
+        client.DefaultRequestHeaders.Add("Accept", "application/json");
+    });
+}
 
 // 🟟 JWT Authentication
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? "");
@@ -59,21 +74,26 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
         policy.WithOrigins(
-                "http://www.denncoffee.uk:7131", // web chạy domain
-                "http://localhost:7131"          // chạy dev local
+                "http://www.denncoffee.uk:7130", // web chạy domain thật
+                "http://localhost:7130",
+
+                "http://www.denncoffee.uk:7131", // web chạy domain thật
+                "http://localhost:7131",
+
+                "http://www.denncoffee.uk:7132", // web chạy domain thật
+                "http://localhost:7132"
+
+
+
+
+
+
             )
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
 
 builder.Services.AddSignalR();
-builder.Services.AddSignalR();
-
-// 🟟 Lắng nghe port 80
-//builder.WebHost.ConfigureKestrel(options =>
-//{
-//    options.ListenAnyIP(80);
-//});
 
 var app = builder.Build();
 

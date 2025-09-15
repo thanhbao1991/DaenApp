@@ -14,7 +14,12 @@ public class DoanhThuController : ControllerBase
     {
         _service = service;
     }
-
+    [HttpGet("chitiet")]
+    public async Task<ActionResult<Result<List<DoanhThuChiTietHoaDonDto>>>> GetChiTietHoaDon(Guid hoaDonId)
+    {
+        var dto = await _service.GetChiTietHoaDonAsync(hoaDonId);
+        return Result<List<DoanhThuChiTietHoaDonDto>>.Success(dto);
+    }
     [HttpGet("ngay")]
     public async Task<ActionResult<Result<DoanhThuNgayDto>>> GetDoanhThuNgay(int ngay, int thang, int nam)
     {

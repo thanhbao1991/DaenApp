@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@inject IConfiguration Configuration
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -16,6 +17,16 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+
+
+
+    <script>
+        // 🟟 Lấy baseUrl từ appsettings.json
+        window.apiBaseUrl = "@Configuration["ApiSettings:BaseUrl"]";
+        console.log("Using API BaseUrl:", window.apiBaseUrl);
+    </script>
+
 </head>
 
 <body>
@@ -161,21 +172,67 @@
                 });
         }
 
-        function xemChiTiet(IdHoaDon, flag) {
-            const url = `/ChiTietHoaDon?IdHoaDon=${IdHoaDon}&flag=${flag}`;
+
+
+
+      // ================================
+        // 🟟 Hàm xem chi tiết hoá đơn
+        // ================================
+        function xemChiTiet(id) {
+            if (!id) return;
+            $('#chiTietContent').html("<p>Đang tải dữ liệu...</p>");
+            $('#chiTietModal').modal('show');
+
+            const url = `${window.apiBaseUrl}/api/doanhthu/chitiet?hoaDonId=${id}`;
             fetch(url)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('chiTietContent').innerHTML = html;
-                    var modal = new bootstrap.Modal(document.getElementById('chiTietModal'));
-                    modal.show();
+                .then(res => res.json())
+                .then(res => {
+                    if (!res.isSuccess) {
+                        $('#chiTietContent').html("<p class='text-danger'>Không tải được chi tiết hóa đơn</p>");
+                        return;
+                    }
+
+                    const list = res.data;
+                    let html = "";
+
+                    const icons = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣"];
+                    function getIcon(num) {
+                        if (num === 10) return "🟟";
+                        if (num < 10) return icons[num];
+                        return num.toString().split("").map(c => icons[parseInt(c)]).join("");
+                    }
+
+                    list.forEach(item => {
+                        const iconSo = getIcon(item.soLuong);
+                        html += `
+                          <div class="mx-3 d-flex justify-content-between align-items-center item-row py-2 ${item.thanhTien == 0 ? "opacity-25" : ""}">
+                              <div>
+                                  <span class="item-text">${iconSo} ${item.tenSanPham}</span>
+                                  ${item.ghiChu ? `<div class="item-note">${item.ghiChu}</div>` : ""}
+                              </div>
+                              <span class="fw-bold text-danger">${item.thanhTien.toLocaleString()}</span>
+                          </div>
+                        `;
+                    });
+
+                    const tong = list.reduce((s, x) => s + x.thanhTien, 0);
+                    html += `
+                      <div class="border-top mt-4 pt-2 d-flex justify-content-between fw-bold text-danger">
+                          <span>Tổng</span>
+                          <span>${tong.toLocaleString()} đ</span>
+                      </div>
+                    `;
+
+                    $('#chiTietContent').html(html);
                 })
-                .catch(error => {
-                    document.getElementById('chiTietContent').innerHTML = "<p>Lỗi tải dữ liệu</p>";
-                    console.error(error);
+                .catch(err => {
+                    $('#chiTietContent').html("<p class='text-danger'>Lỗi tải dữ liệu</p>");
+                    console.error(err);
                 });
         }
     </script>
+
+
 
     @* hien thi toôl tip *@
     <script>

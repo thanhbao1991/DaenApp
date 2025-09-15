@@ -1,21 +1,6 @@
 ﻿@section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
-        // 🟟 Xem chi tiết hóa đơn theo Id
-        function xemChiTiet(id, mode) {
-            if (!id) return;
-            $('#chiTietContent').html("<p>Đang tải dữ liệu...</p>");
-            $('#chiTietModal').modal('show');
-            fetch(`/ChiTietHoaDon?id=${id}&mode=${mode}`)
-                .then(res => res.text())
-                .then(html => {
-                    $('#chiTietContent').html(html);
-                })
-                .catch(err => {
-                    $('#chiTietContent').html("<p class='text-danger'>Lỗi tải dữ liệu</p>");
-                    console.error(err);
-                });
-        }
 
         // 🟟 Xem danh sách hóa đơn theo filter
         function xemHoaDon(type, ngay, thang, nam) {
@@ -49,4 +34,22 @@
             });
         }
     </script>
+
+    <style>
+        .item-row {
+            font-size: 0.95rem;
+        }
+        .item-text {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4em;
+            line-height: 1.4;
+        }
+        .item-note {
+            font-size: 0.85em;
+            opacity: 0.5;
+            padding-left: 2em;
+            line-height: 1.2;
+        }
+    </style>
 }

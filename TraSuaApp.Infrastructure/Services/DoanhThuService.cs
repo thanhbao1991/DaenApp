@@ -8,7 +8,24 @@ public class DoanhThuService : IDoanhThuService
 {
     private readonly AppDbContext _context;
     public DoanhThuService(AppDbContext context) => _context = context;
+    public async Task<List<DoanhThuChiTietHoaDonDto>> GetChiTietHoaDonAsync(Guid hoaDonId)
+    {
+        var chiTiets = await _context.ChiTietHoaDons
+            .AsNoTracking()
+            .Where(x => x.HoaDonId == hoaDonId && !x.IsDeleted)
+            .Select(x => new DoanhThuChiTietHoaDonDto
+            {
+                Id = x.Id,
+                TenSanPham = x.TenSanPham,
+                SoLuong = x.SoLuong,
+                DonGia = x.DonGia,
+                ThanhTien = x.ThanhTien,
+                GhiChu = x.NoteText
+            })
+            .ToListAsync();
 
+        return chiTiets;
+    }
     public async Task<DoanhThuNgayDto> GetDoanhThuNgayAsync(DateTime ngay)
     {
         var list = await _context.HoaDons
@@ -17,42 +34,38 @@ public class DoanhThuService : IDoanhThuService
             .Where(x => !x.IsDeleted && x.Ngay == ngay)
             .ToListAsync();
 
-        var hoaDonIds = list
-        .Select(x => x.Id)
-        .ToList();
-
+        var hoaDonIds = list.Select(x => x.Id).ToList();
         var tongDoanhThu = list.Sum(x => x.ThanhTien);
 
         var tongDaThu = await _context.ChiTietHoaDonThanhToans.AsNoTracking()
-    .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
-    .SumAsync(ct => (decimal?)ct.SoTien) ?? 0;
+            .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
+            .SumAsync(ct => (decimal?)ct.SoTien) ?? 0;
 
         var tongChuyenKhoan = await _context.ChiTietHoaDonThanhToans.AsNoTracking()
-      .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && ct.TenPhuongThucThanhToan.ToLower() != "Tiền Mặt" && !ct.IsDeleted)
-      .SumAsync(ct => (decimal?)ct.SoTien) ?? 0;
+            .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && ct.TenPhuongThucThanhToan.ToLower() != "tiền mặt" && !ct.IsDeleted)
+            .SumAsync(ct => (decimal?)ct.SoTien) ?? 0;
 
         var tongTienNo = await _context.ChiTietHoaDonNos.AsNoTracking()
-.Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
-.SumAsync(ct => (decimal?)ct.SoTienNo) ?? 0;
+            .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
+            .SumAsync(ct => (decimal?)ct.SoTienNo) ?? 0;
 
         var tongTienTraNoTrongNgay = await _context.ChiTietHoaDonThanhToans.AsNoTracking()
-.Where(ct => hoaDonIds.Contains(ct.HoaDonId) && ct.LoaiThanhToan == "Trả nợ trong ngày" && !ct.IsDeleted)
-.SumAsync(ct => (decimal?)ct.SoTien) ?? 0;
+            .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && ct.LoaiThanhToan == "Trả nợ trong ngày" && !ct.IsDeleted)
+            .SumAsync(ct => (decimal?)ct.SoTien) ?? 0;
 
         tongTienNo -= tongTienTraNoTrongNgay;
 
         var tongChiTieu = await _context.ChiTieuHangNgays.AsNoTracking()
-.Where(ct => ct.Ngay == ngay && !ct.BillThang && !ct.IsDeleted)
-.SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0;
+            .Where(ct => ct.Ngay == ngay && !ct.BillThang && !ct.IsDeleted)
+            .SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0;
 
         string viecChuaLam = string.Join(", ",
-         await _context.CongViecNoiBos
-             .AsNoTracking()
-             .Where(ct => !ct.DaHoanThanh && !ct.IsDeleted)
-             .Select(ct => ct.Ten)
-             .ToListAsync()
-     );
-
+            await _context.CongViecNoiBos
+                .AsNoTracking()
+                .Where(ct => !ct.DaHoanThanh && !ct.IsDeleted)
+                .Select(ct => ct.Ten)
+                .ToListAsync()
+        );
 
         var dto = new DoanhThuNgayDto
         {
@@ -78,7 +91,7 @@ public class DoanhThuService : IDoanhThuService
                 ThongTinHoaDon = x.KhachHangId != null ? x.TenKhachHangText : x.TenBan,
                 DiaChiShip = x.DiaChiText,
                 PhanLoai = x.PhanLoai,
-                NgayHoaDon = x.Ngay,
+                NgayHoaDon = x.NgayGio,
                 NgayShip = x.NgayShip,
                 BaoDon = x.BaoDon,
                 TongTien = x.TongTien,
@@ -91,32 +104,66 @@ public class DoanhThuService : IDoanhThuService
 
     public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
     {
-        var list = await _context.HoaDons.AsNoTracking()
+        var hoaDons = await _context.HoaDons
+            .Include(x => x.KhachHang)
+            .AsNoTracking()
             .Where(x => !x.IsDeleted && x.Ngay.Month == thang && x.Ngay.Year == nam)
-            .GroupBy(x => x.Ngay.Date)
-            .Select(g => new DoanhThuThangItemDto
-            {
-                Ngay = g.Key,
-                //   SoDon = g.Count(x => x.PhanLoai is "Mv" or "Ship" or "App" or "TaiCho"),
-                //   TongTien = (double)g.Where(x => x.PhanLoai is "Mv" or "Ship" or "App" or "TaiCho").Sum(x => x.TongTien),
-                //     ChiTieu = (double)g.Where(x => x.PhanLoai == "ChiTieu").Sum(x => x.TongTien),
-                //  //  TienBank = (double)g.Where(x => x.NgayBank == g.Key).Sum(x => x.TienBank),
-                //     TienNo = (double)g.Where(x => x.PhanLoai is "Mv" or "Ship" or "TaiCho")
-                //                     .Where(x => x.NgayNo == g.Key && (x.NgayTra == null || x.NgayTra != g.Key))
-                //0                      .Sum(x => x.TienNo),
-                TaiCho = g.Where(x => x.PhanLoai == "TaiCho").Sum(x => x.TongTien),
-                MuaVe = g.Where(x => x.PhanLoai == "Mv").Sum(x => x.ThanhTien),
-                DiShip = g.Where(x => x.PhanLoai == "Ship").Sum(x => x.ThanhTien),
-                AppShipping = g.Where(x => x.PhanLoai == "App").Sum(x => x.ThanhTien),
-            })
-            .OrderBy(g => g.Ngay)
             .ToListAsync();
 
-        foreach (var item in list)
-        {
-            item.TongTienMat = item.TongTien - item.ChiTieu - item.TienBank - item.TienNo;
-        }
+        var hoaDonIds = hoaDons.Select(x => x.Id).ToList();
 
-        return list;
+        var thanhToans = await _context.ChiTietHoaDonThanhToans
+            .AsNoTracking()
+            .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
+            .ToListAsync();
+
+        var noList = await _context.ChiTietHoaDonNos
+            .AsNoTracking()
+            .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
+            .ToListAsync();
+
+        var chiTieus = await _context.ChiTieuHangNgays
+            .AsNoTracking()
+            .Where(ct => ct.Ngay.Month == thang && ct.Ngay.Year == nam && !ct.BillThang && !ct.IsDeleted)
+            .ToListAsync();
+
+        var result = hoaDons
+            .GroupBy(x => x.Ngay.Date)
+            .Select(g =>
+            {
+                var idsTrongNgay = g.Select(x => x.Id).ToList();
+                var tongDoanhThu = g.Sum(x => x.ThanhTien);
+
+                var tongChuyenKhoan = thanhToans
+                    .Where(ct => idsTrongNgay.Contains(ct.HoaDonId) && ct.TenPhuongThucThanhToan.ToLower() != "tiền mặt")
+                    .Sum(ct => ct.SoTien);
+
+                var tongTienNo = noList
+                    .Where(ct => idsTrongNgay.Contains(ct.HoaDonId))
+                    .Sum(ct => ct.SoTienNo);
+
+                var tongChiTieu = chiTieus
+                    .Where(ct => ct.Ngay.Date == g.Key)
+                    .Sum(ct => ct.ThanhTien);
+
+                return new DoanhThuThangItemDto
+                {
+                    Ngay = g.Key,
+                    SoDon = g.Count(),
+                    TongTien = tongDoanhThu,
+                    ChiTieu = tongChiTieu,
+                    TienBank = tongChuyenKhoan,
+                    TienNo = tongTienNo,
+                    TongTienMat = tongDoanhThu - tongChiTieu - tongChuyenKhoan - tongTienNo,
+                    TaiCho = g.Where(x => x.PhanLoai == "TaiCho").Sum(x => x.ThanhTien),
+                    MuaVe = g.Where(x => x.PhanLoai == "Mv").Sum(x => x.ThanhTien),
+                    DiShip = g.Where(x => x.PhanLoai == "Ship").Sum(x => x.ThanhTien),
+                    AppShipping = g.Where(x => x.PhanLoai == "App").Sum(x => x.ThanhTien),
+                };
+            })
+            .OrderBy(x => x.Ngay)
+            .ToList();
+
+        return result;
     }
 }

@@ -13,13 +13,25 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 
-// 🟟 Đăng ký HttpClient cho API backend
+
+
+// Lấy config cho API
+var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "NOT CONFIGURED";
+
+// In ra console khi start app
+Console.WriteLine($"[TraSuaAppWeb] Using API BaseUrl = {apiBaseUrl}");
+
 builder.Services.AddHttpClient("Api", client =>
 {
-    client.BaseAddress = new Uri("http://api.denncoffee.uk");
+    client.BaseAddress = new Uri(apiBaseUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
+
+// Các service khác
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
+builder.Services.AddControllers();
 
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);

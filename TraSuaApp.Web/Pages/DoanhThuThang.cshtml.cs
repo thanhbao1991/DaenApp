@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TraSuaApp.Shared.Dtos;
@@ -44,12 +44,13 @@ namespace TraSuaAppWeb.Pages
 
                 DoanhThuTheoNgay = wrapper?.Data ?? new();
 
+                // Dùng dữ liệu từ backend đã tính sẵn
                 TongDoanhThu = DoanhThuTheoNgay.Sum(d => d.TongTien);
                 TongChiTieu = DoanhThuTheoNgay.Sum(d => d.ChiTieu);
                 TongSoDon = DoanhThuTheoNgay.Sum(d => d.SoDon);
                 TongChuyenKhoan = DoanhThuTheoNgay.Sum(d => d.TienBank);
                 TongTienNo = DoanhThuTheoNgay.Sum(d => d.TienNo);
-                TongTienMat = TongDoanhThu - TongChiTieu - TongChuyenKhoan - TongTienNo;
+                TongTienMat = DoanhThuTheoNgay.Sum(d => d.TongTienMat);
             }
         }
     }

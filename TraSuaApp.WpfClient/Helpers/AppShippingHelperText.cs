@@ -232,7 +232,7 @@ public class AppShippingHelperText
     {
         var sp = _sanPhamList.FirstOrDefault(x =>
             TextSearchHelper.NormalizeText(x.Ten).ToLower() ==
-            TextSearchHelper.NormalizeText(tenSanPham).ToLower());
+            TextSearchHelper.NormalizeText(tenSanPham.Replace("Trân Châu Đường Đen", "TCĐĐ")).ToLower());
 
         if (sp == null)
         {
