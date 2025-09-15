@@ -7,15 +7,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Controller\**" />
+    <Content Remove="Controller\**" />
+    <EmbeddedResource Remove="Controller\**" />
+    <None Remove="Controller\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.6" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controller\" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\TraSuaApp.Application\TraSuaApp.Application.csproj" />
+    <ProjectReference Include="..\TraSuaApp.Domain\TraSuaApp.Domain.csproj" />
+    <ProjectReference Include="..\TraSuaApp.Infrastructure\TraSuaApp.Infrastructure.csproj" />
     <ProjectReference Include="..\TraSuaApp.Shared\TraSuaApp.Shared.csproj" />
   </ItemGroup>
 

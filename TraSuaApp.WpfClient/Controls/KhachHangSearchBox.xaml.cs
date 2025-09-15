@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -9,7 +10,7 @@ namespace TraSuaApp.WpfClient.Controls
 {
     public partial class KhachHangSearchBox : UserControl
     {
-        public List<KhachHangDto> KhachHangList { get; set; } = new();
+        public ObservableCollection<KhachHangDto> KhachHangList = new();
         public KhachHangDto? SelectedKhachHang { get; private set; }
         public event Action<KhachHangDto>? KhachHangSelected;
         public event Action? KhachHangCleared;

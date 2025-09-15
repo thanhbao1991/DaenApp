@@ -78,7 +78,6 @@ namespace TraSuaApp.WpfClient.Views
         private readonly DispatcherTimer _baoDonTimer;
         private readonly DispatcherTimer _congViecTimer;
         private readonly DispatcherTimer _updateSummaryTimer;
-        private readonly DispatcherTimer _dashboardCaptureTimer;
 
         // 🟟 Gom debounce
         private readonly DebounceManager _debouncer = new();
@@ -94,13 +93,6 @@ namespace TraSuaApp.WpfClient.Views
             _gpt = new GPTService(Config.apiChatGptKey);
             _quickOrder = new QuickOrderService(Config.apiChatGptKey);
             DataContext = this;
-            // 🟟 Timer lưu Dashboard (5 phút)
-            _dashboardCaptureTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMinutes(10)
-            };
-            _dashboardCaptureTimer.Tick += async (s, e) => await CaptureDashboard_Tick();
-            _dashboardCaptureTimer.Start();
             // 🟟 Timer báo đơn (2s)
             _baoDonTimer = new DispatcherTimer
             {
@@ -146,13 +138,7 @@ namespace TraSuaApp.WpfClient.Views
 
         private async Task BaoDonTimer_Tick()
         {
-            // 1) Âm báo đơn giữ nguyên (nhanh và cần realtime)
-            if (_fullHoaDonList.Any(hd => hd.BaoDon))
-                AudioHelper.PlayLoop("don-moi.mp3");
-            else
-                AudioHelper.Stop();
-
-            // 2) Refresh thời gian hiển thị: CHỈ với danh sách đang hiển thị
+            // 1) Refresh thời gian hiển thị: CHỈ với danh sách đang hiển thị
             if (DateTime.Now.Second < 5)
             {
                 var visible = (HoaDonDataGrid.ItemsSource as IEnumerable<HoaDonDto>)
@@ -161,7 +147,7 @@ namespace TraSuaApp.WpfClient.Views
                     item.RefreshGioHienThi();
             }
 
-            // 3) HĐ đến hạn: tính off-UI thread + xử lý theo batch nhỏ
+            // 2) HĐ đến hạn: tính off-UI thread + xử lý theo batch nhỏ
             var now = DateTime.Now;
             var dueBatch = await Task.Run(() =>
                 _fullHoaDonList
@@ -179,7 +165,6 @@ namespace TraSuaApp.WpfClient.Views
                 NotiHelper.Show($"⏰ Đến giờ hẹn: {hd.Ten} ({hd.TongTien:N0}đ)");
                 hd.NgayHen = null;
 
-                // Fire-and-forget để không chặn UI loop
                 _ = Task.Run(async () =>
                 {
                     try { await api.UpdateSingleAsync(hd.Id, hd); }
@@ -187,40 +172,6 @@ namespace TraSuaApp.WpfClient.Views
                 });
             }
         }
-        // 🟟 Timer báo đơn
-        //private async Task BaoDonTimer_Tick()
-        //{
-
-        //    if (_fullHoaDonList.Any(hd => hd.BaoDon))
-        //    {
-        //        AudioHelper.PlayLoop("don-moi.mp3");
-        //    }
-        //    else
-        //    {
-        //        AudioHelper.Stop();
-        //    }
-
-        //    if (DateTime.Now.Second < 5)
-        //    {
-        //        foreach (var item in _fullHoaDonList)
-        //            item.RefreshGioHienThi();
-        //    }
-
-        //    var dsDenHan = _fullHoaDonList
-        //        .Where(h => h.NgayHen.HasValue && h.NgayHen.Value <= DateTime.Now)
-        //        .ToList();
-
-        //    foreach (var hd in dsDenHan)
-        //    {
-        //        NotiHelper.Show($"⏰ Đến giờ hẹn: {hd.Ten} ({hd.TongTien:N0}đ)");
-
-        //        hd.NgayHen = null;
-        //        var api = new HoaDonApi();
-        //        await api.UpdateSingleAsync(hd.Id, hd);
-        //    }
-        //}
-
-        // Thêm field nếu cần (đặt trong class)
         private readonly int _cvTopN = 5;
         private DateTime _lastCvNotiDate = DateTime.MinValue;
         private readonly HashSet<Guid> _cvNotifiedToday = new(); // tránh lặp TTS trong ngày
@@ -233,95 +184,41 @@ namespace TraSuaApp.WpfClient.Views
             var list = _fullCongViecNoiBoList
                         .Where(cv => !cv.IsDeleted && !cv.DaHoanThanh);
 
-            // 1) Việc đến NGÀY hẹn = hôm nay: ưu tiên nói trước, tránh lặp trong cùng 1 ngày
+            // 1) Việc đến NGÀY hẹn = hôm nay
             var dsHenNgay = list
                 .Where(cv => cv.NgayCanhBao.HasValue && cv.NgayCanhBao.Value.Date == today)
                 .OrderBy(cv => cv.NgayGio ?? DateTime.MaxValue)
                 .Take(_cvTopN)
                 .ToList();
 
-            foreach (var cv in dsHenNgay)
-            {
-                if (_lastCvNotiDate != today) _cvNotifiedToday.Clear();
-                _lastCvNotiDate = today;
-
-                if (_cvNotifiedToday.Add(cv.Id))
-                {
-                    await TTSHelper.DownloadAndPlayGoogleTTSAsync("Kiểm tra " + cv.Ten.Replace("Nấu", ""));
-                    await Task.Delay(400);
-                }
-            }
-
-            // 2) Tóm gọn: chỉ đọc Top-N việc chưa hoàn thành (thay vì đọc hết)
+            // 2) Top-N việc chưa hoàn thành
             var dsChuaHoanThanhTop = list
                 .OrderBy(cv => cv.NgayGio ?? DateTime.MaxValue)
                 .Take(_cvTopN)
                 .ToList();
-            CaptureDashboard_Tick();
-            foreach (var cv in dsChuaHoanThanhTop)
+
+            // Gom cả hai danh sách lại, tránh trùng Id
+            var dsCanDoc = dsHenNgay.Concat(dsChuaHoanThanhTop)
+                                    .GroupBy(cv => cv.Id)
+                                    .Select(g => g.First())
+                                    .ToList();
+
+            // Đọc lần lượt
+            foreach (var cv in dsCanDoc)
             {
-                if (_cvNotifiedToday.Add(cv.Id)) // nếu vừa đọc ở trên sẽ không lặp lại
+                if (dsHenNgay.Any(x => x.Id == cv.Id))
+                {
+                    await TTSHelper.DownloadAndPlayGoogleTTSAsync("Kiểm tra " + cv.Ten.Replace("Nấu", ""));
+                }
+                else
                 {
                     await TTSHelper.DownloadAndPlayGoogleTTSAsync(cv.Ten);
-                    await Task.Delay(300);
                 }
+                await Task.Delay(400);
             }
         }
 
 
-
-
-        //// 🟟 Timer công việc
-        //private async Task CongViecTimer_Tick()
-        //{
-        //    if (AppProviders.CongViecNoiBos == null) return;
-
-        //    var today = DateTime.Today;
-
-        //    // 1) Nhắc những việc ĐẾN NGÀY HẸN (NgayCanhBao = hôm nay)
-        //    var dsHenNgay = _fullCongViecNoiBoList
-        //        .Where(cv => !cv.IsDeleted && !cv.DaHoanThanh)
-        //        .Where(cv => cv.NgayCanhBao.HasValue && cv.NgayCanhBao.Value.Date == today)
-        //        .OrderBy(cv => cv.NgayGio ?? DateTime.MaxValue)
-        //        .ToList();
-
-        //    foreach (var cv in dsHenNgay)
-        //    {
-        //        // NotiHelper.Show($"⏳ {cv.Ten}");
-        //        await TTSHelper.DownloadAndPlayGoogleTTSAsync("Kiểm tra " + cv.Ten.Replace("Nấu", ""));
-        //        await Task.Delay(1000);
-        //    }
-
-        //    // 2) Nhắc tất cả công việc CHƯA HOÀN THÀNH (logic cũ, đọc hết)
-        //    var dsChuaHoanThanh = _fullCongViecNoiBoList
-        //        .Where(cv => !cv.IsDeleted && !cv.DaHoanThanh)
-        //        .OrderBy(cv => cv.NgayGio ?? DateTime.MaxValue)
-        //        .ToList();
-
-        //    foreach (var cv in dsChuaHoanThanh)
-        //    {
-        //        // NotiHelper.Show($"❌ {cv.Ten}");
-        //        await TTSHelper.DownloadAndPlayGoogleTTSAsync(cv.Ten);
-        //        await Task.Delay(1000);
-        //    }
-        //}
-
-        //// 🟟 Timer công việc
-        //private async Task CongViecTimer_Tick()
-        //{
-        //    if (AppProviders.CongViecNoiBos != null)
-        //    {
-        //        var congViec = _fullCongViecNoiBoList
-        //            .Where(cv => !cv.DaHoanThanh)
-        //            .OrderBy(x => x.NgayGio)
-        //            .FirstOrDefault();
-
-        //        if (congViec != null)
-        //            await TTSHelper.DownloadAndPlayGoogleTTSAsync(congViec.Ten);
-        //    }
-        //}
-
-        // Auto-capture state
         private DateTime _lastSummaryUpdatedAt = DateTime.MinValue;
         private DateTime _lastDashboardCaptureAt = DateTime.MinValue;
         private bool _capturePending = false;
@@ -337,137 +234,7 @@ namespace TraSuaApp.WpfClient.Views
             if (TabControl.Items[0] is not TabItem tab) return null;
             return tab.Content as FrameworkElement;
         }
-        private async Task CaptureDashboard_Tick()
-        {
-            try
-            {
-                if (!_enableAutoCapture) return;
-                if (WindowState == WindowState.Minimized) return; // tránh chụp khi app bị minimize
 
-                // Chỉ chụp khi vừa có summary mới xong, và cách lần chụp trước >= 5p
-                if (!_capturePending) return;
-                if (DateTime.UtcNow - _lastDashboardCaptureAt < _minCaptureInterval) return;
-
-                // Nếu summary đã quá cũ (> 2 phút) mà chưa chụp được (do bận), bỏ qua
-                if (DateTime.UtcNow - _lastSummaryUpdatedAt > TimeSpan.FromMinutes(2))
-                {
-                    _capturePending = false;
-                    return;
-                }
-
-                // Reset cờ ngay, tránh chụp trùng khi nhiều tick vào gần nhau
-                _capturePending = false;
-
-                // Render cần chạy trên UI thread, nhưng encode/save đẩy ra background
-                await Dispatcher.BeginInvoke(async () =>
-                {
-                    var element = GetFirstTabContentElement();
-                    if (element == null) return;
-
-                    element.UpdateLayout();
-                    var size = new Size(element.ActualWidth, element.ActualHeight);
-                    if (size.Width < 1 || size.Height < 1) return;
-
-                    // Lấy DPI thực để ảnh nét trên mọi scale
-                    var dpiInfo = VisualTreeHelper.GetDpi(element);
-                    int pxW = (int)Math.Ceiling(size.Width * dpiInfo.DpiScaleX);
-                    int pxH = (int)Math.Ceiling(size.Height * dpiInfo.DpiScaleY);
-                    double dpiX = 96.0 * dpiInfo.DpiScaleX;
-                    double dpiY = 96.0 * dpiInfo.DpiScaleY;
-
-                    var rtb = new RenderTargetBitmap(pxW, pxH, dpiX, dpiY, PixelFormats.Pbgra32);
-                    rtb.Render(element);
-
-                    // Encode + Save ra background để nhẹ UI
-                    var folderPath = @"D:\Dropbox\Screenshots";
-                    var filePath = System.IO.Path.Combine(folderPath, $"Dashboard_{DateTime.Now:yyyy-MM-dd}.png"); // mỗi ngày 1 file
-
-                    await Task.Run(() =>
-                    {
-                        try
-                        {
-                            Directory.CreateDirectory(folderPath);
-                            var encoder = new PngBitmapEncoder();
-                            encoder.Frames.Add(BitmapFrame.Create(rtb));
-
-                            using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-                            encoder.Save(fs);
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine("❌ Lỗi lưu ảnh dashboard: " + ex.Message);
-                        }
-                    });
-
-                    _lastDashboardCaptureAt = DateTime.UtcNow;
-                }, System.Windows.Threading.DispatcherPriority.Background);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("❌ Lỗi chụp dashboard: " + ex.Message);
-            }
-        }
-
-        //private async Task CaptureDashboard_Tick()
-        //{
-        //    try
-        //    {
-        //        x = 0;
-        //        today = DateTime.Now.Date.AddDays(0);
-        //        // 🟟 Load lại dữ liệu trước khi chụp (đảm bảo dữ liệu mới)
-        //        await ReloadAfterHoaDonChangeAsync(
-        //            reloadHoaDon: true,
-        //            reloadThanhToan: true,
-        //            reloadNo: true
-        //        );
-
-        //        await Task.Delay(10000);
-
-        //        await Dispatcher.InvokeAsync(() =>
-        //        {
-        //            if (TabControl.Items.Count == 0) return;
-        //            var firstTab = TabControl.Items[0] as TabItem;
-        //            if (firstTab?.Content is not FrameworkElement element) return;
-
-        //            element.UpdateLayout();
-
-        //            var size = new Size(element.ActualWidth, element.ActualHeight);
-        //            double dpi = 96;
-
-        //            var rtb = new RenderTargetBitmap(
-        //                (int)size.Width, (int)size.Height,
-        //                dpi, dpi,
-        //                PixelFormats.Pbgra32);
-
-        //            rtb.Render(element);
-
-        //            // 🟟 Lưu vào thư mục Dropbox (ổ D)
-        //            string folderPath = @"D:\Dropbox\Screenshots";
-        //            if (!Directory.Exists(folderPath))
-        //            {
-        //                Directory.CreateDirectory(folderPath);
-        //            }
-
-        //            // Tạo tên file theo ngày (mỗi ngày 1 file, ghi đè)
-        //            string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".png";
-        //            string filePath = Path.Combine(folderPath, fileName);
-
-        //            var encoder = new PngBitmapEncoder();
-        //            encoder.Frames.Add(BitmapFrame.Create(rtb));
-
-        //            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
-        //            {
-        //                encoder.Save(fs);
-        //            }
-
-        //            Debug.WriteLine($"✅ Dashboard đã tải dữ liệu mới và lưu tại: {filePath}");
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Debug.WriteLine("❌ Lỗi CaptureDashboardAsync: " + ex.Message);
-        //    }
-        //}
 
         private void ScheduleUpdateDashboardSummary()
         {
@@ -475,25 +242,6 @@ namespace TraSuaApp.WpfClient.Views
             _updateSummaryTimer.Start();
         }
 
-        //private void SearchCongViecNoiBoTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        //{
-        //    _debouncer.Debounce("CongViecNoiBo", 300, ApplyCongViecNoiBoFilter);
-        //}
-
-        //private void SearchChiTietHoaDonNoTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        //{
-        //    _debouncer.Debounce("ChiTietNo", 300, ApplyChiTietHoaDonNoFilter);
-        //}
-
-        //private void SearchChiTietHoaDonThanhToanTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        //{
-        //    _debouncer.Debounce("ThanhToan", 300, ApplyChiTietHoaDonThanhToanFilter);
-        //}
-
-        //private void SearchChiTieuHangNgayTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        //{
-        //    _debouncer.Debounce("ChiTieu", 300, ApplyChiTieuHangNgayFilter);
-        //}
 
         private void SearchHoaDonTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -520,20 +268,6 @@ namespace TraSuaApp.WpfClient.Views
             if (sender is TextBox tb)
                 DebounceSearch(tb, "ChiTieu", ApplyChiTieuHangNgayFilter);
         }
-        //private void SearchHoaDonTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        //{
-        //    _debouncer.Debounce("HoaDon", 300, ApplyHoaDonFilter);
-
-        //    if (sender is TextBox tb)
-        //    {
-        //        // đếm số dòng hiện tại trong TextBox
-        //        int lineCount = tb.LineCount;
-        //        if (lineCount < 1) lineCount = 1;
-
-        //        // mỗi dòng cao khoảng 32px
-        //        tb.Height = 32 * lineCount;
-        //    }
-        //}
 
         private void ApplyChiTietHoaDonFilter()
         {
@@ -564,36 +298,6 @@ namespace TraSuaApp.WpfClient.Views
                 DebounceSearch(tb, "ChiTietHoaDon", ApplyChiTietHoaDonFilter);
         }
 
-        //private void SearchChiTietHoaDonTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        //{
-        //    _debouncer.Debounce("ChiTietHoaDon", 300, () =>
-        //    {
-        //        if (_fullChiTietHoaDonList == null) return;
-        //        string keyword = SearchChiTietHoaDonTextBox.Text.Trim().ToLower();
-        //        decimal tongTien = 0;
-        //        List<ChiTietHoaDonDto> sourceList;
-
-        //        if (string.IsNullOrWhiteSpace(keyword))
-        //        {
-        //            sourceList = _fullChiTietHoaDonList;
-        //        }
-        //        else
-        //        {
-        //            sourceList = _fullChiTietHoaDonList
-        //                .Where(x => x.TimKiem.ToLower().Contains(keyword))
-        //                .ToList();
-        //        }
-
-        //        int stt = 1;
-        //        foreach (var item in sourceList)
-        //        {
-        //            item.Stt = stt++;
-        //        }
-
-        //        ChiTietHoaDonListBox.ItemsSource = sourceList;
-        //        tongTien = sourceList.Sum(x => x.ThanhTien);
-        //    });
-        //}
 
         private async Task<bool> WaitForDataAsync(Func<bool> condition, int timeoutMs = 5000)
         {
@@ -652,19 +356,6 @@ namespace TraSuaApp.WpfClient.Views
                 });
             });
         }
-        //private async Task BindProviderAsync(Func<bool> waitCondition, Action<Action> subscribe, Action reloadAction, string name)
-        //{
-        //    await WaitForDataAsync(waitCondition);
-        //    subscribe(() =>
-        //    {
-        //        Debug.WriteLine($"{DateTime.Now:T} - {name} changed");
-        //        reloadAction();
-        //        ScheduleUpdateDashboardSummary();
-        //    });
-        //}
-
-
-        // Thêm vào fields
         private readonly Dictionary<string, DateTime> _lastProviderReload = new();
         private readonly TimeSpan _freshnessWindow = TimeSpan.FromSeconds(60);
 
@@ -725,10 +416,6 @@ namespace TraSuaApp.WpfClient.Views
 
 
 
-
-
-
-        private List<ChiTietHoaDonDto> _fullChiTietHoaDonList = new();
         private async Task BindAllProviders()
         {
             var providers = new List<(Func<bool> wait, Action<Action> subscribe, Action reload, string name)>
@@ -741,6 +428,19 @@ namespace TraSuaApp.WpfClient.Views
                 {
                     AppProviders.HoaDons.OnChanged -= h; // tránh trùng event
                     AppProviders.HoaDons.OnChanged += h;
+
+                    // 🟟 Bổ sung realtime check báo đơn
+                    AppProviders.HoaDons.OnChanged += () =>
+                    {
+                        var hasBaoDon = _fullHoaDonList.Any(x => x.BaoDon);
+                        Dispatcher.Invoke(() =>
+                        {
+                            if (hasBaoDon)
+                                AudioHelper.PlayLoop("don-moi.mp3");
+                            else
+                                AudioHelper.Stop();
+                        });
+                    };
                 }
             },
             ReloadHoaDonUI,
@@ -809,6 +509,102 @@ namespace TraSuaApp.WpfClient.Views
                 await BindProviderAsync(wait, subscribe, reload, name);
             }
         }
+        private void CheckAndPlayBaoDon()
+        {
+            if (_fullHoaDonList.Any(hd => hd.BaoDon))
+            {
+                AudioHelper.PlayLoop("don-moi.mp3");
+            }
+            else
+            {
+                AudioHelper.Stop();
+            }
+        }
+
+        private List<ChiTietHoaDonDto> _fullChiTietHoaDonList = new();
+        //    private async Task BindAllProviders()
+        //    {
+        //        var providers = new List<(Func<bool> wait, Action<Action> subscribe, Action reload, string name)>
+        //{
+        //    (
+        //        () => AppProviders.HoaDons?.Items != null,
+        //        h =>
+        //        {
+        //            if (AppProviders.HoaDons != null)
+        //            {
+        //                AppProviders.HoaDons.OnChanged -= h; // tránh trùng event
+        //                AppProviders.HoaDons.OnChanged += h;
+        //            }
+        //        },
+        //        ReloadHoaDonUI,
+        //        "HoaDons"
+        //    ),
+
+        //    (
+        //        () => AppProviders.CongViecNoiBos?.Items != null,
+        //        h =>
+        //        {
+        //            if (AppProviders.CongViecNoiBos != null)
+        //            {
+        //                AppProviders.CongViecNoiBos.OnChanged -= h;
+        //                AppProviders.CongViecNoiBos.OnChanged += h;
+        //            }
+        //        },
+        //        ReloadCongViecNoiBoUI,
+        //        "CongViecNoiBos"
+        //    ),
+
+        //    (
+        //        () => AppProviders.ChiTietHoaDonNos?.Items != null,
+        //        h =>
+        //        {
+        //            if (AppProviders.ChiTietHoaDonNos != null)
+        //            {
+        //                AppProviders.ChiTietHoaDonNos.OnChanged -= h;
+        //                AppProviders.ChiTietHoaDonNos.OnChanged += h;
+        //            }
+        //        },
+        //        ReloadChiTietHoaDonNoUI,
+        //        "ChiTietHoaDonNos"
+        //    ),
+
+        //    (
+        //        () => AppProviders.ChiTietHoaDonThanhToans?.Items != null,
+        //        h =>
+        //        {
+        //            if (AppProviders.ChiTietHoaDonThanhToans != null)
+        //            {
+        //                AppProviders.ChiTietHoaDonThanhToans.OnChanged -= h;
+        //                AppProviders.ChiTietHoaDonThanhToans.OnChanged += h;
+        //            }
+        //        },
+        //        ReloadChiTietHoaDonThanhToanUI,
+        //        "ChiTietHoaDonThanhToans"
+        //    ),
+
+        //    (
+        //        () => AppProviders.ChiTieuHangNgays?.Items != null,
+        //        h =>
+        //        {
+        //            if (AppProviders.ChiTieuHangNgays != null)
+        //            {
+        //                AppProviders.ChiTieuHangNgays.OnChanged -= h;
+        //                AppProviders.ChiTieuHangNgays.OnChanged += h;
+        //            }
+        //        },
+        //        ReloadChiTieuHangNgayUI,
+        //        "ChiTieuHangNgays"
+        //    )
+        //};
+
+        //        foreach (var (wait, subscribe, reload, name) in providers)
+        //        {
+        //            await BindProviderAsync(wait, subscribe, reload, name);
+        //        }
+        //    }
+
+
+
         private void GenerateMenu(string loai, MenuItem m)
         {
             var viewType = typeof(Window);
@@ -1266,14 +1062,6 @@ namespace TraSuaApp.WpfClient.Views
 
             TongTienThanhToanTextBlock.Header = $"{tongTien:N0} đ";
         }
-        //private void ReloadChiTietHoaDonThanhToanUI()
-        //{
-        //    _fullChiTietHoaDonThanhToanList = AppProviders.ChiTietHoaDonThanhToans.Items
-        //     .Where(x => !x.IsDeleted && x.Ngay == today)
-        //        .OrderByDescending(x => x.NgayGio)
-        //        .ToList();
-        //    ApplyChiTietHoaDonThanhToanFilter();
-        //}
         private async void ReloadChiTietHoaDonThanhToanUI()
         {
             var todayLocal = today;
@@ -1404,16 +1192,6 @@ namespace TraSuaApp.WpfClient.Views
 
             ApplyChiTieuHangNgayFilter();
         }
-        //private void ReloadChiTieuHangNgayUI()
-        //{
-        //    _fullChiTieuHangNgayList = AppProviders.ChiTieuHangNgays.Items
-        //          .Where(x => !x.IsDeleted)
-        //         .Where(x => x.Ngay == today)
-        //        // .OrderBy(x => x.BillThang)
-        //        .OrderByDescending(x => x.NgayGio)
-        //        .ToList();
-        //    ApplyChiTieuHangNgayFilter();
-        //}
 
 
 
@@ -1466,105 +1244,6 @@ namespace TraSuaApp.WpfClient.Views
             }
 
         }
-        //private async Task LoadDoanhThuDynamic()
-        //{
-        //    await WaitForDataAsync(() => AppProviders.HoaDons?.Items != null);
-
-        //    var groups = AppProviders.HoaDons.Items
-        //        .Where(x => !x.IsDeleted && x.Ngay == today)
-        //        .GroupBy(x => x.PhanLoai)
-        //        .Select(g => (Label: g.Key ?? "Khác", Value: g.Sum(x => x.ThanhTien)))
-        //        .OrderByDescending(g => g.Value)
-        //        .ToList();
-
-        //    RenderSummary(DoanhThuStackPanel, "Doanh thu", groups.Sum(x => x.Value), groups);
-        //}
-        //private async Task LoadDaThuDynamic()
-        //{
-        //    await WaitForDataAsync(() => AppProviders.ChiTietHoaDonThanhToans?.Items != null);
-
-        //    var groups = AppProviders.ChiTietHoaDonThanhToans.Items
-        //        .Where(x => !x.IsDeleted && x.Ngay == today)
-        //        .Where(x => x.LoaiThanhToan.ToLower().Contains("trong ngày"))
-        //        .GroupBy(x => x.TenPhuongThucThanhToan)
-        //        .Select(g => (Label: g.Key ?? "Khác", Value: g.Sum(x => x.SoTien)))
-        //        .OrderByDescending(g => g.Value)
-        //        .ToList();
-
-        //    RenderSummary(DaThuStackPanel, "Đã thu", groups.Sum(x => x.Value), groups);
-        //}
-        //private async Task LoadChiTieuDynamic()
-        //{
-        //    await WaitForDataAsync(() => AppProviders.ChiTieuHangNgays?.Items != null);
-
-        //    var groups = AppProviders.ChiTieuHangNgays.Items
-        //        .Where(x => !x.IsDeleted && x.Ngay == today && !x.BillThang)
-        //        .GroupBy(x => x.Ten)
-        //        .Select(g => (Label: g.Key ?? "Khác", Value: g.Sum(x => x.ThanhTien)))
-        //        .OrderByDescending(g => g.Value)
-        //        .ToList();
-
-        //    RenderSummary(ChiTieuStackPanel, "Chi tiêu", groups.Sum(x => x.Value), groups);
-        //}
-        //private async Task LoadChuaThuDynamic()
-        //{
-        //    await WaitForDataAsync(() => AppProviders.HoaDons?.Items != null);
-
-        //    var hoaDonChuaThu = AppProviders.HoaDons.Items
-        //        .Where(x => !x.IsDeleted && x.Ngay == today)
-        //        .Where(x => x.ConLai > 0 && (x.TrangThai == "Chưa thu" || x.TrangThai == "Thu một phần"))
-        //        .OrderByDescending(x => x.NgayGio)
-        //        .Select(hd => (Label: hd.KhachHangId != null ? hd.TenKhachHangText : hd.TenBan, Value: hd.ConLai))
-        //        .ToList();
-
-        //    RenderSummary(ChuaThuStackPanel, "Chưa thu", hoaDonChuaThu.Sum(x => x.Value), hoaDonChuaThu);
-        //}
-        //private async Task LoadCongNoDynamic()
-        //{
-        //    await WaitForDataAsync(() => AppProviders.ChiTietHoaDonNos?.Items != null);
-
-        //    var groups = AppProviders.ChiTietHoaDonNos.Items
-        //        .Where(x => !x.IsDeleted && x.Ngay == today)
-        //        .GroupBy(x => x.Ten)
-        //        .Select(g => (Label: g.Key ?? "Khách lạ", Value: g.Sum(x => x.ConLai)))
-        //        .OrderByDescending(g => g.Value)
-        //        .ToList();
-
-        //    RenderSummary(CongNoStackPanel, "Ghi nợ", groups.Sum(x => x.Value), groups);
-        //}
-        //private async Task LoadTraNoBankDynamic()
-        //{
-        //    await WaitForDataAsync(() => AppProviders.ChiTietHoaDonThanhToans?.Items != null);
-
-        //    var groups = AppProviders.ChiTietHoaDonThanhToans.Items
-        //        .Where(x => !x.IsDeleted && x.Ngay == today)
-        //        .Where(x => x.LoaiThanhToan.ToLower() == "trả nợ qua ngày")
-        //        .Where(x => x.TenPhuongThucThanhToan?.ToLower() != "tiền mặt")
-        //        .GroupBy(x => x.KhachHangId)
-        //        .Select(g => (Label: g.FirstOrDefault()?.Ten ?? "Khách lạ", Value: g.Sum(x => x.SoTien)))
-        //        .OrderByDescending(g => g.Value)
-        //        .ToList();
-
-        //    RenderSummary(TraNoBankStackPanel, "Trả nợ bank", groups.Sum(x => x.Value), groups);
-        //}
-        //private async Task LoadTraNoTienDynamic()
-        //{
-        //    await WaitForDataAsync(() => AppProviders.ChiTietHoaDonThanhToans?.Items != null);
-
-        //    var groups = AppProviders.ChiTietHoaDonThanhToans.Items
-        //        .Where(x => !x.IsDeleted && x.Ngay == today)
-        //        .Where(x => x.LoaiThanhToan == "Trả nợ qua ngày")
-        //        //   .Where(x => x.GhiChu != "Shipper")
-        //        .Where(x => x.TenPhuongThucThanhToan == "Tiền mặt")
-        //        .GroupBy(x => x.KhachHangId)
-        //        .Select(g => (Label: g.FirstOrDefault()?.Ten ?? "Khách lạ", Value: g.Sum(x => x.SoTien)))
-        //        .OrderByDescending(g => g.Value)
-        //        .ToList();
-
-        //    RenderSummary(TraNoTienStackPanel, "Trả nợ tiền", groups.Sum(x => x.Value), groups);
-        //}
-
-        // 🟟 Doanh thu
         private async Task<(decimal Total, List<(string Label, decimal Value)> Items)> GetDoanhThuData()
         {
             await WaitForDataAsync(() => AppProviders.HoaDons?.Items != null);

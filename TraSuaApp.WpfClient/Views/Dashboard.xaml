@@ -640,11 +640,10 @@
                                         Padding="8"
                                         HorizontalAlignment="Stretch"
                                         VerticalAlignment="Center"
-                                        Background="#99999999"
                                         FontSize="{StaticResource FontSizeLarge}"
                                         FontWeight="Bold"
                                         Foreground="{Binding ElementName=ThongTinThanhToanGroupBox, Path=Foreground}"
-                                        TextAlignment="Left" />
+                                        TextAlignment="Center" />
 
                                     <TextBox
                                         x:Name="SearchChiTietHoaDonTextBox"
@@ -1212,16 +1211,23 @@
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
+                        <TextBlock
+                            Padding="8"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Panel.ZIndex="1"
+                            Text="Tìm kiếm:" />
                         <TextBox
                             x:Name="SearchCongViecNoiBoTextBox"
-                            Padding="80,0,0,0"
+                            Margin="100,0,0,0"
                             TextChanged="SearchCongViecNoiBoTextBox_TextChanged" />
                         <Button
                             HorizontalAlignment="Left"
                             Panel.ZIndex="1"
                             Click="AddCongViecNoiBoButton_Click"
                             FontSize="{StaticResource FontSizeLarge}"
-                            Style="{StaticResource ThemButtonStyle}">
+                            Style="{StaticResource ThemButtonStyle}"
+                            Visibility="Collapsed">
                             <StackPanel Orientation="Horizontal">
                                 <fa:IconBlock Margin="0,0,5,0" Icon="Plus" />
                                 <TextBlock Text="Thêm" />
@@ -1294,7 +1300,7 @@
                                     Binding="{Binding XNgayCanhBao}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Sau X ngày cảnh báo" />
-                                <DataGridTemplateColumn>
+                                <DataGridTemplateColumn Visibility="Collapsed">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Button
@@ -1311,7 +1317,7 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTemplateColumn>
+                                <DataGridTemplateColumn Visibility="Collapsed">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Button

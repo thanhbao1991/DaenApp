@@ -68,6 +68,13 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddSignalR();
+builder.Services.AddSignalR();
+
+// 🟟 Lắng nghe port 80
+//builder.WebHost.ConfigureKestrel(options =>
+//{
+//    options.ListenAnyIP(80);
+//});
 
 var app = builder.Build();
 

@@ -10,26 +10,29 @@
     <Compile Remove="Extensions\ResultExtensions.cs" />
   </ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.4" />
-		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.4" />
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="9.0.7" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
-		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		  <PrivateAssets>all</PrivateAssets>
-		</PackageReference>
-		<PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.1" />
-	</ItemGroup>
-	
+  <ItemGroup>
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="9.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.1" />
+
+    <!-- 🟟 Thêm package JWT để khi publish sang IIS không bị thiếu DLL -->
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2" />
+  </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\TraSuaApp.Application\TraSuaApp.Application.csproj" />
     <ProjectReference Include="..\TraSuaApp.Domain\TraSuaApp.Domain.csproj" />
     <ProjectReference Include="..\TraSuaApp.Infrastructure\TraSuaApp.Infrastructure.csproj" />
     <ProjectReference Include="..\TraSuaApp.Shared\TraSuaApp.Shared.csproj" />
   </ItemGroup>
-	
+  
   <ItemGroup>
     <Folder Include="Extensions\" />
     <Folder Include="Helpers\" />

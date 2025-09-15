@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,7 +25,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         private List<SanPhamBienTheDto> _bienTheList = new();
         private List<ToppingDto> _toppingList = new();
         private List<VoucherDto> _voucherList = new();
-        private List<KhachHangDto> _khachHangsList = new();
+        private ObservableCollection<KhachHangDto> _khachHangsList = new();
         private readonly string[] _banList = new[]
 {
     "2", "3", "4", "5", "6",
@@ -45,7 +46,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             _bienTheList = _sanPhamList.SelectMany(x => x.BienThe).ToList();
             _toppingList = AppProviders.Toppings.Items.ToList();
             _voucherList = AppProviders.Vouchers.Items.ToList();
-            _khachHangsList = AppProviders.KhachHangs.Items.ToList();
+            _khachHangsList = AppProviders.KhachHangs.Items;
 
 
             SanPhamSearchBox.SanPhamBienTheSelected += (sanPham, bienThe) =>
@@ -546,7 +547,17 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
                 Result<HoaDonDto> result;
                 if (Model.Id == Guid.Empty)
+                {
+                    // 🟟 Tạo mới hóa đơn
                     result = await _api.CreateAsync(Model);
+
+                    if (result.IsSuccess && result.Data?.KhachHangId != null)
+                    {
+                        // ✅ Reload lại danh sách khách hàng từ DB để chắc chắn có khách mới
+                        await AppProviders.KhachHangs.ReloadAsync();
+                    }
+                }
+
                 else if (Model.IsDeleted)
                     result = await _api.RestoreAsync(Model.Id);
                 else

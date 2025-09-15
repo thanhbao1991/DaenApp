@@ -10,7 +10,7 @@
 
             if (devMachines.Contains(Environment.MachineName, StringComparer.OrdinalIgnoreCase))
             {
-                ApiBaseUrl = "http://localhost:5093";
+                ApiBaseUrl = "http://localhost:8080";
                 ConnectionString =
                     "Server=localhost;Database=TraSuaAppDb;User Id=appuser;Password=StrongPassword@123;TrustServerCertificate=True;";
             }

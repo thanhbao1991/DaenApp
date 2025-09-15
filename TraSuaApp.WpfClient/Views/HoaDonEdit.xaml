@@ -559,7 +559,7 @@
 
                 <GroupBox
                     Name="ToppingGroupBox"
-                    Margin="0,0,-230,0"
+                    Margin="0,0,-250,0"
                     HorizontalAlignment="Right"
                     Foreground="WhiteSmoke"
                     Header="Topping">
@@ -580,7 +580,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock
                                         Grid.Column="0"
-                                        MinWidth="100"
+                                        MinWidth="120"
                                         VerticalAlignment="Center"
                                         Text="{Binding Ten}" />
                                     <Grid Grid.Column="1" HorizontalAlignment="Right">
