@@ -1,5 +1,4 @@
-﻿
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -10,6 +9,11 @@ using TraSuaApp.Infrastructure;
 using TraSuaApp.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ⚡ Cấu hình logging: chỉ log Warning trở lên cho EF Core
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 
 // 🟟 Đọc cấu hình Api BaseUrl từ appsettings
 var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"];
@@ -74,20 +78,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
         policy.WithOrigins(
-                "http://www.denncoffee.uk:7130", // web chạy domain thật
+                "http://www.denncoffee.uk:7130",
                 "http://localhost:7130",
-
-                "http://www.denncoffee.uk:7131", // web chạy domain thật
+                "http://www.denncoffee.uk:7131",
                 "http://localhost:7131",
-
-                "http://www.denncoffee.uk:7132", // web chạy domain thật
+                "http://www.denncoffee.uk:7132",
                 "http://localhost:7132"
-
-
-
-
-
-
             )
             .AllowAnyHeader()
             .AllowAnyMethod());

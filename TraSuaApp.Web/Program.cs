@@ -6,20 +6,25 @@ using TraSuaAppWeb.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ⚡ Cấu hình logging: chỉ log Warning trở lên cho EF Core
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+
 // Service
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(Config.ConnectionString)); // ⚡ dùng ConnectionString từ Config
+    options.UseSqlServer(Config.ConnectionString,
+        opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 
-
-
 // Lấy config cho API
 var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "NOT CONFIGURED";
 
-// In ra console khi start app
-Console.WriteLine($"[TraSuaAppWeb] Using API BaseUrl = {apiBaseUrl}");
+// ❌ Không in ra console khi start app
+// Console.WriteLine($"[TraSuaAppWeb] Using API BaseUrl = {apiBaseUrl}");
 
 builder.Services.AddHttpClient("Api", client =>
 {
@@ -27,12 +32,10 @@ builder.Services.AddHttpClient("Api", client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
-
 // Các service khác
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddControllers();
-
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 

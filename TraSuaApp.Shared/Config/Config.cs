@@ -10,9 +10,7 @@
 
             if (devMachines.Contains(Environment.MachineName, StringComparer.OrdinalIgnoreCase))
             {
-
                 ApiBaseUrl = "http://localhost:8080";
-                //   ApiBaseUrl = "http://api.denncoffee.uk";
 
                 ConnectionString =
                     "Server=localhost;Database=TraSuaAppDb;User Id=appuser;Password=StrongPassword@123;TrustServerCertificate=True;";
@@ -31,6 +29,6 @@
         public static string ApiBaseUrl { get; }
         public static string ConnectionString { get; }
         public static string SignalRHubUrl { get; } // 🟟 thêm property cho SignalR
-        public static string apiChatGptKey = "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";
+        public static string apiChatGptKey = "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";
     }
 }
