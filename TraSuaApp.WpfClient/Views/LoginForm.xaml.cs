@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Input;
+using TraSuaApp.Shared.Config;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
@@ -131,6 +132,7 @@ namespace TraSuaApp.WpfClient.Views
                             $"[Login Saved] Luu={Properties.Settings.Default.Luu}, AutoLogin={Properties.Settings.Default.AutoLogin}, User={Properties.Settings.Default.TaiKhoan}");
 
                         var mainWindow = new Dashboard();
+                        Config.apiChatGptKey = result.Data.TenHienThi;
                         mainWindow.Show();
                         this.DialogResult = true;
                         this.Close();
