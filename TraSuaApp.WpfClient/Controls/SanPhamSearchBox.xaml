@@ -35,8 +35,8 @@
             StaysOpen="False"
             VerticalOffset="2">
             <Border
-                Background="White"
-                BorderBrush="Gray"
+                Background="{StaticResource LightBrush}"
+                BorderBrush="{StaticResource SecondaryBrush}"
                 BorderThickness="1">
                 <ListBox
                     x:Name="ListBoxResults"
@@ -68,7 +68,7 @@
                                         <Run Text=" " />
                                         <Run
                                             FontWeight="Bold"
-                                            Foreground="DarkRed"
+                                            Foreground="{StaticResource DangerBrush}"
                                             Text="{Binding BienThes[0].GiaBan, StringFormat={}{0:N0} đ}" />-->
                                     </TextBlock>
                                 </Button>
@@ -97,7 +97,7 @@
                                                     <Run Text=" " />-->
                                                     <Run
                                                         FontWeight="Bold"
-                                                        Foreground="DarkRed"
+                                                        Foreground="{StaticResource DangerBrush}"
                                                         Text="{Binding GiaBan, StringFormat={}{0:N0} đ}" />
                                                 </TextBlock>
                                             </Button>

@@ -40,10 +40,10 @@
                         x:Name="TaiChoRadio"
                         Margin="0,0,8,0"
                         Checked="LoaiDonRadio_Checked"
-                        Foreground="#4CAF50"
+                        Foreground="{StaticResource SuccessBrush}"
                         GroupName="LoaiDon">
                         <StackPanel VerticalAlignment="Stretch" Orientation="Horizontal">
-                            <fa:IconBlock Foreground="#4CAF50" Icon="Cutlery" />
+                            <fa:IconBlock Foreground="{StaticResource SuccessBrush}" Icon="Cutlery" />
                             <TextBlock FontSize="{StaticResource FontSizeLarge}" Text="Tại chỗ" />
                         </StackPanel>
                     </RadioButton>
@@ -57,12 +57,12 @@
                         x:Name="MuaVeRadio"
                         Margin="0,0,8,0"
                         Checked="LoaiDonRadio_Checked"
-                        Foreground="#2196F3"
+                        Foreground="{StaticResource PrimaryBrush}"
                         GroupName="LoaiDon">
                         <StackPanel VerticalAlignment="Stretch" Orientation="Horizontal">
                             <fa:IconBlock
                                 Margin="0,0,5,0"
-                                Foreground="#2196F3"
+                                Foreground="{StaticResource PrimaryBrush}"
                                 Icon="ShoppingBag" />
                             <TextBlock FontSize="{StaticResource FontSizeLarge}" Text="Mua về" />
                         </StackPanel>
@@ -71,12 +71,12 @@
                         x:Name="ShipRadio"
                         Margin="0,0,8,0"
                         Checked="LoaiDonRadio_Checked"
-                        Foreground="#FF9800"
+                        Foreground="{StaticResource WarningBrush}"
                         GroupName="LoaiDon">
                         <StackPanel VerticalAlignment="Stretch" Orientation="Horizontal">
                             <fa:IconBlock
                                 Margin="0,0,5,0"
-                                Foreground="#FF9800"
+                                Foreground="{StaticResource WarningBrush}"
                                 Icon="Truck" />
                             <TextBlock FontSize="{StaticResource FontSizeLarge}" Text="Ship" />
                         </StackPanel>
@@ -85,12 +85,12 @@
                     <RadioButton
                         x:Name="AppRadio"
                         Checked="LoaiDonRadio_Checked"
-                        Foreground="#F44336"
+                        Foreground="{StaticResource DangerBrush}"
                         GroupName="LoaiDon">
                         <StackPanel VerticalAlignment="Stretch" Orientation="Horizontal">
                             <fa:IconBlock
                                 Margin="0,0,5,0"
-                                Foreground="#F44336"
+                                Foreground="{StaticResource DangerBrush}"
                                 Icon="Mobile" />
                             <TextBlock FontSize="{StaticResource FontSizeLarge}" Text="App" />
                         </StackPanel>
@@ -141,7 +141,7 @@
                         </GroupBox>
                         <GroupBox
                             x:Name="DiemThangTruocGroupBox"
-                            Foreground="Blue"
+                            Foreground="{StaticResource PrimaryBrush}"
                             Header="Điểm tháng trước"
                             MouseDown="DiemThangTruocTextBlock_MouseDown">
                             <TextBlock
@@ -168,7 +168,7 @@
                             </Grid>
                         </GroupBox>
                         <GroupBox
-                            BorderBrush="Gray"
+                            BorderBrush="{StaticResource SecondaryBrush}"
                             BorderThickness="1"
                             Header="Thông tin thanh toán">
                             <Grid>
@@ -214,7 +214,7 @@
                                     Grid.Row="3"
                                     Padding="4"
                                     FontWeight="Medium"
-                                    Foreground="IndianRed"
+                                    Foreground="{StaticResource DangerBrush}"
                                     Text="Công nợ: " />
                                 <TextBlock
                                     x:Name="CongNoTextBlock"
@@ -222,7 +222,7 @@
                                     Grid.Column="1"
                                     Padding="4"
                                     FontWeight="Medium"
-                                    Foreground="IndianRed"
+                                    Foreground="{StaticResource DangerBrush}"
                                     TextAlignment="Right" />
                             </Grid>
                         </GroupBox>
@@ -394,7 +394,7 @@
                                 Panel.ZIndex="1"
                                 FontSize="{StaticResource FontSizeXXX}"
                                 FontWeight="Bold"
-                                Foreground="#4CAF50"
+                                Foreground="{StaticResource SuccessBrush}"
                                 TextAlignment="Center" />
                             <ListBox
                                 x:Name="ChiTietListBox"
@@ -411,7 +411,7 @@
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding SoLuong}" Value="0">
                                                 <Setter Property="TextBlock.TextDecorations" Value="Strikethrough" />
-                                                <Setter Property="Foreground" Value="Gray" />
+                                                <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}" />
                                                 <Setter Property="Opacity" Value="0.4" />
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -426,8 +426,8 @@
                                             </Grid.ColumnDefinitions>
                                             <Border
                                                 Grid.Column="0"
-                                                Background="Gray"
-                                                BorderBrush="LightGray"
+                                                Background="{StaticResource SecondaryBrush}"
+                                                BorderBrush="{StaticResource SecondaryBrush}"
                                                 BorderThickness="1,1,0,1"
                                                 CornerRadius="4,0,0,4">
                                                 <TextBlock
@@ -436,14 +436,14 @@
                                                     VerticalAlignment="Center"
                                                     FontSize="{StaticResource FontSizeBig}"
                                                     FontWeight="Medium"
-                                                    Foreground="White"
+                                                    Foreground="{StaticResource LightBrush}"
                                                     Text="{Binding SoLuong}" />
                                             </Border>
                                             <Border
                                                 Grid.Column="1"
                                                 Padding="8"
-                                                Background="White"
-                                                BorderBrush="LightGray"
+                                                Background="{StaticResource LightBrush}"
+                                                BorderBrush="{StaticResource SecondaryBrush}"
                                                 BorderThickness="0,1,1,1"
                                                 CornerRadius="0,4,4,0">
                                                 <Grid>
@@ -458,12 +458,12 @@
                                                         <StackPanel Orientation="Horizontal">
                                                             <TextBlock
                                                                 FontWeight="Bold"
-                                                                Foreground="Blue"
+                                                                Foreground="{StaticResource PrimaryBrush}"
                                                                 Text="{Binding TenSanPham}" />
                                                             <TextBlock
                                                                 Margin="4,0,0,0"
                                                                 FontWeight="Medium"
-                                                                Foreground="Red"
+                                                                Foreground="{StaticResource DangerBrush}"
                                                                 Text="{Binding TenBienThe}">
                                                                 <TextBlock.Style>
                                                                     <Style TargetType="TextBlock">
@@ -528,7 +528,7 @@
                                                                 HorizontalAlignment="Right"
                                                                 VerticalAlignment="Center"
                                                                 FontWeight="Bold"
-                                                                Foreground="DarkRed"
+                                                                Foreground="{StaticResource DangerBrush}"
                                                                 Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
                                                         </Grid>
 
@@ -536,7 +536,7 @@
                                                         <TextBlock
                                                             Margin="0,0,0,2"
                                                             FontSize="{StaticResource FontSizeSmall}"
-                                                            Foreground="DarkGreen"
+                                                            Foreground="{StaticResource SuccessBrush}"
                                                             Text="{Binding ToppingText}"
                                                             TextWrapping="Wrap"
                                                             Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
@@ -548,7 +548,7 @@
                                                             BorderBrush="Transparent"
                                                             FontSize="{StaticResource FontSizeSmall}"
                                                             FontStyle="Italic"
-                                                            Foreground="DarkOrange"
+                                                            Foreground="{StaticResource WarningBrush}"
                                                             GotFocus="ChiTietItem_Focus"
                                                             Text="{Binding NoteText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                             TextWrapping="Wrap"
@@ -581,14 +581,14 @@
                     Name="ToppingGroupBox"
                     Margin="0,0,-250,0"
                     HorizontalAlignment="Right"
-                    Foreground="WhiteSmoke"
+                    Foreground="{StaticResource LightBrush}"
                     Header="Topping">
                     <ListBox
                         x:Name="ToppingListBox"
                         HorizontalAlignment="Stretch"
                         Background="Transparent"
                         BorderThickness="0"
-                        Foreground="WhiteSmoke"
+                        Foreground="{StaticResource LightBrush}"
                         ScrollViewer.VerticalScrollBarVisibility="Auto"
                         SelectionMode="Single">
                         <ListBox.ItemTemplate>

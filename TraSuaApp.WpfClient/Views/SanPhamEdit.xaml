@@ -65,7 +65,7 @@
                             <TextBlock
                                 x:Name="BienTheModeTextBlock"
                                 FontStyle="Italic"
-                                Foreground="Gray" />
+                                Foreground="{StaticResource SecondaryBrush}" />
                         </StackPanel>
                         <!--  ListBox hiển thị biến thể hiện có  -->
                         <ListBox

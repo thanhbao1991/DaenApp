@@ -12,8 +12,8 @@
             <ColorAnimation
                 Storyboard.TargetName="ButtonText"
                 Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)"
-                From="WhiteSmoke"
-                To="White"
+                From="{StaticResource LightBrush}"
+                To="{StaticResource LightBrush}"
                 Duration="0:0:0.5" />
         </Storyboard>
     </UserControl.Resources>
@@ -23,12 +23,12 @@
             x:Name="MainButton"
             MinWidth="80"
             VerticalAlignment="Center"
-            Background="#4CAF50"
+            Background="{StaticResource SuccessBrush}"
             BorderBrush="Transparent"
             BorderThickness="0"
             Cursor="Hand"
             FontWeight="SemiBold"
-            Foreground="White"
+            Foreground="{StaticResource LightBrush}"
             IsEnabled="{Binding IsBusy, ElementName=root, Converter={StaticResource InverseBoolConverter}}"
             Opacity="1"
             SnapsToDevicePixels="True">
@@ -60,12 +60,12 @@
                             Width="12"
                             Height="12"
                             Opacity="0.3"
-                            Stroke="WhiteSmoke"
+                            Stroke="{StaticResource LightBrush}"
                             StrokeThickness="2" />
                         <Ellipse
                             Width="12"
                             Height="12"
-                            Stroke="White"
+                            Stroke="{StaticResource LightBrush}"
                             StrokeDashArray="6 6"
                             StrokeThickness="2">
                             <Ellipse.RenderTransform>
@@ -94,7 +94,7 @@
                     x:Name="ButtonText"
                     VerticalAlignment="Center"
                     FontWeight="Medium"
-                    Foreground="White"
+                    Foreground="{StaticResource LightBrush}"
                     Text="{Binding Content, ElementName=root}" />
             </StackPanel>
         </Button>

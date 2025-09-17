@@ -41,7 +41,7 @@
                             <TextBlock
                                 x:Name="PhoneModeTextBlock"
                                 FontStyle="Italic"
-                                Foreground="Gray" />
+                                Foreground="{StaticResource SecondaryBrush}" />
                         </StackPanel>
                         <ListBox
                             x:Name="PhoneListBox"
@@ -93,7 +93,7 @@
                             <TextBlock
                                 x:Name="DiaChiModeTextBlock"
                                 FontStyle="Italic"
-                                Foreground="Gray" />
+                                Foreground="{StaticResource SecondaryBrush}" />
                         </StackPanel>
                         <ListBox
                             x:Name="DiaChiListBox"

@@ -85,7 +85,7 @@
                             <Border
                                 Margin="5"
                                 Padding="10"
-                                Background="#388E3C"
+                                Background="{StaticResource SuccessBrush}"
                                 CornerRadius="8">
                                 <StackPanel x:Name="DoanhThuStackPanel" />
                             </Border>
@@ -94,14 +94,14 @@
                             <Border
                                 Margin="5"
                                 Padding="10"
-                                Background="#F57C00"
+                                Background="{StaticResource WarningBrush}"
                                 CornerRadius="8">
                                 <StackPanel x:Name="ChiTieuStackPanel" />
                             </Border>
                             <Border
                                 Margin="5"
                                 Padding="10"
-                                Background="#D32F2F"
+                                Background="{StaticResource DangerBrush}"
                                 CornerRadius="8">
                                 <StackPanel x:Name="CongNoStackPanel" />
                             </Border>
@@ -110,21 +110,21 @@
                             <Border
                                 Margin="5"
                                 Padding="10"
-                                Background="#7B1FA2"
+                                Background="{StaticResource SecondaryBrush}"
                                 CornerRadius="8">
                                 <StackPanel x:Name="TraNoTienStackPanel" />
                             </Border>
                             <Border
                                 Margin="5"
                                 Padding="10"
-                                Background="#455A64"
+                                Background="{StaticResource SecondaryBrush}"
                                 CornerRadius="8">
                                 <StackPanel x:Name="TraNoBankStackPanel" />
                             </Border>
                             <Border
                                 Margin="5"
                                 Padding="10"
-                                Background="#1976D2"
+                                Background="{StaticResource PrimaryBrush}"
                                 CornerRadius="8">
                                 <StackPanel x:Name="DaThuStackPanel" />
                             </Border>
@@ -132,7 +132,7 @@
                             <Border
                                 Margin="5"
                                 Padding="10"
-                                Background="#FBC02D"
+                                Background="{StaticResource WarningBrush}"
                                 CornerRadius="8">
                                 <StackPanel x:Name="ChuaThuStackPanel" />
                             </Border>
@@ -145,9 +145,9 @@
                             </Grid.RowDefinitions>
                             <GroupBox
                                 Margin="5"
-                                BorderBrush="Gray"
+                                BorderBrush="{StaticResource SecondaryBrush}"
                                 BorderThickness="1"
-                                Foreground="Black"
+                                Foreground="{StaticResource DarkBrush}"
                                 Header="Kết quả">
                                 <DataGrid
                                     x:Name="KetQuaDataGrid"
@@ -181,7 +181,7 @@
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="HorizontalAlignment" Value="Right" />
                                                     <Setter Property="TextAlignment" Value="Right" />
-                                                    <Setter Property="Foreground" Value="DarkBlue" />
+                                                    <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
                                                     <Setter Property="FontWeight" Value="Bold" />
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
@@ -371,15 +371,15 @@
                                 <Button
                                     Name="EscButton"
                                     Margin="5"
-                                    Background="DodgerBlue"
+                                    Background="{StaticResource PrimaryBrush}"
                                     Click="EscButton_Click"
-                                    Foreground="White"
+                                    Foreground="{StaticResource LightBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="White"
+                                            Foreground="{StaticResource LightBrush}"
                                             Icon="Motorcycle" />
                                         <TextBlock Margin="5,0,0,0" Text=" Esc - KHÁNH" />
                                     </StackPanel>
@@ -387,15 +387,15 @@
                                 <Button
                                     x:Name="F1Button"
                                     Margin="5"
-                                    Background="LightGreen"
+                                    Background="{StaticResource SuccessBrush}"
                                     Click="F1Button_Click"
-                                    Foreground="Black"
+                                    Foreground="{StaticResource DarkBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="Black"
+                                            Foreground="{StaticResource DarkBrush}"
                                             Icon="MoneyBill" />
                                         <TextBlock Margin="5,0,0,0" Text=" F1 - Tiền mặt" />
                                     </StackPanel>
@@ -403,15 +403,15 @@
                                 <Button
                                     Name="F2Button"
                                     Margin="5"
-                                    Background="DodgerBlue"
+                                    Background="{StaticResource PrimaryBrush}"
                                     Click="F2Button_Click"
-                                    Foreground="White"
+                                    Foreground="{StaticResource LightBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="White"
+                                            Foreground="{StaticResource LightBrush}"
                                             Icon="Print" />
                                         <TextBlock Margin="5,0,0,0" Text=" F2 - In bill" />
                                     </StackPanel>
@@ -419,15 +419,15 @@
                                 <Button
                                     Name="F3Button"
                                     Margin="5"
-                                    Background="DodgerBlue"
+                                    Background="{StaticResource PrimaryBrush}"
                                     Click="F3Button_Click"
-                                    Foreground="White"
+                                    Foreground="{StaticResource LightBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="White"
+                                            Foreground="{StaticResource LightBrush}"
                                             Icon="ShareSquare" />
                                         <TextBlock Margin="5,0,0,0" Text=" F3 - Gửi bill" />
                                     </StackPanel>
@@ -435,15 +435,15 @@
                                 <Button
                                     Name="F4Button"
                                     Margin="5"
-                                    Background="LightYellow"
+                                    Background="{StaticResource WarningBrush}"
                                     Click="F4Button_Click"
-                                    Foreground="Black"
+                                    Foreground="{StaticResource DarkBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="Black"
+                                            Foreground="{StaticResource DarkBrush}"
                                             Icon="CreditCard" />
                                         <TextBlock Margin="5,0,0,0" Text=" F4 - Chuyển khoản" />
                                     </StackPanel>
@@ -451,15 +451,15 @@
                                 <Button
                                     Name="F12Button"
                                     Margin="5"
-                                    Background="IndianRed"
+                                    Background="{StaticResource DangerBrush}"
                                     Click="F12Button_Click"
-                                    Foreground="White"
+                                    Foreground="{StaticResource LightBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="White"
+                                            Foreground="{StaticResource LightBrush}"
                                             Icon="PencilAlt" />
                                         <TextBlock Margin="5,0,0,0" Text=" F12 - Ghi nợ" />
                                     </StackPanel>
@@ -468,13 +468,13 @@
                                     Name="DelButton"
                                     Margin="5"
                                     Click="DelButton_Click"
-                                    Foreground="White"
+                                    Foreground="{StaticResource LightBrush}"
                                     Style="{StaticResource DeleteButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="White"
+                                            Foreground="{StaticResource LightBrush}"
                                             Icon="Trash" />
                                         <TextBlock Margin="5,0,0,0" Text=" Del - Xoá" />
                                     </StackPanel>
@@ -486,13 +486,13 @@
                                     Margin="5"
                                     Background="Transparent"
                                     Click="F5Button_Click"
-                                    Foreground="Black"
+                                    Foreground="{StaticResource DarkBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="Black"
+                                            Foreground="{StaticResource DarkBrush}"
                                             Icon="Refresh" />
                                         <TextBlock Margin="5,0,0,0" Text=" F5 - Làm mới" />
                                     </StackPanel>
@@ -502,7 +502,7 @@
                                     Margin="5"
                                     Background="Transparent"
                                     Click="F6Button_Click"
-                                    Foreground="Black"
+                                    Foreground="{StaticResource DarkBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
@@ -517,7 +517,7 @@
                                     Margin="5"
                                     Background="Transparent"
                                     Click="F7Button_Click"
-                                    Foreground="Black"
+                                    Foreground="{StaticResource DarkBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
@@ -532,7 +532,7 @@
                                     Margin="5"
                                     Background="Transparent"
                                     Click="F8Button_Click"
-                                    Foreground="Black"
+                                    Foreground="{StaticResource DarkBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
@@ -547,7 +547,7 @@
                                     Margin="5"
                                     Background="Transparent"
                                     Click="F9Button_Click"
-                                    Foreground="Black"
+                                    Foreground="{StaticResource DarkBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
@@ -562,7 +562,7 @@
                                     Margin="5"
                                     Background="Transparent"
                                     Click="F10Button_Click"
-                                    Foreground="Black"
+                                    Foreground="{StaticResource DarkBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
@@ -593,7 +593,7 @@
                                     Margin="5"
                                     Background="Transparent"
                                     Click="HisButton_Click"
-                                    Foreground="Black"
+                                    Foreground="{StaticResource DarkBrush}"
                                     Style="{StaticResource AddButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
@@ -607,13 +607,13 @@
                                     Name="AppButton"
                                     Margin="5"
                                     Click="AppButton_Click"
-                                    Foreground="White"
+                                    Foreground="{StaticResource LightBrush}"
                                     Style="{StaticResource ReloadButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="White"
+                                            Foreground="{StaticResource LightBrush}"
                                             Icon="Heart" />
                                         <TextBlock Margin="5,0,0,0" Text="App Shipping" />
                                     </StackPanel>
@@ -674,8 +674,8 @@
                                                     <!--  Số lượng  -->
                                                     <Border
                                                         Grid.Column="0"
-                                                        Background="Gray"
-                                                        BorderBrush="LightGray"
+                                                        Background="{StaticResource SecondaryBrush}"
+                                                        BorderBrush="{StaticResource SecondaryBrush}"
                                                         BorderThickness="1,1,0,1"
                                                         CornerRadius="4,0,0,4">
                                                         <TextBlock
@@ -684,7 +684,7 @@
                                                             VerticalAlignment="Center"
                                                             FontSize="{StaticResource FontSizeBig}"
                                                             FontWeight="Medium"
-                                                            Foreground="White"
+                                                            Foreground="{StaticResource LightBrush}"
                                                             Text="{Binding SoLuong}" />
                                                     </Border>
 
@@ -692,8 +692,8 @@
                                                     <Border
                                                         Grid.Column="1"
                                                         Padding="8"
-                                                        Background="White"
-                                                        BorderBrush="LightGray"
+                                                        Background="{StaticResource LightBrush}"
+                                                        BorderBrush="{StaticResource SecondaryBrush}"
                                                         BorderThickness="0,1,1,1"
                                                         CornerRadius="0,4,4,0">
                                                         <Grid VerticalAlignment="Center">
@@ -709,12 +709,12 @@
                                                                 <StackPanel Orientation="Horizontal">
                                                                     <TextBlock
                                                                         FontWeight="Bold"
-                                                                        Foreground="Blue"
+                                                                        Foreground="{StaticResource PrimaryBrush}"
                                                                         Text="{Binding TenSanPham}" />
                                                                     <TextBlock
                                                                         Margin="4,0,0,0"
                                                                         FontWeight="Medium"
-                                                                        Foreground="Red"
+                                                                        Foreground="{StaticResource DangerBrush}"
                                                                         Text="{Binding TenBienThe}">
                                                                         <TextBlock.Style>
                                                                             <Style TargetType="TextBlock">
@@ -745,14 +745,14 @@
                                                                         HorizontalAlignment="Right"
                                                                         VerticalAlignment="Center"
                                                                         FontWeight="Bold"
-                                                                        Foreground="DarkRed"
+                                                                        Foreground="{StaticResource DangerBrush}"
                                                                         Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
                                                                 </StackPanel>
 
                                                                 <!--  Topping  -->
                                                                 <TextBlock
                                                                     FontSize="{StaticResource FontSizeSmall}"
-                                                                    Foreground="DarkGreen"
+                                                                    Foreground="{StaticResource SuccessBrush}"
                                                                     Text="{Binding ToppingText}"
                                                                     TextWrapping="Wrap"
                                                                     Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
@@ -764,7 +764,7 @@
                                                                     BorderBrush="Transparent"
                                                                     FontSize="{StaticResource FontSizeNormal}"
                                                                     FontStyle="Italic"
-                                                                    Foreground="DarkRed"
+                                                                    Foreground="{StaticResource DangerBrush}"
                                                                     Text="{Binding NoteText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                     TextWrapping="Wrap"
                                                                     Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
@@ -773,7 +773,7 @@
                                                                 <TextBlock
                                                                     Margin="0,0,0,2"
                                                                     FontSize="{StaticResource FontSizeSmall}"
-                                                                    Foreground="DarkBlue"
+                                                                    Foreground="{StaticResource PrimaryBrush}"
                                                                     Text="{Binding DinhLuong}"
                                                                     TextWrapping="Wrap"
                                                                     Visibility="{Binding DinhLuong, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
@@ -834,11 +834,11 @@
                                 <Style TargetType="DataGridRow">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                            <Setter Property="Foreground" Value="Blue" />
+                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
                                             <Setter Property="FontWeight" Value="Medium" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding IsToday}" Value="False">
-                                            <Setter Property="Foreground" Value="Gray" />
+                                            <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}" />
                                             <Setter Property="FontWeight" Value="Light" />
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -902,10 +902,10 @@
                                                     <Style TargetType="TextBlock">
                                                         <Style.Triggers>
                                                             <!--<DataTrigger Binding="{Binding TenPhuongThucThanhToan}" Value="Tiền mặt">
-                                                                <Setter Property="Background" Value="LightGreen" />
+                                                                <Setter Property="Background" Value="{StaticResource SuccessBrush}" />
                                                             </DataTrigger>-->
                                                             <DataTrigger Binding="{Binding TenPhuongThucThanhToan}" Value="Chuyển khoản">
-                                                                <Setter Property="Background" Value="LightYellow" />
+                                                                <Setter Property="Background" Value="{StaticResource WarningBrush}" />
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding TenPhuongThucThanhToan}" Value="Banking Nhã">
                                                                 <Setter Property="Background" Value="Gold" />
@@ -961,11 +961,11 @@
                                 <Style TargetType="DataGridRow">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                            <Setter Property="Foreground" Value="Blue" />
+                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
                                             <Setter Property="FontWeight" Value="Medium" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding IsToday}" Value="False">
-                                            <Setter Property="Foreground" Value="Gray" />
+                                            <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}" />
                                             <Setter Property="FontWeight" Value="Light" />
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -1039,15 +1039,15 @@
                             <Button
                                 x:Name="F1aButton"
                                 Margin="5"
-                                Background="LightGreen"
+                                Background="{StaticResource SuccessBrush}"
                                 Click="F1aButton_Click"
-                                Foreground="Black"
+                                Foreground="{StaticResource DarkBrush}"
                                 Style="{StaticResource AddButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconImage
                                         Width="16"
                                         Height="16"
-                                        Foreground="Black"
+                                        Foreground="{StaticResource DarkBrush}"
                                         Icon="MoneyBill" />
                                     <TextBlock Margin="5,0,0,0" Text=" F1 - Tiền mặt" />
                                 </StackPanel>
@@ -1055,15 +1055,15 @@
                             <Button
                                 Name="F4aButton"
                                 Margin="5"
-                                Background="LightYellow"
+                                Background="{StaticResource WarningBrush}"
                                 Click="F4aButton_Click"
-                                Foreground="Black"
+                                Foreground="{StaticResource DarkBrush}"
                                 Style="{StaticResource AddButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconImage
                                         Width="16"
                                         Height="16"
-                                        Foreground="Black"
+                                        Foreground="{StaticResource DarkBrush}"
                                         Icon="CreditCard" />
                                     <TextBlock Margin="5,0,0,0" Text=" F4 - Chuyển khoản" />
                                 </StackPanel>
@@ -1073,14 +1073,14 @@
                                 Margin="5"
                                 Background="Gold"
                                 Click="F5aButton_Click"
-                                Foreground="Black"
+                                Foreground="{StaticResource DarkBrush}"
                                 Style="{StaticResource AddButtonStyle}"
                                 Visibility="Collapsed">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconImage
                                         Width="16"
                                         Height="16"
-                                        Foreground="Black"
+                                        Foreground="{StaticResource DarkBrush}"
                                         Icon="University" />
                                     <TextBlock Margin="5,0,0,0" Text=" F5 - Banking Nhã" />
                                 </StackPanel>
@@ -1115,11 +1115,11 @@
                                 <Style TargetType="DataGridRow">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                            <Setter Property="Foreground" Value="Blue" />
+                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
                                             <Setter Property="FontWeight" Value="Medium" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding IsToday}" Value="False">
-                                            <Setter Property="Foreground" Value="Gray" />
+                                            <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}" />
                                             <Setter Property="FontWeight" Value="Light" />
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -1227,12 +1227,12 @@
                                 <Style TargetType="DataGridRow">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding DaHoanThanh}" Value="False">
-                                            <Setter Property="Foreground" Value="Blue" />
+                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
                                             <Setter Property="FontWeight" Value="Medium" />
                                             <Setter Property="Opacity" Value="1" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding DaHoanThanh}" Value="True">
-                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Foreground" Value="{StaticResource DarkBrush}" />
                                             <Setter Property="FontWeight" Value="Light" />
                                             <Setter Property="Opacity" Value=".3" />
                                         </DataTrigger>
@@ -1408,3 +1408,4 @@
         </Grid>
     </Border>
 </Window>
+

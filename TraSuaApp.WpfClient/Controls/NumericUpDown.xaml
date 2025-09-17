@@ -12,7 +12,7 @@
             Click="Minus_Click"
             Content="➖"
             Focusable="False"
-            Foreground="Black"
+            Foreground="{StaticResource DarkBrush}"
             IsTabStop="False"
             Style="{StaticResource XoaButtonStyle}" />
         <!--  Ô nhập số lượng  -->
@@ -26,7 +26,7 @@
             VerticalContentAlignment="Center"
             BorderBrush="Transparent"
             FontWeight="Medium"
-            Foreground="Blue"
+            Foreground="{StaticResource PrimaryBrush}"
             Text="{Binding Value, RelativeSource={RelativeSource AncestorType={x:Type local:NumericUpDown}}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
         <!--  Nút cộng  -->
         <Button
@@ -36,7 +36,7 @@
             Click="Plus_Click"
             Content="➕"
             Focusable="False"
-            Foreground="Black"
+            Foreground="{StaticResource DarkBrush}"
             IsTabStop="False"
             Style="{StaticResource XoaButtonStyle}" />
     </Grid>

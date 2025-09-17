@@ -15,7 +15,7 @@
     WindowStyle="None">
 
     <Border
-        Background="White"
+        Background="{StaticResource LightBrush}"
         BorderBrush="#CCC"
         BorderThickness="1"
         CornerRadius="8"
@@ -38,7 +38,7 @@
                         VerticalAlignment="Center"
                         FontSize="16"
                         FontWeight="Bold"
-                        Foreground="White"
+                        Foreground="{StaticResource LightBrush}"
                         Text="Đăng nhập" />
                     <Button
                         Width="32"
@@ -51,7 +51,7 @@
                         Click="CloseButton_Click"
                         Content="✖"
                         Cursor="Hand"
-                        Foreground="White" />
+                        Foreground="{StaticResource LightBrush}" />
                 </Grid>
             </Border>
 
@@ -82,10 +82,10 @@
                         <CheckBox x:Name="AutoLoginCheckBox" VerticalAlignment="Center">
                             <CheckBox.Style>
                                 <Style TargetType="CheckBox">
-                                    <Setter Property="Foreground" Value="Black" />
+                                    <Setter Property="Foreground" Value="{StaticResource DarkBrush}" />
                                     <Style.Triggers>
                                         <Trigger Property="IsEnabled" Value="False">
-                                            <Setter Property="Foreground" Value="Gray" />
+                                            <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}" />
                                         </Trigger>
                                     </Style.Triggers>
                                 </Style>
@@ -113,7 +113,7 @@
                 <TextBlock
                     x:Name="ErrorTextBlock"
                     FontWeight="SemiBold"
-                    Foreground="Red"
+                    Foreground="{StaticResource DangerBrush}"
                     Style="{StaticResource ErrorTextBlock}"
                     TextWrapping="Wrap"
                     Visibility="{Binding Text, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />

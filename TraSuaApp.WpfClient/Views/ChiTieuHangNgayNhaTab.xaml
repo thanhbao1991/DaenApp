@@ -29,7 +29,7 @@
                 VerticalAlignment="Center"
                 FontSize="{StaticResource FontSizeLarge}"
                 FontWeight="Bold"
-                Foreground="DarkRed" />
+                Foreground="{StaticResource DangerBrush}" />
         </StackPanel>
 
         <!--  DataGrid hiển thị chi tiêu  -->

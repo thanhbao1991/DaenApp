@@ -14,7 +14,7 @@
 
     <Border
         Padding="20"
-        Background="White"
+        Background="{StaticResource LightBrush}"
         BorderBrush="#CCC"
         BorderThickness="1"
         CornerRadius="12">

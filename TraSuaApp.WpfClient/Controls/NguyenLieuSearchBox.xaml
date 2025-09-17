@@ -32,8 +32,8 @@
             StaysOpen="False"
             VerticalOffset="2">
             <Border
-                Background="White"
-                BorderBrush="Gray"
+                Background="{StaticResource LightBrush}"
+                BorderBrush="{StaticResource SecondaryBrush}"
                 BorderThickness="1">
                 <ListBox
                     x:Name="ListBoxResults"
@@ -50,7 +50,7 @@
                                 <TextBlock FontWeight="Bold" Text="{Binding Ten}" />
                                 <TextBlock
                                     FontSize="{StaticResource FontSizeSmall}"
-                                    Foreground="Gray"
+                                    Foreground="{StaticResource SecondaryBrush}"
                                     Text="{Binding TimKiem}" />
                             </StackPanel>
                         </DataTemplate>
