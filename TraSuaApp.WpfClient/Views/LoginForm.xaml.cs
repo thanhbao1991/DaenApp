@@ -131,8 +131,9 @@ namespace TraSuaApp.WpfClient.Views
                         System.Diagnostics.Debug.WriteLine(
                             $"[Login Saved] Luu={Properties.Settings.Default.Luu}, AutoLogin={Properties.Settings.Default.AutoLogin}, User={Properties.Settings.Default.TaiKhoan}");
 
-                        var mainWindow = new Dashboard();
                         Config.apiChatGptKey = result.Data.TenHienThi;
+
+                        var mainWindow = new Dashboard();
                         mainWindow.Show();
                         this.DialogResult = true;
                         this.Close();

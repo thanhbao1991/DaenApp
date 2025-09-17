@@ -155,10 +155,13 @@ public class DoanhThuService : IDoanhThuService
                     TienBank = tongChuyenKhoan,
                     TienNo = tongTienNo,
                     TongTienMat = tongDoanhThu - tongChiTieu - tongChuyenKhoan - tongTienNo,
-                    TaiCho = g.Where(x => x.PhanLoai == "TaiCho").Sum(x => x.ThanhTien),
+                    TaiCho = g.Where(x => x.PhanLoai == "Tại Chỗ").Sum(x => x.ThanhTien),
                     MuaVe = g.Where(x => x.PhanLoai == "Mv").Sum(x => x.ThanhTien),
                     DiShip = g.Where(x => x.PhanLoai == "Ship").Sum(x => x.ThanhTien),
                     AppShipping = g.Where(x => x.PhanLoai == "App").Sum(x => x.ThanhTien),
+                    //  ThuongKhanh = g.Where(x => x.PhanLoai == "Ship" && x.NguoiShip == "Khánh").Sum(x => x.ThanhTien) * 0.01m,
+                    ThuongNha = tongDoanhThu * 0.005m,
+                    ThuongKhanh = tongDoanhThu * 0.005m
                 };
             })
             .OrderBy(x => x.Ngay)

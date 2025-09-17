@@ -21,6 +21,8 @@ namespace TraSuaAppWeb.Pages
         public decimal TongChuyenKhoan { get; set; }
         public decimal TongTienMat { get; set; }
         public decimal TongTienNo { get; set; }
+        public decimal ThuongNha { get; set; }
+        public decimal ThuongKhanh { get; set; }
 
         [BindProperty(SupportsGet = true)] public int Thang { get; set; }
         [BindProperty(SupportsGet = true)] public int Nam { get; set; }
@@ -51,6 +53,8 @@ namespace TraSuaAppWeb.Pages
                 TongChuyenKhoan = DoanhThuTheoNgay.Sum(d => d.TienBank);
                 TongTienNo = DoanhThuTheoNgay.Sum(d => d.TienNo);
                 TongTienMat = DoanhThuTheoNgay.Sum(d => d.TongTienMat);
+                ThuongNha = DoanhThuTheoNgay.Sum(d => d.ThuongNha);
+                ThuongKhanh = DoanhThuTheoNgay.Sum(d => d.ThuongKhanh);
             }
         }
     }

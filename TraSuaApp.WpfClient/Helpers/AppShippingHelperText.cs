@@ -186,7 +186,7 @@ public class AppShippingHelperText
             MaHoaDon = string.IsNullOrWhiteSpace(code) ? MaHoaDonGenerator.Generate() : code,
             PhanLoai = "App",
             ChiTietHoaDons = chiTiets,
-            GhiChu = $"Đơn: {trangThai}\nTổng tiền: {tongTien}\n{tenKH}\n{diaChi}"
+            GhiChu = $"{tongTien}\n{diaChi}"
         };
     }
 

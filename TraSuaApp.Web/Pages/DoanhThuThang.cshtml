@@ -85,6 +85,16 @@
                 @string.Format("{0:N0}", Model.DoanhThuTheoNgay.Sum(x => x.AppShipping))
             </td>
         </tr>
+        <tr>
+            <td class="bg-light fw-bold text-start">Thưởng</td>
+            <td class="text-end" style="font-variant-numeric: tabular-nums;">
+                @string.Format("{0:N0}", Model.ThuongNha)
+            </td>
+            <td class="bg-light fw-bold text-start">Ứng</td>
+            <td style="font-variant-numeric: tabular-nums;">
+                @string.Format("{0:N0}", -1)
+            </td>
+        </tr>
     </table>
 
     <table class="table table-sm table-bordered">

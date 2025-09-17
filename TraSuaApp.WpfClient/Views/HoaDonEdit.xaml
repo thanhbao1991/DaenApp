@@ -237,7 +237,9 @@
                                 Grid.Row="2"
                                 Grid.ColumnSpan="2"
                                 Width="175"
-                                TextChanged="NoteTuDoTextBox_TextChanged" />
+                                Height="90"
+                                TextChanged="NoteTuDoTextBox_TextChanged"
+                                TextWrapping="Wrap" />
                         </GroupBox>
 
                         <Grid>
@@ -265,6 +267,12 @@
                                     Unchecked="NoteRadio_Checked" />
                                 <RadioButton
                                     Checked="NoteRadio_Checked"
+                                    Content="Ngọt"
+                                    GroupName="Duong"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
                                     Content="Nhiều ngọt"
                                     GroupName="Duong"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
@@ -272,6 +280,12 @@
                                 <RadioButton
                                     Checked="NoteRadio_Checked"
                                     Content="Đường riêng"
+                                    GroupName="Duong"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Đắng"
                                     GroupName="Duong"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
@@ -286,6 +300,12 @@
                                 <RadioButton
                                     Checked="NoteRadio_Checked"
                                     Content="Ít đá"
+                                    GroupName="Da"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Vừa đá"
                                     GroupName="Da"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
@@ -320,13 +340,13 @@
                                     Unchecked="NoteRadio_Checked" />
                                 <RadioButton
                                     Checked="NoteRadio_Checked"
-                                    Content="Size L"
+                                    Content="Chỉ TCT"
                                     GroupName="Khac"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
                                 <RadioButton
                                     Checked="NoteRadio_Checked"
-                                    Content="Đắng"
+                                    Content="Size L"
                                     GroupName="Khac"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />

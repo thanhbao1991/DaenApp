@@ -1532,7 +1532,10 @@ namespace TraSuaApp.WpfClient.Views
             };
 
             if (window.ShowDialog() == true)
+            {
                 await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
+                SearchHoaDonTextBox.Clear();
+            }
         }
 
         private void AddTaiChoButton_Click(object sender, RoutedEventArgs e)
@@ -1556,27 +1559,32 @@ namespace TraSuaApp.WpfClient.Views
         private readonly DebounceDispatcher _debounceThanhToan = new();
         private readonly DebounceDispatcher _debounceChiTieu = new();
 
+
         private async void HoaDonDataGrid_SelectionChangedAsync(object sender, SelectionChangedEventArgs e)
         {
             try
             {
-                // 🟟 Ngắt phát giọng đọc cũ ngay lập tức
+                // Ngắt phát giọng đọc cũ
                 _cts?.Cancel();
                 TTSHelper.Stop();
 
                 _cts = new CancellationTokenSource();
                 var token = _cts.Token;
 
+                // Nếu không chọn gì thì ẩn panel
+                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+                {
+                    HideHoaDonDetail();
+                    return;
+                }
+
+                ShowHoaDonDetail();
+
                 // Reset UI
-                SearchChiTietHoaDonTextBox.Visibility = Visibility.Collapsed;
-                TongSoSanPhamTextBlock.Visibility = Visibility.Visible;
+                SearchChiTietHoaDonTextBox.Visibility = Visibility.Visible;
                 TongSoSanPhamTextBlock.Text = string.Empty;
                 TenHoaDonTextBlock.Text = string.Empty;
                 ChiTietHoaDonListBox.ItemsSource = null;
-
-
-                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
-                    return;
 
                 var api = new HoaDonApi();
                 var getResult = await api.GetByIdAsync(selected.Id);
@@ -1593,27 +1601,27 @@ namespace TraSuaApp.WpfClient.Views
                 {
                     selected.BaoDon = false;
                     var updateResult = await api.UpdateSingleAsync(selected.Id, selected);
-
                     if (!updateResult.IsSuccess)
                         NotiHelper.ShowError($"Lỗi: {updateResult.Message}");
                     else
                     {
                         await AppProviders.HoaDons.ReloadAsync();
                         ReloadHoaDonUI();
+
+                        // Giữ lại selection cũ sau reload
+                        var items = HoaDonDataGrid.ItemsSource as System.Collections.Generic.IEnumerable<HoaDonDto>;
+                        var again = items?.FirstOrDefault(x => x.Id == selected.Id);
+                        if (again != null) HoaDonDataGrid.SelectedItem = again;
                     }
                 }
 
                 // Cập nhật UI
                 ChiTietHoaDonListBox.ItemsSource = hd.ChiTietHoaDons;
-                //ThongTinThanhToanTextBlock.Foreground = Brushes.Black;
                 UpdateThongTinThanhToanStyle(hd);
-                // gán DataContext cho GroupBox để trigger màu
                 ThongTinThanhToanPanel.DataContext = hd;
 
-                // build footer text
                 RenderFooterPanel(ThongTinThanhToanPanel, hd, includeLine: false);
-                TenHoaDonTextBlock.Text = $"{hd.Ten} - {hd.DiaChiText}"
-                ;
+                TenHoaDonTextBlock.Text = $"{hd.Ten} - {hd.DiaChiText}";
 
                 TongSoSanPhamTextBlock.Text = hd.ChiTietHoaDons
                     .Where(ct =>
@@ -1634,27 +1642,26 @@ namespace TraSuaApp.WpfClient.Views
                     .Sum(ct => ct.SoLuong)
                     .ToString("N0");
 
+                // Đọc ghi chú bằng TTS
                 if (selected.PhanLoai != "Tại Chỗ")
+                {
                     foreach (var ct in hd.ChiTietHoaDons)
                     {
-                        if (token.IsCancellationRequested)
-                            return;
+                        if (token.IsCancellationRequested) return;
 
-                        // 🟟 Chỉ đọc món có ghi chú
                         if (!string.IsNullOrEmpty(ct.NoteText))
                         {
                             string soLuongChu = NumberToVietnamese(ct.SoLuong);
                             string text = $"{soLuongChu} Ly {ct.TenSanPham}";
 
                             await TTSHelper.DownloadAndPlayGoogleTTSAsync(text);
-
                             await Task.Delay(300, token);
 
                             await TTSHelper.DownloadAndPlayGoogleTTSAsync(ct.NoteText.Replace("#", ""));
-
                             await Task.Delay(1000, token);
                         }
                     }
+                }
             }
             catch (OperationCanceledException)
             {
@@ -1665,6 +1672,45 @@ namespace TraSuaApp.WpfClient.Views
                 NotiHelper.ShowError($"Lỗi: {ex.Message}");
             }
         }
+
+        // Hiện panel: set Visible + fade in
+        private void ShowHoaDonDetail()
+        {
+            HoaDonDetailPanel.BeginAnimation(UIElement.OpacityProperty, null);
+
+            if (HoaDonDetailPanel.Visibility != Visibility.Visible)
+            {
+                HoaDonDetailPanel.Opacity = 0;
+                HoaDonDetailPanel.Visibility = Visibility.Visible;
+            }
+
+            var fadeIn = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(220))
+            {
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            HoaDonDetailPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        // Ẩn panel: fade out rồi mới Collapsed
+        private void HideHoaDonDetail()
+        {
+            HoaDonDetailPanel.BeginAnimation(UIElement.OpacityProperty, null);
+
+            var fadeOut = new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(200))
+            {
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+            };
+            fadeOut.Completed += (s, e) =>
+            {
+                HoaDonDetailPanel.Visibility = Visibility.Collapsed;
+            };
+            HoaDonDetailPanel.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        }
+
+
+
+
+
         public static void RenderFooterPanel(StackPanel host, HoaDonDto hd, bool includeLine = true)
         {
             host.Children.Clear();

@@ -336,7 +336,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                         break;
                 }
 
-
+                NoteTuDoTextBox.Text = dto.GhiChu;
             }
             else
             {

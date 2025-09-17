@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
     xmlns:fa="clr-namespace:FontAwesome.Sharp;assembly=FontAwesome.Sharp"
+    xmlns:views="clr-namespace:TraSuaApp.WpfClient.Views"
     Title="Dashboard"
     AllowsTransparency="True"
     Background="Transparent"
@@ -19,11 +20,10 @@
         <Grid>
             <TextBlock
                 Name="ThongBaoTextBlock"
-                Margin="45"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
                 Panel.ZIndex="2"
-                FontSize="{StaticResource FontSizeLarge}"
+                FontSize="{StaticResource FontSizeNormal}"
                 FontWeight="Bold"
                 Foreground="{StaticResource InfoBrush}"
                 Text="Dashboard" />
@@ -39,9 +39,9 @@
                 Grid.Row="0"
                 Grid.Column="0"
                 Margin="4"
-                Background="#4CAF50"
+                Background="{StaticResource SecondaryBrush}"
                 SelectionChanged="TabControl_SelectionChanged">
-                <TabItem Header="Thống kê hôm nay" Tag="ThongKeHomNay">
+                <TabItem Header="Thống kê " Tag="ThongKeHomNay">
                     <Grid Background="#f6f6f6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -205,7 +205,7 @@
                         </Grid>
                     </Grid>
                 </TabItem>
-                <TabItem Header="Hóa đơn hôm nay" Tag="HoaDon">
+                <TabItem Header="Hóa đơn " Tag="HoaDon">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto" />
@@ -247,7 +247,6 @@
                                 HorizontalAlignment="Left"
                                 Panel.ZIndex="1"
                                 Click="AddTaiChoButton_Click"
-                                FontSize="{StaticResource FontSizeLarge}"
                                 Style="{StaticResource SuaButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconBlock Margin="0,0,5,0" Icon="Chair" />
@@ -260,7 +259,6 @@
                                 HorizontalAlignment="Left"
                                 Panel.ZIndex="1"
                                 Click="AddMuaVeButton_Click"
-                                FontSize="{StaticResource FontSizeLarge}"
                                 Style="{StaticResource TaiLaiButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconBlock Margin="0,0,5,0" Icon="ShoppingBag" />
@@ -272,7 +270,6 @@
                                 HorizontalAlignment="Left"
                                 Panel.ZIndex="1"
                                 Click="AddShipButton_Click"
-                                FontSize="{StaticResource FontSizeLarge}"
                                 Style="{StaticResource ThemButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconBlock Margin="0,0,5,0" Icon="Motorcycle" />
@@ -286,7 +283,6 @@
                                 HorizontalAlignment="Left"
                                 Panel.ZIndex="1"
                                 Click="AddAppButton_Click"
-                                FontSize="{StaticResource FontSizeLarge}"
                                 Style="{StaticResource XoaButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconBlock Margin="0,0,5,0" Icon="Mobile" />
@@ -318,10 +314,10 @@
                             </DataGrid.RowStyle>
 
                             <DataGrid.Columns>
-                                <DataGridTextColumn
+                                <!--<DataGridTextColumn
                                     Binding="{Binding Stt}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="STT" />
+                                    Header="STT" />-->
                                 <DataGridTextColumn
                                     Binding="{Binding GioHienThi}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
@@ -624,17 +620,24 @@
                                 </Button>
                             </StackPanel>
                         </Grid>
+
+
                         <Grid
                             Grid.Row="1"
                             Grid.Column="2"
                             Background="{Binding ElementName=ThongTinThanhToanGroupBox, Path=Background}">
-
                             <ScrollViewer
                                 x:Name="ThongTinThanhToanGroupBox"
                                 HorizontalScrollBarVisibility="Disabled"
                                 VerticalScrollBarVisibility="Auto">
 
-                                <StackPanel>
+                                <!--  Panel chứa chi tiết hóa đơn  -->
+                                <StackPanel
+                                    x:Name="HoaDonDetailPanel"
+                                    Opacity="0"
+                                    Visibility="Collapsed">
+
+                                    <!--  Nội dung hóa đơn  -->
                                     <TextBlock
                                         x:Name="TenHoaDonTextBlock"
                                         Padding="8"
@@ -647,13 +650,13 @@
 
                                     <TextBox
                                         x:Name="SearchChiTietHoaDonTextBox"
-                                        Grid.Row="2"
                                         Opacity=".8"
                                         TextChanged="SearchChiTietHoaDonTextBox_TextChanged"
                                         Visibility="Collapsed" />
+
+                                    <!--  Danh sách chi tiết hóa đơn  -->
                                     <ListBox
                                         x:Name="ChiTietHoaDonListBox"
-                                        Grid.Row="1"
                                         Margin="0,8,0,0"
                                         Background="Transparent"
                                         BorderThickness="0"
@@ -667,6 +670,8 @@
                                                         <ColumnDefinition Width="40" />
                                                         <ColumnDefinition Width="*" />
                                                     </Grid.ColumnDefinitions>
+
+                                                    <!--  Số lượng  -->
                                                     <Border
                                                         Grid.Column="0"
                                                         Background="Gray"
@@ -682,6 +687,8 @@
                                                             Foreground="White"
                                                             Text="{Binding SoLuong}" />
                                                     </Border>
+
+                                                    <!--  Nội dung  -->
                                                     <Border
                                                         Grid.Column="1"
                                                         Padding="8"
@@ -697,6 +704,7 @@
                                                                     FontSize="{StaticResource FontSizeSmall}"
                                                                     Text="{Binding NgayGio, StringFormat=dd-MM-yyyy HH:mm}"
                                                                     Visibility="{Binding NgayGio, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+
                                                                 <!--  Tên sản phẩm + biến thể  -->
                                                                 <StackPanel Orientation="Horizontal">
                                                                     <TextBlock
@@ -739,30 +747,7 @@
                                                                         FontWeight="Bold"
                                                                         Foreground="DarkRed"
                                                                         Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
-
                                                                 </StackPanel>
-                                                                <!--<Grid
-                                                            Grid.IsSharedSizeScope="True"
-                                                            IsEnabled="False"
-                                                            IsHitTestVisible="False">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="auto" SharedSizeGroup="ColSL" />
-                                                                <ColumnDefinition Width="auto" SharedSizeGroup="ColGia" />
-                                                                <ColumnDefinition Width="auto" SharedSizeGroup="ColTT" />
-                                                            </Grid.ColumnDefinitions>
-                                                            <StackPanel
-                                                                Grid.Column="0"
-                                                                HorizontalAlignment="Center"
-                                                                Orientation="Horizontal">
-                                                                <ctrl:NumericUpDown Grid.Column="0" Value="{Binding SoLuong, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                                            </StackPanel>
-                                                            <ctrl:MoneyTextBox
-                                                                Grid.Column="1"
-                                                                HorizontalContentAlignment="Right"
-                                                                VerticalContentAlignment="Center"
-                                                                BorderBrush="Transparent"
-                                                                Value="{Binding DonGia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                                        </Grid>-->
 
                                                                 <!--  Topping  -->
                                                                 <TextBlock
@@ -771,6 +756,7 @@
                                                                     Text="{Binding ToppingText}"
                                                                     TextWrapping="Wrap"
                                                                     Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
+
                                                                 <!--  Ghi chú  -->
                                                                 <TextBox
                                                                     AcceptsReturn="True"
@@ -783,6 +769,7 @@
                                                                     TextWrapping="Wrap"
                                                                     Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
 
+                                                                <!--  Định lượng  -->
                                                                 <TextBlock
                                                                     Margin="0,0,0,2"
                                                                     FontSize="{StaticResource FontSizeSmall}"
@@ -790,36 +777,27 @@
                                                                     Text="{Binding DinhLuong}"
                                                                     TextWrapping="Wrap"
                                                                     Visibility="{Binding DinhLuong, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-
-
                                                             </StackPanel>
-                                                            <!--  Nút Xóa  -->
-                                                            <Button
-                                                                Grid.Column="2"
-                                                                HorizontalAlignment="Right"
-                                                                VerticalAlignment="Top"
-                                                                Style="{StaticResource ClearXButtonStyle}"
-                                                                Tag="{Binding}"
-                                                                Visibility="Collapsed" />
-
-
                                                         </Grid>
                                                     </Border>
                                                 </Grid>
                                             </DataTemplate>
                                         </ListBox.ItemTemplate>
-
                                     </ListBox>
+
+                                    <!--  Footer panel  -->
                                     <Grid>
                                         <Border
                                             Margin="8"
-                                            Background="#99999999"
-                                            CornerRadius="8">
+                                            Background="#11111111"
+                                            CornerRadius="8"
+                                            Visibility="{Binding ElementName=TongSoSanPhamTextBlock, Path=Visibility}">
                                             <StackPanel x:Name="ThongTinThanhToanPanel" Margin="8" />
                                         </Border>
 
                                         <TextBlock
                                             x:Name="TongSoSanPhamTextBlock"
+                                            Padding="8"
                                             HorizontalAlignment="Center"
                                             VerticalAlignment="Center"
                                             FontSize="{StaticResource FontSizeXXX}"
@@ -830,9 +808,14 @@
                                 </StackPanel>
                             </ScrollViewer>
                         </Grid>
+
+
+
+
+
                     </Grid>
                 </TabItem>
-                <TabItem Header="Thanh toán hôm nay" Tag="ChiTietHoaDonThanhToan">
+                <TabItem Header="Thanh toán " Tag="ChiTietHoaDonThanhToan">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto" />
@@ -958,7 +941,7 @@
                         </DataGrid>
                     </Grid>
                 </TabItem>
-                <TabItem Header="Công nợ hôm nay" Tag="ChiTietHoaDonNo">
+                <TabItem Header="Công nợ " Tag="ChiTietHoaDonNo">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto" />
@@ -1105,7 +1088,7 @@
                         </StackPanel>
                     </Grid>
                 </TabItem>
-                <TabItem Header="Chi tiêu hôm nay" Tag="ChiTieuHangNgay">
+                <TabItem Header="Chi tiêu " Tag="ChiTieuHangNgay">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto" />
@@ -1205,7 +1188,8 @@
                         </DataGrid>
                     </Grid>
                 </TabItem>
-                <TabItem Header="Công việc hôm nay" Tag="CongViecNoiBo">
+
+                <TabItem Header="Công việc " Tag="CongViecNoiBo">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto" />
@@ -1339,6 +1323,12 @@
                         </DataGrid>
                     </Grid>
                 </TabItem>
+
+                <TabItem Header="Ứng Nhã" Tag="ChiTieuHangNgayNha">
+                    <views:ChiTieuHangNgayNhaTab />
+                </TabItem>
+
+                <TabItem Header="Voucher " Tag="CongViecNoiBo" />
 
             </TabControl>
             <Grid

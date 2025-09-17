@@ -1,0 +1,71 @@
+﻿<UserControl
+    x:Class="TraSuaApp.WpfClient.Views.ChiTieuHangNgayNhaTab"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Thanh điều khiển  -->
+        <StackPanel
+            Margin="0,0,0,8"
+            VerticalAlignment="Center"
+            Orientation="Horizontal">
+            <ComboBox
+                x:Name="MonthSelector"
+                Width="150"
+                SelectionChanged="MonthSelector_SelectionChanged">
+                <ComboBoxItem Content="Tháng này" Tag="0" />
+                <ComboBoxItem Content="Tháng trước" Tag="-1" />
+            </ComboBox>
+
+            <!--  Tổng tiền  -->
+            <TextBlock
+                x:Name="TongTienTextBlock"
+                Margin="20,0,0,0"
+                VerticalAlignment="Center"
+                FontSize="{StaticResource FontSizeLarge}"
+                FontWeight="Bold"
+                Foreground="DarkRed" />
+        </StackPanel>
+
+        <!--  DataGrid hiển thị chi tiêu  -->
+        <DataGrid
+            x:Name="ChiTieuHangNgayNhaDataGrid"
+            Grid.Row="1"
+            AutoGenerateColumns="False"
+            IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn
+                    Width="50"
+                    Binding="{Binding Stt}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="STT" />
+                <DataGridTextColumn
+                    Width="100"
+                    Binding="{Binding Ngay, StringFormat=dd/MM/yyyy}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="Ngày" />
+                <DataGridTextColumn
+                    Width="150"
+                    Binding="{Binding Ten}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="Tên" />
+                <DataGridTextColumn
+                    Width="100"
+                    Binding="{Binding ThanhTien, StringFormat=N0}"
+                    ElementStyle="{StaticResource RightTextCellStyle}"
+                    Header="Thành tiền" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding GhiChu}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="Ghi chú" />
+
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

@@ -45,4 +45,28 @@ public class ChiTieuHangNgayApi : BaseApi, IChiTieuHangNgayApi
     {
         return await GetAsync<List<ChiTieuHangNgayDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
     }
+    public async Task<Result<List<ChiTieuHangNgayDto>>> GetByNguyenLieuInMonth(int year, int month)
+    {
+        return await GetAsync<List<ChiTieuHangNgayDto>>(
+            $"{BASE_URL}/nguyenlieu/{year}/{month}"
+        );
+    }
+
+    public async Task<Result<List<ChiTieuHangNgayDto>>> GetThisMonth()
+    {
+        var dt = DateTime.Today;
+        return await GetByNguyenLieuInMonth(dt.Year, dt.Month);
+    }
+
+    public async Task<Result<List<ChiTieuHangNgayDto>>> GetLastMonth()
+    {
+        var dt = DateTime.Today.AddMonths(-1);
+        return await GetByNguyenLieuInMonth(dt.Year, dt.Month);
+    }
+
+    public async Task<Result<List<ChiTieuHangNgayDto>>> GetTwoMonthsAgo()
+    {
+        var dt = DateTime.Today.AddMonths(-2);
+        return await GetByNguyenLieuInMonth(dt.Year, dt.Month);
+    }
 }

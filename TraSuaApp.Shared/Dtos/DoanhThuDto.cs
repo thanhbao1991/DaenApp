@@ -60,6 +60,8 @@ public class DoanhThuThangItemDto
     public decimal MuaVe { get; set; }
     public decimal DiShip { get; set; }
     public decimal AppShipping { get; set; }
+    public decimal ThuongNha { get; set; }
+    public decimal ThuongKhanh { get; set; }
 }
 
 // 🟟 DTO mới
