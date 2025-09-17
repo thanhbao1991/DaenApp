@@ -1,83 +1,47 @@
-﻿using System.Globalization;
+﻿
+using System.Globalization;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 
 namespace TraSuaApp.WpfClient.Converters
 {
-    public class BoolToRowDetailsConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            bool isCard = (bool)(value ?? false);
-            return isCard
-                ? DataGridRowDetailsVisibilityMode.Visible
-                : DataGridRowDetailsVisibilityMode.Collapsed;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class BoolToVisibilityConverterWithInvert : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            bool isCard = (bool)(value ?? false);
-            bool invert = parameter?.ToString() == "Invert";
-
-            if (invert) isCard = !isCard;
-
-            return isCard ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-
-
-
-
     public class RowStyleMultiConverter : IMultiValueConverter
     {
+        private SolidColorBrush GetBrush(string key)
+        {
+            return System.Windows.Application.Current.TryFindResource(key) as SolidColorBrush ?? Brushes.Transparent;
+        }
 
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
             var ngayShip = values[0];
             var phanLoai = values[1]?.ToString();
             var trangThai = values[2]?.ToString();
-            var DaThuHoacGhiNo = bool.Parse(values[3]?.ToString());
+            bool DaThuHoacGhiNo = false;
+            bool.TryParse(values[3]?.ToString(), out DaThuHoacGhiNo);
 
             if (parameter?.ToString() == "Foreground")
             {
                 if (phanLoai == "Ship")
                 {
                     if (ngayShip == null)
-                        return Brushes.LightSkyBlue;
+                        return GetBrush("InfoBrush");        // LightSkyBlue → Info
                     else
-                    {
-                        if (DaThuHoacGhiNo)
-                            return Brushes.Transparent;
-                        else
-                            return Brushes.LightBlue;
-                    }
+                        return DaThuHoacGhiNo
+                            ? Brushes.Transparent
+                            : GetBrush("PrimaryBrush");     // LightBlue → Primary
                 }
                 if (phanLoai == "App" && !DaThuHoacGhiNo)
-                    return Brushes.LightPink;
+                    return GetBrush("DangerBrush");          // LightPink → Danger
                 if (phanLoai == "Tại Chỗ" && !DaThuHoacGhiNo)
-                    return Brushes.LightGreen;
+                    return GetBrush("SuccessBrush");         // LightGreen → Success
                 if (phanLoai == "Mv" && !DaThuHoacGhiNo)
-                    return Brushes.LightYellow;
+                    return GetBrush("WarningBrush");         // LightYellow → Warning
+
                 return Brushes.Transparent;
             }
 
-            // điều kiện font weight
             if (parameter?.ToString() == "FontWeight")
             {
                 if (phanLoai == "Ship")
@@ -85,19 +49,11 @@ namespace TraSuaApp.WpfClient.Converters
                     if (ngayShip == null)
                         return FontWeights.Medium;
                     else
-                    {
-                        if (DaThuHoacGhiNo)
-                            return FontWeights.Normal;
-                        else
-                            return FontWeights.Medium;
-                    }
+                        return DaThuHoacGhiNo ? FontWeights.Normal : FontWeights.Medium;
                 }
-                if (phanLoai == "App" && !DaThuHoacGhiNo)
+                if ((phanLoai == "App" || phanLoai == "Tại Chỗ" || phanLoai == "Mv") && !DaThuHoacGhiNo)
                     return FontWeights.Medium;
-                if (phanLoai == "Tại Chỗ" && !DaThuHoacGhiNo)
-                    return FontWeights.Medium;
-                if (phanLoai == "Mv" && !DaThuHoacGhiNo)
-                    return FontWeights.Medium;
+
                 return FontWeights.Normal;
             }
 
@@ -107,7 +63,4 @@ namespace TraSuaApp.WpfClient.Converters
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
             => throw new NotImplementedException();
     }
-
-
-
 }

@@ -18,8 +18,6 @@
         <conveter:NotNullToBoolConverter x:Key="NotNullToBoolConverter" />
         <conveter:InverseBoolConverter x:Key="InverseBoolConverter" />
         <conveter:SoDienThoaiConverter x:Key="SoDienThoaiConverter" />
-        <conveter:BoolToVisibilityConverterWithInvert x:Key="BoolToVisibilityConverterWithInvert" />
-        <conveter:BoolToRowDetailsConverter x:Key="BoolToRowDetailsConverter" />
         <conveter:BoolToHiddenConverter x:Key="BoolToHiddenConverter" />
         <conveter:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" />
 

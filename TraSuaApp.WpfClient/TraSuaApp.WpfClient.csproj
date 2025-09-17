@@ -1,6 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <Compile Remove="Styles\**" />
+    <EmbeddedResource Remove="Styles\**" />
+    <None Remove="Styles\**" />
+    <Page Remove="Styles\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="index.cs" />
     <Compile Remove="MainWindow.xaml.cs" />
   </ItemGroup>
