@@ -84,7 +84,7 @@ namespace TraSuaApp.WpfClient.Controls
 
         private void StartBlinkAnimation()
         {
-            if (FindResource("BlinkColorStoryboard") is Storyboard sb)
+            if (FindResource("BlinkOpacityStoryboard") is Storyboard sb)
             {
                 Storyboard.SetTarget(sb, ButtonText);
                 sb.Begin();
@@ -93,7 +93,7 @@ namespace TraSuaApp.WpfClient.Controls
 
         private void StopBlinkAnimation()
         {
-            if (FindResource("BlinkColorStoryboard") is Storyboard sb)
+            if (FindResource("BlinkOpacityStoryboard") is Storyboard sb)
             {
                 sb.Stop();
             }

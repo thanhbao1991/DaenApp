@@ -49,7 +49,6 @@ public static class NotiHelper
               if (TargetTextBlock != null)
               {
                   TargetTextBlock.Text = $"{message}";
-                  TargetTextBlock.Foreground = System.Windows.Media.Brushes.Green;
               }
           });
     }

@@ -142,23 +142,28 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
             }
         }
-        public static SolidColorBrush MakeBrush(SolidColorBrush brush, double opacity = 1.0)
+        public static SolidColorBrush MakeBrush(Brush brush, double opacity = 1.0)
         {
-            var color = brush.Color;
-            var newBrush = new SolidColorBrush(color);
-            newBrush.Opacity = opacity; // 0.0 -> 1.0
+            if (brush is SolidColorBrush solid)
+            {
+                var color = solid.Color;
+                var newBrush = new SolidColorBrush(color);
+                newBrush.Opacity = opacity; // 0.0 -> 1.0
+                return newBrush;
+            }
 
-            return newBrush;
+            // fallback nếu không phải SolidColorBrush
+            return new SolidColorBrush(Colors.Transparent) { Opacity = opacity };
         }
         private void PhuongThucThanhToanComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (PhuongThucThanhToanComboBox.SelectedIndex == 1)
-                Background = MakeBrush(Brushes.LightGreen, 0.8);
+                Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["SuccessBrush"], 0.8);
             else
             if (PhuongThucThanhToanComboBox.SelectedIndex == 0)
-                Background = MakeBrush(Brushes.LightYellow, 0.8);
+                Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["WarningBrush"], 0.8);
             else
-                Background = MakeBrush(Brushes.Gold, 0.8);
+                Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["WarningBrush"], 0.8);
 
 
 

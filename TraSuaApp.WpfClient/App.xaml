@@ -196,6 +196,7 @@
             BasedOn="{StaticResource BaseButtonStyle}"
             TargetType="Button">
             <Setter Property="Background" Value="{StaticResource WarningBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource DarkBrush}" />
         </Style>
 
         <!--  Small action buttons  -->
@@ -248,7 +249,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="1"
-                            CornerRadius="8 8 0 0">
+                            CornerRadius="  0">
                             <ContentPresenter
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
@@ -259,8 +260,8 @@
                                 <Setter TargetName="Bd" Property="Background" Value="{StaticResource Gray200Brush}" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource PrimaryBrush}" />
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource SuccessBrush}" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource SuccessBrush}" />
                                 <Setter Property="Foreground" Value="{StaticResource PrimaryForeground}" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">

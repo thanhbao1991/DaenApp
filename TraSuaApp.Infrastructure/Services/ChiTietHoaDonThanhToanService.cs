@@ -106,11 +106,11 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
                 DiscordEventType.TraNo,
                 $"{entity.SoTien:N0}đ {dto.Ten}"
             );
-        else
-            await DiscordService.SendAsync(
-                DiscordEventType.ThanhToan,
-                $"{entity.SoTien:N0}đ {dto.Ten}"
-            );
+        //else
+        //    await DiscordService.SendAsync(
+        //        DiscordEventType.ThanhToan,
+        //        $"{entity.SoTien:N0}đ {dto.Ten}"
+        //    );
 
         return Result<ChiTietHoaDonThanhToanDto>.Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
             .WithId(after.Id)

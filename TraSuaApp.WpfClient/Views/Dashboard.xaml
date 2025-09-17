@@ -39,7 +39,7 @@
                 Grid.Row="0"
                 Grid.Column="0"
                 Margin="4"
-                Background="{StaticResource SecondaryBrush}"
+                Background="{StaticResource SuccessBrush}"
                 SelectionChanged="TabControl_SelectionChanged">
                 <TabItem Header="Thống kê " Tag="ThongKeHomNay">
                     <Grid Background="#f6f6f6">
@@ -387,15 +387,13 @@
                                 <Button
                                     x:Name="F1Button"
                                     Margin="5"
-                                    Background="{StaticResource SuccessBrush}"
                                     Click="F1Button_Click"
-                                    Foreground="{StaticResource DarkBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
+                                    Style="{StaticResource EditButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="{StaticResource DarkBrush}"
+                                            Foreground="{StaticResource LightBrush}"
                                             Icon="MoneyBill" />
                                         <TextBlock Margin="5,0,0,0" Text=" F1 - Tiền mặt" />
                                     </StackPanel>
@@ -607,13 +605,11 @@
                                     Name="AppButton"
                                     Margin="5"
                                     Click="AppButton_Click"
-                                    Foreground="{StaticResource LightBrush}"
                                     Style="{StaticResource ReloadButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="{StaticResource LightBrush}"
                                             Icon="Heart" />
                                         <TextBlock Margin="5,0,0,0" Text="App Shipping" />
                                     </StackPanel>
@@ -1041,13 +1037,13 @@
                                 Margin="5"
                                 Background="{StaticResource SuccessBrush}"
                                 Click="F1aButton_Click"
-                                Foreground="{StaticResource DarkBrush}"
+                                Foreground="{StaticResource LightBrush}"
                                 Style="{StaticResource AddButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <fa:IconImage
                                         Width="16"
                                         Height="16"
-                                        Foreground="{StaticResource DarkBrush}"
+                                        Foreground="{StaticResource LightBrush}"
                                         Icon="MoneyBill" />
                                     <TextBlock Margin="5,0,0,0" Text=" F1 - Tiền mặt" />
                                 </StackPanel>
@@ -1229,12 +1225,10 @@
                                         <DataTrigger Binding="{Binding DaHoanThanh}" Value="False">
                                             <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
                                             <Setter Property="FontWeight" Value="Medium" />
-                                            <Setter Property="Opacity" Value="1" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding DaHoanThanh}" Value="True">
-                                            <Setter Property="Foreground" Value="{StaticResource DarkBrush}" />
+                                            <Setter Property="Foreground" Value="{StaticResource Gray500Brush}" />
                                             <Setter Property="FontWeight" Value="Light" />
-                                            <Setter Property="Opacity" Value=".3" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>

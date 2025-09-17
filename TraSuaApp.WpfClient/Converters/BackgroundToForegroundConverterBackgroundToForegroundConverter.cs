@@ -12,9 +12,9 @@ namespace TraSuaApp.WpfClient.Converters
             {
                 var color = brush.Color;
                 double brightness = (299 * color.R + 587 * color.G + 114 * color.B) / 1000.0;
-                return brightness > 128 ? Brushes.Black : Brushes.White;
+                return brightness > 128 ? (Brush)System.Windows.Application.Current.Resources["DarkBrush"] : (Brush)System.Windows.Application.Current.Resources["LightBrush"];
             }
-            return Brushes.Black;
+            return (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

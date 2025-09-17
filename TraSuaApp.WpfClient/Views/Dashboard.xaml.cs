@@ -18,6 +18,7 @@ using TraSuaApp.Shared.Config;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Shared.Services;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
 using TraSuaApp.WpfClient.Services;
@@ -1777,14 +1778,14 @@ namespace TraSuaApp.WpfClient.Views
         private void UpdateThongTinThanhToanStyle(HoaDonDto hd)
         {
             // mặc định
-            ThongTinThanhToanGroupBox.Background = Brushes.WhiteSmoke;
-            ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+            ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["LightBrush"];
+            ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
 
             // Ưu tiên: nếu còn nợ khách hàng > 0 thì luôn hiển thị đỏ nhạt
             if (hd.TongNoKhachHang > 0)
             {
-                ThongTinThanhToanGroupBox.Background = Brushes.IndianRed;
-                ThongTinThanhToanGroupBox.Foreground = Brushes.White;
+                ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["DangerBrush"];
+                ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["LightBrush"];
                 return; // dừng ở đây, không xét tiếp
             }
 
@@ -1792,18 +1793,18 @@ namespace TraSuaApp.WpfClient.Views
             switch (hd.TrangThai)
             {
                 case "Tiền mặt":
-                    ThongTinThanhToanGroupBox.Background = Brushes.Green;
-                    ThongTinThanhToanGroupBox.Foreground = Brushes.White;
+                    ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["SuccessBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["LightBrush"];
                     break;
 
                 case "Chuyển khoản":
-                    ThongTinThanhToanGroupBox.Background = Brushes.LightYellow;
-                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+                    ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["WarningBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
                     break;
 
                 case "Banking Nhã":
-                    ThongTinThanhToanGroupBox.Background = Brushes.Gold;
-                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+                    ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["WarningBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
                     break;
 
                 case "Chuyển khoản + Tiền mặt":
@@ -1819,7 +1820,7 @@ namespace TraSuaApp.WpfClient.Views
                     new GradientStop(Colors.LightYellow, 1.0)
                 }
                     };
-                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
                     break;
 
                 case "Banking Nhã + Tiền mặt":
@@ -1835,22 +1836,22 @@ namespace TraSuaApp.WpfClient.Views
                     new GradientStop(Colors.Gold, 1.0)
                 }
                     };
-                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
                     break;
 
                 case "Thu một phần":
-                    ThongTinThanhToanGroupBox.Background = Brushes.LightGreen;
-                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black;
+                    ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["SuccessBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
                     break;
 
                 case "Nợ một phần":
-                    ThongTinThanhToanGroupBox.Background = Brushes.LightCoral;
-                    ThongTinThanhToanGroupBox.Foreground = Brushes.Black; // đỏ nhạt → chữ đen vẫn đọc được
+                    ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["DangerBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"]; // đỏ nhạt → chữ đen vẫn đọc được
                     break;
 
                 case "Ghi nợ":
-                    ThongTinThanhToanGroupBox.Background = Brushes.IndianRed;
-                    ThongTinThanhToanGroupBox.Foreground = Brushes.White;
+                    ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["DangerBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["LightBrush"];
                     break;
             }
         }
@@ -1949,18 +1950,6 @@ namespace TraSuaApp.WpfClient.Views
         }
         private async void ReloadHoaDonUI()
         {
-            //        _fullHoaDonList = AppProviders.HoaDons.Items
-            //            .Where(x => !x.IsDeleted && (x.Ngay == today
-            //            || x.DaThuHoacGhiNo == false
-            //            ))
-            //            .OrderByDescending(x => x.UuTien)       // Blue lên đầu
-            //            .ThenByDescending(x => x.IsBlue)        // Ưu tiên
-            //            .ThenBy(x => x.TrangThai == "Chưa thu" || x.TrangThai ==
-            //"Thu một phần" ? 0 : 1)
-            //            .ThenByDescending(x => x.NgayGio)       // Mới nhất
-            //            .ToList();
-
-            //        ApplyHoaDonFilter();
             _fullHoaDonList = await UiListHelper.BuildListAsync(
             AppProviders.HoaDons.Items.Where(x => !x.IsDeleted),
             snap => snap.Where(x => x.Ngay == today || !x.DaThuHoacGhiNo)
@@ -2237,12 +2226,18 @@ namespace TraSuaApp.WpfClient.Views
                 SoTien = selected.ConLai,
             };
         }
-        public static SolidColorBrush MakeBrush(SolidColorBrush brush, double opacity = 1.0)
+        public static SolidColorBrush MakeBrush(Brush brush, double opacity = 1.0)
         {
-            var color = brush.Color;
-            var newBrush = new SolidColorBrush(color);
-            newBrush.Opacity = opacity; // 0.0 -> 1.0
-            return newBrush;
+            if (brush is SolidColorBrush solid)
+            {
+                var color = solid.Color;
+                var newBrush = new SolidColorBrush(color);
+                newBrush.Opacity = opacity; // 0.0 -> 1.0
+                return newBrush;
+            }
+
+            // fallback nếu không phải SolidColorBrush
+            return new SolidColorBrush(Colors.Transparent) { Opacity = opacity };
         }
         private async Task ReloadAfterHoaDonChangeAsync(
             bool reloadHoaDon = true,
@@ -2680,7 +2675,7 @@ namespace TraSuaApp.WpfClient.Views
                     Owner = this,
                     Width = ActualWidth,
                     Height = ActualHeight,
-                    Background = MakeBrush(Brushes.IndianRed, 0.8)
+                    Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["DangerBrush"], 0.8)
                 };
                 window.SoTienTextBox.IsReadOnly = true;
 
@@ -2773,57 +2768,6 @@ namespace TraSuaApp.WpfClient.Views
             _congViecTimer.Stop();
             _updateSummaryTimer.Stop();
         }
-        private void UpdateStatusIconStyle(HoaDonDto hd, IconBlock icon)
-        {
-            // Ẩn mặc định
-            icon.Visibility = Visibility.Collapsed;
-            icon.Opacity = 1; // reset khi không nhấp nháy
-
-            if (hd == null) return;
-            if (hd.DaThuHoacGhiNo) return; // đã thu/ghi nợ thì không hiện icon
-
-            // Mặc định bật hiển thị
-            icon.Visibility = Visibility.Visible;
-
-            // Chọn icon + màu theo PhanLoai
-            switch (hd.PhanLoai)
-            {
-                case "App":
-                    icon.Icon = FontAwesome.Sharp.IconChar.Mobile;
-                    icon.Foreground = Brushes.Red;
-                    break;
-
-                case "Tại Chỗ":
-                    icon.Icon = FontAwesome.Sharp.IconChar.Chair;
-                    icon.Foreground = Brushes.Green;
-                    break;
-
-                case "Mv":
-                    icon.Icon = FontAwesome.Sharp.IconChar.ShoppingBag;
-                    icon.Foreground = Brushes.Indigo;
-                    break;
-
-                case "Ship":
-                    icon.Icon = FontAwesome.Sharp.IconChar.Motorcycle; // hoặc Scooter
-                    icon.Foreground = Brushes.Orange;
-                    break;
-            }
-
-            // 🟟 Nếu chưa thu/ghi nợ thì cho nhấp nháy
-            if (!hd.DaThuHoacGhiNo)
-            {
-                var blink = new System.Windows.Media.Animation.DoubleAnimation
-                {
-                    From = 1.0,
-                    To = 0.2,
-                    Duration = TimeSpan.FromSeconds(0.5),
-                    AutoReverse = true,
-                    RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
-                };
-
-                icon.BeginAnimation(UIElement.OpacityProperty, blink);
-            }
-        }
         private void StatusIcon_Loaded(object sender, RoutedEventArgs e)
         {
             if (sender is IconBlock icon && icon.DataContext is HoaDonDto hd)
@@ -2851,23 +2795,29 @@ namespace TraSuaApp.WpfClient.Views
             {
                 case "App":
                     icon.Icon = IconChar.MobileScreenButton;
-                    icon.Foreground = Brushes.Red;
+                    icon.Foreground = (Brush)System.Windows.Application.Current.Resources["DangerBrush"];
                     break;
                 case "Tại Chỗ":
                     icon.Icon = IconChar.Chair;
-                    icon.Foreground = Brushes.Green;
+                    icon.Foreground = (Brush)System.Windows.Application.Current.Resources["SuccessBrush"];
                     break;
                 case "Mv":
                     icon.Icon = IconChar.BagShopping;
-                    icon.Foreground = Brushes.Indigo;
+                    icon.Foreground = (Brush)System.Windows.Application.Current.Resources["WarningBrush"];
                     break;
                 case "Ship":
-                    icon.Icon = IconChar.Motorcycle;
-                    icon.Foreground = Brushes.Orange;
+                    icon.Icon =
+                        hd.NguoiShip == "Khánh" ?
+                        IconChar.Motorcycle : IconChar.Truck;
+                    icon.Foreground =
+                        hd.NguoiShip == "Khánh" ?
+                    (Brush)System.Windows.Application.Current.Resources["DangerBrush"] :
+                    (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
+
                     break;
                 default:
                     icon.Icon = IconChar.Circle; // fallback
-                    icon.Foreground = Brushes.Gray;
+                    icon.Foreground = (Brush)System.Windows.Application.Current.Resources["SecondaryBrush"];
                     break;
             }
 
@@ -2890,17 +2840,15 @@ namespace TraSuaApp.WpfClient.Views
         {
             await SafeButtonHandlerAsync(AppButton, async _ =>
             {
-                // trước đây: private async void QuickOrderButton_Click()
-                if (string.IsNullOrWhiteSpace(SearchHoaDonTextBox.Text))
-                    return;
-
-                string input = SearchHoaDonTextBox.Text;
-
+                string input = SearchHoaDonTextBox.Text.Trim();
+                if (string.IsNullOrEmpty(input)) input = Clipboard.GetText().Trim();
+                if (string.IsNullOrEmpty(input)) return;
                 // ✅ Dùng DTO giống shipper
                 var dto = await _quickOrder.BuildHoaDonFromQuickAsync(input); // yêu cầu bạn đã thêm method này trong QuickOrderService
                 if (dto == null || dto.ChiTietHoaDons == null || dto.ChiTietHoaDons.Count == 0)
                 {
                     MessageBox.Show("❌ Không nhận diện được món nào.");
+                    DiscordService.SendAsync(DiscordEventType.Admin, input);
                     return;
                 }
 

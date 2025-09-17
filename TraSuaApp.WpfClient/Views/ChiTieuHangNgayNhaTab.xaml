@@ -29,7 +29,7 @@
                 VerticalAlignment="Center"
                 FontSize="{StaticResource FontSizeLarge}"
                 FontWeight="Bold"
-                Foreground="{StaticResource DangerBrush}" />
+                Foreground="{StaticResource LightBrush}" />
         </StackPanel>
 
         <!--  DataGrid hiển thị chi tiêu  -->
@@ -62,7 +62,7 @@
                 <DataGridTextColumn
                     Width="*"
                     Binding="{Binding GhiChu}"
-                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Ghi chú" />
 
             </DataGrid.Columns>
