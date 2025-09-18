@@ -875,12 +875,11 @@ public class HoaDonService : IHoaDonService
     public async Task<List<HoaDonDto>> GetAllAsync()
     {
         var today = DateTime.Today;
-        var fromDate = today.AddDays(-2); // 3 ngày gần đây (hôm nay + 2 ngày trước)
+        var fromDate = today.AddDays(-1);
 
         var list = await _context.HoaDons.AsNoTracking()
             .Where(x => !x.IsDeleted &&
                        (x.Ngay >= fromDate
-                       //|| x.TrangThai == "Chưa thu" || x.TrangThai == "Thu một phần"
                        ))
             .Select(h => new
             {

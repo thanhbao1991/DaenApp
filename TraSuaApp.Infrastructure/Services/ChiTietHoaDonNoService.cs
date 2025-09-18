@@ -130,7 +130,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
     public async Task<List<ChiTietHoaDonNoDto>> GetAllAsync()
     {
         var today = DateTime.Today;
-        var fromDate = today.AddDays(-2);
+        var fromDate = today.AddDays(-1);
 
         var list = await _context.ChiTietHoaDonNos.AsNoTracking()
             .Where(x => !x.IsDeleted)
@@ -179,7 +179,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
     //public async Task<List<ChiTietHoaDonNoDto>> GetAllAsync()
     //{
     //    var today = DateTime.Today;
-    //    var fromDate = today.AddDays(-2);
+    //    var fromDate = today.AddDays(-1);
 
     //    return await _context.ChiTietHoaDonNos.AsNoTracking()
     //        .Where(x => !x.IsDeleted
