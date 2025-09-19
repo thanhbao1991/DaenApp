@@ -157,20 +157,79 @@
                 });
         }
 
-        function xemHoaDon(flag, ngay, thang, nam) {
-            const url = `/DanhSachHoaDon?flag=${flag}&ngay=${ngay}&thang=${thang}&nam=${nam}`;
-            fetch(url)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('hoaDonContent').innerHTML = html;
-                    var modal = new bootstrap.Modal(document.getElementById('hoaDonModal'));
-                    modal.show();
-                })
-                .catch(error => {
-                    document.getElementById('hoaDonContent').innerHTML = "<p>Lỗi tải dữ liệu</p>";
-                    console.error(error);
+
+
+
+
+
+
+        function xemHoaDonKhachHang(khachHangId) {
+    if (!khachHangId) return;
+    const container = document.getElementById('hoaDonContent');
+    container.innerHTML = "<p>Đang tải danh sách...</p>";
+
+    // mở modal
+    new bootstrap.Modal(document.getElementById('hoaDonModal')).show();
+
+    const url = `${window.apiBaseUrl}/api/doanhthu/danhsach?khachHangId=${khachHangId}`;
+    fetch(url)
+        .then(res => res.json())
+        .then(res => {
+            if (!res.isSuccess) {
+                container.innerHTML = "<p class='text-danger'>Không tải được danh sách hóa đơn</p>";
+                return;
+            }
+
+            const rows = (res.data || [])
+                // đảm bảo sắp xếp mới nhất trước
+                .sort((a, b) => new Date(b.ngayHoaDon) - new Date(a.ngayHoaDon));
+
+            let html = `
+                <table class="table table-sm table-bordered">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Ngày giờ</th>
+                      <th>Khách hàng</th>
+                      <th class="text-end">Còn lại</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+
+            rows.forEach(item => {
+                // ⚠️ dùng đúng camelCase từ API: ngayHoaDon, thongTinHoaDon, tongTien, daThu, conLai, id
+                const ngayGio = new Date(item.ngayHoaDon).toLocaleString('vi-VN', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
                 });
-        }
+
+                const tong = Number(item.tongTien || 0);
+                const daThu = Number(item.daThu || 0);
+                const conLai = Number(item.conLai || (tong - daThu));
+
+                html += `
+                    <tr>
+                        <td>${ngayGio}</td>
+                    <td>
+  ${[item.tenKhachHangText, item.thongTinHoaDon].filter(Boolean).join(" - ")}
+</td>
+                        <td class="text-end">
+                            <a href="javascript:void(0)" onclick="xemChiTiet('${item.id}')">
+                                ${conLai.toLocaleString('vi-VN')} đ
+                            </a>
+                        </td>
+                    </tr>`;
+            });
+
+            html += "</tbody></table>";
+            container.innerHTML = html;
+        })
+        .catch(err => {
+            container.innerHTML = "<p class='text-danger'>Lỗi tải dữ liệu</p>";
+            console.error(err);
+        });
+}
+
+
 
 
 

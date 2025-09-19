@@ -116,6 +116,10 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<SignalRHub>("/hub/entity");
 
-app.MapGet("/", () => Results.Json(new { status = "Backend API running" }));
 
+
+app.MapGet("/", () => Results.Ok(new { status = "Backend API running" }))
+   .WithMetadata(new HttpMethodMetadata(new[] { "GET", "HEAD" }));
+//app.MapGet("/", () => Results.Json(new { status = "Backend API running" }));
+//app.MapGet("/", () => "Bot is running!");
 app.Run();

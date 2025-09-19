@@ -1,5 +1,7 @@
-﻿using System.Net.Http.Json;
+﻿using System.Media;
+using System.Net.Http.Json;
 using TraSuaApp.Shared.Config;
+using TraSuaApp.WpfClient;
 using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.Hubs;
@@ -67,12 +69,26 @@ public static class AppProviders
         // 🟟 handle mất kết nối / kết nối lại
         signalR.OnDisconnected(() =>
         {
-            // NotiHelper.ShowError("⚠️ Mất kết nối Sever Đồng Bộ. Dữ liệu sẽ reload định kỳ 5 phút.");
+            // Phát âm thanh lỗi (system beep)
+            SystemSounds.Hand.Play();
+
+            // Hiện thông báo
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                NotiHelper.ShowSilient("⚠️ Mất kết nối Server.");
+            });
         });
 
         signalR.OnReconnected(() =>
         {
-            // NotiHelper.Show("✅ Đã kết nối lại Sever Đồng Bộ.");
+            // Phát âm thanh thông báo thành công
+            SystemSounds.Asterisk.Play();
+
+            // Hiện thông báo
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                NotiHelper.ShowSilient("✅ Đã kết nối lại Server.");
+            });
         });
 
         KhachHangs = new KhachHangDataProvider(signalR);

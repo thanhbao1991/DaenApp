@@ -14,12 +14,14 @@ public class DoanhThuController : ControllerBase
     {
         _service = service;
     }
+
     [HttpGet("chitiet")]
     public async Task<ActionResult<Result<List<DoanhThuChiTietHoaDonDto>>>> GetChiTietHoaDon(Guid hoaDonId)
     {
         var dto = await _service.GetChiTietHoaDonAsync(hoaDonId);
         return Result<List<DoanhThuChiTietHoaDonDto>>.Success(dto);
     }
+
     [HttpGet("ngay")]
     public async Task<ActionResult<Result<DoanhThuNgayDto>>> GetDoanhThuNgay(int ngay, int thang, int nam)
     {
@@ -33,5 +35,13 @@ public class DoanhThuController : ControllerBase
     {
         var dto = await _service.GetDoanhThuThangAsync(thang, nam);
         return Result<List<DoanhThuThangItemDto>>.Success(dto);
+    }
+
+    // 🟟 mới: danh sách hóa đơn của 1 khách trong ngày
+    [HttpGet("danhsach")]
+    public async Task<ActionResult<Result<List<DoanhThuHoaDonDto>>>> GetDanhSachHoaDon(Guid khachHangId)
+    {
+        var dto = await _service.GetHoaDonKhachHangAsync(khachHangId);
+        return Result<List<DoanhThuHoaDonDto>>.Success(dto);
     }
 }

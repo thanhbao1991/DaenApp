@@ -8,6 +8,34 @@ public class DoanhThuService : IDoanhThuService
 {
     private readonly AppDbContext _context;
     public DoanhThuService(AppDbContext context) => _context = context;
+
+
+    public async Task<List<DoanhThuHoaDonDto>> GetHoaDonKhachHangAsync(Guid khachHangId)
+    {
+        var list = await _context.HoaDons
+            .Where(h => h.KhachHangId == khachHangId && !h.IsDeleted)
+            .Select(h => new DoanhThuHoaDonDto
+            {
+                NgayHoaDon = h.NgayGio,
+                Id = h.Id,
+                ThongTinHoaDon = h.PhanLoai,
+                TenKhachHangText = h.TenKhachHangText,
+                TongTien = h.ThanhTien,
+                DaThu = h.ChiTietHoaDonThanhToans
+                            .Where(t => !t.IsDeleted)
+                            .Sum(t => (decimal?)t.SoTien) ?? 0,
+                ConLai = h.ThanhTien - (
+                            h.ChiTietHoaDonThanhToans
+                              .Where(t => !t.IsDeleted)
+                              .Sum(t => (decimal?)t.SoTien) ?? 0),
+            })
+            .Where(h => h.ConLai > 0) // 🟟 chỉ lấy hoá đơn còn nợ thực sự
+            .OrderByDescending(h => h.NgayHoaDon)
+            .ToListAsync();
+
+        return list;
+    }
+
     public async Task<List<DoanhThuChiTietHoaDonDto>> GetChiTietHoaDonAsync(Guid hoaDonId)
     {
         var chiTiets = await _context.ChiTietHoaDons

@@ -17,7 +17,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
             if (PhanLoai == "Ship")
             {
                 if (NgayShip == null)
-                    return "Blue"; // chưa đi ship
+                    return "DodgerBlue"; // chưa đi ship
                 if (DaThuHoacGhiNo == false)
                     return "Transparent"; // đi ship + chưa thu
                 else
@@ -30,7 +30,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
             else
             {
                 if (DaThuHoacGhiNo == false)
-                    return "Blue";
+                    return "DodgerBlue";
                 else
                 {
                     if (ConLai > 0)

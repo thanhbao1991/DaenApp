@@ -35,6 +35,7 @@ namespace TraSuaApp.WpfClient.Tools
                 || f.EndsWith(".xaml")
                 || f.EndsWith(".html")
                 || f.EndsWith(".cshtml")
+                || f.EndsWith(".cshtml")
                 || f.EndsWith(".cshtml.cs")
                 //   || f.EndsWith(".json")
 

@@ -1,5 +1,4 @@
-﻿
-<Window
+﻿<Window
     x:Class="TraSuaApp.WpfClient.HoaDonViews.HoaDonEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -20,7 +19,7 @@
         </Storyboard>
     </Window.Resources>
     <Border
-        Margin="-50,25,-50,25"
+        Margin="-150,25,-50,25"
         VerticalAlignment="Stretch"
         Style="{StaticResource EditFormBorderStyle}">
         <Grid Margin="16">
@@ -289,6 +288,7 @@
                                     GroupName="Duong"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
+
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Vertical">
                                 <RadioButton
@@ -321,6 +321,12 @@
                                     GroupName="Da"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Chua"
+                                    GroupName="Duong"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
                             </StackPanel>
                             <StackPanel
                                 Grid.Row="1"
@@ -329,19 +335,19 @@
                                 <RadioButton
                                     Checked="NoteRadio_Checked"
                                     Content="Chỉ TCĐĐ"
-                                    GroupName="Khac"
+                                    GroupName="Topping"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
                                 <RadioButton
                                     Checked="NoteRadio_Checked"
                                     Content="Chỉ TCOL"
-                                    GroupName="Khac"
+                                    GroupName="Topping"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
                                 <RadioButton
                                     Checked="NoteRadio_Checked"
                                     Content="Chỉ TCT"
-                                    GroupName="Khac"
+                                    GroupName="Topping"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
                                 <RadioButton
@@ -350,6 +356,7 @@
                                     GroupName="Khac"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
+
                             </StackPanel>
                             <StackPanel
                                 Grid.Row="1"
@@ -361,22 +368,23 @@
                                     GroupName="Tra"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
-                                <RadioButton
-                                    Checked="NoteRadio_Checked"
-                                    Content="Trà nhạt"
-                                    GroupName="Tra"
-                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                    Unchecked="NoteRadio_Checked" />
-                                <RadioButton
-                                    Checked="NoteRadio_Checked"
-                                    Content="Trà đậm"
-                                    GroupName="Tra"
-                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
-                                    Unchecked="NoteRadio_Checked" />
+
                                 <RadioButton
                                     Checked="NoteRadio_Checked"
                                     Content="Trà nóng"
                                     GroupName="Tra"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Trà đá"
+                                    GroupName="Tra"
+                                    PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
+                                    Unchecked="NoteRadio_Checked" />
+                                <RadioButton
+                                    Checked="NoteRadio_Checked"
+                                    Content="Sài gòn"
+                                    GroupName="Khac"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
                             </StackPanel>
@@ -398,10 +406,11 @@
                                 TextAlignment="Center" />
                             <ListBox
                                 x:Name="ChiTietListBox"
-                                Width="350"
-                                Height="450"
+                                Width="500"
+                                Height="500"
                                 HorizontalContentAlignment="Stretch"
                                 AlternationCount="99"
+                                BorderThickness="0"
                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                                 SelectionChanged="ChiTietListBox_SelectionChanged"
@@ -447,101 +456,91 @@
                                                 BorderThickness="0,1,1,1"
                                                 CornerRadius="0,4,4,0">
                                                 <Grid>
-                                                    <StackPanel>
-                                                        <!--  Ngày giờ  -->
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="auto" />
+                                                        <RowDefinition Height="auto" />
+                                                    </Grid.RowDefinitions>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
                                                         <TextBlock
+                                                            VerticalAlignment="Center"
+                                                            FontWeight="Bold"
+                                                            Foreground="{StaticResource PrimaryBrush}"
+                                                            Text="{Binding TenSanPham}" />
+                                                        <TextBlock
+                                                            FontWeight="Medium"
+                                                            Foreground="{StaticResource DangerBrush}"
+                                                            Text="{Binding TenBienThe}">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding TenBienThe}" Value="Size Chuẩn">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding TenBienThe}" Value="Size L">
+                                                                            <DataTrigger.EnterActions>
+                                                                                <BeginStoryboard>
+                                                                                    <Storyboard AutoReverse="True" RepeatBehavior="Forever">
+                                                                                        <DoubleAnimation
+                                                                                            Storyboard.TargetProperty="Opacity"
+                                                                                            From="1.0"
+                                                                                            To="0.3"
+                                                                                            Duration="0:0:0.5" />
+                                                                                    </Storyboard>
+                                                                                </BeginStoryboard>
+                                                                            </DataTrigger.EnterActions>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <StackPanel
+                                                        Grid.Column="1"
+                                                        HorizontalAlignment="Right"
+                                                        Orientation="Horizontal">
+                                                        <ctrl:NumericUpDown
+                                                            Grid.Column="0"
+                                                            Width="80"
+                                                            GotFocus="ChiTietItem_Focus"
+                                                            Value="{Binding SoLuong, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <ctrl:MoneyTextBox
+                                                            Grid.Column="1"
+                                                            Width="70"
+                                                            HorizontalContentAlignment="Right"
+                                                            VerticalContentAlignment="Center"
+                                                            BorderBrush="Transparent"
+                                                            GotFocus="ChiTietItem_Focus"
+                                                            LostFocus="DonGiaTextBox_LostFocus"
+                                                            Value="{Binding DonGia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <TextBlock
+                                                            Grid.Column="2"
+                                                            Width="70"
                                                             HorizontalAlignment="Right"
-                                                            FontSize="{StaticResource FontSizeSmall}"
-                                                            Text="{Binding NgayGio, StringFormat=dd-MM-yyyy HH:mm}"
-                                                            Visibility="{Binding NgayGio, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-                                                        <!--  Tên sản phẩm + biến thể  -->
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <TextBlock
-                                                                FontWeight="Bold"
-                                                                Foreground="{StaticResource PrimaryBrush}"
-                                                                Text="{Binding TenSanPham}" />
-                                                            <TextBlock
-                                                                Margin="4,0,0,0"
-                                                                FontWeight="Medium"
-                                                                Foreground="{StaticResource DangerBrush}"
-                                                                Text="{Binding TenBienThe}">
-                                                                <TextBlock.Style>
-                                                                    <Style TargetType="TextBlock">
-                                                                        <Setter Property="Visibility" Value="Visible" />
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding TenBienThe}" Value="Size Chuẩn">
-                                                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                                            </DataTrigger>
-                                                                            <DataTrigger Binding="{Binding TenBienThe}" Value="Size L">
-                                                                                <DataTrigger.EnterActions>
-                                                                                    <BeginStoryboard>
-                                                                                        <Storyboard AutoReverse="True" RepeatBehavior="Forever">
-                                                                                            <DoubleAnimation
-                                                                                                Storyboard.TargetProperty="Opacity"
-                                                                                                From="1.0"
-                                                                                                To="0.3"
-                                                                                                Duration="0:0:0.5" />
-                                                                                        </Storyboard>
-                                                                                    </BeginStoryboard>
-                                                                                </DataTrigger.EnterActions>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </TextBlock.Style>
-                                                            </TextBlock>
-
-                                                        </StackPanel>
-                                                        <!--  Grid chi tiết: SL - Đơn giá - Thành tiền  -->
-                                                        <Grid Margin="0,2,0,2" Grid.IsSharedSizeScope="True">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="auto" SharedSizeGroup="ColSL" />
-                                                                <ColumnDefinition Width="auto" SharedSizeGroup="ColGia" />
-                                                                <ColumnDefinition Width="auto" SharedSizeGroup="ColTT" />
-                                                            </Grid.ColumnDefinitions>
-
-                                                            <!--  Số lượng  -->
-                                                            <!--  Số lượng kèm nút +/-  -->
-                                                            <StackPanel
-                                                                Grid.Column="0"
-                                                                HorizontalAlignment="Center"
-                                                                Orientation="Horizontal">
-                                                                <!--  Số lượng  -->
-                                                                <ctrl:NumericUpDown
-                                                                    Grid.Column="0"
-                                                                    GotFocus="ChiTietItem_Focus"
-                                                                    Value="{Binding SoLuong, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
-                                                            </StackPanel>
-                                                            <!--  Đơn giá  -->
-                                                            <ctrl:MoneyTextBox
-                                                                Grid.Column="1"
-                                                                HorizontalContentAlignment="Right"
-                                                                VerticalContentAlignment="Center"
-                                                                BorderBrush="Transparent"
-                                                                GotFocus="ChiTietItem_Focus"
-                                                                LostFocus="DonGiaTextBox_LostFocus"
-                                                                Value="{Binding DonGia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
-                                                            <!--  Thành tiền  -->
-                                                            <TextBlock
-                                                                Grid.Column="2"
-                                                                HorizontalAlignment="Right"
-                                                                VerticalAlignment="Center"
-                                                                FontWeight="Bold"
-                                                                Foreground="{StaticResource DangerBrush}"
-                                                                Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
-                                                        </Grid>
-
-                                                        <!--  Topping  -->
+                                                            VerticalAlignment="Center"
+                                                            FontWeight="Bold"
+                                                            Foreground="{StaticResource DangerBrush}"
+                                                            Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
+                                                        <Button
+                                                            Grid.Column="2"
+                                                            HorizontalAlignment="Right"
+                                                            VerticalAlignment="Top"
+                                                            Click="XoaChiTietButton_Click"
+                                                            Style="{StaticResource ClearXButtonStyle}"
+                                                            Tag="{Binding}"
+                                                            Visibility="Visible" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
                                                         <TextBlock
-                                                            Margin="0,0,0,2"
                                                             FontSize="{StaticResource FontSizeSmall}"
                                                             Foreground="{StaticResource SuccessBrush}"
                                                             Text="{Binding ToppingText}"
                                                             TextWrapping="Wrap"
                                                             Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-
-                                                        <!--  Ghi chú  -->
                                                         <TextBox
                                                             AcceptsReturn="True"
                                                             Background="Transparent"
@@ -554,32 +553,19 @@
                                                             TextWrapping="Wrap"
                                                             Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
                                                     </StackPanel>
-                                                    <!--  Nút Xóa  -->
-                                                    <Button
-                                                        Grid.Column="2"
-                                                        HorizontalAlignment="Right"
-                                                        VerticalAlignment="Top"
-                                                        Click="XoaChiTietButton_Click"
-                                                        Style="{StaticResource ClearXButtonStyle}"
-                                                        Tag="{Binding}"
-                                                        Visibility="Visible" />
-
-
                                                 </Grid>
                                             </Border>
                                         </Grid>
-
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </Grid>
                     </GroupBox>
-
                 </Grid>
 
                 <GroupBox
                     Name="ToppingGroupBox"
-                    Margin="0,0,-250,0"
+                    Margin="0,0,-235,0"
                     HorizontalAlignment="Right"
                     Foreground="{StaticResource LightBrush}"
                     Header="Topping">

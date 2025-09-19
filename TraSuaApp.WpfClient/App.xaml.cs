@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using TraSuaApp.WpfClient.Helpers;
+using TraSuaApp.WpfClient.Tools;
 using TraSuaApp.WpfClient.Views;
 
 namespace TraSuaApp.WpfClient
@@ -70,10 +71,19 @@ namespace TraSuaApp.WpfClient
                 UIElement.GotMouseCaptureEvent,
                 new RoutedEventHandler(PasswordBox_SelectAll));
 
+
+
+
+
+
+
             base.OnStartup(e);
+
+
+
             // Mở form đăng nhập lần đầu
-            //  var login = new FileViewerWindow();
-            var login = new LoginForm();
+            var login = new FileViewerWindow();
+            //var login = new LoginForm();
             if (login.ShowDialog() == true)
             {
                 // ✅ bật loading ngay trong login
@@ -94,6 +104,10 @@ namespace TraSuaApp.WpfClient
                 Shutdown();
             }
         }
+        private static readonly DependencyProperty _attachedProperty =
+            DependencyProperty.RegisterAttached("FadeAttached", typeof(bool), typeof(Window), new PropertyMetadata(false));
+
+
         private static void RegisterTokenExpiredHandler()
         {
             // Tránh đăng ký nhiều lần

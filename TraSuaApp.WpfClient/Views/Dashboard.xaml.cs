@@ -1572,96 +1572,100 @@ namespace TraSuaApp.WpfClient.Views
                 _cts = new CancellationTokenSource();
                 var token = _cts.Token;
 
-                // Nếu không chọn gì thì ẩn panel
-                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected)
+                if (HoaDonDataGrid.SelectedItem is HoaDonDto selected)
                 {
-                    HideHoaDonDetail();
-                    return;
-                }
+                    HoaDonDetailPanel.DataContext = selected;
+                    await AnimationHelper.FadeSwitchAsync(HoaDonDetailPanel.Visibility == Visibility.Visible ? HoaDonDetailPanel : null,
+                                                           HoaDonDetailPanel);
+                    //ShowHoaDonDetail();
 
-                ShowHoaDonDetail();
+                    // Reset UI
+                    SearchChiTietHoaDonTextBox.Visibility = Visibility.Collapsed;
+                    TongSoSanPhamTextBlock.Text = string.Empty;
+                    TenHoaDonTextBlock.Text = string.Empty;
+                    ChiTietHoaDonListBox.ItemsSource = null;
 
-                // Reset UI
-                SearchChiTietHoaDonTextBox.Visibility = Visibility.Visible;
-                TongSoSanPhamTextBlock.Text = string.Empty;
-                TenHoaDonTextBlock.Text = string.Empty;
-                ChiTietHoaDonListBox.ItemsSource = null;
-
-                var api = new HoaDonApi();
-                var getResult = await api.GetByIdAsync(selected.Id);
-                if (!getResult.IsSuccess || getResult.Data == null)
-                {
-                    NotiHelper.ShowError($"Lỗi: {getResult.Message}");
-                    return;
-                }
-
-                var hd = getResult.Data;
-
-                // Tắt báo đơn ngay
-                if (selected.BaoDon == true)
-                {
-                    selected.BaoDon = false;
-                    var updateResult = await api.UpdateSingleAsync(selected.Id, selected);
-                    if (!updateResult.IsSuccess)
-                        NotiHelper.ShowError($"Lỗi: {updateResult.Message}");
-                    else
+                    var api = new HoaDonApi();
+                    var getResult = await api.GetByIdAsync(selected.Id);
+                    if (!getResult.IsSuccess || getResult.Data == null)
                     {
-                        await AppProviders.HoaDons.ReloadAsync();
-                        ReloadHoaDonUI();
-
-                        // Giữ lại selection cũ sau reload
-                        var items = HoaDonDataGrid.ItemsSource as System.Collections.Generic.IEnumerable<HoaDonDto>;
-                        var again = items?.FirstOrDefault(x => x.Id == selected.Id);
-                        if (again != null) HoaDonDataGrid.SelectedItem = again;
+                        NotiHelper.ShowError($"Lỗi: {getResult.Message}");
+                        return;
                     }
-                }
 
-                // Cập nhật UI
-                ChiTietHoaDonListBox.ItemsSource = hd.ChiTietHoaDons;
-                UpdateThongTinThanhToanStyle(hd);
-                ThongTinThanhToanPanel.DataContext = hd;
+                    var hd = getResult.Data;
 
-                RenderFooterPanel(ThongTinThanhToanPanel, hd, includeLine: false);
-                TenHoaDonTextBlock.Text = $"{hd.Ten} - {hd.DiaChiText}";
-
-                TongSoSanPhamTextBlock.Text = hd.ChiTietHoaDons
-                    .Where(ct =>
+                    // Tắt báo đơn ngay
+                    if (selected.BaoDon == true)
                     {
-                        var bienThe = AppProviders.SanPhams.Items
-                            .SelectMany(sp => sp.BienThe)
-                            .FirstOrDefault(bt => bt.Id == ct.SanPhamIdBienThe);
-
-                        if (bienThe == null) return false;
-
-                        var sp = AppProviders.SanPhams.Items.FirstOrDefault(s => s.Id == bienThe.SanPhamId);
-                        if (sp == null) return false;
-
-                        return sp.TenNhomSanPham != "Thuốc lá"
-                            && sp.TenNhomSanPham != "Ăn vặt"
-                            && sp.TenNhomSanPham != "Nước lon";
-                    })
-                    .Sum(ct => ct.SoLuong)
-                    .ToString("N0");
-
-                // Đọc ghi chú bằng TTS
-                if (selected.PhanLoai != "Tại Chỗ")
-                {
-                    foreach (var ct in hd.ChiTietHoaDons)
-                    {
-                        if (token.IsCancellationRequested) return;
-
-                        if (!string.IsNullOrEmpty(ct.NoteText))
+                        selected.BaoDon = false;
+                        var updateResult = await api.UpdateSingleAsync(selected.Id, selected);
+                        if (!updateResult.IsSuccess)
+                            NotiHelper.ShowError($"Lỗi: {updateResult.Message}");
+                        else
                         {
-                            string soLuongChu = NumberToVietnamese(ct.SoLuong);
-                            string text = $"{soLuongChu} Ly {ct.TenSanPham}";
+                            await AppProviders.HoaDons.ReloadAsync();
+                            ReloadHoaDonUI();
 
-                            await TTSHelper.DownloadAndPlayGoogleTTSAsync(text);
-                            await Task.Delay(300, token);
-
-                            await TTSHelper.DownloadAndPlayGoogleTTSAsync(ct.NoteText.Replace("#", ""));
-                            await Task.Delay(1000, token);
+                            // Giữ lại selection cũ sau reload
+                            var items = HoaDonDataGrid.ItemsSource as System.Collections.Generic.IEnumerable<HoaDonDto>;
+                            var again = items?.FirstOrDefault(x => x.Id == selected.Id);
+                            if (again != null) HoaDonDataGrid.SelectedItem = again;
                         }
                     }
+
+                    // Cập nhật UI
+                    ChiTietHoaDonListBox.ItemsSource = hd.ChiTietHoaDons;
+                    UpdateThongTinThanhToanStyle(hd);
+                    ThongTinThanhToanPanel.DataContext = hd;
+
+                    RenderFooterPanel(ThongTinThanhToanPanel, hd, includeLine: false);
+                    TenHoaDonTextBlock.Text = $"{hd.Ten} - {hd.DiaChiText}";
+
+                    TongSoSanPhamTextBlock.Text = hd.ChiTietHoaDons
+                        .Where(ct =>
+                        {
+                            var bienThe = AppProviders.SanPhams.Items
+                                .SelectMany(sp => sp.BienThe)
+                                .FirstOrDefault(bt => bt.Id == ct.SanPhamIdBienThe);
+
+                            if (bienThe == null) return false;
+
+                            var sp = AppProviders.SanPhams.Items.FirstOrDefault(s => s.Id == bienThe.SanPhamId);
+                            if (sp == null) return false;
+
+                            return sp.TenNhomSanPham != "Thuốc lá"
+                                && sp.TenNhomSanPham != "Ăn vặt"
+                                && sp.TenNhomSanPham != "Nước lon";
+                        })
+                        .Sum(ct => ct.SoLuong)
+                        .ToString("N0");
+
+                    // Đọc ghi chú bằng TTS
+                    if (selected.PhanLoai != "Tại Chỗ")
+                    {
+                        foreach (var ct in hd.ChiTietHoaDons)
+                        {
+                            if (token.IsCancellationRequested) return;
+
+                            if (!string.IsNullOrEmpty(ct.NoteText))
+                            {
+                                string soLuongChu = NumberToVietnamese(ct.SoLuong);
+                                string text = $"{soLuongChu} Ly {ct.TenSanPham}";
+
+                                await TTSHelper.DownloadAndPlayGoogleTTSAsync(text);
+                                await Task.Delay(300, token);
+
+                                await TTSHelper.DownloadAndPlayGoogleTTSAsync(ct.NoteText.Replace("#", ""));
+                                await Task.Delay(1000, token);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    await AnimationHelper.FadeSwitchAsync(HoaDonDetailPanel, null);
+                    // HideHoaDonDetail();
                 }
             }
             catch (OperationCanceledException)
@@ -1996,9 +2000,21 @@ namespace TraSuaApp.WpfClient.Views
 
         private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.Source is not TabControl tabControl) return;
 
-            var selectedTab = tabControl.SelectedItem as TabItem;
+            if (!ReferenceEquals(e.OriginalSource, sender))
+                return;
+
+            if (sender is not TabControl tabControl) return;
+
+            FrameworkElement? oldContent = (e.RemovedItems.Count > 0 && e.RemovedItems[0] is TabItem oldTab)
+                                           ? oldTab.Content as FrameworkElement
+                                           : null;
+
+            FrameworkElement? newContent = tabControl.SelectedContent as FrameworkElement;
+
+            await AnimationHelper.FadeSwitchAsync(oldContent, newContent);
+
+            var selectedTab = TabControl.SelectedItem as TabItem;
             if (selectedTab == null) return;
 
             var tag = selectedTab.Tag?.ToString();
@@ -2009,49 +2025,6 @@ namespace TraSuaApp.WpfClient.Views
             // Map tag → action load lại dữ liệu
             var loadActions = new Dictionary<string, Func<Task>>
             {
-                //    ["ThongKeHomNay"] = async () =>
-                //    {
-                //        var result1 = await ApiClient.GetAsync("/api/dashboard/homnay");
-                //        var dashboard1 = await result1.Content.ReadFromJsonAsync<DashboardDto>();
-                //        if (dashboard1 != null)
-                //            BanNhieuGrid.ItemsSource = dashboard1.TopSanPhams;
-
-                //        var result2 = await ApiClient.GetAsync("/api/dashboard/dubao");
-                //        BanNhieuGrid.Focus();
-                //    },
-
-                //    ["HoaDon"] = async () =>
-                //    {
-                //        await AppProviders.HoaDons.ReloadAsync();   // ✅ luôn reload provider
-                //        ReloadHoaDonUI();                           // ✅ refresh UI
-                //    },
-
-                //    ["ChiTieuHangNgay"] = async () =>
-                //    {
-                //        await AppProviders.ChiTieuHangNgays.ReloadAsync();
-                //        ReloadChiTieuHangNgayUI();
-                //    },
-
-                //    ["ChiTietHoaDonNo"] = async () =>
-                //    {
-                //        await AppProviders.ChiTietHoaDonNos.ReloadAsync();
-                //        ReloadChiTietHoaDonNoUI();
-                //    },
-
-                //    ["CongViecNoiBo"] = async () =>
-                //    {
-                //        await AppProviders.CongViecNoiBos.ReloadAsync();
-                //        ReloadCongViecNoiBoUI();
-                //    },
-
-                //    ["ChiTietHoaDonThanhToan"] = async () =>
-                //    {
-                //        await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
-                //        ReloadChiTietHoaDonThanhToanUI();
-                //    }
-
-
-                // Bên trong Dictionary<string, Func<Task>> loadActions = …
                 ["HoaDon"] = async () =>
                 {
                     await ExecuteWithFreshnessAsync(
@@ -2808,10 +2781,12 @@ namespace TraSuaApp.WpfClient.Views
                 case "Ship":
                     icon.Icon =
                         hd.NguoiShip == "Khánh" ?
-                        IconChar.Motorcycle : IconChar.Truck;
+                        IconChar.Motorcycle : hd.NgayShip == null ? IconChar.HourglassHalf : IconChar.Truck;
                     icon.Foreground =
                         hd.NguoiShip == "Khánh" ?
                     (Brush)System.Windows.Application.Current.Resources["DangerBrush"] :
+                    hd.NgayShip == null ?
+                    (Brush)System.Windows.Application.Current.Resources["PrimaryBrush"] :
                     (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
 
                     break;

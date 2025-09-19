@@ -38,6 +38,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         public HoaDonEdit(HoaDonDto? dto = null)
         {
             InitializeComponent();
+            AnimationHelper.FadeInWindow(this); // 🟟 mở mượt
+
             this.KeyDown += Window_KeyDown;
             this.Title = _friendlyName;
             TieuDeTextBlock.Text = _friendlyName;
@@ -1283,6 +1285,27 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 ChiTietListBox.Items.Refresh();
                 CapNhatTongTien();
             }
+        }
+
+
+
+        private bool _isClosing = false;
+
+        protected override async void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (_isClosing)
+            {
+                base.OnClosing(e);
+                return;
+            }
+
+            e.Cancel = true;
+            _isClosing = true;
+
+            await AnimationHelper.FadeOutWindowAsync(this);
+
+            // sau khi fade-out thì đóng hẳn
+            this.Close();
         }
     }
 }
