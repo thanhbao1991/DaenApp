@@ -1323,7 +1323,9 @@
                 </TabItem>
 
                 <TabItem Header="Voucher " Tag="CongViecNoiBo" />
-
+                <TabItem Header="Thống kê (mới)">
+                    <views:ThongKeTab />
+                </TabItem>
             </TabControl>
             <Grid
                 x:Name="Menu"

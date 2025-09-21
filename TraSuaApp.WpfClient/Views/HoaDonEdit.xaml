@@ -18,6 +18,7 @@
                 Duration="0:0:0.4" />
         </Storyboard>
     </Window.Resources>
+
     <Border
         Margin="-150,25,-50,25"
         VerticalAlignment="Stretch"

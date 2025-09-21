@@ -114,7 +114,6 @@
             @if (Model.Data?.HoaDons != null)
             {
                 foreach (var item in Model.Data.HoaDons
-                .Where(x => x.PhanLoai is "Mv" or "Ship" or "App" or "TaiCho")
                 .OrderByDescending(x => x.PhanLoai == "Ship" && x.NgayShip == null)
                 .ThenByDescending(x => x.NgayHoaDon))
                 {
@@ -126,13 +125,13 @@
 
                     string iconTrangThai = "";
                     if (item.BaoDon) iconTrangThai = "\uD83D\uDD14";
-                    else if (item.PhanLoai == "TaiCho") iconTrangThai = "\uD83E\uDE91";
+                    else if (item.PhanLoai == "Tại Chỗ") iconTrangThai = "\uD83E\uDE91";
                     else if (item.PhanLoai == "Mv") iconTrangThai = "\uD83D\uDECD";
                     else if (item.PhanLoai == "App") iconTrangThai = "\uD83D\uDCF1";
                     else if (item.PhanLoai == "Ship")
                         iconTrangThai = item.NgayShip == null ? "\uD83D\uDC69\u200D\uD83C\uDF73" : "\uD83D\uDEF5";
 
-                    string hienThiText = item.ThongTinHoaDon;
+                    string hienThiText = item.TenKhachHangText == "" ? item.ThongTinHoaDon : item.TenKhachHangText;
                     var tien = GetThongTinTien(item);
 
                     <tr>

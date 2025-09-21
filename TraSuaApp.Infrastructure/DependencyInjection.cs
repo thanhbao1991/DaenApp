@@ -10,7 +10,7 @@ namespace TraSuaApp.Infrastructure
         {
             // Đăng ký tất cả các service tại đây
             services.AddScoped<IDoanhThuService, DoanhThuService>();
-
+            services.AddScoped<IThongKeService, ThongKeService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITaiKhoanService, TaiKhoanService>();
             services.AddScoped<INhomSanPhamService, NhomSanPhamService>();

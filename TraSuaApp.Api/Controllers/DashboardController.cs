@@ -41,10 +41,10 @@ namespace TraSuaApp.Api.Controllers
 
             // Gán STT sau khi có danh sách
             var topSanPham = tempList
-                .Select((x, index) => new DashboardTopSanPhamDto
+                .Select((x, index) => new TopSanPhamDto
                 {
                     Stt = index + 1,
-                    Ngay = x.Ngay,
+                    //Ngay = x.Ngay,
                     TenSanPham = x.TenSanPham,
                     SoLuong = x.SoLuong,
                     DoanhThu = x.DoanhThu,

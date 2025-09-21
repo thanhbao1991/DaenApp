@@ -1507,7 +1507,7 @@ namespace TraSuaApp.WpfClient.Views
                 var dashboard = await homNayTask.Result.Content.ReadFromJsonAsync<DashboardDto>();
                 if (dashboard != null)
                 {
-                    BanNhieuGrid.ItemsSource = dashboard.TopSanPhams ?? new List<DashboardTopSanPhamDto>();
+                    BanNhieuGrid.ItemsSource = dashboard.TopSanPhams ?? new List<TopSanPhamDto>();
                 }
 
             }
@@ -1525,6 +1525,7 @@ namespace TraSuaApp.WpfClient.Views
                 PhanLoai = phanLoai
             };
 
+
             var window = new HoaDonEdit(dto)
             {
                 Width = this.ActualWidth,
@@ -1534,8 +1535,12 @@ namespace TraSuaApp.WpfClient.Views
 
             if (window.ShowDialog() == true)
             {
-                await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
+                // Đảm bảo nhìn thấy đơn mới ngay
+                today = DateTime.Today;                     // ép scope về Hôm nay
+                await ReloadAfterHoaDonChangeAsync(
+                    reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
                 SearchHoaDonTextBox.Clear();
+
             }
         }
 
@@ -1956,8 +1961,9 @@ namespace TraSuaApp.WpfClient.Views
         {
             _fullHoaDonList = await UiListHelper.BuildListAsync(
             AppProviders.HoaDons.Items.Where(x => !x.IsDeleted),
-            snap => snap.Where(x => x.Ngay == today || !x.DaThuHoacGhiNo)
-                        .OrderByDescending(x => x.UuTien)
+            // snap => snap.Where(x => x.Ngay == today || !x.DaThuHoacGhiNo)
+            snap => snap.Where(x => x.Ngay.Date == today.Date || !x.DaThuHoacGhiNo)
+            .OrderByDescending(x => x.UuTien)
                         .ThenByDescending(x => x.IsBlue)
                         .ThenBy(x => (x.TrangThai == "Chưa thu" || x.TrangThai == "Thu một phần") ? 0 : 1)
                         .ThenByDescending(x => x.NgayGio)
@@ -2220,6 +2226,7 @@ namespace TraSuaApp.WpfClient.Views
         {
             if (reloadHoaDon)
                 await AppProviders.HoaDons.ReloadAsync();
+
 
             if (reloadThanhToan)
                 await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();

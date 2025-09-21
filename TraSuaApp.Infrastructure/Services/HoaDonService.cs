@@ -19,7 +19,7 @@ public class HoaDonService : IHoaDonService
     }
 
     // ✅ Dùng chung cho mọi nơi
-    private static string ResolveTrangThai(decimal thanhTien, decimal daThu, bool coNo, IList<string> methods)
+    public static string ResolveTrangThai(decimal thanhTien, decimal daThu, bool coNo, IList<string> methods)
     {
         if (daThu >= thanhTien)
         {

@@ -1289,24 +1289,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
 
 
-        private bool _isClosing = false;
 
-        protected override async void OnClosing(System.ComponentModel.CancelEventArgs e)
-        {
-            if (_isClosing)
-            {
-                base.OnClosing(e);
-                return;
-            }
-
-            e.Cancel = true;
-            _isClosing = true;
-
-            await AnimationHelper.FadeOutWindowAsync(this);
-
-            // sau khi fade-out thì đóng hẳn
-            this.Close();
-        }
     }
 }
 
