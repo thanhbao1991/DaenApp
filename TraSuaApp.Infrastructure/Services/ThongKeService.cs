@@ -47,7 +47,6 @@ namespace TraSuaApp.Infrastructure.Services
                 .OrderByDescending(x => x.GiaTri)
                 .ToListAsync();
 
-            // ====== ĐÃ THU (chỉ tính các khoản thu TRONG NGÀY, không tính trả nợ) ======
             // ====== ĐÃ THU / CHƯA THU ======
             var daThuQ = _db.ChiTietHoaDonThanhToans
               .Where(t => t.Ngay == ngay && !t.IsDeleted)
@@ -68,97 +67,72 @@ namespace TraSuaApp.Infrastructure.Services
                 .SumAsync(t => (decimal?)t.SoTien) ?? 0m;
 
             var DaThuChiTiet = new List<LabelValueDto>
-    {
-        new LabelValueDto { Ten = "Tiền mặt", GiaTri = ttTienMat_KhongKhanh },
-        new LabelValueDto { Ten = "Tiền shipper", GiaTri = ttTienMat_Khanh },
-        new LabelValueDto { Ten = "Chuyển khoản", GiaTri = ttBanking }
-    };
+            {
+                new LabelValueDto { Ten = "Tiền mặt", GiaTri = ttTienMat_KhongKhanh },
+                new LabelValueDto { Ten = "Tiền shipper", GiaTri = ttTienMat_Khanh },
+                new LabelValueDto { Ten = "Chuyển khoản", GiaTri = ttBanking }
+            };
 
-
-            // ====== CHƯA THU ======
+            // ====== CHƯA THU (chỉ các hoá đơn CHƯA ghi nợ) ======
             var chuaThuList = await (
-        from h in hoaDonQ
-            .Include(x => x.ChiTietHoaDonThanhToans)
-            .Include(x => x.ChiTietHoaDonNos)
-        let daThuHD = h.ChiTietHoaDonThanhToans
-                        .Where(t => !t.IsDeleted)
-                        .Sum(t => (decimal?)t.SoTien) ?? 0m
-        let conLai = h.ThanhTien - daThuHD
-        where conLai > 0 && !h.ChiTietHoaDonNos.Any(n => !n.IsDeleted)
-        select new
-        {
-            h.Id,
-            h.KhachHangId,
-            h.TenKhachHangText,
-            h.TenBan,
-            ConLai = conLai
-        }
-    ).ToListAsync();
+                from h in hoaDonQ
+                    .Include(x => x.ChiTietHoaDonThanhToans)
+                    .Include(x => x.ChiTietHoaDonNos)
+                let daThuHD = h.ChiTietHoaDonThanhToans
+                                .Where(t => !t.IsDeleted)
+                                .Sum(t => (decimal?)t.SoTien) ?? 0m
+                let conLai = h.ThanhTien - daThuHD
+                where conLai > 0 && !h.ChiTietHoaDonNos.Any(n => !n.IsDeleted)
+                select new
+                {
+                    h.Id,
+                    h.KhachHangId,
+                    h.TenKhachHangText,
+                    h.TenBan,
+                    ConLai = conLai
+                }
+            ).ToListAsync();
 
             decimal chuaThu = chuaThuList.Sum(x => x.ConLai);
 
             var chuaThuChiTiet = chuaThuList
-            .GroupBy(x => x.KhachHangId ?? Guid.Empty)
-            .Select(g => new LabelValueDto
-            {
-                Ten = g.First().KhachHangId != null
-                        ? (g.First().TenKhachHangText ?? "(không tên)")
-                        : (g.First().TenBan ?? "(không tên)"),
-                GiaTri = g.Sum(x => x.ConLai)
-            })
-            .OrderByDescending(x => x.GiaTri)
-            .ToList();
+                .GroupBy(x => x.KhachHangId ?? Guid.Empty)
+                .Select(g => new LabelValueDto
+                {
+                    Ten = g.First().KhachHangId != null
+                            ? (g.First().TenKhachHangText ?? "(không tên)")
+                            : (g.First().TenBan ?? "(không tên)"),
+                    GiaTri = g.Sum(x => x.ConLai)
+                })
+                .OrderByDescending(x => x.GiaTri)
+                .ToList();
+
             // ====== CHI TIÊU ======
             decimal chiTieu = await chiTieuQ
-                .Where(c => !c.BillThang)   // 🟟 bỏ chi tiêu tháng
+                .Where(c => !c.BillThang)
                 .SumAsync(c => (decimal?)c.ThanhTien) ?? 0m;
 
             var chiTieuChiTiet = await chiTieuQ
-                .Where(c => !c.BillThang)   // 🟟 bỏ chi tiêu tháng
+                .Where(c => !c.BillThang)
                 .GroupBy(c => c.Ten ?? "(khác)")
                 .Select(g => new LabelValueDto { Ten = g.Key, GiaTri = g.Sum(x => x.ThanhTien) })
                 .OrderByDescending(x => x.GiaTri)
                 .ToListAsync();
 
-            // ====== CÔNG NỢ (ghi nợ tạo trong ngày) ======
-            var hoaDonCongNoQ = _db.HoaDons
-      .AsNoTracking()
-      .Where(h => !h.IsDeleted && h.Ngay >= start && h.Ngay < end)
-      .Select(h => new
-      {
-          h.Id,
-          h.ThanhTien,
-          DaThu = h.ChiTietHoaDonThanhToans
-                     .Where(t => !t.IsDeleted)
-                     .Sum(t => (decimal?)t.SoTien) ?? 0,
-          CoNo = h.ChiTietHoaDonNos.Any(n => !n.IsDeleted),
-          h.KhachHangId,
-          h.TenKhachHangText,
-          h.TenBan
-      });
+            // ====== CÔNG NỢ (ghi nợ phát sinh trong ngày) — DÙNG SoTienConLai ======
+            decimal congNo = await noQ.SumAsync(n => (decimal?)n.SoTienConLai) ?? 0m;
 
-            var hoaDonCongNoList = await hoaDonCongNoQ.ToListAsync();
-
-
-
-            // Tổng công nợ = sum(ThanhTien - DaThu) cho các hóa đơn có CoNo
-            decimal congNo = hoaDonCongNoList
-                .Where(x => x.CoNo)
-                .Sum(x => x.ThanhTien - x.DaThu);
-
-            // Chi tiết theo khách hàng
-            var congNoChiTiet = hoaDonCongNoList
-      .Where(x => x.CoNo)
-      .GroupBy(x => x.KhachHangId ?? Guid.Empty)
-      .Select(g => new LabelValueDto
-      {
-          Ten = g.First().KhachHangId != null
-                ? (g.First().TenKhachHangText ?? "(không tên)")
-                : (g.First().TenBan ?? "(không tên)"),
-          GiaTri = g.Sum(x => x.ThanhTien - x.DaThu)
-      })
-      .OrderByDescending(x => x.GiaTri)
-      .ToList();
+            var congNoChiTiet = await noQ
+                .GroupBy(n => n.KhachHangId ?? Guid.Empty)
+                .Select(g => new LabelValueDto
+                {
+                    Ten = g.First().KhachHangId != null
+                        ? (g.First().HoaDon.TenKhachHangText ?? "(không tên)")
+                        : (g.First().HoaDon.TenBan ?? "(không tên)"),
+                    GiaTri = g.Sum(x => x.SoTienConLai)
+                })
+                .OrderByDescending(x => x.GiaTri)
+                .ToListAsync();
 
             // ====== TRẢ NỢ ======
             var traNoQ = thanhToanQ.Where(t => t.LoaiThanhToan == "Trả nợ qua ngày");
@@ -177,52 +151,45 @@ namespace TraSuaApp.Infrastructure.Services
 
             // Chi tiết Trả nợ Tiền mặt
             var traNoTienChiTiet = await (
-      from t in traNoQ.Where(x => x.TenPhuongThucThanhToan == "Tiền mặt")
-      join h in _db.HoaDons.AsNoTracking() on t.HoaDonId equals h.Id
-      group t by (h.KhachHangId ?? Guid.Empty) into g
-      select new LabelValueDto
-      {
-          Ten = g.First().HoaDon.KhachHangId != null
-                ? (g.First().HoaDon.TenKhachHangText ?? "(không tên)")
-                : (g.First().HoaDon.TenBan ?? "(không tên)"),
-          GiaTri = g.Sum(x => x.SoTien)
-      })
-      .OrderByDescending(x => x.GiaTri)
-      .ToListAsync();
+                from t in traNoQ.Where(x => x.TenPhuongThucThanhToan == "Tiền mặt")
+                join h in _db.HoaDons.AsNoTracking() on t.HoaDonId equals h.Id
+                group t by (h.KhachHangId ?? Guid.Empty) into g
+                select new LabelValueDto
+                {
+                    Ten = g.First().HoaDon.KhachHangId != null
+                        ? (g.First().HoaDon.TenKhachHangText ?? "(không tên)")
+                        : (g.First().HoaDon.TenBan ?? "(không tên)"),
+                    GiaTri = g.Sum(x => x.SoTien)
+                })
+                .OrderByDescending(x => x.GiaTri)
+                .ToListAsync();
 
             // Chi tiết Trả nợ Bank
             var traNoBankChiTiet = await (
-      from t in traNoQ.Where(x => x.TenPhuongThucThanhToan != "Tiền mặt")
-      join h in _db.HoaDons.AsNoTracking() on t.HoaDonId equals h.Id
-      group t by (h.KhachHangId ?? Guid.Empty) into g
-      select new LabelValueDto
-      {
-          Ten = g.First().HoaDon.KhachHangId != null
-                ? (g.First().HoaDon.TenKhachHangText ?? "(không tên)")
-                : (g.First().HoaDon.TenBan ?? "(không tên)"),
-          GiaTri = g.Sum(x => x.SoTien)
-      })
-      .OrderByDescending(x => x.GiaTri)
-      .ToListAsync();
-
+                from t in traNoQ.Where(x => x.TenPhuongThucThanhToan != "Tiền mặt")
+                join h in _db.HoaDons.AsNoTracking() on t.HoaDonId equals h.Id
+                group t by (h.KhachHangId ?? Guid.Empty) into g
+                select new LabelValueDto
+                {
+                    Ten = g.First().HoaDon.KhachHangId != null
+                        ? (g.First().HoaDon.TenKhachHangText ?? "(không tên)")
+                        : (g.First().HoaDon.TenBan ?? "(không tên)"),
+                    GiaTri = g.Sum(x => x.SoTien)
+                })
+                .OrderByDescending(x => x.GiaTri)
+                .ToListAsync();
 
             // ====== TỔNG SỐ ĐƠN / TỔNG SỐ LY ======
             int tongSoDon = await hoaDonQ.CountAsync();
-            // ====== TỔNG SỐ LY (theo logic Dashboard cũ) ======
+
             var tongSoLy = await chiTietQuery
                .Include(ct => ct.SanPhamBienThe)
                    .ThenInclude(bt => bt.SanPham)
                        .ThenInclude(sp => sp.NhomSanPham)
-               .Where(ct =>
-                   ct.SanPhamBienThe != null &&
-                   ct.SanPhamBienThe.SanPham != null &&
-                   ct.SanPhamBienThe.SanPham.NhomSanPham != null &&
-                   ct.SanPhamBienThe.SanPham.NhomSanPham.Ten != "Thuốc lá" &&
-                   ct.SanPhamBienThe.SanPham.NhomSanPham.Ten != "Ăn vặt" &&
-                   ct.SanPhamBienThe.SanPham.NhomSanPham.Ten != "Nước lon")
+               .Where(ct => ct.SanPhamBienThe != null && ct.SanPhamBienThe.SanPham != null)
                .SumAsync(ct => (int?)ct.SoLuong) ?? 0;
 
-            // ====== TOP SẢN PHẨM BÁN CHẠY (theo mẫu DashboardController) ======
+            // ====== TOP SẢN PHẨM BÁN CHẠY ======
             var tempTop = await chiTietQuery
                 .GroupBy(c => c.TenSanPham)
                 .Select(g => new
@@ -231,7 +198,6 @@ namespace TraSuaApp.Infrastructure.Services
                     SoLuong = g.Sum(x => x.SoLuong),
                     DoanhThu = g.Sum(x => x.ThanhTien)
                 })
-                // ưu tiên theo Số lượng, nếu bằng thì theo Doanh thu
                 .OrderByDescending(x => x.SoLuong)
                 .ThenByDescending(x => x.DoanhThu)
                 .Take(50)

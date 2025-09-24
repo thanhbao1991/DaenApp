@@ -9,7 +9,6 @@ public class DoanhThuService : IDoanhThuService
     private readonly AppDbContext _context;
     public DoanhThuService(AppDbContext context) => _context = context;
 
-
     public async Task<List<DoanhThuHoaDonDto>> GetHoaDonKhachHangAsync(Guid khachHangId)
     {
         var list = await _context.HoaDons
@@ -23,13 +22,18 @@ public class DoanhThuService : IDoanhThuService
                 TongTien = h.ThanhTien,
                 DaThu = h.ChiTietHoaDonThanhToans
                             .Where(t => !t.IsDeleted)
-                            .Sum(t => (decimal?)t.SoTien) ?? 0,
-                ConLai = h.ThanhTien - (
-                            h.ChiTietHoaDonThanhToans
-                              .Where(t => !t.IsDeleted)
-                              .Sum(t => (decimal?)t.SoTien) ?? 0),
+                            .Sum(t => (decimal?)t.SoTien) ?? 0m,
+                // Ưu tiên nợ đã ghi (SoTienConLai); nếu chưa ghi nợ thì fallback còn lại trong ngày
+                ConLai = (
+                    h.ChiTietHoaDonNos.Where(n => !n.IsDeleted)
+                        .Sum(n => (decimal?)n.SoTienConLai) ?? 0m) > 0
+                    ? (h.ChiTietHoaDonNos.Where(n => !n.IsDeleted)
+                          .Sum(n => (decimal?)n.SoTienConLai) ?? 0m)
+                    : Math.Max(0m,
+                        h.ThanhTien - (h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted)
+                                        .Sum(t => (decimal?)t.SoTien) ?? 0m)),
             })
-            .Where(h => h.ConLai > 0) // 🟟 chỉ lấy hoá đơn còn nợ thực sự
+            .Where(h => h.ConLai > 0)
             .OrderByDescending(h => h.NgayHoaDon)
             .ToListAsync();
 
@@ -55,50 +59,51 @@ public class DoanhThuService : IDoanhThuService
         return chiTiets;
     }
 
-
-
     public async Task<DoanhThuNgayDto> GetDoanhThuNgayAsync(DateTime ngay)
     {
         var ngayBatDau = ngay.Date;
         var ngayKetThuc = ngay.Date.AddDays(1);
-
 
         var list = await _context.HoaDons
             .Include(x => x.KhachHang)
             .Include(x => x.ChiTietHoaDonThanhToans)
             .Include(x => x.ChiTietHoaDonNos)
             .AsNoTracking()
-    .Where(x => !x.IsDeleted && x.Ngay >= ngayBatDau && x.Ngay < ngayKetThuc)
+            .Where(x => !x.IsDeleted && x.Ngay >= ngayBatDau && x.Ngay < ngayKetThuc)
             .ToListAsync();
 
         var hoaDonIds = list.Select(x => x.Id).ToList();
+
         var tongDoanhThu = list.Sum(x => x.ThanhTien);
 
         var tongDaThu = await _context.ChiTietHoaDonThanhToans.AsNoTracking()
             .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
-            .SumAsync(ct => (decimal?)ct.SoTien) ?? 0;
+            .SumAsync(ct => (decimal?)ct.SoTien) ?? 0m;
 
         var tongChuyenKhoan = await _context.ChiTietHoaDonThanhToans.AsNoTracking()
             .Where(ct => hoaDonIds.Contains(ct.HoaDonId) &&
                          ct.TenPhuongThucThanhToan.ToLower() != "tiền mặt" &&
                          !ct.IsDeleted)
-            .SumAsync(ct => (decimal?)ct.SoTien) ?? 0;
+            .SumAsync(ct => (decimal?)ct.SoTien) ?? 0m;
 
-        var tongTienNo = await _context.ChiTietHoaDonNos.AsNoTracking()
+        // Nợ còn lại của các hoá đơn trong ngày (đã ghi nợ): dùng SoTienConLai
+        var tongNoTuNoLines = await _context.ChiTietHoaDonNos.AsNoTracking()
             .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
-            .SumAsync(ct => (decimal?)ct.SoTienNo) ?? 0;
+            .SumAsync(ct => (decimal?)ct.SoTienConLai) ?? 0m;
 
-        var tongTienTraNoTrongNgay = await _context.ChiTietHoaDonThanhToans.AsNoTracking()
-            .Where(ct => hoaDonIds.Contains(ct.HoaDonId) &&
-                         ct.LoaiThanhToan == "Trả nợ trong ngày" &&
-                         !ct.IsDeleted)
-            .SumAsync(ct => (decimal?)ct.SoTien) ?? 0;
+        // Phần CHƯA THU của các hóa đơn chưa ghi nợ
+        var chuaThuKhongNo = await _context.HoaDons.AsNoTracking()
+            .Where(h => hoaDonIds.Contains(h.Id) && !h.IsDeleted && !h.ChiTietHoaDonNos.Any(n => !n.IsDeleted))
+            .Select(h => (decimal?)(
+                h.ThanhTien - (h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted)
+                                .Sum(t => (decimal?)t.SoTien) ?? 0m)))
+            .SumAsync() ?? 0m;
 
-        tongTienNo -= tongTienTraNoTrongNgay;
+        var tongConLai = tongNoTuNoLines + chuaThuKhongNo;
 
         var tongChiTieu = await _context.ChiTieuHangNgays.AsNoTracking()
             .Where(ct => ct.Ngay == ngay && !ct.BillThang && !ct.IsDeleted)
-            .SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0;
+            .SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0m;
 
         string viecChuaLam = string.Join(", ",
             await _context.CongViecNoiBos
@@ -114,18 +119,19 @@ public class DoanhThuService : IDoanhThuService
             TongSoDon = list.Count(),
             TongDoanhThu = tongDoanhThu,
             TongDaThu = tongDaThu,
-            TongConLai = tongDoanhThu - tongDaThu,
+            TongConLai = tongConLai,
             TongChiTieu = tongChiTieu,
             TongChuyenKhoan = tongChuyenKhoan,
-            TongTienNo = tongTienNo,
-            TongCongNo = -1, // bạn có thể cập nhật logic riêng
+            TongTienNo = tongNoTuNoLines, // nợ còn lại hôm nay (đã ghi nợ)
+            TongCongNo = tongNoTuNoLines,
+
             TaiCho = list.Where(x => x.PhanLoai == "Tại Chỗ").Sum(x => x.ThanhTien),
             MuaVe = list.Where(x => x.PhanLoai == "Mv").Sum(x => x.ThanhTien),
             DiShip = list.Where(x => x.PhanLoai == "Ship").Sum(x => x.ThanhTien),
             AppShipping = list.Where(x => x.PhanLoai == "App").Sum(x => x.ThanhTien),
             ViecChuaLam = viecChuaLam,
 
-            // 🟟 Map chi tiết từng hoá đơn đầy đủ
+            // chi tiết theo hoá đơn (ưu tiên SoTienConLai)
             HoaDons = list.Select(h => new DoanhThuHoaDonDto
             {
                 Id = h.Id,
@@ -137,34 +143,24 @@ public class DoanhThuService : IDoanhThuService
                 PhanLoai = h.PhanLoai,
                 NgayHoaDon = h.NgayGio,
                 NgayShip = h.NgayShip,
-                //NgayNo = h.NgayNo,
-                //NgayTra = h.NgayTra,
                 BaoDon = h.BaoDon,
-                TongTien = h.ThanhTien, // ✅ dùng ThanhTien
-                DaThu = h.ChiTietHoaDonThanhToans
-                            .Where(t => !t.IsDeleted)
-                            .Sum(t => (decimal?)t.SoTien) ?? 0,
-                ConLai = h.ThanhTien - (
-                            h.ChiTietHoaDonThanhToans
-                              .Where(t => !t.IsDeleted)
-                              .Sum(t => (decimal?)t.SoTien) ?? 0),
-                TienBank = h.ChiTietHoaDonThanhToans
-                            .Where(t => !t.IsDeleted && t.TenPhuongThucThanhToan.ToLower() != "tiền mặt")
-                            .Sum(t => (decimal?)t.SoTien) ?? 0,
-                TienMat = h.ChiTietHoaDonThanhToans
-                            .Where(t => !t.IsDeleted && t.TenPhuongThucThanhToan.ToLower() == "tiền mặt")
-                            .Sum(t => (decimal?)t.SoTien) ?? 0,
-                TienNo = h.ChiTietHoaDonNos
-                            .Where(n => !n.IsDeleted)
-                            .Sum(n => (decimal?)n.SoTienNo) ?? 0
+                TongTien = h.ThanhTien,
+                DaThu = h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted)
+                            .Sum(t => (decimal?)t.SoTien) ?? 0m,
+                ConLai = (
+                    h.ChiTietHoaDonNos.Where(n => !n.IsDeleted)
+                        .Sum(n => (decimal?)n.SoTienConLai) ?? 0m) > 0
+                    ? (h.ChiTietHoaDonNos.Where(n => !n.IsDeleted)
+                          .Sum(n => (decimal?)n.SoTienConLai) ?? 0m)
+                    : Math.Max(0m,
+                        h.ThanhTien - (h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted)
+                                        .Sum(t => (decimal?)t.SoTien) ?? 0m)),
             }).ToList()
         };
 
         dto.TongTienMat = dto.TongDoanhThu - dto.TongChiTieu - dto.TongChuyenKhoan - dto.TongTienNo;
         return dto;
     }
-
-
 
     public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
     {
@@ -184,6 +180,7 @@ public class DoanhThuService : IDoanhThuService
         var noList = await _context.ChiTietHoaDonNos
             .AsNoTracking()
             .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
+            .Select(ct => new { ct.HoaDonId, ct.SoTienConLai })
             .ToListAsync();
 
         var chiTieus = await _context.ChiTieuHangNgays
@@ -204,7 +201,7 @@ public class DoanhThuService : IDoanhThuService
 
                 var tongTienNo = noList
                     .Where(ct => idsTrongNgay.Contains(ct.HoaDonId))
-                    .Sum(ct => ct.SoTienNo);
+                    .Sum(ct => ct.SoTienConLai);
 
                 var tongChiTieu = chiTieus
                     .Where(ct => ct.Ngay.Date == g.Key)
@@ -223,7 +220,6 @@ public class DoanhThuService : IDoanhThuService
                     MuaVe = g.Where(x => x.PhanLoai == "Mv").Sum(x => x.ThanhTien),
                     DiShip = g.Where(x => x.PhanLoai == "Ship").Sum(x => x.ThanhTien),
                     AppShipping = g.Where(x => x.PhanLoai == "App").Sum(x => x.ThanhTien),
-                    //  ThuongKhanh = g.Where(x => x.PhanLoai == "Ship" && x.NguoiShip == "Khánh").Sum(x => x.ThanhTien) * 0.01m,
                     ThuongNha = tongDoanhThu * 0.005m,
                     ThuongKhanh = tongDoanhThu * 0.005m
                 };
