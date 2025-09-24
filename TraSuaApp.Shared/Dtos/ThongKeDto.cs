@@ -23,6 +23,8 @@
         public decimal TraNoTien { get; set; }
         public decimal TraNoKhanh { get; set; } // Trả nợ có GhiChu="Shipper"
         public decimal TraNoBank { get; set; }
+
+        public decimal TongTraNo => TraNoTien + TraNoBank + TraNoKhanh;
         public int TongSoDon { get; set; }
         public int TongSoLy { get; set; }
 

@@ -26,9 +26,10 @@ public class ChiTietHoaDonThanhToanDto : DtoBase
     public string? GhiChu { get; set; }
 
     public string TimKiem =>
-    $"{Ten?.ToLower() ?? ""} " +
     TextSearchHelper.NormalizeText(Ten ?? "") + " " +
-    TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
-    TextSearchHelper.GetShortName(Ten ?? "");
+    TextSearchHelper.NormalizeText(TenPhuongThucThanhToan ?? "") + " " +
+    TextSearchHelper.NormalizeText(LoaiThanhToan ?? "") + " " +
+    TextSearchHelper.NormalizeText(GhiChu ?? "");
+
 
 }

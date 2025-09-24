@@ -18,8 +18,8 @@ public class ChiTietHoaDonNoDto : DtoBase
 
     public override string ApiRoute => "ChiTietHoaDonNo";
     public decimal SoTienNo { get; set; }
-    public decimal SoTienDaTra { get; set; }
-    public decimal ConLai => SoTienNo - SoTienDaTra;
+    public decimal SoTienConLai { get; set; }
+
     public DateTime NgayGio { get; set; }
     public DateTime Ngay { get; set; }
 
@@ -29,10 +29,10 @@ public class ChiTietHoaDonNoDto : DtoBase
 
     public Guid HoaDonId { get; set; }
     public Guid? KhachHangId { get; set; }
+
     public string TimKiem =>
-    $"{Ten?.ToLower() ?? ""} " +
     TextSearchHelper.NormalizeText(Ten ?? "") + " " +
-    TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
-    TextSearchHelper.GetShortName(Ten ?? "");
+    TextSearchHelper.NormalizeText(Ngay.ToString("dd-MM-yyyy") ?? "") + " " +
+    TextSearchHelper.NormalizeText(GhiChu ?? "");
 
 }

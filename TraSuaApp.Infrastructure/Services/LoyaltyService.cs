@@ -4,18 +4,11 @@ namespace TraSuaApp.Infrastructure.Services;
 
 public static class LoyaltyService
 {
-    /// <summary>
-    /// Tính số điểm từ doanh thu hóa đơn (ví dụ: 1% doanh thu).
-    /// </summary>
     public static int TinhDiemTuHoaDon(decimal thanhTien)
     {
         return (int)Math.Floor(thanhTien * 0.01m);
     }
 
-    /// <summary>
-    /// Tính điểm tháng này và tháng trước của 1 khách hàng.
-    /// Nếu khách không được nhận voucher → trả về (-1, -1).
-    /// </summary>
     public static async Task<(int diemThangNay, int diemThangTruoc)>
         TinhDiemThangAsync(AppDbContext db, Guid khachHangId, DateTime now, bool duocNhanVoucher)
     {
@@ -43,9 +36,6 @@ public static class LoyaltyService
         return (diemThangNay, diemThangTruoc);
     }
 
-    /// <summary>
-    /// Kiểm tra khách hàng đã nhận voucher trong tháng hiện tại chưa.
-    /// </summary>
     public static async Task<bool> DaNhanVoucherTrongThangAsync(AppDbContext db, Guid khachHangId, DateTime now)
     {
         var firstDayCurrent = new DateTime(now.Year, now.Month, 1);
@@ -62,9 +52,6 @@ public static class LoyaltyService
         ).AnyAsync();
     }
 
-    /// <summary>
-    /// Tính tổng nợ khách hàng (có thể loại trừ 1 hóa đơn).
-    /// </summary>
     public static async Task<decimal> TinhTongNoKhachHangAsync(AppDbContext db, Guid khachHangId, Guid? excludeHoaDonId = null)
     {
         var congNoQuery = db.ChiTietHoaDonNos.AsNoTracking()
@@ -74,12 +61,10 @@ public static class LoyaltyService
             congNoQuery = congNoQuery.Where(h => h.HoaDonId != excludeHoaDonId.Value);
 
         var result = await congNoQuery
-            .Select(h => new
-            {
-                ConLai = h.SoTienNo - (db.ChiTietHoaDonThanhToans
-                                        .Where(t => t.ChiTietHoaDonNoId == h.Id && !t.IsDeleted)
-                                        .Sum(t => (decimal?)t.SoTien) ?? 0)
-            })
+.Select(h => new
+{
+    ConLai = h.SoTienConLai
+})
             .ToListAsync();
 
         return result.Sum(x => x.ConLai > 0 ? x.ConLai : 0);

@@ -41,169 +41,8 @@
                 Margin="4"
                 Background="{StaticResource SuccessBrush}"
                 SelectionChanged="TabControl_SelectionChanged">
-                <TabItem Header="Thống kê " Tag="ThongKeHomNay">
-                    <Grid Background="#f6f6f6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="3*" />
-                        </Grid.ColumnDefinitions>
-                        <UniformGrid
-                            Grid.Column="1"
-                            Margin="10"
-                            Columns="4"
-                            Rows="0">
-                            <DataGrid
-                                x:Name="BanNhieuGrid"
-                                Margin="5"
-                                AutoGenerateColumns="False"
-                                HorizontalScrollBarVisibility="Hidden"
-                                IsReadOnly="True">
-                                <DataGrid.Columns>
-                                    <!--<DataGridTextColumn
-     Binding="{Binding Stt}"
-     ElementStyle="{StaticResource CenterTextCellStyle}"
-     Header="STT" />-->
-                                    <!--<DataGridTextColumn
-     Binding="{Binding Ngay, StringFormat=dd-MM-yyyy}"
-     ElementStyle="{StaticResource CenterTextCellStyle}"
-     Header="Ngày" />-->
-                                    <DataGridTextColumn
-                                        Width="*"
-                                        Binding="{Binding TenSanPham}"
-                                        ElementStyle="{StaticResource CenterTextCellStyle}"
-                                        Header="Tên món" />
-                                    <DataGridTextColumn
-                                        Width="auto"
-                                        Binding="{Binding SoLuong}"
-                                        ElementStyle="{StaticResource CenterTextCellStyle}"
-                                        Header="Đã bán" />
-
-
-                                </DataGrid.Columns>
-                            </DataGrid>
-
-                            <Border
-                                Margin="5"
-                                Padding="10"
-                                Background="{StaticResource SuccessBrush}"
-                                CornerRadius="8">
-                                <StackPanel x:Name="DoanhThuStackPanel" />
-                            </Border>
-
-
-                            <Border
-                                Margin="5"
-                                Padding="10"
-                                Background="{StaticResource WarningBrush}"
-                                CornerRadius="8">
-                                <StackPanel x:Name="ChiTieuStackPanel" />
-                            </Border>
-                            <Border
-                                Margin="5"
-                                Padding="10"
-                                Background="{StaticResource DangerBrush}"
-                                CornerRadius="8">
-                                <StackPanel x:Name="CongNoStackPanel" />
-                            </Border>
-
-
-                            <Border
-                                Margin="5"
-                                Padding="10"
-                                Background="{StaticResource SecondaryBrush}"
-                                CornerRadius="8">
-                                <StackPanel x:Name="TraNoTienStackPanel" />
-                            </Border>
-                            <Border
-                                Margin="5"
-                                Padding="10"
-                                Background="{StaticResource SecondaryBrush}"
-                                CornerRadius="8">
-                                <StackPanel x:Name="TraNoBankStackPanel" />
-                            </Border>
-                            <Border
-                                Margin="5"
-                                Padding="10"
-                                Background="{StaticResource PrimaryBrush}"
-                                CornerRadius="8">
-                                <StackPanel x:Name="DaThuStackPanel" />
-                            </Border>
-
-                            <Border
-                                Margin="5"
-                                Padding="10"
-                                Background="{StaticResource WarningBrush}"
-                                CornerRadius="8">
-                                <StackPanel x:Name="ChuaThuStackPanel" />
-                            </Border>
-
-                        </UniformGrid>
-                        <Grid Grid.Column="0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="auto" />
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
-                            <GroupBox
-                                Margin="5"
-                                BorderBrush="{StaticResource SecondaryBrush}"
-                                BorderThickness="1"
-                                Foreground="{StaticResource DarkBrush}"
-                                Header="Kết quả">
-                                <DataGrid
-                                    x:Name="KetQuaDataGrid"
-                                    HorizontalContentAlignment="Stretch"
-                                    AutoGenerateColumns="False"
-                                    CanUserAddRows="False"
-                                    CanUserDeleteRows="False"
-                                    Focusable="False"
-                                    FontSize="{StaticResource FontSizeBig}"
-                                    GridLinesVisibility="Horizontal"
-                                    HeadersVisibility="None"
-                                    IsHitTestVisible="False"
-                                    IsReadOnly="True"
-                                    ItemsSource="{Binding KetQua}"
-                                    SelectionMode="Single">
-                                    <DataGrid.Columns>
-                                        <!--  Cột Tên  -->
-                                        <DataGridTextColumn
-                                            Width="*"
-                                            Binding="{Binding Ten}"
-                                            FontWeight="Bold"
-                                            Header="Tên"
-                                            IsReadOnly="True" />
-
-                                        <!--  Cột Giá trị  -->
-                                        <DataGridTextColumn
-                                            Width="110"
-                                            Binding="{Binding GiaTri, StringFormat=N0}"
-                                            Header="">
-                                            <DataGridTextColumn.ElementStyle>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="HorizontalAlignment" Value="Right" />
-                                                    <Setter Property="TextAlignment" Value="Right" />
-                                                    <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
-                                                    <Setter Property="FontWeight" Value="Bold" />
-                                                </Style>
-                                            </DataGridTextColumn.ElementStyle>
-                                        </DataGridTextColumn>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </GroupBox>
-                            <StackPanel
-                                Grid.Row="1"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Top"
-                                Orientation="Horizontal">
-                                <Button
-                                    Margin="0,0,5,0"
-                                    Click="HomQuaClick"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    Hôm qua
-                                </Button>
-                                <Button Click="HomNayClick" Style="{StaticResource EditButtonStyle}">Hôm nay</Button>
-                            </StackPanel>
-                        </Grid>
-                    </Grid>
+                <TabItem Header="Thống kê" Tag="ThongKe">
+                    <views:ThongKeTab />
                 </TabItem>
                 <TabItem Header="Hóa đơn " Tag="HoaDon">
                     <Grid>
@@ -759,8 +598,7 @@
                                                                     Background="Transparent"
                                                                     BorderBrush="Transparent"
                                                                     FontSize="{StaticResource FontSizeNormal}"
-                                                                    FontStyle="Italic"
-                                                                    Foreground="{StaticResource DangerBrush}"
+                                                                    Foreground="{StaticResource SuccessBrush}"
                                                                     Text="{Binding NoteText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                     TextWrapping="Wrap"
                                                                     Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
@@ -817,8 +655,41 @@
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-
-                        <TextBox x:Name="SearchChiTietHoaDonThanhToanTextBox" TextChanged="SearchChiTietHoaDonThanhToanTextBox_TextChanged" />
+                        <TextBlock
+                            Padding="8"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Panel.ZIndex="1"
+                            Text="Tìm kiếm:" />
+                        <TextBox
+                            x:Name="SearchChiTietHoaDonThanhToanTextBox"
+                            Margin="100,0,0,0"
+                            TextChanged="SearchChiTietHoaDonThanhToanTextBox_TextChanged" />
+                        <StackPanel
+                            HorizontalAlignment="Right"
+                            Panel.ZIndex="1"
+                            Orientation="Horizontal">
+                            <Button
+                                Click="TimKiemNhanhThanhToanButton_Click"
+                                Content="Tiền mặt hôm nay"
+                                Style="{StaticResource ThemButtonStyle}"
+                                Tag="thanh toán tiền mặt trong ngày" />
+                            <Button
+                                Click="TimKiemNhanhThanhToanButton_Click"
+                                Content="Chuyển khoản hôm nay"
+                                Style="{StaticResource ThemButtonStyle}"
+                                Tag="thanh toán chuyển khoản trong ngày" />
+                            <Button
+                                Click="TimKiemNhanhThanhToanButton_Click"
+                                Content="Trả nợ hôm nay"
+                                Style="{StaticResource ThemButtonStyle}"
+                                Tag="qua ngày" />
+                            <Button
+                                Click="TimKiemNhanhThanhToanButton_Click"
+                                Content="Tiền mặt Shipper"
+                                Style="{StaticResource ThemButtonStyle}"
+                                Tag="shipper tiền mặt" />
+                        </StackPanel>
                         <DataGrid
                             x:Name="ChiTietHoaDonThanhToanDataGrid"
                             Grid.Row="1"
@@ -867,18 +738,6 @@
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Tên bàn/khách" />
 
-                                <!--  5. Phương thức thanh toán  -->
-                                <DataGridTextColumn
-                                    Binding="{Binding TenPhuongThucThanhToan}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Phương thức" />
-
-                                <!--  6. Loại thanh toán (thanh toán hay trả nợ)  -->
-                                <DataGridTextColumn
-                                    Binding="{Binding LoaiThanhToan}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Thanh toán" />
-
                                 <!--  7. Số tiền (đặt cuối cùng trong phần tiền, căn phải nếu có thể)  -->
                                 <!--<DataGridTextColumn
                                     x:Name="TongTienThanhToanTextBlock"
@@ -919,8 +778,20 @@
                                 <DataGridTextColumn
                                     Width="*"
                                     Binding="{Binding GhiChu}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    ElementStyle="{StaticResource LeftTextCellStyle}"
                                     Header="Ghi chú" />
+
+                                <!--  5. Phương thức thanh toán  -->
+                                <DataGridTextColumn
+                                    Binding="{Binding TenPhuongThucThanhToan}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Phương thức" />
+
+                                <!--  6. Loại thanh toán (thanh toán hay trả nợ)  -->
+                                <DataGridTextColumn
+                                    Binding="{Binding LoaiThanhToan}"
+                                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                                    Header="Thanh toán" />
 
                                 <DataGridTemplateColumn Header="Xoá">
                                     <DataGridTemplateColumn.CellTemplate>
@@ -943,9 +814,31 @@
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
+                        <TextBlock
+                            Padding="8"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Panel.ZIndex="1"
+                            Text="Tìm kiếm:" />
+                        <StackPanel
+                            HorizontalAlignment="Right"
+                            Panel.ZIndex="1"
+                            Orientation="Horizontal">
+                            <Button
+                                Click="TimKiemNhanhCongNoButton_Click"
+                                Content="Công nợ hôm nay"
+                                Style="{StaticResource ThemButtonStyle}"
+                                Tag="hôm nay" />
+                            <Button
+                                Click="TimKiemNhanhCongNoButton_Click"
+                                Content="Công nợ hôm qua"
+                                Style="{StaticResource ThemButtonStyle}"
+                                Tag="hôm qua" />
+                        </StackPanel>
                         <TextBox
                             x:Name="SearchChiTietHoaDonNoTextBox"
                             Grid.Row="0"
+                            Margin="100,0,0,0"
                             TextChanged="SearchChiTietHoaDonNoTextBox_TextChanged" />
                         <DataGrid
                             x:Name="ChiTietHoaDonNoDataGrid"
@@ -961,8 +854,8 @@
                                             <Setter Property="FontWeight" Value="Medium" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding IsToday}" Value="False">
-                                            <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}" />
-                                            <Setter Property="FontWeight" Value="Light" />
+                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                                            <Setter Property="FontWeight" Value="Normal" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -996,12 +889,12 @@
                                     Binding="{Binding SoTienNo, StringFormat=N0}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Số tiền" />
-                                <DataGridTextColumn
+                                <!--<DataGridTextColumn
                                     Binding="{Binding SoTienDaTra, StringFormat=N0}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Đã thu" />
+                                    Header="Đã thu" />-->
                                 <DataGridTextColumn
-                                    Binding="{Binding ConLai, StringFormat=N0}"
+                                    Binding="{Binding SoTienConLai, StringFormat=N0}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Còn lại" />
                                 <DataGridTextColumn
@@ -1184,7 +1077,6 @@
                         </DataGrid>
                     </Grid>
                 </TabItem>
-
                 <TabItem Header="Công việc " Tag="CongViecNoiBo">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -1317,15 +1209,11 @@
                         </DataGrid>
                     </Grid>
                 </TabItem>
-
                 <TabItem Header="Ứng Nhã" Tag="ChiTieuHangNgayNha">
                     <views:ChiTieuHangNgayNhaTab />
                 </TabItem>
-
                 <TabItem Header="Voucher " Tag="CongViecNoiBo" />
-                <TabItem Header="Thống kê (mới)">
-                    <views:ThongKeTab />
-                </TabItem>
+
             </TabControl>
             <Grid
                 x:Name="Menu"

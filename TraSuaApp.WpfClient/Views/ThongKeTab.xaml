@@ -16,9 +16,10 @@
 
         <!--  Thanh điều hướng ngày  -->
         <StackPanel
-            Grid.Row="0"
-            Margin="8"
-            HorizontalAlignment="Left"
+            Grid.Row="1"
+            Margin="10"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Bottom"
             Orientation="Horizontal">
             <Button
                 x:Name="PrevButton"
@@ -55,22 +56,232 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!--  Card kết quả bên trái  -->
+            <!--  Bên trái: Tổng hợp cố định  -->
             <Border
                 Grid.Column="0"
-                Margin="10"
-                Padding="10"
+                Margin="8,10,8,50"
+                Padding="0"
                 Background="White"
                 BorderBrush="{StaticResource SecondaryBrush}"
                 BorderThickness="1"
                 CornerRadius="12"
                 SnapsToDevicePixels="True">
-                <ScrollViewer Foreground="{StaticResource DarkBrush}" VerticalScrollBarVisibility="Auto">
-                    <StackPanel x:Name="KetQuaStackPanel" />
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+
+                        <!--  Doanh thu  -->
+                        <Border
+                            Padding="6"
+                            Background="{StaticResource PrimaryBrush}"
+                            CornerRadius=" 12 12  0 0">
+                            <DockPanel>
+                                <TextBlock
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="Doanh thu" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="{Binding DoanhThu, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+
+                        <!--  Chưa thu  -->
+                        <Border Padding="6" Background="{StaticResource WarningBrush}">
+                            <DockPanel>
+                                <TextBlock
+                                    FontWeight="Bold"
+                                    Foreground="Black"
+                                    Text="Chưa thu" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    FontWeight="Bold"
+                                    Foreground="Black"
+                                    Text="{Binding ChuaThu, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+
+                        <!--  Công nợ  -->
+                        <Border Padding="6" Background="{StaticResource DangerBrush}">
+                            <DockPanel>
+                                <TextBlock
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="Công nợ" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="{Binding CongNo, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+
+                        <!--  Đã thu  -->
+                        <Border Padding="6" Background="{StaticResource SuccessBrush}">
+                            <DockPanel>
+                                <TextBlock
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="Đã thu" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="{Binding DaThu, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+
+                        <!--  Đã thu chi tiết  -->
+                        <!--<Border Padding="6" Background="LightGreen">
+                            <DockPanel>
+                                <TextBlock Foreground="Black" Text="- Tiền mặt (Nhã)" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    Foreground="Black"
+                                    Text="{Binding DaThu_TienMat, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>-->
+
+                        <Border Padding="6" Background="LightGreen">
+                            <DockPanel>
+                                <TextBlock Foreground="Black" Text="- Tiền mặt (Khánh)" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    Foreground="Black"
+                                    Text="{Binding DaThu_Khanh, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+
+                        <Border Padding="6" Background="LightGreen">
+                            <DockPanel>
+                                <TextBlock Foreground="Black" Text="- Banking" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    Foreground="Black"
+                                    Text="{Binding DaThu_Banking, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+
+                        <!--  Chi tiêu  -->
+                        <Border Padding="6" Background="LightGreen">
+                            <DockPanel>
+                                <TextBlock Foreground="Black" Text="- Chi tiêu" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    Foreground="Black"
+                                    Text="{Binding ChiTieu, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+
+                        <!--  Mang về  -->
+                        <Border Padding="6" Background="LightGreen">
+                            <DockPanel>
+                                <TextBlock
+                                    FontWeight="Bold"
+                                    Foreground="Black"
+                                    Text="KIỂM TIỀN" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    FontWeight="Bold"
+                                    Foreground="Black"
+                                    Text="{Binding MangVe, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+
+                        <!--  Trả nợ  -->
+                        <Border Padding="6" Background="Gray">
+                            <DockPanel>
+                                <TextBlock
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="Trả nợ" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="{Binding TongTraNo, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+                        <Border Padding="6" Background="LightGray">
+                            <DockPanel>
+                                <TextBlock Foreground="Black" Text="- Trả nợ (Nhã)" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    Foreground="Black"
+                                    Text="{Binding TraNoTien, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+                        <Border Padding="6" Background="LightGray">
+                            <DockPanel>
+                                <TextBlock Foreground="Black" Text="- Trả nợ (Khánh)" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    Foreground="Black"
+                                    Text="{Binding TraNoKhanh, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+                        <Border Padding="6" Background="LightGray">
+                            <DockPanel>
+                                <TextBlock Foreground="Black" Text="- Trả nợ (Bank)" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    Foreground="Black"
+                                    Text="{Binding TraNoBank, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+
+                        <!--  Tổng đơn  -->
+                        <Border Padding="6" Background="White">
+                            <DockPanel>
+                                <TextBlock
+                                    FontWeight="Bold"
+                                    Foreground="Black"
+                                    Text="Tổng số đơn" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    FontWeight="Bold"
+                                    Foreground="Black"
+                                    Text="{Binding TongSoDon}" />
+                            </DockPanel>
+                        </Border>
+
+                        <!--  Tổng ly  -->
+                        <Border Padding="6" Background="White">
+                            <DockPanel>
+                                <TextBlock
+                                    FontWeight="Bold"
+                                    Foreground="Black"
+                                    Text="Tổng số ly" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    FontWeight="Bold"
+                                    Foreground="Black"
+                                    Text="{Binding TongSoLy}" />
+                            </DockPanel>
+                        </Border>
+
+                    </StackPanel>
                 </ScrollViewer>
             </Border>
 
-            <!--  Phải: TopSP + 7 card  -->
+            <!--  Bên phải: TopSP + các card chi tiết  -->
             <UniformGrid
                 Grid.Column="1"
                 Margin="5"
@@ -78,40 +289,28 @@
                 Rows="0"
                 SnapsToDevicePixels="True">
 
-                <!--  ✅ Top sản phẩm bán chạy — Primary  -->
+
+                <!--  Doanh thu  -->
                 <Border
                     Margin="5"
                     Padding="10"
                     Background="{StaticResource PrimaryBrush}"
                     CornerRadius="8">
-                    <ScrollViewer Foreground="{StaticResource PrimaryForeground}" VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="TopSanPhamStackPanel" />
-                    </ScrollViewer>
-                </Border>
-
-                <!--  Doanh thu — Success  -->
-                <Border
-                    Margin="5"
-                    Padding="10"
-                    Background="{StaticResource SuccessBrush}"
-                    CornerRadius="8">
                     <ScrollViewer Foreground="{StaticResource SuccessForeground}" VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="DoanhThuStackPanel" />
                     </ScrollViewer>
                 </Border>
-
-                <!--  Chi tiêu — Warning  -->
+                <!--  Chưa thu  -->
                 <Border
                     Margin="5"
                     Padding="10"
                     Background="{StaticResource WarningBrush}"
                     CornerRadius="8">
-                    <ScrollViewer Foreground="{StaticResource WarningForeground}" VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="ChiTieuStackPanel" />
+                    <ScrollViewer Foreground="{StaticResource LightForeground}" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="ChuaThuStackPanel" />
                     </ScrollViewer>
                 </Border>
-
-                <!--  Công nợ — Danger  -->
+                <!--  Công nợ  -->
                 <Border
                     Margin="5"
                     Padding="10"
@@ -122,47 +321,60 @@
                     </ScrollViewer>
                 </Border>
 
-                <!--  Trả nợ tiền — Secondary  -->
+                <!--  Đã thu  -->
                 <Border
                     Margin="5"
                     Padding="10"
-                    Background="{StaticResource SecondaryBrush}"
-                    CornerRadius="8">
-                    <ScrollViewer Foreground="{StaticResource SecondaryForeground}" VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="TraNoTienStackPanel" />
-                    </ScrollViewer>
-                </Border>
-
-                <!--  Trả nợ bank — Info  -->
-                <Border
-                    Margin="5"
-                    Padding="10"
-                    Background="{StaticResource InfoBrush}"
-                    CornerRadius="8">
-                    <ScrollViewer Foreground="{StaticResource InfoForeground}" VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="TraNoBankStackPanel" />
-                    </ScrollViewer>
-                </Border>
-
-                <!--  Đã thu — Dark  -->
-                <Border
-                    Margin="5"
-                    Padding="10"
-                    Background="{StaticResource DarkBrush}"
+                    Background="{StaticResource SuccessBrush}"
                     CornerRadius="8">
                     <ScrollViewer Foreground="{StaticResource DarkForeground}" VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="DaThuStackPanel" />
                     </ScrollViewer>
                 </Border>
 
-                <!--  Chưa thu — Light  -->
+                <!--  Chi tiêu  -->
                 <Border
                     Margin="5"
                     Padding="10"
-                    Background="{StaticResource LightBrush}"
+                    Background="{StaticResource DarkBrush}"
+                    CornerRadius="8">
+                    <ScrollViewer Foreground="{StaticResource DarkForeground}" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="ChiTieuStackPanel" />
+                    </ScrollViewer>
+                </Border>
+
+
+                <!--  Trả nợ tiền  -->
+                <Border
+                    Margin="5"
+                    Padding="10"
+                    Background="LightGreen"
                     CornerRadius="8">
                     <ScrollViewer Foreground="{StaticResource LightForeground}" VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="ChuaThuStackPanel" />
+                        <StackPanel x:Name="TraNoTienStackPanel" />
+                    </ScrollViewer>
+                </Border>
+
+                <!--  Trả nợ bank  -->
+                <Border
+                    Margin="5"
+                    Padding="10"
+                    Background="LightYellow"
+                    CornerRadius="8">
+                    <ScrollViewer Foreground="{StaticResource InfoForeground}" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="TraNoBankStackPanel" />
+                    </ScrollViewer>
+                </Border>
+
+
+                <!--  Top sản phẩm bán chạy  -->
+                <Border
+                    Margin="5"
+                    Padding="10"
+                    Background="{StaticResource InfoBrush}"
+                    CornerRadius="8">
+                    <ScrollViewer Foreground="{StaticResource PrimaryForeground}" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="TopSanPhamStackPanel" />
                     </ScrollViewer>
                 </Border>
 

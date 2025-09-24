@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Domain.Entities;
+using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
@@ -45,8 +46,6 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         };
     }
 
-
-
     public async Task<Result<ChiTietHoaDonThanhToanDto>> CreateAsync(ChiTietHoaDonThanhToanDto dto)
     {
         // Kiểm tra số tiền hợp lệ
@@ -90,7 +89,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
 
         _context.ChiTietHoaDonThanhToans.Add(entity);
 
-
+        await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -dto.SoTien);
         await _context.SaveChangesAsync();
 
         var afterEntity = await _context.ChiTietHoaDonThanhToans
@@ -161,9 +160,10 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.PhuongThucThanhToanId = dto.PhuongThucThanhToanId;
         entity.TenPhuongThucThanhToan = dto.TenPhuongThucThanhToan;
         entity.GhiChu = GhiChu;
-
         entity.LastModified = DateTime.Now;
 
+        await NoHelper.UpdateSoTienConLaiAsync(_context, oldChiTietHoaDonNoId, oldSoTien);       // hoàn trả số cũ
+        await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -dto.SoTien); // trừ số mới
         await _context.SaveChangesAsync();
 
         var afterEntity = await _context.ChiTietHoaDonThanhToans
@@ -204,7 +204,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.DeletedAt = DateTime.Now;
         entity.LastModified = DateTime.Now;
 
-
+        await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, entity.SoTien);
         await _context.SaveChangesAsync();
 
         if (entity.ChiTietHoaDonNoId != null)
@@ -239,6 +239,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.DeletedAt = null;
         entity.LastModified = DateTime.Now;
 
+        await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -entity.SoTien);
         await _context.SaveChangesAsync();
 
         var afterEntity = await _context.ChiTietHoaDonThanhToans
@@ -281,6 +282,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             })
             .ToListAsync();
     }
+
     public async Task<ChiTietHoaDonThanhToanDto?> GetByIdAsync(Guid id)
     {
         return await _context.ChiTietHoaDonThanhToans.AsNoTracking()

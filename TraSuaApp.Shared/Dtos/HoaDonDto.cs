@@ -7,8 +7,6 @@ namespace TraSuaApp.Shared.Dtos;
 
 public class HoaDonDto : DtoBase, INotifyPropertyChanged
 {
-
-
     [NotMapped]
     public string RowBackground
     {
@@ -152,6 +150,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public DateTime? NgayHen { get; set; }
     public bool DaNhanVoucher { get; set; }
     public bool DaThuHoacGhiNo { get; set; }
+    public override string Ten => KhachHangId == null ? TenBan : TenKhachHangText;
     public string TimKiem =>
         $"{Ten?.ToLower() ?? ""} " +
         TextSearchHelper.NormalizeText(Ten ?? "") + " " +

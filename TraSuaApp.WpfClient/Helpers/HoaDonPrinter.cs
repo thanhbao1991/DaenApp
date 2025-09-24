@@ -50,7 +50,7 @@ namespace TraSuaApp.WpfClient.Helpers
             {
                 if (includeLine) sb.AppendLine("---------------------------");
                 AddRow(sb, "Công nợ:", hoaDon.TongNoKhachHang);
-                if (hoaDon.TongNoKhachHang != hoaDon.ConLai)
+                //if (hoaDon.TongNoKhachHang != hoaDon.ConLai)
                 {
                     AddRow(sb, "TỔNG:", hoaDon.TongNoKhachHang + hoaDon.ConLai);
                 }

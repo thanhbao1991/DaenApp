@@ -6,7 +6,7 @@ public partial class ChiTietHoaDonNo
 
     public decimal SoTienNo { get; set; }
 
-    // public decimal SoTienDaTra { get; set; }
+    public decimal SoTienConLai { get; set; }
     public string? GhiChu { get; set; }
 
 
@@ -25,6 +25,7 @@ public partial class ChiTietHoaDonNo
     public DateTime Ngay { get; set; }
 
     public Guid? KhachHangId { get; set; }
+    // public virtual ICollection<ChiTietHoaDonThanhToan> ChiTietHoaDonThanhToans { get; set; } = new List<ChiTietHoaDonThanhToan>();
 
     public virtual HoaDon HoaDon { get; set; } = null!;
     public KhachHang KhachHang { get; set; }

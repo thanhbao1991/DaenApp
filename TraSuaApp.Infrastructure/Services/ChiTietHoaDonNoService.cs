@@ -25,6 +25,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         {
             Id = entity.Id,
             SoTienNo = entity.SoTienNo,
+            SoTienConLai = entity.SoTienConLai,
             NgayGio = entity.NgayGio,
             GhiChu = entity.GhiChu,
             Ngay = entity.Ngay,
@@ -37,13 +38,13 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         };
     }
 
-
     public async Task<Result<ChiTietHoaDonNoDto>> CreateAsync(ChiTietHoaDonNoDto dto)
     {
         var entity = new ChiTietHoaDonNo
         {
             Id = Guid.NewGuid(),
             SoTienNo = dto.SoTienNo,
+            SoTienConLai = dto.SoTienNo,
             NgayGio = dto.NgayGio,
             GhiChu = dto.GhiChu,
             Ngay = dto.Ngay,
@@ -143,9 +144,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
                 x.KhachHangId,
                 TenKhachHang = x.KhachHang != null ? x.KhachHang.Ten : x.Id.ToString(), // 🟟 Ưu tiên tên khách
                 x.SoTienNo,
-                SoTienDaTra = _context.ChiTietHoaDonThanhToans
-                                      .Where(t => t.ChiTietHoaDonNoId == x.Id && !t.IsDeleted)
-                                      .Sum(t => (decimal?)t.SoTien) ?? 0,
+                x.SoTienConLai,
                 x.GhiChu,
                 x.CreatedAt,
                 x.LastModified,
@@ -154,7 +153,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
             .ToListAsync();
 
         return list
-            .Where(x => x.SoTienNo > x.SoTienDaTra    // 🟟 còn nợ → lấy tất cả
+            .Where(x => x.SoTienConLai > 0    // 🟟 còn nợ → lấy tất cả
                      || x.Ngay >= fromDate)           // 🟟 trả đủ → chỉ lấy 3 ngày gần đây
             .Select(x => new ChiTietHoaDonNoDto
             {
@@ -165,10 +164,8 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
                 KhachHangId = x.KhachHangId,
                 Ten = x.TenKhachHang,                 // 🟟 gán tên khách
                 SoTienNo = x.SoTienNo,
-                SoTienDaTra = x.SoTienDaTra,
-                //ConLai = x.SoTienNo - x.SoTienDaTra,
+                SoTienConLai = x.SoTienConLai,
                 GhiChu = x.GhiChu,
-                //  MaHoaDon = x.MaHoaDon,
                 CreatedAt = x.CreatedAt,
                 LastModified = x.LastModified,
                 IsDeleted = x.IsDeleted
@@ -176,36 +173,6 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
             .OrderByDescending(x => x.LastModified)
             .ToList();
     }
-    //public async Task<List<ChiTietHoaDonNoDto>> GetAllAsync()
-    //{
-    //    var today = DateTime.Today;
-    //    var fromDate = today.AddDays(-1);
-
-    //    return await _context.ChiTietHoaDonNos.AsNoTracking()
-    //        .Where(x => !x.IsDeleted
-    //                 && (x.ConLai > 0 || x.Ngay >= fromDate)) // 🟟 nếu còn nợ thì lấy hết, ngược lại chỉ lấy 3 ngày gần đây
-    //        .OrderByDescending(x => x.LastModified)
-    //        .Select(x => new ChiTietHoaDonNoDto
-    //        {
-
-    //
-    //            SoTienDaTra = _context.ChiTietHoaDonThanhToans.AsNoTracking()
-    //                                .Where(t => t.ChiTietHoaDonNoId == x.Id && !t.IsDeleted)
-    //                                .Sum(t => (decimal?)t.SoTien) ?? 0,
-    //
-    //          NgayGio = x.NgayGio,
-    //            GhiChu = x.GhiChu,
-    //            Ngay = x.Ngay,
-    //            HoaDonId = x.HoaDonId,
-    //            KhachHangId = x.KhachHangId,
-    //            Ten = x.KhachHang != null ? x.KhachHang.Ten : null,
-    //            CreatedAt = x.CreatedAt,
-    //            DeletedAt = x.DeletedAt,
-    //            IsDeleted = x.IsDeleted,
-    //            LastModified = x.LastModified
-    //        })
-    //        .ToListAsync();
-    //}
 
     public async Task<ChiTietHoaDonNoDto?> GetByIdAsync(Guid id)
     {
@@ -216,10 +183,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
                 Id = x.Id,
                 MaHoaDon = x.HoaDon != null ? x.HoaDon.MaHoaDon : null,
                 SoTienNo = x.SoTienNo,
-                SoTienDaTra = _context.ChiTietHoaDonThanhToans.AsNoTracking()
-                                    .Where(t => t.ChiTietHoaDonNoId == x.Id && !t.IsDeleted)
-                                    .Sum(t => (decimal?)t.SoTien) ?? 0,
-
+                SoTienConLai = x.SoTienConLai,
                 NgayGio = x.NgayGio,
                 GhiChu = x.GhiChu,
                 Ngay = x.Ngay,
@@ -233,6 +197,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
             })
             .FirstOrDefaultAsync();
     }
+
     public async Task<Result<ChiTietHoaDonNoDto>> DeleteAsync(Guid id)
     {
         var before = await _context.ChiTietHoaDonNos.AsNoTracking()
@@ -242,9 +207,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
                 Id = x.Id,
                 MaHoaDon = x.HoaDon != null ? x.HoaDon.MaHoaDon : null,
                 SoTienNo = x.SoTienNo,
-                SoTienDaTra = _context.ChiTietHoaDonThanhToans.AsNoTracking()
-                                    .Where(t => t.ChiTietHoaDonNoId == x.Id && !t.IsDeleted)
-                                    .Sum(t => (decimal?)t.SoTien) ?? 0,
+                SoTienConLai = x.SoTienConLai,
                 NgayGio = x.NgayGio,
                 GhiChu = x.GhiChu,
                 Ngay = x.Ngay,
@@ -288,9 +251,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
                 Id = x.Id,
                 MaHoaDon = x.HoaDon != null ? x.HoaDon.MaHoaDon : null,
                 SoTienNo = x.SoTienNo,
-                SoTienDaTra = _context.ChiTietHoaDonThanhToans.AsNoTracking()
-                                    .Where(t => t.ChiTietHoaDonNoId == x.Id && !t.IsDeleted)
-                                    .Sum(t => (decimal?)t.SoTien) ?? 0,
+                SoTienConLai = x.SoTienConLai,
                 NgayGio = x.NgayGio,
                 GhiChu = x.GhiChu,
                 Ngay = x.Ngay,

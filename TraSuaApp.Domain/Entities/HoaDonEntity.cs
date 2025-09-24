@@ -5,7 +5,6 @@ namespace TraSuaApp.Domain.Entities;
 public partial class HoaDon
 {
     public DateTime? NgayHen { get; set; }
-
     public Guid Id { get; set; }
     [DefaultValue(false)]
     public bool UuTien { get; set; }

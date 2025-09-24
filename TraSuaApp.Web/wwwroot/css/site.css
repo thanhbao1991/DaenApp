@@ -63,3 +63,48 @@ input[type="number"] {
   font-size: 16px !important;
   touch-action: manipulation;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.bg-success-light {
+    background-color: #90EE90 !important; /* xanh lá nhạt */
+    color: #000 !important; /* chữ đen */
+}
+
+.bg-warning-light {
+    background-color: #FFFFE0 !important; /* vàng nhạt */
+    color: #000 !important; /* chữ đen */
+}
+
+
+.highlight-animate {
+    animation: borderFlashPrimary 0.4s alternate infinite;
+    border-radius: 6px;
+}
+
+@keyframes borderFlashPrimary {
+    from {
+        box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.9);
+    }
+
+    to {
+        box-shadow: 0 0 12px 4px rgba(13, 110, 253, 0.9);
+    }
+}
+
+#chitieu, #congno {
+    scroll-margin-top: 20px; /* chừa 80px phía trên, bạn có thể chỉnh 60-100 tuỳ giao diện */
+}

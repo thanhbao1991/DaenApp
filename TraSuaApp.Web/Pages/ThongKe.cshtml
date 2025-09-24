@@ -1,0 +1,209 @@
+﻿@page
+@model TraSuaAppWeb.Pages.ThongKeModel
+@{
+    ViewData["Title"] = "Thống kê ngày";
+    var d = Model.Data;
+}
+
+<div class="container-fluid p-2">
+    <!-- Thanh điều hướng -->
+    <div class="d-flex justify-content-between mb-3">
+        <a class="btn btn-outline-primary btn-sm" href="?ngay=@Model.Prev.Day&thang=@Model.Prev.Month&nam=@Model.Prev.Year">← Ngày trước</a>
+        <span class="fw-bold">@d?.Ngay.ToString("dd/MM/yyyy")</span>
+        <a class="btn btn-outline-primary btn-sm" href="?ngay=@Model.Next.Day&thang=@Model.Next.Month&nam=@Model.Next.Year">Ngày sau →</a>
+    </div>
+
+    @if (d != null)
+    {
+        <!-- 1. Tổng hợp -->
+        <div class="card mb-3">
+            <div class="card-header fw-bold">Tổng hợp</div>
+            <div class="list-group list-group-flush small">
+                <div class="list-group-item bg-primary border-0 text-white d-flex justify-content-between">
+                    <span>Doanh thu</span>
+                    <b>@String.Format("{0:N0}", d.DoanhThu)</b>
+                </div>
+                <div class="list-group-item bg-warning border-0 text-dark d-flex justify-content-between">
+                    <span>Chưa thu</span>
+                    <b>@String.Format("{0:N0}", d.ChuaThu)</b>
+                </div>
+                <div class="list-group-item bg-danger border-0 text-white d-flex justify-content-between">
+                    <span>Công nợ</span>
+                    <b>@String.Format("{0:N0}", d.CongNo)</b>
+                </div>
+                <div class="list-group-item bg-success border-0 text-white d-flex justify-content-between">
+                    <span>Đã thu</span>
+                    <b>@String.Format("{0:N0}", d.DaThu)</b>
+                </div>
+                <div class="list-group-item ps-4 bg-success-light border-0 d-flex justify-content-between">
+                    <span>- Tiền mặt (Khánh)</span>
+                    <b>@String.Format("{0:N0}", d.DaThu_Khanh)</b>
+                </div>
+                <div class="list-group-item ps-4 bg-success-light border-0 d-flex justify-content-between">
+                    <span>- Banking</span>
+                    <b>@String.Format("{0:N0}", d.DaThu_Banking)</b>
+                </div>
+                <div class="list-group-item ps-4 bg-success-light border-0 d-flex justify-content-between">
+                    <span>- Chi tiêu</span>
+                    <b>@String.Format("{0:N0}", d.ChiTieu)</b>
+                </div>
+                <div class="list-group-item bg-success-light border-0 d-flex justify-content-between">
+                    <span>KIỂM TIỀN</span>
+                    <b>@String.Format("{0:N0}", d.MangVe)</b>
+                </div>
+                <div class="list-group-item bg-secondary border-0 text-white d-flex justify-content-between">
+                    <span>Trả nợ</span>
+                    <b>@String.Format("{0:N0}", d.TraNoTien + d.TraNoBank + d.TraNoKhanh)</b>
+                </div>
+                <div class="list-group-item ps-4 bg-secondary-subtle border-0 d-flex justify-content-between">
+                    <span>- Trả nợ (Nhã)</span>
+                    <b>@String.Format("{0:N0}", d.TraNoTien)</b>
+                </div>
+                <div class="list-group-item ps-4 bg-secondary-subtle border-0 d-flex justify-content-between">
+                    <span>- Trả nợ (Khánh)</span>
+                    <b>@String.Format("{0:N0}", d.TraNoKhanh)</b>
+                </div>
+                <div class="list-group-item ps-4 bg-secondary-subtle border-0  d-flex justify-content-between">
+                    <span>- Trả nợ (Bank)</span>
+                    <b>@String.Format("{0:N0}", d.TraNoBank)</b>
+                </div>
+                <div class="list-group-item d-flex border-0 justify-content-between">
+                    <span>Tổng đơn</span>
+                    <b>@d.TongSoDon</b>
+                </div>
+                <div class="list-group-item d-flex border-0 justify-content-between">
+                    <span>Tổng ly</span>
+                    <b>@d.TongSoLy</b>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Doanh thu -->
+        <div class="card mb-3 text-bg-primary">
+            <div class="card-header fw-bold">Doanh thu: @String.Format("{0:N0}", d.DoanhThu)</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var item in d.DoanhThuChiTiet)
+                {
+                    <li class="list-group-item bg-transparent border-0 text-white d-flex justify-content-between">
+                        <span>@item.Ten</span>
+                        <span class="text-end">@item.GiaTri.ToString("N0")</span>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <!-- 3. Chưa thu -->
+        <div class="card mb-3 text-bg-warning">
+            <div class="card-header fw-bold">Chưa thu: @String.Format("{0:N0}", d.ChuaThu)</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var item in d.ChuaThuChiTiet)
+                {
+                    <li class="list-group-item bg-transparent border-0 text-dark d-flex justify-content-between">
+                        <span>@item.Ten</span>
+                        <span class="text-end">@item.GiaTri.ToString("N0")</span>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <!-- 4. Công nợ -->
+        <div class="card mb-3 text-bg-danger" id="congno">
+            <div class="card-header fw-bold">Công nợ: @String.Format("{0:N0}", d.CongNo)</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var item in d.CongNoChiTiet)
+                {
+                    <li class="list-group-item bg-transparent border-0 text-white d-flex justify-content-between">
+                        <span>@item.Ten</span>
+                        <span class="text-end">@item.GiaTri.ToString("N0")</span>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <!-- 5. Đã thu -->
+        <div class="card mb-3 text-bg-success">
+            <div class="card-header fw-bold">Đã thu: @String.Format("{0:N0}", d.DaThu)</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var item in d.DaThuChiTiet)
+                {
+                    <li class="list-group-item bg-transparent border-0 text-white d-flex justify-content-between">
+                        <span>@item.Ten</span>
+                        <span class="text-end">@item.GiaTri.ToString("N0")</span>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <!-- 6. Chi tiêu -->
+        <div class="card mb-3 text-bg-dark" id="chitieu">
+            <div class="card-header fw-bold">Chi tiêu: @String.Format("{0:N0}", d.ChiTieu)</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var item in d.ChiTieuChiTiet)
+                {
+                    <li class="list-group-item bg-transparent border-0 text-white d-flex justify-content-between">
+                        <span>@item.Ten</span>
+                        <span class="text-end">@item.GiaTri.ToString("N0")</span>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <!-- 7. Trả nợ tiền -->
+        <div class="card mb-3 bg-success-light text-dark">
+            <div class="card-header fw-bold">Trả nợ tiền: @String.Format("{0:N0}", d.TraNoTien)</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var item in d.TraNoTienChiTiet)
+                {
+                    <li class="list-group-item bg-transparent border-0 text-dark d-flex justify-content-between">
+                        <span>@item.Ten</span>
+                        <span class="text-end">@item.GiaTri.ToString("N0")</span>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <!-- 8. Trả nợ bank -->
+        <div class="card mb-3 bg-warning-light text-dark">
+            <div class="card-header fw-bold">Trả nợ bank: @String.Format("{0:N0}", d.TraNoBank)</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var item in d.TraNoBankChiTiet)
+                {
+                    <li class="list-group-item bg-transparent border-0 text-dark d-flex justify-content-between">
+                        <span>@item.Ten</span>
+                        <span class="text-end">@item.GiaTri.ToString("N0")</span>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <!-- 9. Top sản phẩm bán chạy -->
+        <div class="card mb-3">
+            <div class="card-header fw-bold bg-primary text-white">Top sản phẩm bán chạy</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var sp in d.TopSanPhams.OrderBy(x => x.Stt).Take(10))
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>@sp.Stt. @sp.TenSanPham</span>
+                        <span class="badge bg-primary rounded-pill">@sp.SoLuong</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">Không có dữ liệu.</div>
+    }
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.location.hash) {
+            const target = document.querySelector(window.location.hash);
+            if (target) {
+                target.classList.add("highlight-animate");
+            }
+        }
+    });
+</script>
