@@ -1600,6 +1600,8 @@ public class HoaDonService : IHoaDonService
                 await NoHelper.UpdateSoTienConLaiAsync(_context, thanhToan.ChiTietHoaDonNoId, -soTienThu); //  [oai_citation:6‡AllFiles.txt](sediment://file_00000000e36c624391fd78dd99742fe6)
         }
 
+        entity.GhiChuShipper = $"Tiền mặt: {soTienThu:N0} đ";
+        entity.LastModified = now;
         entity.LastModified = now;
         await _context.SaveChangesAsync();
 

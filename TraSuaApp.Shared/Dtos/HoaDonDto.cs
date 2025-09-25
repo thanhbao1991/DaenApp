@@ -7,6 +7,7 @@ namespace TraSuaApp.Shared.Dtos;
 
 public class HoaDonDto : DtoBase, INotifyPropertyChanged
 {
+
     [NotMapped]
     public string RowBackground
     {
@@ -139,7 +140,6 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public decimal ThanhTien { get; set; }
     public decimal DaThu { get; set; }
     public decimal ConLai { get; set; }
-
     public int TichDiem => (int)ThanhTien / 10000;
     public virtual ICollection<ChiTietHoaDonDto> ChiTietHoaDons { get; set; } = new List<ChiTietHoaDonDto>();
     public virtual ICollection<ChiTietHoaDonToppingDto> ChiTietHoaDonToppings { get; set; } = new List<ChiTietHoaDonToppingDto>();

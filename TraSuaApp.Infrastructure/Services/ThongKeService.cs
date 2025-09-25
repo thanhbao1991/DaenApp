@@ -186,7 +186,12 @@ namespace TraSuaApp.Infrastructure.Services
                .Include(ct => ct.SanPhamBienThe)
                    .ThenInclude(bt => bt.SanPham)
                        .ThenInclude(sp => sp.NhomSanPham)
-               .Where(ct => ct.SanPhamBienThe != null && ct.SanPhamBienThe.SanPham != null)
+               .Where(ct => ct.SanPhamBienThe != null &&
+                            ct.SanPhamBienThe.SanPham != null &&
+                            ct.SanPhamBienThe.SanPham.NhomSanPham.Ten != "Thuốc lá" &&
+                            ct.SanPhamBienThe.SanPham.NhomSanPham.Ten != "Ăn vặt" &&
+                            ct.SanPhamBienThe.SanPham.NhomSanPham.Ten != "Nước lon"
+                   )
                .SumAsync(ct => (int?)ct.SoLuong) ?? 0;
 
             // ====== TOP SẢN PHẨM BÁN CHẠY ======
