@@ -20,18 +20,7 @@ public class DoanhThuService : IDoanhThuService
                 ThongTinHoaDon = h.PhanLoai,
                 TenKhachHangText = h.TenKhachHangText,
                 TongTien = h.ThanhTien,
-                DaThu = h.ChiTietHoaDonThanhToans
-                            .Where(t => !t.IsDeleted)
-                            .Sum(t => (decimal?)t.SoTien) ?? 0m,
-                // Ưu tiên nợ đã ghi (SoTienConLai); nếu chưa ghi nợ thì fallback còn lại trong ngày
-                ConLai = (
-                    h.ChiTietHoaDonNos.Where(n => !n.IsDeleted)
-                        .Sum(n => (decimal?)n.SoTienConLai) ?? 0m) > 0
-                    ? (h.ChiTietHoaDonNos.Where(n => !n.IsDeleted)
-                          .Sum(n => (decimal?)n.SoTienConLai) ?? 0m)
-                    : Math.Max(0m,
-                        h.ThanhTien - (h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted)
-                                        .Sum(t => (decimal?)t.SoTien) ?? 0m)),
+                ConLai = h.ConLai
             })
             .Where(h => h.ConLai > 0)
             .OrderByDescending(h => h.NgayHoaDon)
@@ -99,11 +88,14 @@ public class DoanhThuService : IDoanhThuService
                                 .Sum(t => (decimal?)t.SoTien) ?? 0m)))
             .SumAsync() ?? 0m;
 
-        var tongConLai = tongNoTuNoLines + chuaThuKhongNo;
+        var tongConLai = await _context.HoaDons.AsNoTracking()
+      .Where(h => !h.IsDeleted && h.Ngay >= ngayBatDau && h.Ngay < ngayKetThuc)
+      .SumAsync(h => (decimal?)h.ConLai) ?? 0m;
 
         var tongChiTieu = await _context.ChiTieuHangNgays.AsNoTracking()
-            .Where(ct => ct.Ngay == ngay && !ct.BillThang && !ct.IsDeleted)
-            .SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0m;
+        .Where(ct => !ct.IsDeleted && !ct.BillThang
+                  && ct.Ngay >= ngayBatDau && ct.Ngay < ngayKetThuc)
+        .SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0m;
 
         string viecChuaLam = string.Join(", ",
             await _context.CongViecNoiBos
@@ -145,29 +137,29 @@ public class DoanhThuService : IDoanhThuService
                 NgayShip = h.NgayShip,
                 BaoDon = h.BaoDon,
                 TongTien = h.ThanhTien,
-                DaThu = h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted)
-                            .Sum(t => (decimal?)t.SoTien) ?? 0m,
-                ConLai = (
-                    h.ChiTietHoaDonNos.Where(n => !n.IsDeleted)
-                        .Sum(n => (decimal?)n.SoTienConLai) ?? 0m) > 0
-                    ? (h.ChiTietHoaDonNos.Where(n => !n.IsDeleted)
-                          .Sum(n => (decimal?)n.SoTienConLai) ?? 0m)
-                    : Math.Max(0m,
-                        h.ThanhTien - (h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted)
-                                        .Sum(t => (decimal?)t.SoTien) ?? 0m)),
+                ConLai = h.ConLai,
             }).ToList()
         };
 
-        dto.TongTienMat = dto.TongDoanhThu - dto.TongChiTieu - dto.TongChuyenKhoan - dto.TongTienNo;
+        dto.TongTienMat = -1;// dto.TongDoanhThu - dto.TongChiTieu - dto.TongChuyenKhoan - dto.TongTienNo;
         return dto;
     }
 
     public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
     {
+        var monthStart = new DateTime(nam, thang, 1);
+        var monthEnd = monthStart.AddMonths(1);
+
         var hoaDons = await _context.HoaDons
             .Include(x => x.KhachHang)
             .AsNoTracking()
-            .Where(x => !x.IsDeleted && x.Ngay.Month == thang && x.Ngay.Year == nam)
+            .Where(x => !x.IsDeleted && x.Ngay >= monthStart && x.Ngay < monthEnd)
+            .ToListAsync();
+
+        var chiTieus = await _context.ChiTieuHangNgays
+            .AsNoTracking()
+            .Where(ct => !ct.IsDeleted && !ct.BillThang
+                      && ct.Ngay >= monthStart && ct.Ngay < monthEnd)
             .ToListAsync();
 
         var hoaDonIds = hoaDons.Select(x => x.Id).ToList();
@@ -183,10 +175,6 @@ public class DoanhThuService : IDoanhThuService
             .Select(ct => new { ct.HoaDonId, ct.SoTienConLai })
             .ToListAsync();
 
-        var chiTieus = await _context.ChiTieuHangNgays
-            .AsNoTracking()
-            .Where(ct => ct.Ngay.Month == thang && ct.Ngay.Year == nam && !ct.BillThang && !ct.IsDeleted)
-            .ToListAsync();
 
         var result = hoaDons
             .GroupBy(x => x.Ngay.Date)

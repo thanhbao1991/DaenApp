@@ -216,16 +216,6 @@
                         </Border>
                         <Border Padding="6" Background="LightGray">
                             <DockPanel>
-                                <TextBlock Foreground="Black" Text="- Trả nợ (Nhã)" />
-                                <TextBlock
-                                    HorizontalAlignment="Right"
-                                    DockPanel.Dock="Right"
-                                    Foreground="Black"
-                                    Text="{Binding TraNoTien, StringFormat=N0}" />
-                            </DockPanel>
-                        </Border>
-                        <Border Padding="6" Background="LightGray">
-                            <DockPanel>
                                 <TextBlock Foreground="Black" Text="- Trả nợ (Khánh)" />
                                 <TextBlock
                                     HorizontalAlignment="Right"
@@ -234,6 +224,17 @@
                                     Text="{Binding TraNoKhanh, StringFormat=N0}" />
                             </DockPanel>
                         </Border>
+                        <Border Padding="6" Background="LightGray">
+                            <DockPanel>
+                                <TextBlock Foreground="Black" Text="- Trả nợ (Nhã)" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    Foreground="Black"
+                                    Text="{Binding TraNoTien, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+
                         <Border Padding="6" Background="LightGray">
                             <DockPanel>
                                 <TextBlock Foreground="Black" Text="- Trả nợ (Bank)" />

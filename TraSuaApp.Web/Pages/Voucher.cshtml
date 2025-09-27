@@ -1,0 +1,59 @@
+﻿@page
+@model TraSuaAppWeb.Pages.VoucherModel
+@{
+    ViewData["Title"] = "Voucher theo tháng";
+}
+
+<div class="container-fluid p-2">
+
+    <!-- Thanh điều hướng tháng -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a class="btn btn-outline-primary btn-sm"
+           href="?thang=@Model.Prev.Month&nam=@Model.Prev.Year">← Tháng trước</a>
+
+        <span class="fw-bold fs-5">@Model.CurrentMonthStart.ToString("MM/yyyy")</span>
+
+        <a class="btn btn-outline-primary btn-sm"
+           href="?thang=@Model.Next.Month&nam=@Model.Next.Year">Tháng sau →</a>
+    </div>
+
+    <div class="d-flex justify-content-end mb-2">
+        <div class="fw-bold">Tổng voucher: @String.Format("{0:N0}", Model.Tong) đ</div>
+    </div>
+
+    @if (Model.Items?.Any() == true)
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th style="width:60px">STT</th>
+                        <th style="width:160px">Ngày</th>
+                        <th style="width:220px">Khách hàng</th>
+                        <th>Tên voucher</th>
+                        <th class="text-end" style="width:160px">Giá trị áp dụng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var stt = 1;
+                        foreach (var it in Model.Items)
+                        {
+                            <tr>
+                                <td>@(stt++)</td>
+                                <td>@it.Ngay.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@it.TenKhachHang</td>
+                                <td>@it.TenVoucher</td>
+                                <td class="text-end">@it.GiaTriApDung.ToString("N0")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">Không có dữ liệu tháng này.</div>
+    }
+</div>

@@ -12,4 +12,9 @@ public interface IVoucherService
     Task<Result<VoucherDto>> DeleteAsync(Guid id);
     Task<Result<VoucherDto>> RestoreAsync(Guid id);
     Task<List<VoucherDto>> GetUpdatedSince(DateTime lastSync);
+
+
+    Task<List<VoucherChiTraDto>> GetByOffsetAsync(int offset);     // tháng hiện tại + offset
+    Task<List<VoucherChiTraDto>> GetByMonthAsync(int year, int month);
+
 }

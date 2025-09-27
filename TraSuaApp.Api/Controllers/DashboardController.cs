@@ -17,47 +17,6 @@ namespace TraSuaApp.Api.Controllers
             _db = db;
         }
 
-        [HttpGet("homnay")]
-        public async Task<ActionResult<DashboardDto>> GetToday()
-        {
-            var today = DateTime.Today;
-            var tomorrow = today.AddDays(1);
-            var chiTietQuery = _db.ChiTietHoaDons
-                .Where(c => c.HoaDon.Ngay >= today && c.HoaDon.Ngay < tomorrow && !c.HoaDon.IsDeleted);
-
-            var tongDoanhThu = await chiTietQuery.SumAsync(x => x.ThanhTien);
-
-            var tempList = await chiTietQuery
-                .GroupBy(c => new { c.TenSanPham, Ngay = c.HoaDon.Ngay.Date })
-                .Select(g => new
-                {
-                    Ngay = g.Key.Ngay,
-                    TenSanPham = g.Key.TenSanPham ?? "",
-                    SoLuong = g.Sum(x => x.SoLuong),
-                    DoanhThu = g.Sum(x => x.ThanhTien)
-                })
-                .OrderByDescending(x => x.DoanhThu)
-                .ToListAsync();
-
-            // Gán STT sau khi có danh sách
-            var topSanPham = tempList
-                .Select((x, index) => new TopSanPhamDto
-                {
-                    Stt = index + 1,
-                    //Ngay = x.Ngay,
-                    TenSanPham = x.TenSanPham,
-                    SoLuong = x.SoLuong,
-                    DoanhThu = x.DoanhThu,
-                })
-                .ToList();
-
-            return new DashboardDto
-            {
-                TopSanPhams = topSanPham,
-            };
-        }
-
-        [HttpGet("dubao")]
 
         [HttpGet("lichsu-khachhang/{khachHangId}")]
         public async Task<ActionResult<DashboardDto>> GetLichSuKhachHang(Guid khachHangId)
@@ -95,6 +54,7 @@ namespace TraSuaApp.Api.Controllers
                 History = history
             };
         }
+
 
         [HttpGet("thongtin-khachhang/{khachHangId}")]
         public async Task<ActionResult<KhachHangFavoriteDto>> GetThongTinKhachHang(Guid khachHangId)
@@ -158,19 +118,5 @@ namespace TraSuaApp.Api.Controllers
             };
         }
 
-        private string GetThuVietnamese(DayOfWeek dayOfWeek)
-        {
-            return dayOfWeek switch
-            {
-                DayOfWeek.Monday => "Thứ 2",
-                DayOfWeek.Tuesday => "Thứ 3",
-                DayOfWeek.Wednesday => "Thứ 4",
-                DayOfWeek.Thursday => "Thứ 5",
-                DayOfWeek.Friday => "Thứ 6",
-                DayOfWeek.Saturday => "Thứ 7",
-                DayOfWeek.Sunday => "Chủ nhật",
-                _ => ""
-            };
-        }
     }
 }

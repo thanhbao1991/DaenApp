@@ -88,6 +88,10 @@ namespace TraSuaApp.WpfClient.Views
         public Dashboard()
         {
             InitializeComponent();
+
+
+
+
             NotiHelper.TargetTextBlock = ThongBaoTextBlock;
             _gpt = new GPTService(Config.apiChatGptKey);
             _quickOrder = new QuickOrderService(Config.apiChatGptKey);

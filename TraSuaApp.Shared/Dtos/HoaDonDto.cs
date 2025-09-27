@@ -7,6 +7,7 @@ namespace TraSuaApp.Shared.Dtos;
 
 public class HoaDonDto : DtoBase, INotifyPropertyChanged
 {
+    public bool DaThuHoacGhiNo => ConLai == 0m || HasDebt;
 
     [NotMapped]
     public string RowBackground
@@ -43,31 +44,29 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     {
         get
         {
+            var status = TrangThai?.ToLower() ?? "";
+
             if (PhanLoai == "Ship")
             {
                 if (NgayShip == null)
                     return "White"; // chưa đi ship
-                if (DaThuHoacGhiNo == false)
-                    return "Black"; // đi ship + chưa thu
-                else
-                {
-                    if (ConLai > 0)
-                        return "IndianRed";
-                }
-                return "Black"; // đi ship + đã thu
+
+                if (status.Contains("nợ"))
+                    return "IndianRed";
+                else if (status.Contains("chuyển khoản"))
+                    return "Orange";
+
+                return "Black";
             }
             else
             {
-                if (DaThuHoacGhiNo == false)
-                    return "White";
-                else
-                {
-                    if (ConLai > 0)
-                        return "IndianRed";
-                }
+                if (status.Contains("nợ"))
+                    return "IndianRed";
+                else if (status.Contains("chuyển khoản"))
+                    return "Orange";
+
                 return "Black";
             }
-
         }
     }
     public bool IsBlue
@@ -88,6 +87,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public bool UuTien { get; set; }
     [DefaultValue(false)]
     public bool BaoDon { get; set; }
+    public bool HasDebt { get; set; }
     public decimal TongNoKhachHang { get; set; }
     public int TongDiem { get; set; }
     public int DiemThangNay { get; set; }
@@ -138,7 +138,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public decimal TongTien { get; set; }
     public decimal GiamGia { get; set; }
     public decimal ThanhTien { get; set; }
-    public decimal DaThu { get; set; }
+    public decimal DaThu => ThanhTien - ConLai;
     public decimal ConLai { get; set; }
     public int TichDiem => (int)ThanhTien / 10000;
     public virtual ICollection<ChiTietHoaDonDto> ChiTietHoaDons { get; set; } = new List<ChiTietHoaDonDto>();
@@ -149,7 +149,6 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public virtual ICollection<ChiTietHoaDonThanhToan> ChiTietHoaDonThanhToans { get; set; } = new List<ChiTietHoaDonThanhToan>();
     public DateTime? NgayHen { get; set; }
     public bool DaNhanVoucher { get; set; }
-    public bool DaThuHoacGhiNo { get; set; }
     public override string Ten => KhachHangId == null ? TenBan : TenKhachHangText;
     public string TimKiem =>
         $"{Ten?.ToLower() ?? ""} " +
@@ -194,7 +193,6 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
         TongTien = other.TongTien;
         GiamGia = other.GiamGia;
         ThanhTien = other.ThanhTien;
-        DaThu = other.DaThu;
         ConLai = other.ConLai;
 
         // collections
@@ -206,7 +204,6 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
         KhachHang = other.KhachHang;
 
         DaNhanVoucher = other.DaNhanVoucher;
-        DaThuHoacGhiNo = other.DaThuHoacGhiNo;
 
         LastModified = other.LastModified;
         DeletedAt = other.DeletedAt;

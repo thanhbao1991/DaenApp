@@ -12,4 +12,7 @@ public interface IVoucherApi
     Task<Result<VoucherDto>> UpdateAsync(Guid id, VoucherDto dto);
     Task<Result<VoucherDto>> DeleteAsync(Guid id);
     Task<Result<VoucherDto>> RestoreAsync(Guid id);
+
+
+
 }

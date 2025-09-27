@@ -223,7 +223,6 @@
         new Chart(ctx, config);
     </script>
 }
-
 @functions {
     public class TienHienThi
     {
@@ -232,23 +231,32 @@
         public string Tooltip { get; set; } = string.Empty;
     }
 
+    // Hiển thị hoàn toàn theo ConLai (đã đồng bộ backend)
     public TienHienThi GetThongTinTien(TraSuaApp.Shared.Dtos.DoanhThuHoaDonDto item)
     {
         var r = new TienHienThi();
+        var tong = Math.Max(0, item.TongTien);
+        var conLai = Math.Max(0, item.ConLai);
 
-        if (!item.DaThanhToan)
+        if (conLai >= tong) // chưa thu đồng nào
         {
             r.MauNen = "white";
-            r.SoTien = item.TongTien.ToString("N0");
-            r.Tooltip = "Chưa thanh toán";
+            r.SoTien = tong.ToString("N0");
+            r.Tooltip = "Chưa thu";
         }
-        else
-        if (item.DaThanhToan && item.ConLai > 0)
+        else if (conLai > 0) // đã thu một phần (còn nợ)
         {
             r.MauNen = "#ffcccc";
-            r.SoTien = item.ConLai.ToString("N0");
+            r.SoTien = conLai.ToString("N0");
             r.Tooltip = "Khách còn nợ";
         }
+        else // conLai == 0: đã thu đủ
+        {
+            r.MauNen = "#ccffcc";
+            r.SoTien = "0";
+            r.Tooltip = "Đã thu đủ";
+        }
+
         return r;
     }
 }

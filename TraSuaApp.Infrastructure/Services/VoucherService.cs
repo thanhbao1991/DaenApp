@@ -182,4 +182,51 @@ public class VoucherService : IVoucherService
             .Select(x => ToDto(x))
             .ToListAsync();
     }
+
+    public Task<List<VoucherChiTraDto>> GetByOffsetAsync(int offset)
+    {
+        var (start, end) = GetMonthRange(offset);
+        return QueryRange(start, end).ToListAsync();
+    }
+
+    public Task<List<VoucherChiTraDto>> GetByMonthAsync(int year, int month)
+    {
+        var start = new DateTime(year, month, 1);
+        var end = start.AddMonths(1);
+        return QueryRange(start, end).ToListAsync();
+    }
+
+    private static (DateTime start, DateTime end) GetMonthRange(int offset)
+    {
+        var today = DateTime.Today;
+        var firstThis = new DateTime(today.Year, today.Month, 1);
+        var start = firstThis.AddMonths(offset);
+        var end = start.AddMonths(1);
+        return (start, end);
+    }
+
+    private IQueryable<VoucherChiTraDto> QueryRange(DateTime start, DateTime end)
+    {
+        return
+            from v in _context.ChiTietHoaDonVouchers.AsNoTracking()
+            where !v.IsDeleted && v.CreatedAt >= start && v.CreatedAt < end
+            join h0 in _context.HoaDons.AsNoTracking() on v.HoaDonId equals h0.Id into hj
+            from h in hj.DefaultIfEmpty()
+            join k0 in _context.KhachHangs.AsNoTracking() on h.KhachHangId equals k0.Id into kj
+            from k in kj.DefaultIfEmpty()
+            orderby v.CreatedAt descending
+            select new VoucherChiTraDto
+            {
+                Id = v.Id,
+                Ngay = v.CreatedAt,
+                TenVoucher = v.TenVoucher ?? "",
+                GiaTriApDung = v.GiaTriApDung,               // ✅ lấy trực tiếp số tiền thực tế từ DB
+                HoaDonId = v.HoaDonId,
+                VoucherId = v.VoucherId,
+                TenKhachHang = (h.TenKhachHangText ?? k.Ten) ?? ""  // ưu tiên TenKhachHangText
+            };
+    }
+
+
+
 }

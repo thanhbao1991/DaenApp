@@ -89,7 +89,9 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
 
         _context.ChiTietHoaDonThanhToans.Add(entity);
 
+
         await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -dto.SoTien);
+        await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
 
         var afterEntity = await _context.ChiTietHoaDonThanhToans
@@ -162,8 +164,9 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.GhiChu = GhiChu;
         entity.LastModified = DateTime.Now;
 
-        await NoHelper.UpdateSoTienConLaiAsync(_context, oldChiTietHoaDonNoId, oldSoTien);       // hoàn trả số cũ
-        await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -dto.SoTien); // trừ số mới
+        await NoHelper.UpdateSoTienConLaiAsync(_context, oldChiTietHoaDonNoId, oldSoTien);
+        await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -dto.SoTien);
+        await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
 
         var afterEntity = await _context.ChiTietHoaDonThanhToans
@@ -205,6 +208,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.LastModified = DateTime.Now;
 
         await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, entity.SoTien);
+        await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
 
         if (entity.ChiTietHoaDonNoId != null)
@@ -240,6 +244,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.LastModified = DateTime.Now;
 
         await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -entity.SoTien);
+        await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
 
         var afterEntity = await _context.ChiTietHoaDonThanhToans

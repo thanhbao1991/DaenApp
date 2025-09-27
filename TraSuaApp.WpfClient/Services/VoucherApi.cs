@@ -45,4 +45,14 @@ public class VoucherApi : BaseApi, IVoucherApi
     {
         return await GetAsync<List<VoucherDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
     }
+
+
+    public Task<Result<List<VoucherChiTraDto>>> GetByOffset(int offset)
+         => GetAsync<List<VoucherChiTraDto>>($"{BASE_URL}/by-offset?offset={offset}");
+
+    public Task<Result<List<VoucherChiTraDto>>> GetThisMonth()
+        => GetByOffset(0);
+
+    public Task<Result<List<VoucherChiTraDto>>> GetLastMonth()
+        => GetByOffset(-1);
 }

@@ -48,10 +48,8 @@ namespace TraSuaApp.Infrastructure.Services
                 .ToListAsync();
 
             // ====== ĐÃ THU / CHƯA THU ======
-            var daThuQ = _db.ChiTietHoaDonThanhToans
-              .Where(t => t.Ngay == ngay && !t.IsDeleted)
-              .Where(t => t.LoaiThanhToan == "Trong ngày" || t.LoaiThanhToan == "Trả nợ trong ngày");
-
+            var daThuQ = thanhToanQ
+    .Where(t => t.LoaiThanhToan == "Trong ngày" || t.LoaiThanhToan == "Trả nợ trong ngày");
             decimal daThu = await daThuQ.SumAsync(t => (decimal?)t.SoTien) ?? 0m;
 
             decimal ttTienMat_Khanh = await daThuQ
@@ -63,7 +61,8 @@ namespace TraSuaApp.Infrastructure.Services
                 .SumAsync(t => (decimal?)t.SoTien) ?? 0m;
 
             decimal ttBanking = await daThuQ
-                .Where(t => t.TenPhuongThucThanhToan != "Tiền mặt")
+                .Where(t => t.TenPhuongThucThanhToan != "Tiền mặt"
+                )
                 .SumAsync(t => (decimal?)t.SoTien) ?? 0m;
 
             var DaThuChiTiet = new List<LabelValueDto>
@@ -75,23 +74,17 @@ namespace TraSuaApp.Infrastructure.Services
 
             // ====== CHƯA THU (chỉ các hoá đơn CHƯA ghi nợ) ======
             var chuaThuList = await (
-                from h in hoaDonQ
-                    .Include(x => x.ChiTietHoaDonThanhToans)
-                    .Include(x => x.ChiTietHoaDonNos)
-                let daThuHD = h.ChiTietHoaDonThanhToans
-                                .Where(t => !t.IsDeleted)
-                                .Sum(t => (decimal?)t.SoTien) ?? 0m
-                let conLai = h.ThanhTien - daThuHD
-                where conLai > 0 && !h.ChiTietHoaDonNos.Any(n => !n.IsDeleted)
-                select new
-                {
-                    h.Id,
-                    h.KhachHangId,
-                    h.TenKhachHangText,
-                    h.TenBan,
-                    ConLai = conLai
-                }
-            ).ToListAsync();
+               from h in hoaDonQ
+               where h.ConLai > 0 && !h.HasDebt           // ✅ đơn chưa thu và chưa ghi nợ
+               select new
+               {
+                   h.Id,
+                   h.KhachHangId,
+                   h.TenKhachHangText,
+                   h.TenBan,
+                   ConLai = h.ConLai                      // ✅ dùng cột
+               }
+           ).ToListAsync();
 
             decimal chuaThu = chuaThuList.Sum(x => x.ConLai);
 
@@ -139,6 +132,8 @@ namespace TraSuaApp.Infrastructure.Services
 
             decimal traNoTien = await traNoQ
                 .Where(t => t.TenPhuongThucThanhToan == "Tiền mặt")
+                .Where(t => t.GhiChu != "Shipper")
+
                 .SumAsync(t => (decimal?)t.SoTien) ?? 0m;
 
             decimal traNoBank = await traNoQ
@@ -151,7 +146,8 @@ namespace TraSuaApp.Infrastructure.Services
 
             // Chi tiết Trả nợ Tiền mặt
             var traNoTienChiTiet = await (
-                from t in traNoQ.Where(x => x.TenPhuongThucThanhToan == "Tiền mặt")
+                from t in traNoQ.Where(x => x.TenPhuongThucThanhToan == "Tiền mặt" &&
+                x.GhiChu != "Shipper")
                 join h in _db.HoaDons.AsNoTracking() on t.HoaDonId equals h.Id
                 group t by (h.KhachHangId ?? Guid.Empty) into g
                 select new LabelValueDto

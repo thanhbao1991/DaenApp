@@ -1,5 +1,0 @@
-﻿namespace TraSuaApp.Shared.Dtos
-{
-
-
-}

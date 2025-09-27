@@ -70,12 +70,12 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                                     {
                                         var note = hoaDon.GhiChuShipper.ToLower();
 
-                                        if (note.StartsWith("tiền mặt"))
-                                        {
-                                            AudioHelper.Play("tien-mat.mp3");
-                                            NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                        }
-                                        else if (note.StartsWith("chuyển khoản"))
+                                        //if (note.StartsWith("tiền mặt"))
+                                        //{
+                                        //    AudioHelper.Play("tien-mat.mp3");
+                                        //    NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                        //}
+                                        if (note.StartsWith("chuyển khoản"))
                                         {
                                             AudioHelper.Play("chuyen-khoan.mp3");
                                             NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
@@ -107,16 +107,14 @@ public class BaseDataProvider<T> where T : DtoBase, new()
             // Khi mất kết nối SignalR → bật fallback timer
             _signalR.OnDisconnected(() =>
             {
-                NotiHelper.ShowError("⚠️ Mất kết nối SignalR. Sẽ tự reload mỗi 5 phút...");
-                System.Diagnostics.Debug.WriteLine("⚠️ SignalR Disconnected");
+                NotiHelper.ShowError("⚠️ Mất kết nối, Vui lòng chờ...");
                 StartFallbackTimer();
             });
 
             // Khi kết nối lại → tắt fallback timer
             _signalR.OnReconnected(() =>
             {
-                // NotiHelper.Show("✅ Đã kết nối lại SignalR.");
-                System.Diagnostics.Debug.WriteLine("✅ SignalR Reconnected");
+                NotiHelper.Show("✅ Đã kết nối lại");
                 StopFallbackTimer();
             });
         }

@@ -20,6 +20,7 @@
         <Grid>
             <TextBlock
                 Name="ThongBaoTextBlock"
+                Margin="16"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
                 Panel.ZIndex="2"
@@ -148,6 +149,7 @@
                                         <DataTrigger Binding="{Binding DaThuHoacGhiNo}" Value="True">
                                             <Setter Property="FontWeight" Value="Normal" />
                                         </DataTrigger>
+
                                     </Style.Triggers>
                                 </Style>
                             </DataGrid.RowStyle>
@@ -177,7 +179,7 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn
-                                    Width="2*"
+                                    Width="*"
                                     Binding="{Binding Ten}"
                                     Header="Tên bàn/khách">
                                     <DataGridTextColumn.ElementStyle>
@@ -193,12 +195,19 @@
                                     </DataGridTextColumn.ElementStyle>
                                 </DataGridTextColumn>
                                 <DataGridTextColumn
-                                    Width="*"
+                                    Width="150"
                                     Binding="{Binding GhiChuShipper}"
-                                    ElementStyle="{StaticResource RightTextCellStyle}"
-                                    Header="Shipper" />
+                                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                                    Header="" />
+
+                                <!--<DataGridTextColumn
+                                    Width="100"
+                                    Binding="{Binding TrangThai}"
+                                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                                    Header="" />-->
 
                             </DataGrid.Columns>
+
                         </DataGrid>
 
                         <Grid
@@ -678,7 +687,7 @@
                                 Click="TimKiemNhanhThanhToanButton_Click"
                                 Content="Chuyển khoản hôm nay"
                                 Style="{StaticResource ThemButtonStyle}"
-                                Tag="thanh toán chuyển khoản trong ngày" />
+                                Tag="chuyển khoản trong ngày" />
                             <Button
                                 Click="TimKiemNhanhThanhToanButton_Click"
                                 Content="Trả nợ hôm nay"
@@ -775,11 +784,6 @@
 
 
                                 <!--  8. ghi chu  -->
-                                <DataGridTextColumn
-                                    Width="*"
-                                    Binding="{Binding GhiChu}"
-                                    ElementStyle="{StaticResource LeftTextCellStyle}"
-                                    Header="Ghi chú" />
 
                                 <!--  5. Phương thức thanh toán  -->
                                 <DataGridTextColumn
@@ -792,6 +796,11 @@
                                     Binding="{Binding LoaiThanhToan}"
                                     ElementStyle="{StaticResource CenterTextCellStyle}"
                                     Header="Thanh toán" />
+                                <DataGridTextColumn
+                                    Width="*"
+                                    Binding="{Binding GhiChu}"
+                                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                                    Header="Ghi chú" />
 
                                 <DataGridTemplateColumn Header="Xoá">
                                     <DataGridTemplateColumn.CellTemplate>
@@ -1209,10 +1218,15 @@
                         </DataGrid>
                     </Grid>
                 </TabItem>
-                <TabItem Header="Ứng Nhã" Tag="ChiTieuHangNgayNha">
-                    <views:ChiTieuHangNgayNhaTab />
+                <TabItem Header="Ứng Nhã">
+                    <views:ChiTieuNhaTab />
                 </TabItem>
-                <TabItem Header="Voucher " Tag="CongViecNoiBo" />
+                <TabItem Header="Voucher ">
+                    <views:VoucherTab />
+
+                </TabItem>
+
+
 
             </TabControl>
             <Grid

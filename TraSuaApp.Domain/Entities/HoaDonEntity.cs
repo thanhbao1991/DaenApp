@@ -11,6 +11,8 @@ public partial class HoaDon
     public bool UuTien { get; set; }
     [DefaultValue(false)]
     public bool BaoDon { get; set; }
+    public bool HasDebt { get; set; }
+
     public DateTime? NgayShip { get; set; }
     public DateTime? NgayRa { get; set; }
     public string? GhiChu { get; set; }
