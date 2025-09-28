@@ -1,71 +1,50 @@
-using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Shared.Config; // ⚡ import Config
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Services;
-using TraSuaAppWeb.Data;
+using TraSuaAppWeb.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ⚡ Cấu hình logging: chỉ log Warning trở lên cho EF Core
+// Logging gọn
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 
-// Service
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(Config.ConnectionString,
-        opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
+// DbContext (nếu web bạn có dùng)
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 
-// Lấy config cho API
-var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "NOT CONFIGURED";
+// API base url
+var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:7132/";
 
-// ❌ Không in ra console khi start app
-// Console.WriteLine($"[TraSuaAppWeb] Using API BaseUrl = {apiBaseUrl}");
-
-builder.Services.AddHttpClient("Api", client =>
+// HttpClient gọi API + gắn Bearer từ cookie
+builder.Services.AddTransient<ApiAuthHeaderHandler>();
+builder.Services.AddHttpClient("Api", c =>
 {
-    client.BaseAddress = new Uri(apiBaseUrl);
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-});
-
-// Các service khác
-builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
-builder.Services.AddControllers();
+    c.BaseAddress = new Uri(apiBaseUrl);
+    c.DefaultRequestHeaders.Add("Accept", "application/json");
+})
+.AddHttpMessageHandler<ApiAuthHeaderHandler>();
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
 var app = builder.Build();
 
-// ======================
-// BẮT LỖI TOÀN CỤC
-// ======================
-AppDomain.CurrentDomain.UnhandledException += async (sender, e) =>
+// Global error -> Discord
+AppDomain.CurrentDomain.UnhandledException += async (_, e) =>
 {
-    var ex = e.ExceptionObject as Exception;
-    if (ex != null)
-    {
+    if (e.ExceptionObject is Exception ex)
         await DiscordService.SendAsync(DiscordEventType.Admin, $"🟟 **Web UnhandledException**\n```{ex}```");
-    }
 };
-
-TaskScheduler.UnobservedTaskException += async (sender, e) =>
+TaskScheduler.UnobservedTaskException += async (_, e) =>
 {
     if (e.Exception != null)
-    {
         await DiscordService.SendAsync(DiscordEventType.Admin, $"⚠️ **Web UnobservedTaskException**\n```{e.Exception}```");
-    }
 };
 
-// Middleware
-// ⚠️ Tạm tắt HTTPS nếu chưa dùng SSL thật
-// if (!app.Environment.IsDevelopment())
-//     app.UseHttpsRedirection();
-
+// Pipeline
+// if (!app.Environment.IsDevelopment()) app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();

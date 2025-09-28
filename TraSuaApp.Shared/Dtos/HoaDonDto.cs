@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations.Schema;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Shared.Helpers;
 
@@ -9,80 +8,82 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
 {
     public bool DaThuHoacGhiNo => ConLai == 0m || HasDebt;
 
-    [NotMapped]
+
+
+
     public string RowBackground
     {
         get
         {
-            if (PhanLoai == "Ship")
+            var statusRaw = (TrangThai ?? string.Empty).Trim();
+            var statusLower = statusRaw.ToLowerInvariant();
+            var isShip = string.Equals(PhanLoai, "Ship", StringComparison.OrdinalIgnoreCase);
+
+            // ✅ Không nền cho các trạng thái sau (mọi phân loại)
+            if (
+              statusLower.Contains("đã thu") ||
+               statusLower.Contains("đã chuyển khoản") ||
+               statusLower.Contains("ghi nợ") ||
+               statusLower.Contains("nợ một phần") ||
+               // "Không thu" nhưng đã đi ship -> không nền
+               (statusLower.Equals("không thu") && isShip && NgayShip != null)
+                )
             {
-                if (NgayShip == null)
-                    return "DodgerBlue"; // chưa đi ship
-                if (DaThuHoacGhiNo == false)
-                    return "Transparent"; // đi ship + chưa thu
-                else
-                {
-                    if (ConLai > 0)
-                        return "Transparent";
-                }
-                return "Transparent"; // đi ship + đã thu
-            }
-            else
-            {
-                if (DaThuHoacGhiNo == false)
-                    return "DodgerBlue";
-                else
-                {
-                    if (ConLai > 0)
-                        return "Transparent";
-                }
                 return "Transparent";
             }
+
+
+
+            // ✅ Quy tắc đặc biệt cho "Không thu"
+            if (statusRaw.Equals("Không thu", StringComparison.OrdinalIgnoreCase) && isShip)
+            {
+                // Chưa đi ship -> đậm; Đã đi ship -> không nền
+                return NgayShip == null ? "DodgerBlue" : "Transparent";
+            }
+
+            // ❖ Ship: chưa đi -> xanh dương đậm; đã đi -> xanh dương nhạt
+            if (isShip) return NgayShip == null ? "DodgerBlue" : "Transparent";
+
+            // ❖ Khác Ship: chưa thu -> xanh lá đậm; còn lại -> xanh lá nhạt
+            return DaThuHoacGhiNo ? "LightGreen" : "LightGreen";
         }
     }
+
     public string RowForeground
     {
         get
         {
-            var status = TrangThai?.ToLower() ?? "";
+            var statusRaw = (TrangThai ?? string.Empty).Trim();
+            var statusLower = statusRaw.ToLowerInvariant();
+            var isShip = string.Equals(PhanLoai, "Ship", StringComparison.OrdinalIgnoreCase);
 
-            if (PhanLoai == "Ship")
-            {
-                if (NgayShip == null)
-                    return "White"; // chưa đi ship
+            // 1) Ưu tiên màu chữ theo trạng thái
+            if (statusLower.Contains("nợ") && !statusLower.Contains("trả"))
+                return "IndianRed";            // đỏ nếu "nợ" (không phải "trả nợ")
 
-                if (status.Contains("nợ"))
-                    return "IndianRed";
-                else if (status.Contains("chuyển khoản"))
-                    return "Orange";
+            if (statusLower.Contains("chuyển khoản"))
+                return "Orange";                 // vàng nếu "chuyển khoản"
 
-                return "Black";
-            }
-            else
-            {
-                if (status.Contains("nợ"))
-                    return "IndianRed";
-                else if (status.Contains("chuyển khoản"))
-                    return "Orange";
+            // 2) Xác định nền để chọn đen/trắng
+            var noBackground =
+                statusLower.Contains("đã thu") ||
+                statusLower.Contains("đã chuyển khoản") ||
+                statusLower.Contains("ghi nợ") ||
+                statusLower.Contains("nợ một phần") ||
+                // "Không thu" nhưng đã đi ship -> không nền
+                (statusLower.Equals("không thu") && isShip && NgayShip != null);
 
-                return "Black";
-            }
+            // Nền đậm: Ship chưa đi (DodgerBlue) hoặc Không-Ship chưa thu (Green)
+            var bgIsDark = !noBackground && ((isShip && NgayShip == null) || (!isShip && !DaThuHoacGhiNo));
+
+            return bgIsDark ? "Black" : "Black";
         }
     }
-    public bool IsBlue
-    {
-        get
-        {
-            if (PhanLoai == "Ship")
-            {
-                return NgayShip == null;  // chưa đi ship
-            }
-            else
-            {
-                return DaThuHoacGhiNo == false; // chưa thu tại chỗ
-            }
-        }
-    }
+
+
+
+
+
     [DefaultValue(false)]
     public bool UuTien { get; set; }
     [DefaultValue(false)]

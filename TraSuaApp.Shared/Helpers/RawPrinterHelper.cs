@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using System.Text;
 
 namespace TraSuaApp.Shared.Helpers
 {
@@ -51,22 +52,70 @@ namespace TraSuaApp.Shared.Helpers
             SetLastError = true, ExactSpelling = true,
             CallingConvention = CallingConvention.StdCall)]
         public static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBytes, int dwCount, out int dwWritten);
+        public static void ProbeCodePages(string printerName)
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            var enc = Encoding.GetEncoding("windows-1258");
 
+            string sample = "Test VI: Điểm tháng này – ă â ê ô ơ ư đ";
+
+            for (int n = 0; n <= 39; n++)
+            {
+                var header = new byte[] { 0x1B, 0x40, 0x1B, 0x74, (byte)n };
+                var body = enc.GetBytes($"ESC t {n:D2} => {sample}\r\n");
+                var all = new byte[header.Length + body.Length];
+                Buffer.BlockCopy(header, 0, all, 0, header.Length);
+                Buffer.BlockCopy(body, 0, all, header.Length, body.Length);
+
+                IntPtr unmanaged = Marshal.AllocCoTaskMem(all.Length);
+                try
+                {
+                    Marshal.Copy(all, 0, unmanaged, all.Length);
+                    SendBytesToPrinter(printerName, unmanaged, all.Length);
+                }
+                finally
+                {
+                    Marshal.FreeCoTaskMem(unmanaged);
+                }
+            }
+        }
         /// <summary>
         /// Gửi chuỗi ra máy in
         /// </summary>
-        public static bool SendStringToPrinter(string printerName, string data)
+        public static bool SendStringToPrinter(
+                   string printerName,
+                   string data,
+                   string codepage = "windows-1258",
+                   int escposCodePageIndex = 30 // đa số Xprinter: 30 = Vietnamese
+               )
         {
-            IntPtr pBytes;
-            int dwCount = data.Length;
-            pBytes = Marshal.StringToCoTaskMemAnsi(data);
+            // Cho phép lấy các codepage ngoài UTF-8 trong .NET
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            var enc = Encoding.GetEncoding(codepage);
+
+            // Dải lệnh ESC/POS: reset & chọn bảng mã trước khi in
+            // ESC @  -> reset
+            // ESC t n -> chọn bảng mã (n = 30 thường là Vietnamese trên Xprinter)
+            var header = new byte[] { 0x1B, 0x40, 0x1B, 0x74, (byte)escposCodePageIndex };
+
+            // Nội dung hóa đơn
+            byte[] body = enc.GetBytes(data);
+
+            // Ghép và gửi
+            byte[] all = new byte[header.Length + body.Length];
+            Buffer.BlockCopy(header, 0, all, 0, header.Length);
+            Buffer.BlockCopy(body, 0, all, header.Length, body.Length);
+
+            IntPtr unmanaged = Marshal.AllocCoTaskMem(all.Length);
             try
             {
-                return SendBytesToPrinter(printerName, pBytes, dwCount);
+                Marshal.Copy(all, 0, unmanaged, all.Length);
+                return SendBytesToPrinter(printerName, unmanaged, all.Length);
             }
             finally
             {
-                Marshal.FreeCoTaskMem(pBytes);
+                Marshal.FreeCoTaskMem(unmanaged);
             }
         }
 

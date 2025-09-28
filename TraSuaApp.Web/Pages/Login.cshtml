@@ -1,0 +1,41 @@
+@page
+@model TraSuaAppWeb.Pages.LoginModel
+@{
+    ViewData["Title"] = "Đăng nhập";
+    ViewData["HideMenu"] = true;
+
+    // Lấy từ Model thay vì dùng Context trong .cshtml
+    var returnUrl = Model.ReturnUrl ?? "/";
+}
+
+<div class="container mt-5" style="max-width:420px">
+    <div class="card shadow-sm">
+        <div class="card-header fw-bold">Đăng nhập</div>
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(Model.Error))
+            {
+                <div class="alert alert-danger">@Model.Error</div>
+            }
+
+            <form method="post">
+                <input type="hidden" name="ReturnUrl" value="@returnUrl" />
+                <div class="mb-3">
+                    <label class="form-label">Tên đăng nhập</label>
+                    <input asp-for="TaiKhoan" class="form-control" autofocus />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mật khẩu</label>
+                    <input asp-for="MatKhau" type="password" class="form-control" />
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" asp-for="Remember" />
+                        <label class="form-check-label" asp-for="Remember">Ghi nhớ</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Đăng nhập</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

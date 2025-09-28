@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TraSuaApp.Application.Interfaces;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
-
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class DoanhThuController : ControllerBase

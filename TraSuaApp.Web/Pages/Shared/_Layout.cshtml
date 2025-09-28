@@ -1,11 +1,17 @@
 ﻿@inject IConfiguration Configuration
-<!DOCTYPE html>
-<html lang="en">
+@{
+    // đọc tên hiển thị nếu có (được set sau khi login)
+    var displayName = Context.Request.Cookies["display_name"];
+    // tuyệt đối KHÔNG render access_token / api keys ra UI
+}
 
+<!DOCTYPE html>
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>@ViewData["Title"] - WebApplication1</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>@ViewData["Title"] - Denn</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -18,15 +24,138 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-
-
-
     <script>
-        // 🟟 Lấy baseUrl từ appsettings.json
+        // chỉ để client biết API base, không chứa secret
         window.apiBaseUrl = "@Configuration["ApiSettings:BaseUrl"]";
-        console.log("Using API BaseUrl:", window.apiBaseUrl);
-    </script>
 
+                function xemHoaDonKhachHang(khachHangId) {
+            if (!khachHangId) return;
+            const container = document.getElementById('hoaDonContent');
+            container.innerHTML = "<p>Đang tải danh sách...</p>";
+
+            // mở modal
+            new bootstrap.Modal(document.getElementById('hoaDonModal')).show();
+
+            const url = `${window.apiBaseUrl}/api/doanhthu/danhsach?khachHangId=${khachHangId}`;
+            fetch(url)
+                .then(res => res.json())
+                .then(res => {
+                    if (!res.isSuccess) {
+                        container.innerHTML = "<p class='text-danger'>Không tải được danh sách hóa đơn</p>";
+                        return;
+                    }
+
+                    const rows = (res.data || [])
+                        // đảm bảo sắp xếp mới nhất trước
+                        .sort((a, b) => new Date(b.ngayHoaDon) - new Date(a.ngayHoaDon));
+
+                    let html = `
+                        <table class="table table-sm table-bordered">
+                          <thead class="table-light">
+                            <tr>
+                              <th>Ngày giờ</th>
+                              <th>Khách hàng</th>
+                              <th class="text-end">Còn lại</th>
+                            </tr>
+                          </thead>
+                          <tbody>`;
+
+                    rows.forEach(item => {
+                        // ⚠️ dùng đúng camelCase từ API: ngayHoaDon, thongTinHoaDon, tongTien, daThu, conLai, id
+                        const ngayGio = new Date(item.ngayHoaDon).toLocaleString('vi-VN', {
+                            day: '2-digit', month: '2-digit', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                        });
+
+                        const tong = Number(item.tongTien || 0);
+                        const daThu = Number(item.daThu || 0);
+                        const conLai = Number(item.conLai || (tong - daThu));
+
+                        html += `
+                            <tr>
+                                <td>${ngayGio}</td>
+                            <td>
+          ${[item.tenKhachHangText, item.thongTinHoaDon].filter(Boolean).join(" - ")}
+        </td>
+                                <td class="text-end">
+                                    <a href="javascript:void(0)" onclick="xemChiTiet('${item.id}')">
+                                        ${conLai.toLocaleString('vi-VN')} đ
+                                    </a>
+                                </td>
+                            </tr>`;
+                    });
+
+                    html += "</tbody></table>";
+                    container.innerHTML = html;
+                })
+                .catch(err => {
+                    container.innerHTML = "<p class='text-danger'>Lỗi tải dữ liệu</p>";
+                    console.error(err);
+                });
+        }
+
+
+
+
+
+
+              // ================================
+                // 🟟 Hàm xem chi tiết hoá đơn
+                // ================================
+                function xemChiTiet(id) {
+                    if (!id) return;
+                    $('#chiTietContent').html("<p>Đang tải dữ liệu...</p>");
+                    $('#chiTietModal').modal('show');
+
+                    const url = `${window.apiBaseUrl}/api/doanhthu/chitiet?hoaDonId=${id}`;
+                    fetch(url)
+                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.isSuccess) {
+                                $('#chiTietContent').html("<p class='text-danger'>Không tải được chi tiết hóa đơn</p>");
+                                return;
+                            }
+
+                            const list = res.data;
+                            let html = "";
+
+                            const icons = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣"];
+                            function getIcon(num) {
+                                if (num === 10) return "🟟";
+                                if (num < 10) return icons[num];
+                                return num.toString().split("").map(c => icons[parseInt(c)]).join("");
+                            }
+
+                            list.forEach(item => {
+                                const iconSo = getIcon(item.soLuong);
+                                html += `
+                                  <div class="mx-3 d-flex justify-content-between align-items-center item-row py-2 ${item.thanhTien == 0 ? "opacity-25" : ""}">
+                                      <div>
+                                          <span class="item-text">${iconSo} ${item.tenSanPham}</span>
+                                          ${item.ghiChu ? `<div class="item-note">${item.ghiChu}</div>` : ""}
+                                      </div>
+                                      <span class="fw-bold text-danger">${item.thanhTien.toLocaleString()}</span>
+                                  </div>
+                                `;
+                            });
+
+                            const tong = list.reduce((s, x) => s + x.thanhTien, 0);
+                            html += `
+                              <div class="border-top mt-4 pt-2 d-flex justify-content-between fw-bold text-danger">
+                                  <span>Tổng</span>
+                                  <span>${tong.toLocaleString()} đ</span>
+                              </div>
+                            `;
+
+                            $('#chiTietContent').html(html);
+                        })
+                        .catch(err => {
+                            $('#chiTietContent').html("<p class='text-danger'>Lỗi tải dữ liệu</p>");
+                            console.error(err);
+                        });
+                }
+
+    </script>
 </head>
 
 <body>
@@ -38,33 +167,63 @@
                     <button class="navbar-toggler" type="button" id="menuToggleButton" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
+
+                    <a class="navbar-brand fw-bold" asp-page="/Index">Đenn</a>
+
                     <div class="collapse navbar-collapse" id="mainNavbar">
                         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                             <li class="nav-item">
-                                <a class="nav-link" asp-page="/DoanhThuNgay">&#x2B55;
-
-                                    Doanh Thu Ngày</a>
+                                <a class="nav-link" asp-page="/DoanhThuNgay">
+                                    <span class="ico me-2">&#x2B55;</span> <!-- ⭕ -->
+                                    Doanh Thu Ngày
+                                </a>
                             </li>
+
                             <li class="nav-item">
-                                <a class="nav-link" asp-page="/DoanhThuThang">&#x1F4CA;
-                                    Doanh Thu Tháng</a>
+                                <a class="nav-link" asp-page="/DoanhThuThang">
+                                    <span class="ico me-2">&#x1F4CA;</span> <!-- 🟟 -->
+                                    Doanh Thu Tháng
+                                </a>
                             </li>
+
                             <li class="nav-item">
-                                <a class="nav-link" asp-page="/ThongKe">&#x1F4C8; Thống kê</a>
+                                <a class="nav-link" asp-page="/ThongKe">
+                                    <span class="ico me-2">&#x1F4C8;</span> <!-- 🟟 -->
+                                    Thống kê
+                                </a>
                             </li>
+
                             <li class="nav-item">
-                                <a class="nav-link" asp-page="/ChiTieuNha">&#x1F4C8; Ứng Nhã</a>
+                                <a class="nav-link" asp-page="/ChiTieuNha">
+                                    <span class="ico me-2">&#x1F4B8;</span> <!-- 🟟: Ứng Nhã -->
+                                    Ứng Nhã
+                                </a>
                             </li>
+
                             <li class="nav-item">
-                                <a class="nav-link" asp-page="/Voucher">&#x1F4C8; Voucher & Chiết Khấu</a>
+                                <a class="nav-link" asp-page="/Voucher">
+                                    <span class="ico me-2">&#x1F39F;</span> <!-- 🟟: Voucher -->
+                                    Voucher &amp; Chiết khấu
+                                </a>
                             </li>
 
 
+                        </ul>
 
-
-                            <a class="navbar-brand" asp-page="/Index">Đenn</a>
-                   </ul>
+                        <div class="d-flex align-items-center">
+                            @if (!string.IsNullOrWhiteSpace(displayName))
+                            {
+                                <span class="me-3 text-muted">Xin chào, <b>@displayName</b></span>
+                                <form asp-page="/Login" asp-page-handler="Logout" method="post" class="d-inline">
+                                    <button class="btn btn-outline-secondary btn-sm" type="submit">Đăng xuất</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <a class="btn btn-outline-primary btn-sm" asp-page="/Login">Đăng nhập</a>
+                            }
                         </div>
+                    </div>
                 </div>
             </nav>
         }
@@ -81,322 +240,24 @@
         <footer class="border-top footer text-muted"></footer>
     }
 
-
     @await RenderSectionAsync("Scripts", required: false)
 
     <script>
-
-        const hoaDonDaChon = new Set();
-
-        function chonHoaDon(item) {
-            const id = item.dataset.id;
-            const dot = item.querySelector('.timeline-dot');
-
-            dot.classList.toggle("selected");
-            if (hoaDonDaChon.has(id))
-                hoaDonDaChon.delete(id);
-            else
-                hoaDonDaChon.add(id);
-
-            console.log("Đã chọn:", Array.from(hoaDonDaChon));
-        }
-
-        function capNhatBankingNhieu() {
-            if (hoaDonDaChon.size === 0)
-                return alert("Vui lòng chọn ít nhất một hoá đơn để banking.");
-
-            if (!confirm("Bạn chắc chắn muốn cập nhật các hoá đơn này là đã chuyển khoản?"))
-                return;
-
-            fetch(`DanhSachHoaDon?handler=CapNhatBankingNhieu`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                },
-                body: JSON.stringify(Array.from(hoaDonDaChon))
-            })
-                .then(res => {
-                    if (res.redirected) window.location.href = res.url;
-                    else return res.json();
-                })
-                .then(data => {
-                    if (data?.success === false)
-                        alert("❌ Banking thất bại.");
-                });
-        }
-
-        function capNhatBanking(id) {
-            console.log("Gọi capNhatBanking", id);
-            if (!id) return alert("Không xác định hoá đơn!");
-            if (!confirm("Bạn chắc chắn muốn Banking hoá đơn này?")) return;
-
-            fetch(`/ChiTietHoaDon?handler=CapNhatBanking&id=${id}`, {
-                method: 'POST',
-                headers: {
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                }
-            })
-                .then(res => {
-                    if (res.redirected) window.location.href = res.url;
-                    else return res.json();
-                })
-                .then(data => {
-                    if (data?.success === false) alert("❌ Cập nhật thất bại.");
-                });
-        }
-
-        function capNhatNo(id) {
-            if (!id) return alert("Không xác định hoá đơn!");
-            if (!confirm("Bạn chắc chắn muốn Ghi nợ hoá đơn này?")) return;
-
-            fetch(`/ChiTietHoaDon?handler=CapNhatNo&id=${id}`, {
-                method: 'POST',
-                headers: {
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                }
-            })
-                .then(res => {
-                    if (res.redirected) window.location.href = res.url;
-                    else return res.json();
-                })
-                .then(data => {
-                    if (data?.success === false) alert("❌ Ghi nợ thất bại.");
-                });
-        }
-
-
-
-
-
-
-
-        function xemHoaDonKhachHang(khachHangId) {
-    if (!khachHangId) return;
-    const container = document.getElementById('hoaDonContent');
-    container.innerHTML = "<p>Đang tải danh sách...</p>";
-
-    // mở modal
-    new bootstrap.Modal(document.getElementById('hoaDonModal')).show();
-
-    const url = `${window.apiBaseUrl}/api/doanhthu/danhsach?khachHangId=${khachHangId}`;
-    fetch(url)
-        .then(res => res.json())
-        .then(res => {
-            if (!res.isSuccess) {
-                container.innerHTML = "<p class='text-danger'>Không tải được danh sách hóa đơn</p>";
-                return;
-            }
-
-            const rows = (res.data || [])
-                // đảm bảo sắp xếp mới nhất trước
-                .sort((a, b) => new Date(b.ngayHoaDon) - new Date(a.ngayHoaDon));
-
-            let html = `
-                <table class="table table-sm table-bordered">
-                  <thead class="table-light">
-                    <tr>
-                      <th>Ngày giờ</th>
-                      <th>Khách hàng</th>
-                      <th class="text-end">Còn lại</th>
-                    </tr>
-                  </thead>
-                  <tbody>`;
-
-            rows.forEach(item => {
-                // ⚠️ dùng đúng camelCase từ API: ngayHoaDon, thongTinHoaDon, tongTien, daThu, conLai, id
-                const ngayGio = new Date(item.ngayHoaDon).toLocaleString('vi-VN', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                });
-
-                const tong = Number(item.tongTien || 0);
-                const daThu = Number(item.daThu || 0);
-                const conLai = Number(item.conLai || (tong - daThu));
-
-                html += `
-                    <tr>
-                        <td>${ngayGio}</td>
-                    <td>
-  ${[item.tenKhachHangText, item.thongTinHoaDon].filter(Boolean).join(" - ")}
-</td>
-                        <td class="text-end">
-                            <a href="javascript:void(0)" onclick="xemChiTiet('${item.id}')">
-                                ${conLai.toLocaleString('vi-VN')} đ
-                            </a>
-                        </td>
-                    </tr>`;
-            });
-
-            html += "</tbody></table>";
-            container.innerHTML = html;
-        })
-        .catch(err => {
-            container.innerHTML = "<p class='text-danger'>Lỗi tải dữ liệu</p>";
-            console.error(err);
-        });
-}
-
-
-
-
-
-
-      // ================================
-        // 🟟 Hàm xem chi tiết hoá đơn
-        // ================================
-        function xemChiTiet(id) {
-            if (!id) return;
-            $('#chiTietContent').html("<p>Đang tải dữ liệu...</p>");
-            $('#chiTietModal').modal('show');
-
-            const url = `${window.apiBaseUrl}/api/doanhthu/chitiet?hoaDonId=${id}`;
-            fetch(url)
-                .then(res => res.json())
-                .then(res => {
-                    if (!res.isSuccess) {
-                        $('#chiTietContent').html("<p class='text-danger'>Không tải được chi tiết hóa đơn</p>");
-                        return;
-                    }
-
-                    const list = res.data;
-                    let html = "";
-
-                    const icons = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣"];
-                    function getIcon(num) {
-                        if (num === 10) return "🟟";
-                        if (num < 10) return icons[num];
-                        return num.toString().split("").map(c => icons[parseInt(c)]).join("");
-                    }
-
-                    list.forEach(item => {
-                        const iconSo = getIcon(item.soLuong);
-                        html += `
-                          <div class="mx-3 d-flex justify-content-between align-items-center item-row py-2 ${item.thanhTien == 0 ? "opacity-25" : ""}">
-                              <div>
-                                  <span class="item-text">${iconSo} ${item.tenSanPham}</span>
-                                  ${item.ghiChu ? `<div class="item-note">${item.ghiChu}</div>` : ""}
-                              </div>
-                              <span class="fw-bold text-danger">${item.thanhTien.toLocaleString()}</span>
-                          </div>
-                        `;
-                    });
-
-                    const tong = list.reduce((s, x) => s + x.thanhTien, 0);
-                    html += `
-                      <div class="border-top mt-4 pt-2 d-flex justify-content-between fw-bold text-danger">
-                          <span>Tổng</span>
-                          <span>${tong.toLocaleString()} đ</span>
-                      </div>
-                    `;
-
-                    $('#chiTietContent').html(html);
-                })
-                .catch(err => {
-                    $('#chiTietContent').html("<p class='text-danger'>Lỗi tải dữ liệu</p>");
-                    console.error(err);
-                });
-        }
-    </script>
-
-
-
-    @* hien thi toôl tip *@
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-                new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-        });
-    </script>
-
-    @* convert sang hinh anh *@
-    <script>
-        function captureImage() {
-            const sourceElement = document.getElementById("modalContent");
-
-            html2canvas(sourceElement, {
-                scale: 4,
-                useCORS: true
-            }).then(canvas => {
-                const imageData = canvas.toDataURL("image/png");
-
-                const img = document.createElement("img");
-                img.id = "capturedImage";
-                img.src = imageData;
-                img.alt = "Ảnh đã chụp";
-                img.style.border = "2px dashed #2196F3";
-                img.style.marginTop = "10px";
-                img.style.maxWidth = "100%";
-                img.style.borderRadius = "6px";
-
-                const preview = document.getElementById("imagePreview");
-                preview.innerHTML = "";
-                preview.appendChild(img);
-            });
-        }
-    </script>
-
-    @* Đong mo menu  *@
-    <script>
+        // Đóng/mở menu trên mobile
         window.addEventListener('load', function () {
             const menuButton = document.getElementById('menuToggleButton');
             const navbar = document.getElementById('mainNavbar');
-
             let isMenuOpen = false;
-
             menuButton.addEventListener('click', function () {
-                if (isMenuOpen) {
-                    navbar.classList.remove('show');
-                } else {
-                    navbar.classList.add('show');
-                }
+                navbar.classList.toggle('show');
                 isMenuOpen = !isMenuOpen;
             });
-
-            // Đợi trang tải xong mới gắn sự kiện đóng menu khi click link
             document.querySelectorAll('#mainNavbar .nav-link').forEach(link => {
                 link.addEventListener('click', function () {
-                    setTimeout(() => {
-                        navbar.classList.remove('show');
-                        isMenuOpen = false;
-                    }, 200); // Cho delay nhẹ để hiệu ứng mượt mà hơn
+                    setTimeout(() => { navbar.classList.remove('show'); isMenuOpen = false; }, 200);
                 });
             });
         });
     </script>
-
-    @* Phat hien hoa don moi*@
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.0/signalr.min.js"></script>
-    <script>
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/hoadonhub")
-            .build();
-        connection.on("BankingMoi", function (hoaDon) {
-            alert(`Banking Mới\n${hoaDon.ten_khach} - ${hoaDon.tong_tien.toLocaleString()}₫`);
-        });
-
-        connection.on("GhiNoMoi", function (hoaDon) {
-            alert(`Ghi Nợ Mới\n${hoaDon.ten_khach} - ${hoaDon.tong_tien.toLocaleString()}₫`);
-        });
-
-        connection.on("HoaDonMoi", function (hoaDon) {
-            alert(`Hoá Đơn Mới\n${hoaDon.ten_khach} - ${hoaDon.tong_tien.toLocaleString()}₫`);
-            // Hoặc cập nhật danh sách hóa đơn, DOM...
-        });
-        connection.start().catch(err => console.error(err.toString()));
-    </script>
-
-    @* thong bao loi *@
-    <script>
-        @if (ViewData["SqlError"] != null)
-            {
-                <text>
-                    alert("@ViewData["SqlError"]");
-                </text>
-        }
-    </script>
 </body>
-
 </html>

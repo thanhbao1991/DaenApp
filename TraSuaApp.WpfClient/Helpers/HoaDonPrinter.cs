@@ -4,7 +4,10 @@ using System.Windows;
 using System.Windows.Controls;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
-
+// ở đầu file HoaDonPrinter.cs
+// ở đầu file HoaDonPrinter.cs
+using D = System.Drawing;
+using DP = System.Drawing.Printing;
 namespace TraSuaApp.WpfClient.Helpers
 {
     public static class HoaDonPrinter
@@ -16,8 +19,6 @@ namespace TraSuaApp.WpfClient.Helpers
 
             if (hoaDon.KhachHangId != null)
             {
-                //      sb.AppendLine($"Khách hàng: {hoaDon.TenKhachHangText} - {hoaDon.DiaChiText} - {FormatPhone(hoaDon.SoDienThoaiText)}");
-
                 var starText = StarHelper.GetStarText(hoaDon.DiemThangNay);
                 if (!string.IsNullOrEmpty(starText))
                     sb.AppendLine($"Điểm tháng này: {starText}");
@@ -50,10 +51,7 @@ namespace TraSuaApp.WpfClient.Helpers
             {
                 if (includeLine) sb.AppendLine("---------------------------");
                 AddRow(sb, "Công nợ:", hoaDon.TongNoKhachHang);
-                //if (hoaDon.TongNoKhachHang != hoaDon.ConLai)
-                {
-                    AddRow(sb, "TỔNG:", hoaDon.TongNoKhachHang + hoaDon.ConLai);
-                }
+                AddRow(sb, "TỔNG:", hoaDon.TongNoKhachHang + hoaDon.ConLai);
             }
 
             if (includeLine) sb.AppendLine("===========================");
@@ -103,15 +101,11 @@ namespace TraSuaApp.WpfClient.Helpers
                 if (item.ToppingDtos != null && item.ToppingDtos.Any())
                 {
                     foreach (var tp in item.ToppingDtos)
-                    {
                         sb.AppendLine($"      + {tp.Ten} x{tp.SoLuong} ({tp.Gia:N0})");
-                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(item.NoteText))
-                {
                     sb.AppendLine($"      * {item.NoteText}");
-                }
 
                 sb.AppendLine();
             }
@@ -131,8 +125,9 @@ namespace TraSuaApp.WpfClient.Helpers
         public static void Print(HoaDonDto hoaDon)
         {
             var content = BuildContent(hoaDon);
-            string defaultPrinter = new PrinterSettings().PrinterName;
-            RawPrinterHelper.SendStringToPrinter(defaultPrinter, content);
+            string printerName = new PrinterSettings().PrinterName;
+
+            PrintViaGdi(content, printerName, "Consolas", 10f);
         }
 
         public static void Copy(HoaDonDto hoaDon)
@@ -172,12 +167,53 @@ namespace TraSuaApp.WpfClient.Helpers
             wnd.ShowDialog();
         }
 
+        // ===== GDI printing =====
+        private static string[]? _lines;
+        private static int _lineIndex;
+        private static float _lineHeight;
+
+        private static void PrintViaGdi(string content, string printerName, string fontName, float fontSize)
+        {
+            _lines = content.Replace("\r", "").Split('\n');
+            _lineIndex = 0;
+
+            var doc = new DP.PrintDocument();
+            doc.PrinterSettings.PrinterName = printerName;
+
+            // (Tùy chọn) giảm lề về 0 để in sát
+            doc.DefaultPageSettings.Margins = new DP.Margins(0, 0, 0, 0);
+
+            doc.PrintPage += (s, e) =>
+            {
+                using var font = new D.Font(fontName, fontSize, D.FontStyle.Regular, D.GraphicsUnit.Point);
+                _lineHeight = font.GetHeight(e.Graphics);
+
+                float y = 0;
+                var fmt = new D.StringFormat(D.StringFormatFlags.NoWrap); // giữ nguyên layout từng dòng
+
+                while (_lineIndex < _lines!.Length)
+                {
+                    if (y + _lineHeight > e.MarginBounds.Bottom)
+                    {
+                        e.HasMorePages = true; // sang trang tiếp
+                        return;
+                    }
+
+                    var line = _lines[_lineIndex++];
+                    e.Graphics.DrawString(line, font, D.Brushes.Black,
+                        new D.RectangleF(0, y, e.MarginBounds.Width, _lineHeight), fmt);
+                    y += _lineHeight;
+                }
+
+                e.HasMorePages = false;
+            };
+
+            doc.Print();
+        }
         // ===== Helpers =====
         private static string FormatPhone(string? phone)
         {
-            if (string.IsNullOrWhiteSpace(phone))
-                return "";
-
+            if (string.IsNullOrWhiteSpace(phone)) return "";
             var digits = new string(phone.Where(char.IsDigit).ToArray());
 
             if (digits.Length == 10)
@@ -196,8 +232,6 @@ namespace TraSuaApp.WpfClient.Helpers
             if (space < 1) space = 1;
             sb.AppendLine(leftPart + new string(' ', space) + rightPart);
         }
-
-
 
         private static void AddCenterText(StringBuilder sb, string text, bool bold = false, int width = 32)
         {

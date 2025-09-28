@@ -142,6 +142,7 @@
                             IsReadOnly="True"
                             MouseDoubleClick="HoaDonDataGrid_MouseDoubleClick"
                             SelectionChanged="HoaDonDataGrid_SelectionChangedAsync"
+                            VirtualizingPanel.VirtualizationMode="Standard"
                             Visibility="Visible">
                             <DataGrid.RowStyle>
                                 <Style TargetType="DataGridRow">

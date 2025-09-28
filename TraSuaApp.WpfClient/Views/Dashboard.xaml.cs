@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing.Printing;
 using System.IO;
 using System.Net.Http.Json;
 using System.Reflection;
@@ -1560,13 +1561,21 @@ namespace TraSuaApp.WpfClient.Views
         {
             _fullHoaDonList = await UiListHelper.BuildListAsync(
             AppProviders.HoaDons.Items.Where(x => !x.IsDeleted),
-            // snap => snap.Where(x => x.Ngay == today || !x.DaThuHoacGhiNo)
-            snap => snap.Where(x => x.Ngay.Date == today.Date || !x.DaThuHoacGhiNo)
-            .OrderByDescending(x => x.UuTien)
-                        .ThenByDescending(x => x.IsBlue)
-                        .ThenBy(x => (x.TrangThai == "Chưa thu" || x.TrangThai == "Thu một phần") ? 0 : 1)
-                        .ThenByDescending(x => x.NgayGio)
+            snap => snap.Where(x => x.Ngay.Date == today.Date || x.DaThuHoacGhiNo)
+                .OrderBy(x =>
+                {
+                    // Ưu tiên nhóm
+                    if (x.UuTien) return 0; // Nhóm 1: Đơn ưu tiên
+                    if (x.PhanLoai == "Ship" && x.NgayShip == null) return 1; // Nhóm 2: Ship chưa đi
+                    if (x.PhanLoai != "Ship" &&
+                        (x.TrangThai == "Chưa thu" || x.TrangThai == "Thu một phần" || x.TrangThai == "Chuyển khoản một phần"))
+                        return 2; // Nhóm 3: Đơn khác ship chưa thu
+                    if (x.PhanLoai == "Ship" && x.NgayShip != null && !x.DaThuHoacGhiNo) return 3; // Nhóm 4 (mới): Ship đã đi nhưng chưa thu
+                    return 4; // Nhóm 5: Các đơn còn lại
+                })
+                .ThenByDescending(x => x.NgayGio) // trong nhóm thì sắp theo thời gian mới nhất
         );
+
 
             ApplyHoaDonFilter();
         }
@@ -1589,16 +1598,7 @@ namespace TraSuaApp.WpfClient.Views
 
         private async void MenuItem_Click(object sender, RoutedEventArgs e)
         {
-            //try
-            //{
-            //    string reply = await _gpt.AskAsync("xin chào");
-            //    MessageBox.Show(reply, "GPT-4o-mini");
-            //}
-            //catch (Exception ex)
-            //{
-            //    MessageBox.Show("❌ Lỗi: " + ex.Message);
-            //}
-
+            RawPrinterHelper.ProbeCodePages(new PrinterSettings().PrinterName);
 
 
         }
@@ -2367,24 +2367,29 @@ namespace TraSuaApp.WpfClient.Views
 
             icon.Visibility = Visibility.Visible;
 
-            // ⚠ Dùng tên IconChar CHẮC CHẮN có trong FA6:
-            // App        → MobileScreenButton
-            // Tại Chỗ    → Chair
-            // Mv        → BagShopping
-            // Ship (moto)→ Motorcycle
+
             switch (hd.PhanLoai)
             {
                 case "App":
-                    icon.Icon = IconChar.MobileScreenButton;
-                    icon.Foreground = (Brush)System.Windows.Application.Current.Resources["DangerBrush"];
+                    if (hd.TrangThai == "Chưa thu")
+                    {
+                        icon.Icon = IconChar.MobileScreenButton;
+                        icon.Foreground = (Brush)System.Windows.Application.Current.Resources["DangerBrush"];
+                    }
                     break;
                 case "Tại Chỗ":
-                    icon.Icon = IconChar.Chair;
-                    icon.Foreground = (Brush)System.Windows.Application.Current.Resources["SuccessBrush"];
+                    if (hd.TrangThai == "Chưa thu")
+                    {
+                        icon.Icon = IconChar.Chair;
+                        icon.Foreground = (Brush)System.Windows.Application.Current.Resources["SuccessBrush"];
+                    }
                     break;
                 case "Mv":
-                    icon.Icon = IconChar.BagShopping;
-                    icon.Foreground = (Brush)System.Windows.Application.Current.Resources["WarningBrush"];
+                    if (hd.TrangThai == "Chưa thu")
+                    {
+                        icon.Icon = IconChar.BagShopping;
+                        icon.Foreground = (Brush)System.Windows.Application.Current.Resources["WarningBrush"];
+                    }
                     break;
                 case "Ship":
                     icon.Icon =
@@ -2396,7 +2401,6 @@ namespace TraSuaApp.WpfClient.Views
                     hd.NgayShip == null ?
                     (Brush)System.Windows.Application.Current.Resources["PrimaryBrush"] :
                     (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
-
                     break;
                 default:
                     icon.Icon = IconChar.Circle; // fallback
@@ -2413,7 +2417,8 @@ namespace TraSuaApp.WpfClient.Views
                 AutoReverse = true,
                 RepeatBehavior = RepeatBehavior.Forever
             };
-            icon.BeginAnimation(UIElement.OpacityProperty, blink);
+            if (hd.PhanLoai == "Ship" && hd.NgayShip == null)
+                icon.BeginAnimation(UIElement.OpacityProperty, blink);
         }
 
 
