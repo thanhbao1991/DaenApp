@@ -31,6 +31,7 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="OpenAI" Version="2.4.0" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
     <PackageReference Include="Selenium.WebDriver" Version="4.35.0" />
     <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="139.0.7258.6800" />
   </ItemGroup>

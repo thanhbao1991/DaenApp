@@ -1,68 +1,33 @@
-﻿using System.Drawing.Printing;
+﻿using System.Diagnostics;
+using System.Drawing.Drawing2D;   // NearestNeighbor
+using System.Drawing.Imaging;
+using System.Globalization;
+using System.IO;
+using System.Net;
 using System.Text;
-using System.Windows;
-using System.Windows.Controls;
+using System.Text.RegularExpressions;
+using System.Windows;             // Clipboard
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
-// ở đầu file HoaDonPrinter.cs
-// ở đầu file HoaDonPrinter.cs
 using D = System.Drawing;
 using DP = System.Drawing.Printing;
+
 namespace TraSuaApp.WpfClient.Helpers
 {
     public static class HoaDonPrinter
     {
-        // ===== Hàm build phần Footer (tài chính) cho UI và In =====
-        public static string BuildFooterContent(HoaDonDto hoaDon, bool includeLine = true)
-        {
-            StringBuilder sb = new StringBuilder();
+        // ====== CẤU HÌNH CỐ ĐỊNH ======
+        private const string BANK_BIN = "970415";                 // VietinBank (tham khảo cho link)
+        private const string BANK_NAME = "VIETINBANK";
+        private const string ACCOUNT_NO = "0889664007";
+        private const string ACCOUNT_NAME = "TRAN THI HUYEN TRANG";
+        // CDN keys ưu tiên cho VietinBank:
+        private static readonly string[] _bankKeys = new[] { "ICB", "vietinbank", BANK_BIN };
 
-            if (hoaDon.KhachHangId != null)
-            {
-                var starText = StarHelper.GetStarText(hoaDon.DiemThangNay);
-                if (!string.IsNullOrEmpty(starText))
-                    sb.AppendLine($"Điểm tháng này: {starText}");
-
-                var starText2 = StarHelper.GetStarText(hoaDon.DiemThangTruoc);
-                if (!string.IsNullOrEmpty(starText2))
-                    sb.AppendLine($"Điểm tháng trước: {starText2}");
-            }
-
-            if (includeLine) sb.AppendLine("---------------------------");
-
-            if (hoaDon.GiamGia > 0)
-            {
-                AddRow(sb, "TỔNG CỘNG:", hoaDon.TongTien);
-                AddRow(sb, "Giảm giá:", hoaDon.GiamGia);
-                AddRow(sb, "Thành tiền:", hoaDon.ThanhTien);
-            }
-            else
-            {
-                AddRow(sb, "Thành tiền:", hoaDon.ThanhTien);
-            }
-
-            if (hoaDon.DaThu > 0)
-            {
-                AddRow(sb, "Đã thu:", hoaDon.DaThu);
-                AddRow(sb, "Còn lại:", hoaDon.ConLai);
-            }
-
-            if (hoaDon.TongNoKhachHang > 0)
-            {
-                if (includeLine) sb.AppendLine("---------------------------");
-                AddRow(sb, "Công nợ:", hoaDon.TongNoKhachHang);
-                AddRow(sb, "TỔNG:", hoaDon.TongNoKhachHang + hoaDon.ConLai);
-            }
-
-            if (includeLine) sb.AppendLine("===========================");
-
-            return sb.ToString();
-        }
-
-        // ===== Hàm build full bill (header + chi tiết + footer) =====
+        // ===== Build full bill (text) =====
         private static string BuildContent(HoaDonDto hoaDon)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             // Header
             AddCenterText(sb, "ĐENN", true);
@@ -72,7 +37,8 @@ namespace TraSuaApp.WpfClient.Helpers
 
             if (hoaDon.KhachHangId != null)
             {
-                sb.AppendLine($"Khách hàng: {hoaDon.TenKhachHangText} - {hoaDon.DiaChiText} - {FormatPhone(hoaDon.SoDienThoaiText)}");
+                sb.AppendLine($"Khách hàng: {hoaDon.TenKhachHangText}");
+                sb.AppendLine($"{hoaDon.DiaChiText} - {FormatPhone(hoaDon.SoDienThoaiText)}");
 
                 var starText = StarHelper.GetStarText(hoaDon.DiemThangNay);
                 if (!string.IsNullOrEmpty(starText))
@@ -110,7 +76,7 @@ namespace TraSuaApp.WpfClient.Helpers
                 sb.AppendLine();
             }
 
-            // Footer
+            // Footer (đÃ bỏ phần điểm để tránh trùng lặp)
             sb.Append(BuildFooterContent(hoaDon, true));
 
             // Cảm ơn
@@ -121,96 +87,319 @@ namespace TraSuaApp.WpfClient.Helpers
             return sb.ToString();
         }
 
-        // ===== Public Methods =====
+        public static string BuildFooterContent(HoaDonDto hoaDon, bool includeLine = true)
+        {
+            var sb = new StringBuilder();
+
+            if (includeLine) sb.AppendLine("---------------------------");
+
+            if (hoaDon.GiamGia > 0)
+            {
+                AddRow(sb, "TỔNG CỘNG:", hoaDon.TongTien);
+                AddRow(sb, "Giảm giá:", hoaDon.GiamGia);
+                AddRow(sb, "Thành tiền:", hoaDon.ThanhTien);
+            }
+            else
+            {
+                AddRow(sb, "Thành tiền:", hoaDon.ThanhTien);
+            }
+
+            if (hoaDon.DaThu > 0)
+            {
+                AddRow(sb, "Đã thu:", hoaDon.DaThu);
+                AddRow(sb, "Còn lại:", hoaDon.ConLai);
+            }
+
+            if (hoaDon.TongNoKhachHang > 0)
+            {
+                if (includeLine) sb.AppendLine("---------------------------");
+                AddRow(sb, "Công nợ:", hoaDon.TongNoKhachHang);
+                AddRow(sb, "TỔNG:", hoaDon.TongNoKhachHang + hoaDon.ConLai);
+            }
+
+            if (includeLine) sb.AppendLine("===========================");
+            return sb.ToString();
+        }
+
+        // ===== Public: In bill kèm QR ONLINE ở CUỐI (fail -> text-only) =====
         public static void Print(HoaDonDto hoaDon)
         {
-            var content = BuildContent(hoaDon);
-            string printerName = new PrinterSettings().PrinterName;
-
-            PrintViaGdi(content, printerName, "Consolas", 10f);
+            Print(hoaDon, maHoaDon: BuildMaHoaDon(hoaDon), accountName: ACCOUNT_NAME);
         }
 
-        public static void Copy(HoaDonDto hoaDon)
+        public static void Print(HoaDonDto hoaDon, string maHoaDon, string? accountName)
         {
             var content = BuildContent(hoaDon);
-            Clipboard.SetText(content);
+            string printerName = new DP.PrinterSettings().PrinterName;
+
+            decimal amount = GetAmount(hoaDon); // ưu tiên TỔNG nợ nếu có
+            string ten = GetTenKhach(hoaDon);
+            string addInfo = BuildAddInfo(ten, amount, maHoaDon);
+
+            // thử tải QR ONLINE
+            var qrOnline = TryDownloadVietQrOnline(amount, addInfo, accountName ?? ACCOUNT_NAME);
+
+            if (qrOnline != null)
+            {
+                // in bill + QR ở cuối (canh trái, vừa cột chữ, 2 dòng trống)
+                PrintViaGdi(content, printerName, "Consolas", 10f, qrOnline);
+            }
+            else
+            {
+                // KHÔNG có QR → chèn block text CK ở CUỐI bill rồi in
+                var vi = CultureInfo.GetCultureInfo("vi-VN");
+                var sb = new StringBuilder(content);
+                sb.AppendLine("---------------------------");
+                sb.AppendLine("THÔNG TIN CHUYỂN KHOẢN:");
+                sb.AppendLine($"{BANK_NAME} - {ACCOUNT_NO}");
+                if (!string.IsNullOrWhiteSpace(accountName ?? ACCOUNT_NAME)) sb.AppendLine(accountName ?? ACCOUNT_NAME);
+                sb.AppendLine($"Số tiền: {amount.ToString("#,0₫", vi)}");
+                sb.AppendLine($"Nội dung: {addInfo}");
+                sb.AppendLine("===========================");
+
+                PrintViaGdi(sb.ToString(), printerName, "Consolas", 10f, qrBmp: null);
+            }
         }
 
-        public static void Preview(HoaDonDto hoaDon, Window owner)
+        // ======== GỬI ZALO: text hóa đơn + QR ONLINE (nếu lấy được) ========
+        public static string BuildBillTextOnly(HoaDonDto hd)
+            => BuildContent(hd).TrimEnd();
+
+        public static string? SaveQrOnlineForZalo(HoaDonDto hd, string? path = null)
         {
-            var content = BuildContent(hoaDon);
+            decimal amount = GetAmount(hd);
+            string ma = BuildMaHoaDon(hd);
+            string ten = GetTenKhach(hd);
+            string addInfo = BuildAddInfo(ten, amount, ma);
 
-            var tb = new TextBox
-            {
-                Text = content,
-                FontFamily = new System.Windows.Media.FontFamily("Consolas"),
-                FontSize = 13,
-                Height = 400,
-                IsReadOnly = true,
-                TextWrapping = TextWrapping.Wrap,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto
-            };
+            using var bmp = TryDownloadVietQrOnline(amount, addInfo, ACCOUNT_NAME); // ONLINE ONLY
+            if (bmp == null) return null;
 
-            var wnd = new Window
-            {
-                Title = "Xem trước hóa đơn",
-                Owner = owner,
-                Width = 300,
-                ResizeMode = ResizeMode.NoResize,
-                WindowStyle = WindowStyle.SingleBorderWindow,
-                SizeToContent = SizeToContent.Height,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                Content = tb
-            };
-
-            wnd.ShowDialog();
+            path ??= Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                                  $"QR_{ma}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+            bmp.Save(path, ImageFormat.Png);
+            return path;
         }
 
-        // ===== GDI printing =====
+        // gói “luôn copy clipboard”: trả về (đường dẫn ảnh QR nếu có, message)
+        public static (string? qrPng, string message) PrepareZaloTextAndQr_AlwaysCopy(HoaDonDto hd, bool openExplorer = true)
+        {
+            string msg = BuildBillTextOnly(hd);
+            string? png = null;
+
+            try { png = SaveQrOnlineForZalo(hd); } catch { png = null; }
+
+            // Nếu không có QR -> bổ sung block CK vào text
+            if (png == null)
+                msg = AppendTransferBlock(msg, hd);
+
+            // Copy clipboard (best-effort)
+            try { Clipboard.SetText(msg); }
+            catch
+            {
+                try { System.Windows.Application.Current?.Dispatcher?.Invoke(() => Clipboard.SetText(msg)); } catch { }
+            }
+
+            if (openExplorer && png != null)
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{png}\"") { UseShellExecute = true });
+                }
+                catch { }
+            }
+
+            return (png, msg);
+        }
+
+        private static string AppendTransferBlock(string billText, HoaDonDto hd)
+        {
+            decimal amount = GetAmount(hd);
+            string ma = BuildMaHoaDon(hd);
+            string ten = GetTenKhach(hd);
+            string addInfo = BuildAddInfo(ten, amount, ma);
+            var vi = CultureInfo.GetCultureInfo("vi-VN");
+
+            var sb = new StringBuilder();
+            sb.AppendLine(billText);
+            sb.AppendLine("---------------------------");
+            sb.AppendLine("THÔNG TIN CHUYỂN KHOẢN");
+            sb.AppendLine($"{BANK_NAME} - {ACCOUNT_NO}");
+            sb.AppendLine(ACCOUNT_NAME);
+            sb.AppendLine($"Số tiền: {amount.ToString("#,0₫", vi)}");
+            sb.AppendLine($"Nội dung: {addInfo}");
+            return sb.ToString().TrimEnd();
+        }
+
+        // ===== In text + QR (canh trái, ngang bằng cột chữ, thêm 2 dòng trống) =====
         private static string[]? _lines;
         private static int _lineIndex;
-        private static float _lineHeight;
+        private static D.Bitmap? _qr;
+        private static bool _qrPrinted;
 
-        private static void PrintViaGdi(string content, string printerName, string fontName, float fontSize)
+        private static void PrintViaGdi(string content, string printerName, string fontName, float fontSize, D.Bitmap? qrBmp)
         {
             _lines = content.Replace("\r", "").Split('\n');
             _lineIndex = 0;
+            _qr = qrBmp;                    // có thể null
+            _qrPrinted = (_qr == null);
 
             var doc = new DP.PrintDocument();
             doc.PrinterSettings.PrinterName = printerName;
-
-            // (Tùy chọn) giảm lề về 0 để in sát
             doc.DefaultPageSettings.Margins = new DP.Margins(0, 0, 0, 0);
 
             doc.PrintPage += (s, e) =>
             {
+                var g = e.Graphics;
+                g.PageUnit = D.GraphicsUnit.Pixel;
+
+                // MarginBounds -> PX
+                int leftPx = (int)Math.Round(e.MarginBounds.Left / 100f * g.DpiX);
+                int topPx = (int)Math.Round(e.MarginBounds.Top / 100f * g.DpiY);
+                int widthPx = (int)Math.Round(e.MarginBounds.Width / 100f * g.DpiX);
+                int bottomPx = (int)Math.Round(e.MarginBounds.Bottom / 100f * g.DpiY);
+
                 using var font = new D.Font(fontName, fontSize, D.FontStyle.Regular, D.GraphicsUnit.Point);
-                _lineHeight = font.GetHeight(e.Graphics);
+                int lineHpx = (int)Math.Ceiling(font.GetHeight(g));
 
-                float y = 0;
-                var fmt = new D.StringFormat(D.StringFormatFlags.NoWrap); // giữ nguyên layout từng dòng
+                g.SmoothingMode = SmoothingMode.None;
+                g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
 
+                var fmt = new D.StringFormat(D.StringFormatFlags.NoWrap);
+                int y = topPx;
+
+                // 1) In toàn bộ text
                 while (_lineIndex < _lines!.Length)
                 {
-                    if (y + _lineHeight > e.MarginBounds.Bottom)
-                    {
-                        e.HasMorePages = true; // sang trang tiếp
-                        return;
-                    }
+                    if (y + lineHpx > bottomPx) { e.HasMorePages = true; return; }
+                    g.DrawString(_lines[_lineIndex++], font, D.Brushes.Black,
+                                 new D.RectangleF(leftPx, y, widthPx, lineHpx), fmt);
+                    y += lineHpx;
+                }
 
-                    var line = _lines[_lineIndex++];
-                    e.Graphics.DrawString(line, font, D.Brushes.Black,
-                        new D.RectangleF(0, y, e.MarginBounds.Width, _lineHeight), fmt);
-                    y += _lineHeight;
+                // 2) In QR ở cuối – ép vừa chiều cao còn lại, thêm 2 dòng trống
+                if (!_qrPrinted && _qr != null)
+                {
+                    int leftPadPx = 0;                                 // sát cột chữ
+                    int rightPadPx = 0;
+                    int blank2Lines = 2 * lineHpx;                        // thêm 2 dòng trống
+                    int safeBottomPx = (int)Math.Round(0.1f * g.DpiY);     // ~2.5mm
+
+                    int maxWidthPx = Math.Max(60, widthPx - leftPadPx - rightPadPx);
+                    int maxHeightPx = Math.Max(60, bottomPx - y - safeBottomPx - blank2Lines);
+
+                    int finalMaxPx = Math.Max(80, Math.Min(maxWidthPx, maxHeightPx));
+
+                    int quietPx = Math.Clamp(finalMaxPx / 12, 12, 24);
+                    int corePx = Math.Max(64, finalMaxPx - 2 * quietPx);
+
+                    using var crisp = MakeCrispQr(_qr, corePx, extraQuietPx: quietPx);
+
+                    int x = leftPx + leftPadPx;
+                    int w = Math.Min(crisp.Width, finalMaxPx);
+                    int h = Math.Min(crisp.Height, finalMaxPx);
+
+                    g.DrawImage(crisp, new D.Rectangle(x, y, w, h));
+                    y += h + blank2Lines;   // 2 dòng trống để xé giấy
+
+                    _qrPrinted = true;
                 }
 
                 e.HasMorePages = false;
             };
 
+            doc.EndPrint += (s, e) => { _qr?.Dispose(); _qr = null; };
             doc.Print();
         }
+
+        // helper phóng nét QR với quiet-zone
+        private static D.Bitmap MakeCrispQr(D.Bitmap src, int targetPx, int extraQuietPx = 24)
+        {
+            var bmp = new D.Bitmap(targetPx + extraQuietPx * 2, targetPx + extraQuietPx * 2, D.Imaging.PixelFormat.Format24bppRgb);
+            using var g = D.Graphics.FromImage(bmp);
+            g.Clear(D.Color.White);
+            g.SmoothingMode = SmoothingMode.None;
+            g.InterpolationMode = InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = PixelOffsetMode.Half;
+
+            g.DrawImage(src, new D.Rectangle(extraQuietPx, extraQuietPx, targetPx, targetPx));
+            return bmp;
+        }
+
+        // ====== QR ONLINE (CDN) ======
+        private static string BuildVietQrCdnUrl(string bankKey, decimal amount, string addInfo, string? accountName = ACCOUNT_NAME)
+        {
+            long vnd = (long)Math.Round(amount, 0, MidpointRounding.AwayFromZero);
+            string url = $"https://img.vietqr.io/image/{bankKey}-{ACCOUNT_NO}-qr_only.png" +
+                         $"?amount={vnd}&addInfo={Uri.EscapeDataString(addInfo)}&logo=false";
+            if (!string.IsNullOrWhiteSpace(accountName))
+                url += $"&accountName={Uri.EscapeDataString(accountName!)}";
+            return url;
+        }
+
+        private static D.Bitmap? TryDownloadVietQrOnline(decimal amount, string addInfo, string? accountName = ACCOUNT_NAME)
+        {
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+
+            using var wc = new WebClient();
+            foreach (var key in _bankKeys)
+            {
+                try
+                {
+                    var url = BuildVietQrCdnUrl(key, amount, addInfo, accountName);
+                    byte[] bytes = wc.DownloadData(url);
+                    using var ms = new MemoryStream(bytes);
+                    return new D.Bitmap(ms);
+                }
+                catch { /* thử key khác */ }
+            }
+            return null;
+        }
+
         // ===== Helpers =====
+        // Lấy số tiền tạo QR: nếu có công nợ => TỔNG = Công nợ + Còn lại; ngược lại tiền hóa đơn
+        private static decimal GetAmount(HoaDonDto hd)
+        {
+            var bill = hd.ConLai > 0 ? hd.ConLai : hd.ThanhTien;
+            if (hd.TongNoKhachHang > 0) return hd.TongNoKhachHang + hd.ConLai; // ConLai=0 nếu đã thu hết
+            return bill;
+        }
+
+        private static string BuildMaHoaDon(HoaDonDto hd)
+            => $"HD{hd.Id.ToString().Substring(0, 8)}";
+
+        private static string GetTenKhach(HoaDonDto hd)
+            => !string.IsNullOrWhiteSpace(hd.TenKhachHangText) ? hd.TenKhachHangText : "KHACH";
+
+        // Nội dung: "<ten> thanh toan <so-tien> (HDxxxxxx)"
+        private static string BuildAddInfo(string ten, decimal amount, string maHoaDon)
+        {
+            var vi = CultureInfo.GetCultureInfo("vi-VN");
+            string soTien = amount.ToString("#,0", vi); // không kèm đơn vị
+            string raw = $"{ten} thanh toan {soTien} ({maHoaDon})";
+            return ToAsciiNoDiacritics(raw, upper: true);
+        }
+        private static string ToAsciiNoDiacritics(string? s, bool upper = true)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return string.Empty;
+
+            // Khử dấu: Unicode Normalization + bỏ NonSpacingMark
+            var norm = s.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder(norm.Length);
+            foreach (var ch in norm)
+            {
+                var cat = CharUnicodeInfo.GetUnicodeCategory(ch);
+                if (cat != UnicodeCategory.NonSpacingMark) sb.Append(ch);
+            }
+
+            // Chuẩn hóa: Đ/đ -> D/d, gộp khoảng trắng
+            var res = sb.ToString().Normalize(NormalizationForm.FormC)
+                           .Replace('Đ', 'D').Replace('đ', 'd');
+            res = Regex.Replace(res, @"\s+", " ").Trim();
+
+            return upper ? res.ToUpperInvariant() : res;
+        }
         private static string FormatPhone(string? phone)
         {
             if (string.IsNullOrWhiteSpace(phone)) return "";
@@ -224,7 +413,7 @@ namespace TraSuaApp.WpfClient.Helpers
                 return phone;
         }
 
-        private static void AddRow(StringBuilder sb, string left, decimal right, int width = 30)
+        private static void AddRow(StringBuilder sb, string left, decimal right, int width = 27)
         {
             string leftPart = left;
             string rightPart = right.ToString("N0");

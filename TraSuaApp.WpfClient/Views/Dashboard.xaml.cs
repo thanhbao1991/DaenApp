@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
-using System.Drawing.Printing;
 using System.IO;
 using System.Net.Http.Json;
 using System.Reflection;
@@ -1598,8 +1597,6 @@ namespace TraSuaApp.WpfClient.Views
 
         private async void MenuItem_Click(object sender, RoutedEventArgs e)
         {
-            RawPrinterHelper.ProbeCodePages(new PrinterSettings().PrinterName);
-
 
         }
 
@@ -1999,7 +1996,8 @@ namespace TraSuaApp.WpfClient.Views
                     return;
                 }
 
-                HoaDonPrinter.Copy(result.Data);
+                var (qrPng, message) = HoaDonPrinter.PrepareZaloTextAndQr_AlwaysCopy(result.Data);
+
                 NotiHelper.Show("Đã copy, ctrl v để gửi!");
             }, requireSelectedHoaDon: true);
         }
