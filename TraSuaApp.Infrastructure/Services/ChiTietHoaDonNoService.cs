@@ -58,6 +58,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
 
         _context.ChiTietHoaDonNos.Add(entity);
 
+        await _context.SaveChangesAsync();
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
 
@@ -96,6 +97,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         entity.KhachHangId = dto.KhachHangId;
         entity.LastModified = DateTime.Now;
 
+        await _context.SaveChangesAsync();
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
 
@@ -128,6 +130,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         entity.DeletedAt = null;
         entity.LastModified = DateTime.Now;
 
+        await _context.SaveChangesAsync();
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
 
@@ -140,12 +143,12 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
 
     public async Task<List<ChiTietHoaDonNoDto>> GetAllAsync()
     {
-        var fromDate = DateTime.Today.AddDays(-1);
+        var fromDate = DateTime.Today.AddDays(0);
 
         return await _context.ChiTietHoaDonNos
             .AsNoTracking()
-            .Where(x => !x.IsDeleted
-                && (x.SoTienConLai > 0 || x.Ngay >= fromDate))
+            .Where(x => !x.IsDeleted)
+            .Where(x => x.SoTienConLai > 0 || x.Ngay >= fromDate)
             .OrderByDescending(x => x.LastModified)
             .Select(x => new ChiTietHoaDonNoDto
             {
@@ -167,51 +170,6 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
             .ToListAsync();
     }
 
-    //public async Task<List<ChiTietHoaDonNoDto>> GetAllAsync()
-    //{
-    //    var today = DateTime.Today;
-    //    var fromDate = today.AddDays(-1);
-
-    //    var list = await _context.ChiTietHoaDonNos.AsNoTracking()
-    //        .Where(x => !x.IsDeleted)
-    //        .Select(x => new
-    //        {
-    //            x.Id,
-    //            x.Ngay,
-    //            x.NgayGio,
-    //            x.HoaDonId,
-    //            x.KhachHangId,
-    //            TenKhachHang = x.KhachHang != null ? x.KhachHang.Ten : x.Id.ToString(), // 🟟 Ưu tiên tên khách
-    //            x.SoTienNo,
-    //            x.SoTienConLai,
-    //            x.GhiChu,
-    //            x.CreatedAt,
-    //            x.LastModified,
-    //            x.IsDeleted
-    //        })
-    //        .ToListAsync();
-
-    //    return list
-    //        .Where(x => x.SoTienConLai > 0    // 🟟 còn nợ → lấy tất cả
-    //                 || x.Ngay >= fromDate)           // 🟟 trả đủ → chỉ lấy 3 ngày gần đây
-    //        .Select(x => new ChiTietHoaDonNoDto
-    //        {
-    //            Id = x.Id,
-    //            Ngay = x.Ngay,
-    //            NgayGio = x.NgayGio,
-    //            HoaDonId = x.HoaDonId,
-    //            KhachHangId = x.KhachHangId,
-    //            Ten = x.TenKhachHang,                 // 🟟 gán tên khách
-    //            SoTienNo = x.SoTienNo,
-    //            SoTienConLai = x.SoTienConLai,
-    //            GhiChu = x.GhiChu,
-    //            CreatedAt = x.CreatedAt,
-    //            LastModified = x.LastModified,
-    //            IsDeleted = x.IsDeleted
-    //        })
-    //        .OrderByDescending(x => x.LastModified)
-    //        .ToList();
-    //}
 
     public async Task<ChiTietHoaDonNoDto?> GetByIdAsync(Guid id)
     {
@@ -268,6 +226,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         entity.DeletedAt = DateTime.Now;
         entity.LastModified = DateTime.Now;
 
+        await _context.SaveChangesAsync();
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
 

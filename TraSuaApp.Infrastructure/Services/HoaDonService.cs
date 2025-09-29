@@ -102,7 +102,7 @@ public class HoaDonService : IHoaDonService
 
         HoaDon entity = new HoaDon
         {
-            Id = Guid.NewGuid(),
+            Id = dto.Id,
             MaHoaDon = string.IsNullOrWhiteSpace(dto.MaHoaDon)
                 ? MaHoaDonGenerator.Generate()
                 : dto.MaHoaDon,
@@ -259,6 +259,8 @@ public class HoaDonService : IHoaDonService
         await UpdateTichDiemAsync(entity.KhachHangId, entity.Id, thanhTien, now);
 
         // ✅ đồng bộ lại theo thực tế thanh toán/nợ (nếu đã có)
+        await _context.SaveChangesAsync();
+
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
         await _context.SaveChangesAsync();
 
@@ -1074,6 +1076,7 @@ public class HoaDonService : IHoaDonService
         entity.GhiChuShipper = $"Tí nữa chuyển khoản: {conLai:N0} đ";
         entity.LastModified = now;
 
+        await _context.SaveChangesAsync();
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
         await _context.SaveChangesAsync();
 
@@ -1183,13 +1186,16 @@ public class HoaDonService : IHoaDonService
         entity.GhiChuShipper = $"{ghiChuCu}Trả nợ: {traNoCu:N0} đ";
         entity.LastModified = now;
 
-
-        // recalc cho tất cả hoá đơn cũ + hoá đơn hiện tại
-        var tasks = affectedInvoiceIds.Select(hid => HoaDonHelper.RecalcConLaiAsync(_context, hid));
-        await Task.WhenAll(tasks);
-        await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
         await _context.SaveChangesAsync();
 
+        // ⚠️ EF Core không cho query song song trên cùng DbContext → chạy tuần tự
+        foreach (var hid in affectedInvoiceIds)
+        {
+            await HoaDonHelper.RecalcConLaiAsync(_context, hid);
+        }
+        await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
+
+        await _context.SaveChangesAsync();
         var after = ToDto(entity);
 
         await DiscordService.SendAsync(DiscordEventType.DuyKhanh, $"{entity.TenKhachHangText} {entity.GhiChuShipper}");
@@ -1242,6 +1248,7 @@ public class HoaDonService : IHoaDonService
         entity.GhiChuShipper = $"Ghi nợ: {soTienNo:N0} đ";
         entity.LastModified = now;
 
+        await _context.SaveChangesAsync();
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
         await _context.SaveChangesAsync();
 
@@ -1313,6 +1320,7 @@ public class HoaDonService : IHoaDonService
         entity.GhiChuShipper = $"Tiền mặt: {soTienThu:N0} đ";
         entity.LastModified = now;
 
+        await _context.SaveChangesAsync();
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
         await _context.SaveChangesAsync();
 
@@ -1379,6 +1387,7 @@ public class HoaDonService : IHoaDonService
 
         entity.LastModified = now;
 
+        await _context.SaveChangesAsync();
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
         await _context.SaveChangesAsync();
 

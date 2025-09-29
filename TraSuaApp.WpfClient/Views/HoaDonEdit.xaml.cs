@@ -407,12 +407,15 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             }
         }
 
+        private bool _isSaving = false;
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            ErrorTextBlock.Text = "";
-            SaveButton.IsBusy = true;   // ✅ bật loading
-
+            if (_isSaving) return;           // ⬅️ chặn lần gọi thứ 2
+            _isSaving = true;
+            SaveButton.IsBusy = true;
+            SaveButton.IsEnabled = false;
+            NoiDungForm.IsEnabled = false;
             try
             {
                 if (TaiChoRadio.IsChecked == true)
@@ -546,6 +549,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 DongBoTatCaTopping();
 
 
+                if (Model.Id == Guid.Empty) Model.Id = Guid.NewGuid();
 
                 Result<HoaDonDto> result;
                 if (Model.Id == Guid.Empty)
@@ -582,10 +586,28 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             finally
             {
                 SaveButton.IsBusy = false;
+                SaveButton.IsEnabled = true;
+                NoiDungForm.IsEnabled = true;
+                _isSaving = false;
+            }
 
+        }
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                CloseButton_Click(null!, null!);
+                return;
+            }
+            else
+            if (e.Key == Key.Enter)
+            {
+                if (KhachHangSearchBox.IsPopupOpen || SanPhamSearchBox.IsPopupOpen) return;
+                if (_isSaving) return;       // ⬅️ đang lưu thì bỏ
+                e.Handled = true;
+                SaveButton_Click(SaveButton, new RoutedEventArgs());
             }
         }
-
         private void DongBoTatCaTopping()
         {
             foreach (var chiTiet in Model.ChiTietHoaDons)
@@ -613,44 +635,33 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
         private void ResetSanPhamInputs()
         {
+            _isLoadingNote = true;               // ⬅️ chặn cập nhật note khi reset
 
-            // Reset số lượng
-
-            // Bỏ chọn tất cả radio trong Tab Note
-            foreach (var radio in this.FindVisualChildren<RadioButton>().Where(r => r.GroupName != "LoaiDon"))
+            try
             {
-                radio.IsChecked = false;
+                // Clear tất cả radio (trừ nhóm LoaiDon)
+                foreach (var radio in this.FindVisualChildren<RadioButton>().Where(r => r.GroupName != "LoaiDon"))
+                    radio.IsChecked = false;
+
+                // Tuỳ bạn: nếu muốn TextBox ghi chú tự do cũng reset về rỗng
+                NoteTuDoTextBox.Text = string.Empty;
+
+                // Reset topping
+                if (ToppingListBox.ItemsSource is List<ToppingDto> ds)
+                {
+                    foreach (var t in ds) t.SoLuong = 0;
+                    ToppingListBox.Items.Refresh();
+                }
             }
-
-            if (ToppingListBox.ItemsSource is List<ToppingDto> ds)
+            finally
             {
-                foreach (var t in ds) t.SoLuong = 0;
-                ToppingListBox.Items.Refresh();
+                _isLoadingNote = false;          // mở lại cập nhật note
             }
         }
         private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 
 
-        private void Window_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Escape)
-            {
-                CloseButton_Click(null!, null!);
-                return;
-            }
 
-            if (e.Key == Key.Enter)
-            {
-                // ❗ Nếu KhachHangSearchBox vẫn đang mở popup → KHÔNG lưu
-                if (KhachHangSearchBox.IsPopupOpen)
-                    return;
-                if (SanPhamSearchBox.IsPopupOpen)
-                    return;
-
-
-                SaveButton_Click(SaveButton, new RoutedEventArgs());
-            }
-        }
 
         private void ToppingMinus_Click(object sender, RoutedEventArgs e)
         {
@@ -911,9 +922,11 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
         private void CapNhatChiTietSanPham(int soLuong, bool forceNewLine = false)
         {
-            string currentNote = string.Join(", ", this.FindVisualChildren<RadioButton>()
-                .Where(r => r.IsChecked == true && r.GroupName != "LoaiDon")
-                .Select(r => r.Content.ToString()));
+            string currentNote = string.Join(" # ",
+         this.FindVisualChildren<RadioButton>()
+             .Where(r => r.IsChecked == true && r.GroupName != "LoaiDon")
+             .Select(r => r.Content?.ToString() ?? "")
+     );
 
             ChiTietHoaDonDto? existing = null;
 

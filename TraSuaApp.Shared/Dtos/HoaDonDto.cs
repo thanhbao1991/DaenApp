@@ -44,8 +44,10 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
             // ❖ Ship: chưa đi -> xanh dương đậm; đã đi -> xanh dương nhạt
             if (isShip) return NgayShip == null ? "DodgerBlue" : "Transparent";
 
+            if (PhanLoai == "App") return "LightCoral";
+
             // ❖ Khác Ship: chưa thu -> xanh lá đậm; còn lại -> xanh lá nhạt
-            return DaThuHoacGhiNo ? "LightGreen" : "LightGreen";
+            return DaThuHoacGhiNo ? "GreenYellow" : "GreenYellow";
         }
     }
 

@@ -26,7 +26,7 @@ public static class LoyaltyService
 
         // Điểm tháng trước
         var firstDayPrev = firstDayCurrent.AddMonths(-1);
-        var lastDayPrev = firstDayCurrent.AddDays(-1);
+        var lastDayPrev = firstDayCurrent.AddDays(0);
         int diemThangTruoc = await db.ChiTietHoaDonPoints.AsNoTracking()
             .Where(p => !p.IsDeleted && p.KhachHangId == khachHangId &&
                         p.Ngay >= firstDayPrev &&

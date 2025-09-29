@@ -1,20 +1,22 @@
-﻿// namespace TraSuaApp.Infrastructure.Helpers
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Infrastructure;
 
 public static class HoaDonHelper
 {
     public static async Task RecalcConLaiAsync(AppDbContext db, Guid hoaDonId)
     {
-        var h = await db.HoaDons
-            .Include(x => x.ChiTietHoaDonNos.Where(n => !n.IsDeleted))
-            .Include(x => x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted))
-            .FirstOrDefaultAsync(x => x.Id == hoaDonId);
-
+        // Lấy entity TRONG TRACKING để cập nhật fields
+        var h = await db.HoaDons.FirstOrDefaultAsync(x => x.Id == hoaDonId);
         if (h == null) return;
 
-        var sumNo = h.ChiTietHoaDonNos.Sum(n => n.SoTienConLai);
-        var sumPaid = h.ChiTietHoaDonThanhToans.Sum(t => t.SoTien);
+        // ✅ TÍNH LẠI trực tiếp từ DB, không dựa vào navigation đã cache
+        var sumNo = await db.ChiTietHoaDonNos
+            .Where(n => n.HoaDonId == hoaDonId && !n.IsDeleted)
+            .SumAsync(n => (decimal?)n.SoTienConLai) ?? 0m;
+
+        var sumPaid = await db.ChiTietHoaDonThanhToans
+            .Where(t => t.HoaDonId == hoaDonId && !t.IsDeleted)
+            .SumAsync(t => (decimal?)t.SoTien) ?? 0m;
 
         if (sumNo > 0)
         {
@@ -28,6 +30,5 @@ public static class HoaDonHelper
         }
 
         h.LastModified = DateTime.Now;
-        //  await db.SaveChangesAsync();
     }
 }

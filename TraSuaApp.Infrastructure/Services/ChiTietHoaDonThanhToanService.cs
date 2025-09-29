@@ -64,10 +64,12 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
 
         if (dto.SoTien > soTienConLai)
             return Result<ChiTietHoaDonThanhToanDto>.Failure($"Số tiền còn lại cần thu: {soTienConLai.ToString("N0")}.");
-        string GhiChu = dto.SoTien == soTienConLai ? "Thanh toán đủ" : $"Thanh toán thiếu";
 
+        string GhiChu = dto.SoTien == soTienConLai ? "Thanh toán đủ" : "Thanh toán thiếu";
 
         var now = DateTime.Now;
+        var ngayGio = dto.NgayGio == default ? now : dto.NgayGio;
+        var ngay = dto.Ngay == default ? now.Date : dto.Ngay;
 
         var entity = new ChiTietHoaDonThanhToan
         {
@@ -75,9 +77,9 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             SoTien = dto.SoTien,
             LoaiThanhToan = dto.LoaiThanhToan,
             ChiTietHoaDonNoId = dto.ChiTietHoaDonNoId,
-            NgayGio = dto.NgayGio,
+            NgayGio = ngayGio,
             TenPhuongThucThanhToan = dto.TenPhuongThucThanhToan,
-            Ngay = dto.Ngay,
+            Ngay = ngay,
             HoaDonId = dto.HoaDonId,
             KhachHangId = dto.KhachHangId,
             PhuongThucThanhToanId = dto.PhuongThucThanhToanId,
@@ -89,8 +91,13 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
 
         _context.ChiTietHoaDonThanhToans.Add(entity);
 
-
+        // Cập nhật công nợ (nếu có)
         await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -dto.SoTien);
+
+        // 🟟 FLUSH TRƯỚC
+        await _context.SaveChangesAsync();
+
+        // Recalc ConLai/HasDebt
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
 
@@ -101,17 +108,16 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
 
         var after = ToDto(afterEntity);
 
-
         if (entity.ChiTietHoaDonNoId != null)
             await DiscordService.SendAsync(
                 DiscordEventType.TraNo,
                 $"{entity.SoTien:N0}đ {dto.Ten}"
             );
-        //else
-        //    await DiscordService.SendAsync(
-        //        DiscordEventType.ThanhToan,
-        //        $"{entity.SoTien:N0}đ {dto.Ten}"
-        //    );
+        // else
+        //     await DiscordService.SendAsync(
+        //         DiscordEventType.ThanhToan,
+        //         $"{entity.SoTien:N0}đ {dto.Ten}"
+        //     );
 
         return Result<ChiTietHoaDonThanhToanDto>.Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
             .WithId(after.Id)
@@ -138,8 +144,8 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             return Result<ChiTietHoaDonThanhToanDto>.Failure("Hóa đơn không tồn tại.");
 
         var tongDaThanhToan = await _context.ChiTietHoaDonThanhToans
-            .Where(x => x.HoaDonId == dto.HoaDonId && !x.IsDeleted && x.Id != dto.Id)
-            .SumAsync(x => x.SoTien);
+         .Where(x => x.HoaDonId == dto.HoaDonId && !x.IsDeleted && x.Id != id) // ✅
+         .SumAsync(x => x.SoTien);
 
         var soTienConLai = hoaDon.ThanhTien - tongDaThanhToan;
 
@@ -148,12 +154,14 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
 
         string GhiChu = dto.SoTien == soTienConLai ? "Thanh toán đủ" : "Thanh toán thiếu";
 
-
         var before = ToDto(entity);
 
+        // Giữ lại thông tin cũ để recalc đúng
+        var oldHoaDonId = entity.HoaDonId;
         var oldSoTien = entity.SoTien;
         var oldChiTietHoaDonNoId = entity.ChiTietHoaDonNoId;
 
+        // Cập nhật entity
         entity.SoTien = dto.SoTien;
         entity.ChiTietHoaDonNoId = dto.ChiTietHoaDonNoId;
         entity.LoaiThanhToan = dto.LoaiThanhToan;
@@ -164,9 +172,21 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.GhiChu = GhiChu;
         entity.LastModified = DateTime.Now;
 
+        // Hoàn tác công nợ cũ + áp dụng công nợ mới (nếu có)
         await NoHelper.UpdateSoTienConLaiAsync(_context, oldChiTietHoaDonNoId, oldSoTien);
         await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -dto.SoTien);
+
+        // 🟟 FLUSH TRƯỚC
+        await _context.SaveChangesAsync();
+
+        // Nếu đổi hóa đơn, recalc cả hai; nếu không, recalc hóa đơn hiện tại
+        if (oldHoaDonId != entity.HoaDonId)
+        {
+            await HoaDonHelper.RecalcConLaiAsync(_context, oldHoaDonId);
+        }
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
+
+        // LƯU KẾT QUẢ RECALC
         await _context.SaveChangesAsync();
 
         var afterEntity = await _context.ChiTietHoaDonThanhToans
@@ -207,7 +227,13 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.DeletedAt = DateTime.Now;
         entity.LastModified = DateTime.Now;
 
+        // Trả lại công nợ nếu trước đó cấn trừ vào nợ
         await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, entity.SoTien);
+
+        // 🟟 FLUSH TRƯỚC
+        await _context.SaveChangesAsync();
+
+        // Recalc hóa đơn
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
 
@@ -221,7 +247,6 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
                 DiscordEventType.ThanhToan,
                 $"[Xoá] {entity.SoTien:N0}đ {entity.Id} "
             );
-
 
         return Result<ChiTietHoaDonThanhToanDto>.Success(before, $"Xoá {_friendlyName.ToLower()} thành công.")
             .WithId(before.Id)
@@ -243,7 +268,13 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.DeletedAt = null;
         entity.LastModified = DateTime.Now;
 
+        // Cấn lại công nợ khi khôi phục
         await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -entity.SoTien);
+
+        // 🟟 FLUSH TRƯỚC
+        await _context.SaveChangesAsync();
+
+        // Recalc hóa đơn
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
 
@@ -261,7 +292,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
     public async Task<List<ChiTietHoaDonThanhToanDto>> GetAllAsync()
     {
         var today = DateTime.Today;
-        var fromDate = today.AddDays(-1);
+        var fromDate = today.AddDays(0);
 
         return await _context.ChiTietHoaDonThanhToans.AsNoTracking()
             .Where(x => !x.IsDeleted && x.Ngay >= fromDate)
