@@ -549,25 +549,31 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 DongBoTatCaTopping();
 
 
-                if (Model.Id == Guid.Empty) Model.Id = Guid.NewGuid();
-
-                Result<HoaDonDto> result;
-                if (Model.Id == Guid.Empty)
+                // trước khi gọi API
+                bool isNew = Model.Id == Guid.Empty;
+                if (isNew)
                 {
-                    // 🟟 Tạo mới hóa đơn
-                    result = await _api.CreateAsync(Model);
-
-                    if (result.IsSuccess && result.Data?.KhachHangId != null)
-                    {
-                        // ✅ Reload lại danh sách khách hàng từ DB để chắc chắn có khách mới
-                        await AppProviders.KhachHangs.ReloadAsync();
-                    }
+                    Model.Id = Guid.NewGuid();
                 }
 
+                Result<HoaDonDto> result;
+                if (isNew)
+                {
+                    // tạo mới
+                    result = await _api.CreateAsync(Model);
+                    if (result.IsSuccess && result.Data?.KhachHangId != null)
+                        await AppProviders.KhachHangs.ReloadAsync();
+                }
                 else if (Model.IsDeleted)
+                {
                     result = await _api.RestoreAsync(Model.Id);
+                }
                 else
+                {
+                    // cập nhật
                     result = await _api.UpdateAsync(Model.Id, Model);
+                }
+
 
                 if (!result.IsSuccess)
                 {

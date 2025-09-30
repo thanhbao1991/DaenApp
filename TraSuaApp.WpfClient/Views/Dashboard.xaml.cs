@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
@@ -25,11 +24,7 @@ using TraSuaApp.WpfClient.SettingsViews;
 
 namespace TraSuaApp.WpfClient.Views
 {
-    public class KetQuaDto
-    {
-        public string? Ten { get; set; } = "";
-        public decimal? GiaTri { get; set; }
-    }
+
 
     public class DebounceDispatcher
     {
@@ -64,7 +59,29 @@ namespace TraSuaApp.WpfClient.Views
 
     public partial class Dashboard : Window
     {
-        public ObservableCollection<KetQuaDto> KetQua { get; set; } = new();
+        private NotiWindow? _notiWin;
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            _notiWin = new NotiWindow { Owner = this };
+            PositionNoti();
+            _notiWin.Show();
+        }
+
+        protected override void OnLocationChanged(EventArgs e) { base.OnLocationChanged(e); PositionNoti(); }
+        protected override void OnRenderSizeChanged(SizeChangedInfo s) { base.OnRenderSizeChanged(s); PositionNoti(); }
+        protected override void OnStateChanged(EventArgs e) { base.OnStateChanged(e); PositionNoti(); }
+
+        private void PositionNoti()
+        {
+            if (_notiWin == null) return;
+            // neo góc phải-trên của cửa sổ chính, cách 8px
+            var p = this.PointToScreen(new System.Windows.Point(this.ActualWidth, 0));
+            double dpi = VisualTreeHelper.GetDpi(this).DpiScaleX; // giả định scale X=Y
+            _notiWin.Left = p.X / dpi - _notiWin.Width - 4;
+            _notiWin.Top = p.Y / dpi + 4;
+        }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -92,7 +109,7 @@ namespace TraSuaApp.WpfClient.Views
 
 
 
-            NotiHelper.TargetTextBlock = ThongBaoTextBlock;
+            //     NotiHelper.TargetTextBlock = ThongBaoTextBlock;
             _gpt = new GPTService(Config.apiChatGptKey);
             _quickOrder = new QuickOrderService(Config.apiChatGptKey);
             DataContext = this;
@@ -345,8 +362,9 @@ namespace TraSuaApp.WpfClient.Views
             {
                 // Báo nhỏ cho người dùng khi thật sự phải gọi mạng
                 if (!string.IsNullOrWhiteSpace(friendlyNameForToast))
-                    ThongBaoTextBlock.Text = $"Đang cập nhật {friendlyNameForToast.ToLower()}…";
+                    NotiHelper.ShowWarn(
 
+                     $"Đang cập nhật {friendlyNameForToast.ToLower()}…");
                 try
                 {
                     await reloadAsync();
@@ -358,7 +376,7 @@ namespace TraSuaApp.WpfClient.Views
                 }
                 finally
                 {
-                    ThongBaoTextBlock.Text = null;
+                    // ThongBaoTextBlock.Text = null;
                 }
             }
 
@@ -1583,7 +1601,7 @@ namespace TraSuaApp.WpfClient.Views
         {
             if (ChiTietHoaDonListBox.SelectedItem is not ChiTietHoaDonDto selected)
             {
-                ThongBaoTextBlock.Text = "";
+                //  ThongBaoTextBlock.Text = "";
                 return;
             }
             var sp = AppProviders.SanPhams.Items.SingleOrDefault(x => x.Ten == selected.TenSanPham);
@@ -1599,6 +1617,14 @@ namespace TraSuaApp.WpfClient.Views
         {
 
         }
+        // Nhấn nút 🟟 Reload trong header
+        private void ReloadMessenger_Click(object sender, RoutedEventArgs e)
+        {
+            if (MessengerView.WebView != null)
+                MessengerView?.Reload();
+        }
+
+
 
         private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -1630,8 +1656,18 @@ namespace TraSuaApp.WpfClient.Views
                 }
             }
 
+            if (MessengerTabItem.IsSelected)
+            {
+                MessengerView.UnreadCount = 0; // reset khi chọn tab
 
-            ThongBaoTextBlock.Text = null;
+                var sb = (Storyboard)MessengerTabItem.FindResource("FlashStoryboard");
+                sb.Stop(MessengerTabItem);
+
+                var badge = MessengerTabItem.FindName("BadgeBorder") as Border;
+                if (badge != null)
+                    badge.Background = new SolidColorBrush(Colors.Crimson);
+            }
+            // ThongBaoTextBlock.Text = null;
 
             // Map tag → action load lại dữ liệu
             var loadActions = new Dictionary<string, Func<Task>>

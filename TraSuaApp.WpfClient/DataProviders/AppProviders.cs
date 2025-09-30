@@ -75,7 +75,7 @@ public static class AppProviders
             // Hiện thông báo
             App.Current.Dispatcher.Invoke(() =>
             {
-                NotiHelper.ShowSilient("⚠️ Mất kết nối Server.");
+                NotiHelper.ShowSilent("⚠️ Mất kết nối Server.");
             });
         });
 
@@ -87,7 +87,7 @@ public static class AppProviders
             // Hiện thông báo
             App.Current.Dispatcher.Invoke(() =>
             {
-                NotiHelper.ShowSilient("✅ Đã kết nối lại Server.");
+                NotiHelper.ShowSilent("✅ Đã kết nối lại Server.");
             });
         });
 

@@ -78,22 +78,22 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                                         if (note.StartsWith("chuyển khoản"))
                                         {
                                             AudioHelper.Play("chuyen-khoan.mp3");
-                                            NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                            NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
                                         }
                                         else if (note.StartsWith("ghi nợ"))
                                         {
                                             AudioHelper.Play("ghi-no.mp3");
-                                            NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                            NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
                                         }
                                         else if (note.StartsWith("tí nữa chuyển khoản"))
                                         {
                                             AudioHelper.Play("chuyen-khoan-sau.mp3"); // thêm file âm thanh riêng nếu cần
-                                            NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                            NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
                                         }
                                         else if (note.Contains("trả nợ"))
                                         {
                                             AudioHelper.Play("tra-no.mp3"); // thêm file âm thanh riêng nếu cần
-                                            NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                            NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
                                         }
                                     }
                                 }

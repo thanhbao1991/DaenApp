@@ -26,9 +26,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.WinUI.Notifications" Version="7.1.2" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="FontAwesome.Sharp" Version="6.6.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3485.44" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="OpenAI" Version="2.4.0" />
     <PackageReference Include="QRCoder" Version="1.6.0" />
@@ -95,6 +97,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\KhachHangEdit.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\MessengerTab.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\LogList.xaml.cs">

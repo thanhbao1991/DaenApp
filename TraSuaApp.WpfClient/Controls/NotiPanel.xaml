@@ -1,0 +1,110 @@
+﻿<UserControl
+    x:Class="TraSuaApp.WpfClient.Controls.NotiPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:helpers="clr-namespace:TraSuaApp.WpfClient.Helpers"
+    x:Name="root"
+    Loaded="UserControl_Loaded"
+    MouseEnter="Root_MouseEnter"
+    MouseLeave="Root_MouseLeave">
+    <UserControl.Resources>
+        <helpers:KindToBrushConverter x:Key="KindToBrushConverter" />
+    </UserControl.Resources>
+
+    <!--  Vỏ khay  -->
+    <Border
+        x:Name="PART_Host"
+        Width="{Binding CompactWidth, ElementName=root}"
+        Height="{Binding CompactHeight, ElementName=root}"
+        Margin="8"
+        Padding="8"
+        HorizontalAlignment="Right"
+        VerticalAlignment="Top"
+        Background="#FDFDFD"
+        BorderBrush="{DynamicResource SecondaryBrush}"
+        BorderThickness="1"
+        CornerRadius="10">
+        <Border.Effect>
+            <DropShadowEffect
+                x:Name="Shadow"
+                BlurRadius="10"
+                Opacity="0.25"
+                ShadowDepth="2" />
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!--  Header  -->
+            <DockPanel Grid.Row="0" LastChildFill="False">
+                <TextBlock
+                    Margin="0,0,6,0"
+                    VerticalAlignment="Center"
+                    FontWeight="Bold"
+                    Foreground="{DynamicResource PrimaryBrush}"
+                    Text="{Binding HeaderTitle, ElementName=root}" />
+                <Border
+                    Margin="6,0,0,0"
+                    Padding="2,0"
+                    VerticalAlignment="Center"
+                    Background="{DynamicResource PrimaryBrush}"
+                    CornerRadius="10">
+                    <TextBlock
+                        Margin="6,0"
+                        Foreground="{DynamicResource LightBrush}"
+                        Text="{Binding ItemsSource.Count, ElementName=root}" />
+                </Border>
+                <Button
+                    Margin="8,0,0,0"
+                    Padding="6,2"
+                    Click="Clear_Click"
+                    Content="Xóa"
+                    DockPanel.Dock="Right"
+                    Style="{StaticResource XoaButtonStyle}"
+                    ToolTip="Xóa tất cả" />
+            </DockPanel>
+
+            <!--  Danh sách  -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding ItemsSource, ElementName=root}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type helpers:NotifyItem}">
+                            <Border
+                                Margin="0,6,0,0"
+                                Padding="6"
+                                Background="#FFF9F9F9"
+                                BorderBrush="#FFEDEDED"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="4" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border
+                                        Grid.Column="0"
+                                        Background="{Binding Kind, Converter={StaticResource KindToBrushConverter}}"
+                                        CornerRadius="3" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                        <TextBlock
+                                            FontSize="11"
+                                            Foreground="{DynamicResource SecondaryBrush}"
+                                            Text="{Binding Time, StringFormat={}{0:HH\\:mm}}" />
+                                        <TextBlock Foreground="{DynamicResource DarkBrush}" TextWrapping="Wrap">
+                                            <Run Text="{Binding Message}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>

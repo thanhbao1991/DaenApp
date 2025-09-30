@@ -1,9 +1,8 @@
-﻿using System.Windows.Controls;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
+using TraSuaApp.WpfClient.Helpers;
 
 public static class NotiHelper
 {
-    // 🟟 Hàm 1 tham số → Thông tin
     public static void Show(string msg)
     {
         //NotifyIcon notify = new NotifyIcon
@@ -18,8 +17,6 @@ public static class NotiHelper
         //Task.Delay(4000).ContinueWith(_ => notify.Dispose());
         MessageBox.Show(msg);
     }
-
-    // 🟟 Hàm lỗi gọn (2 tham số)
     public static void ShowError(string msg)
     {
         MessageBox.Show(msg);
@@ -34,25 +31,15 @@ public static class NotiHelper
         //notify.ShowBalloonTip(4000);
         //Task.Delay(5000).ContinueWith(_ => notify.Dispose());
     }
+    // public static TextBlock? TargetTextBlock { get; set; }
 
 
 
 
-
-
-    public static TextBlock? TargetTextBlock { get; set; }
-
-    public static void ShowSilient(string message)
-    {
-        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-          {
-              if (TargetTextBlock != null)
-              {
-                  TargetTextBlock.Text = $"{message}";
-              }
-          });
-    }
-
+    public static void ShowSilent(string message) => NotiCenter.Add(message, "info");
+    public static void ShowSuccess(string message) => NotiCenter.Add(message, "success");
+    public static void ShowWarn(string message) => NotiCenter.Add(message, "warn");
+    public static void ShowError2(string message) => NotiCenter.Add(message, "error");
 
 
 }
