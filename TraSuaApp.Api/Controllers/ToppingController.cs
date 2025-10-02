@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using TraSuaApp.Api.Hubs;
-using TraSuaApp.Application.Interfaces;
+using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;

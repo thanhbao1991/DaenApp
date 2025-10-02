@@ -8,6 +8,7 @@ using System.Windows.Media.Animation;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Shared.Services;
 using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Controls;
 using TraSuaApp.WpfClient.Helpers;
@@ -20,6 +21,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         public HoaDonDto Model { get; set; } = new();
         private readonly IHoaDonApi _api;
         string _friendlyName = TuDien._tableFriendlyNames["HoaDon"];
+        public string? GptInputText { get; set; }   // 🟟 giữ input GPT lại
 
         private List<SanPhamDto> _sanPhamList = new();
         private List<SanPhamBienTheDto> _bienTheList = new();
@@ -34,7 +36,34 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 };
 
 
+        private async void ReportAiButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string inputText = string.IsNullOrWhiteSpace(GptInputText)
+                    ? "(Không có input GPT)"
+                    : GptInputText;
 
+                string outputText = string.Join("\n",
+                    Model.ChiTietHoaDons.Select(ct =>
+                        $"- {ct.TenSanPham} {ct.TenBienThe} x{ct.SoLuong}"));
+
+                string noiDung =
+                    $"⚠️ Báo sai OpenAI:\n\n" +
+                    $"**Input GPT**:\n{inputText}\n\n" +
+                    $"**Output GPT**:\n{outputText}";
+
+                await DiscordService.SendAsync(DiscordEventType.Admin, noiDung);
+
+                MessageBox.Show("Đã gửi báo cáo về Admin.", "Thông báo",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi gửi báo cáo: " + ex.Message,
+                    "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         public HoaDonEdit(HoaDonDto? dto = null)
         {
             InitializeComponent();
@@ -165,6 +194,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                                 var blink = (Storyboard)FindResource("BlinkAnimation");
                                 Storyboard.SetTarget(blink, DiemThangTruocGroupBox);
                                 blink.Begin();
+                                MessageBox.Show($"Voucher {giaTriVoucher.ToString("N0")}");
                             }
                         }
 
@@ -354,7 +384,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             }
 
             if (Model.ChiTietHoaDons == null)
-                Model.ChiTietHoaDons = new List<ChiTietHoaDonDto>();
+                Model.ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>();
 
             if (Model.ChiTietHoaDonToppings == null)
                 Model.ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>();
@@ -541,9 +571,9 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 }
 
                 // 🟟 Chỉ giữ lại các dòng > 0 để lưu
-                Model.ChiTietHoaDons = Model.ChiTietHoaDons
-                    .Where(ct => ct.SoLuong > 0)
-                    .ToList();
+                Model.ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(
+     Model.ChiTietHoaDons.Where(ct => ct.SoLuong > 0)
+ );
 
                 // ✅ Đồng bộ lại topping, STT trước khi kiểm tra rỗng
                 DongBoTatCaTopping();

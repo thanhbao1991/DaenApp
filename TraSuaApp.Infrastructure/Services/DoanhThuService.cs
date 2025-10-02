@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Application.Interfaces;
+using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Shared.Dtos;
 
 namespace TraSuaApp.Infrastructure.Services;

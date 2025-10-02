@@ -18,6 +18,15 @@
 
     <Border Background="#F5F5F5" CornerRadius="10">
         <Grid>
+            <ctrl:NotiPanel
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Panel.ZIndex="3"
+                CompactHeight="38"
+                CompactWidth="120"
+                ExpandedHeight="500"
+                ExpandedWidth="300"
+                Visibility="Collapsed" />
             <ProgressBar
                 x:Name="ProgressBar"
                 Height="16"
@@ -32,6 +41,23 @@
                 Margin="4"
                 Background="{StaticResource SuccessBrush}"
                 SelectionChanged="TabControl_SelectionChanged">
+                <TabItem x:Name="MessengerTabItem" Tag="Messenger">
+                    <TabItem.Header>
+                        <Grid Margin="0,2,0,2">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock
+                                    Margin="0,0,4,0"
+                                    VerticalAlignment="Center"
+                                    Text="Messenger" />
+                            </StackPanel>
+                            <!--  Badge  -->
+                        </Grid>
+                    </TabItem.Header>
+
+                    <!--  Nội dung Messenger  -->
+                    <ctrl:MessengerTab x:Name="MessengerView" />
+                </TabItem>
+
                 <TabItem Header="Thống kê" Tag="ThongKe">
                     <views:ThongKeTab />
                 </TabItem>
@@ -51,27 +77,17 @@
                             x:Name="SearchHoaDonTextBox"
                             Grid.Column="1"
                             Grid.ColumnSpan="2"
+                            Padding="440,0,0,0"
                             AcceptsReturn="True"
                             LostFocus="SearchHoaDonTextBox_LostFocus"
                             TextChanged="SearchHoaDonTextBox_TextChanged" />
                         <StackPanel
                             Grid.Column="1"
-                            HorizontalAlignment="Right"
+                            Grid.ColumnSpan="2"
+                            HorizontalAlignment="Left"
                             VerticalAlignment="Top"
                             Panel.ZIndex="1"
                             Orientation="Horizontal">
-                            <Button
-                                Margin="8,0,0,0"
-                                HorizontalAlignment="Left"
-                                Panel.ZIndex="1"
-                                Click="AddAIButton_Click"
-                                Foreground="{StaticResource DarkBrush}"
-                                Style="{StaticResource XoaButtonStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa:IconBlock Margin="0,0,5,0" Icon="Robot" />
-                                    <TextBlock Text="Order Nhanh" />
-                                </StackPanel>
-                            </Button>
 
                             <Button
                                 HorizontalAlignment="Left"
@@ -120,6 +136,18 @@
                                 </StackPanel>
                             </Button>
 
+                            <Button
+                                Margin="8,0,0,0"
+                                HorizontalAlignment="Left"
+                                Panel.ZIndex="1"
+                                Click="AddAIButton_Click"
+                                Foreground="{StaticResource DarkBrush}"
+                                Style="{StaticResource XoaButtonStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa:IconBlock Margin="0,0,5,0" Icon="Robot" />
+                                    <TextBlock Text="Order Nhanh" />
+                                </StackPanel>
+                            </Button>
 
                         </StackPanel>
 
@@ -464,6 +492,7 @@
                             <ScrollViewer
                                 x:Name="ThongTinThanhToanGroupBox"
                                 HorizontalScrollBarVisibility="Disabled"
+                                PreviewMouseWheel="ThongTinThanhToanGroupBox_PreviewMouseWheel"
                                 VerticalScrollBarVisibility="Auto">
 
                                 <!--  Panel chứa chi tiết hóa đơn  -->
@@ -495,8 +524,9 @@
                                         Margin="0,8,0,0"
                                         Background="Transparent"
                                         BorderThickness="0"
+                                        ScrollViewer.CanContentScroll="False"
                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                        ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                         SelectionChanged="ChiTietHoaDonListBox_SelectionChanged">
                                         <ListBox.ItemTemplate>
                                             <DataTemplate>
@@ -1215,47 +1245,6 @@
                 <TabItem Header="Voucher" Tag="Voucher">
                     <views:VoucherTab />
                 </TabItem>
-                <TabItem x:Name="MessengerTabItem" Tag="Messenger">
-                    <TabItem.Header>
-                        <Grid Margin="0,2,0,2">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock
-                                    Margin="0,0,4,0"
-                                    VerticalAlignment="Center"
-                                    Text="Messenger" />
-                                <Button
-                                    Width="24"
-                                    Height="20"
-                                    Margin="0,0,4,0"
-                                    Padding="0"
-                                    Click="ReloadMessenger_Click"
-                                    Content="↻" />
-                            </StackPanel>
-
-                            <!--  Badge  -->
-                            <Border
-                                x:Name="BadgeBorder"
-                                Height="20"
-                                MinWidth="20"
-                                HorizontalAlignment="Right"
-                                Background="Crimson"
-                                CornerRadius="10"
-                                Visibility="{Binding UnreadCount, ElementName=MessengerView, Converter={StaticResource IntToVisibilityConverter}}">
-                                <TextBlock
-                                    Padding="4,0"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    FontSize="12"
-                                    FontWeight="Bold"
-                                    Foreground="White"
-                                    Text="{Binding UnreadCount, ElementName=MessengerView}" />
-                            </Border>
-                        </Grid>
-                    </TabItem.Header>
-
-                    <!--  Nội dung Messenger  -->
-                    <ctrl:MessengerTab x:Name="MessengerView" />
-                </TabItem>
 
             </TabControl>
             <Grid
@@ -1263,7 +1252,7 @@
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
                 Panel.ZIndex="1"
-                Visibility="Collapsed">
+                Visibility="Visible">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto" />
                     <ColumnDefinition Width="auto" />
@@ -1275,7 +1264,7 @@
                     VerticalAlignment="Center"
                     Background="Transparent"
                     BorderThickness="0"
-                    Visibility="Collapsed">
+                    Visibility="Visible">
                     <MenuItem
                         Name="SettingsMenu"
                         Margin="4"
@@ -1292,7 +1281,7 @@
                                 Margin="4"
                                 VerticalAlignment="Center"
                                 VerticalContentAlignment="Center"
-                                Click="MenuItem_Click"
+                                Click="Import_Click"
                                 Header="Import" />
                         </MenuItem>
                     </MenuItem>
@@ -1310,7 +1299,7 @@
                     Grid.Column="1"
                     HorizontalAlignment="Right"
                     Orientation="Horizontal"
-                    Visibility="Collapsed">
+                    Visibility="Visible">
                     <Button
                         Width="30"
                         Height="30"

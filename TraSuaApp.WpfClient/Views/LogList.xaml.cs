@@ -86,12 +86,12 @@ public partial class LogList : Window
     private void ApplySearch()
     {
         var keyword = SearchTextBox.Text.Trim();
-        var filtered = TextSearchHelper.FilterByTen(_logs, keyword, x => x.KetQua);
+        //var filtered = TextSearchHelper.FilterByTen(_logs, keyword, x => x.KetQua);
 
-        for (int i = 0; i < filtered.Count; i++)
-            filtered[i].STT = i + 1;
+        //for (int i = 0; i < filtered.Count; i++)
+        //    filtered[i].STT = i + 1;
 
-        LogDataGrid.ItemsSource = filtered;
+        //LogDataGrid.ItemsSource = filtered;
     }
 
     private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)

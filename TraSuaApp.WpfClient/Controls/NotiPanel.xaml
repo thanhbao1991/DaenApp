@@ -16,14 +16,14 @@
         x:Name="PART_Host"
         Width="{Binding CompactWidth, ElementName=root}"
         Height="{Binding CompactHeight, ElementName=root}"
-        Margin="8"
-        Padding="8"
+        Margin="4"
+        Padding="4"
         HorizontalAlignment="Right"
         VerticalAlignment="Top"
         Background="#FDFDFD"
         BorderBrush="{DynamicResource SecondaryBrush}"
         BorderThickness="1"
-        CornerRadius="10">
+        CornerRadius="4">
         <Border.Effect>
             <DropShadowEffect
                 x:Name="Shadow"
@@ -61,9 +61,9 @@
                     Margin="8,0,0,0"
                     Padding="6,2"
                     Click="Clear_Click"
-                    Content="Xóa"
+                    Content="✖"
                     DockPanel.Dock="Right"
-                    Style="{StaticResource XoaButtonStyle}"
+                    Style="{StaticResource CloseButtonStyle}"
                     ToolTip="Xóa tất cả" />
             </DockPanel>
 
@@ -81,8 +81,8 @@
                                 CornerRadius="6">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="4" />
                                         <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
 
@@ -90,15 +90,18 @@
                                         Grid.Column="0"
                                         Background="{Binding Kind, Converter={StaticResource KindToBrushConverter}}"
                                         CornerRadius="3" />
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                        <TextBlock
-                                            FontSize="11"
-                                            Foreground="{DynamicResource SecondaryBrush}"
-                                            Text="{Binding Time, StringFormat={}{0:HH\\:mm}}" />
-                                        <TextBlock Foreground="{DynamicResource DarkBrush}" TextWrapping="Wrap">
-                                            <Run Text="{Binding Message}" />
-                                        </TextBlock>
-                                    </StackPanel>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="8"
+                                        FontSize="11"
+                                        Foreground="{DynamicResource SecondaryBrush}"
+                                        Text="{Binding Time, StringFormat={}{0:HH\\:mm}}" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        Foreground="{DynamicResource DarkBrush}"
+                                        TextWrapping="Wrap">
+                                        <Run Text="{Binding Message}" />
+                                    </TextBlock>
                                 </Grid>
                             </Border>
                         </DataTemplate>

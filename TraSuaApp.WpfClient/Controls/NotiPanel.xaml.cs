@@ -31,7 +31,7 @@ namespace TraSuaApp.WpfClient.Controls
             DependencyProperty.Register(nameof(HeaderTitle),
                 typeof(string),
                 typeof(NotiPanel),
-                new PropertyMetadata("Thông báo"));
+                new PropertyMetadata("News"));
 
         public double CompactWidth
         {

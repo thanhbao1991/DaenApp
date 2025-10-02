@@ -14,8 +14,8 @@ public class TaiKhoanDto : DtoBase
     public bool IsActive { get; set; }
     public string TimKiem =>
      $"{Ten?.ToLower() ?? ""} " +
-     TextSearchHelper.NormalizeText(Ten ?? "") + " " +
-     TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
-     TextSearchHelper.GetShortName(Ten ?? "");
+     StringHelper.NormalizeText(Ten ?? "") + " " +
+     StringHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+     StringHelper.GetShortName(Ten ?? "");
 
 }

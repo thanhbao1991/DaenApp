@@ -95,7 +95,10 @@
                             <TextBlock FontSize="{StaticResource FontSizeLarge}" Text="App" />
                         </StackPanel>
                     </RadioButton>
-
+                    <Button
+                        Click="ReportAiButton_Click"
+                        Content="⚠️ Bắt đơn chưa đúng lắm !!!"
+                        Style="{StaticResource DeleteButtonStyle}" />
                 </StackPanel>
                 <Button
                     Click="CloseButton_Click"

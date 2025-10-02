@@ -9,6 +9,7 @@ public partial class SanPham
     public string? DinhLuong { get; set; }
 
     public string? VietTat { get; set; }
+    public string? TenKhongVietTat { get; set; }
 
     public int DaBan { get; set; }
 

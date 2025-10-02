@@ -19,7 +19,10 @@ public partial class ChiTietHoaDonEntity
     public DateTime? DeletedAt { get; set; }
 
     public bool IsDeleted { get; set; }
-
+    public int Stt
+    {
+        get; set;
+    }
     public DateTime? LastModified { get; set; }
 
     public string TenBienThe { get; set; } = null!;

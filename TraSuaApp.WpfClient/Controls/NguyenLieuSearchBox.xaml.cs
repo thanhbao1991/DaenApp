@@ -60,7 +60,7 @@ namespace TraSuaApp.WpfClient.Controls
                 ? Visibility.Collapsed
                 : Visibility.Visible;
 
-            string keyword = TextSearchHelper.NormalizeText(SearchTextBox.Text.Trim());
+            string keyword = StringHelper.NormalizeText(SearchTextBox.Text.Trim());
             if (string.IsNullOrEmpty(keyword))
             {
                 ListBoxResults.ItemsSource = null;

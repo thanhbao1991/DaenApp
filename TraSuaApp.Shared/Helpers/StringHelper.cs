@@ -1,9 +1,56 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace TraSuaApp.Shared.Helpers;
 
 public static class StringHelper
 {
+    public static string NormalizeText(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return "";
+        var normalized = input.Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder();
+        foreach (var c in normalized)
+        {
+            var uc = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (uc != UnicodeCategory.NonSpacingMark)
+                builder.Append(c);
+        }
+        return builder.ToString()
+            .Normalize(NormalizationForm.FormC)
+            .ToLowerInvariant()
+            .Replace("đ", "d");
+    }
+    public static string GetShortName(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return string.Empty;
+
+        string normalized = NormalizeText(input);
+        var words = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        var shortName = new StringBuilder();
+
+        foreach (var word in words)
+        {
+            if (string.IsNullOrWhiteSpace(word))
+                continue;
+
+            // Nếu từ bắt đầu bằng chữ + số (vd: 5b, 3a) → lấy toàn bộ
+            if (char.IsDigit(word[0]) || (word.Length > 1 && char.IsDigit(word[1])))
+            {
+                shortName.Append(word);
+            }
+            else
+            {
+                shortName.Append(word[0]);
+            }
+        }
+
+        return shortName.ToString().ToLower();
+    }
+
     public static string? CapitalizeEachWord(string? input)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -18,7 +65,6 @@ public static class StringHelper
         return string.Join(" ", words);
     }
 
-    // ✅ Sanitize nhẹ nhàng (chỉ loại bỏ ký tự nguy hiểm phổ biến)
     private static string SoftSanitizeSql(string? input)
     {
         if (string.IsNullOrEmpty(input)) return input ?? "";
@@ -45,7 +91,6 @@ public static class StringHelper
         return input;
     }
 
-    // ✅ Sanitize nghiêm ngặt (ngoài ký tự, xoá từ khoá SQL)
     private static string StrictSanitizeSql(string? input)
     {
         if (string.IsNullOrEmpty(input)) return input ?? "";
@@ -68,11 +113,6 @@ public static class StringHelper
         return input;
     }
 
-    /// <summary>
-    /// Chuẩn hoá tất cả string property trong object:
-    /// - Sanitize SQL injection
-    /// - Capitalize chữ cái đầu mỗi từ
-    /// </summary>
     public static void NormalizeAllStrings<T>(T obj, bool sanitizeSql = true, bool strictSqlSanitize = false)
     {
         if (obj == null) return;

@@ -10,7 +10,7 @@ public abstract class DtoBase
     public DateTime? DeletedAt { get; set; }
 
     public virtual string Ten { get; set; } = string.Empty;
-    public int? Stt { get; set; }
+    public int Stt { get; set; }
 
     public abstract string ApiRoute { get; }
 

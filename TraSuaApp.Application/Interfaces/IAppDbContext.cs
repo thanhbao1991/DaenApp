@@ -1,6 +1,6 @@
 ﻿using TraSuaApp.Domain.Interfaces;
 
-namespace TraSuaApp.Application.Interfaces;
+namespace TraSuaApp.Applicationn.Interfaces;
 
 public interface IAppDbContext
 {

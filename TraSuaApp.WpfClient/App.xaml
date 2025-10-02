@@ -8,17 +8,8 @@
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
     Exit="Application_Exit">
     <Application.Resources>
-        <Storyboard
-            x:Key="FlashStoryboard"
-            AutoReverse="True"
-            RepeatBehavior="Forever">
-            <ColorAnimation
-                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                From="Crimson"
-                To="Orange"
-                Duration="0:0:0.3" />
-        </Storyboard>
-        <!--  Converters  -->
+
+
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <conveter:RowStyleMultiConverter x:Key="RowStyleMultiConverter" />
         <conveter:NullOrEmptyOrDefaultToVisibilityConverter x:Key="NullOrEmptyOrDefaultToVisibilityConverter" />

@@ -16,7 +16,6 @@ using TraSuaApp.Shared.Config;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.Shared.Services;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
 using TraSuaApp.WpfClient.Services;
@@ -59,29 +58,12 @@ namespace TraSuaApp.WpfClient.Views
 
     public partial class Dashboard : Window
     {
-        private NotiWindow? _notiWin;
 
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
-            _notiWin = new NotiWindow { Owner = this };
-            PositionNoti();
-            _notiWin.Show();
         }
 
-        protected override void OnLocationChanged(EventArgs e) { base.OnLocationChanged(e); PositionNoti(); }
-        protected override void OnRenderSizeChanged(SizeChangedInfo s) { base.OnRenderSizeChanged(s); PositionNoti(); }
-        protected override void OnStateChanged(EventArgs e) { base.OnStateChanged(e); PositionNoti(); }
-
-        private void PositionNoti()
-        {
-            if (_notiWin == null) return;
-            // neo góc phải-trên của cửa sổ chính, cách 8px
-            var p = this.PointToScreen(new System.Windows.Point(this.ActualWidth, 0));
-            double dpi = VisualTreeHelper.GetDpi(this).DpiScaleX; // giả định scale X=Y
-            _notiWin.Left = p.X / dpi - _notiWin.Width - 4;
-            _notiWin.Top = p.Y / dpi + 4;
-        }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -99,7 +81,7 @@ namespace TraSuaApp.WpfClient.Views
         private readonly DebounceManager _debouncer = new();
 
         private CancellationTokenSource _cts = new();
-        private readonly QuickOrderService _quickOrder;
+        private readonly QuickOrderService _quick = new(Config.apiChatGptKey);
 
 
         public Dashboard()
@@ -110,8 +92,6 @@ namespace TraSuaApp.WpfClient.Views
 
 
             //     NotiHelper.TargetTextBlock = ThongBaoTextBlock;
-            _gpt = new GPTService(Config.apiChatGptKey);
-            _quickOrder = new QuickOrderService(Config.apiChatGptKey);
             DataContext = this;
             // 🟟 Timer báo đơn (2s)
             _baoDonTimer = new DispatcherTimer
@@ -867,7 +847,7 @@ namespace TraSuaApp.WpfClient.Views
             else
             {
                 // Tách keyword theo khoảng trắng
-                keyword = TextSearchHelper.NormalizeText(keyword);
+                keyword = StringHelper.NormalizeText(keyword);
                 var keywords = keyword
                     .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     .Select(k => k.ToLower())
@@ -1611,18 +1591,45 @@ namespace TraSuaApp.WpfClient.Views
 
         private DateTime today;
 
-        private readonly GPTService _gpt;
 
-        private async void MenuItem_Click(object sender, RoutedEventArgs e)
+        private async void Import_Click(object sender, RoutedEventArgs e)
         {
+            var api = new SanPhamApi();
+            var result = await api.GetAllAsync();
+
+            foreach (var sp in result.Data)
+            {
+
+                string newTen = sp.Ten;
+
+                // thay thế viết tắt
+                newTen = newTen.Replace("TCT", "Trân Châu Trắng", StringComparison.OrdinalIgnoreCase);
+                newTen = newTen.Replace("Tct", "Trân Châu Trắng", StringComparison.OrdinalIgnoreCase);
+                newTen = newTen.Replace("TCĐĐ", "Trân Châu Đường Đen", StringComparison.OrdinalIgnoreCase);
+                newTen = newTen.Replace("Olong", "Ô Long", StringComparison.OrdinalIgnoreCase);
+                newTen = newTen.Replace("OLONG", "Ô Long", StringComparison.OrdinalIgnoreCase);
+                newTen = newTen.Replace("Cf", "Cà Phê", StringComparison.OrdinalIgnoreCase);
+                newTen = newTen.Replace("Cafe", "Cà Phê", StringComparison.OrdinalIgnoreCase);
+                newTen = newTen.Replace("S/MV", "Ship / Mua Về", StringComparison.OrdinalIgnoreCase);
+
+                newTen = newTen.Replace("(", " ").Replace(")", " ");
+
+                // chuẩn hóa khoảng trắng (nhiều space -> 1 space)
+                newTen = System.Text.RegularExpressions.Regex.Replace(newTen, @"\s+", " ");
+
+
+                // lưu dưới dạng lower
+                newTen = newTen.ToLowerInvariant();
+
+
+                sp.TenKhongVietTat = newTen;
+
+                await api.UpdateAsync(sp.Id, sp);
+
+            }
 
         }
         // Nhấn nút 🟟 Reload trong header
-        private void ReloadMessenger_Click(object sender, RoutedEventArgs e)
-        {
-            if (MessengerView.WebView != null)
-                MessengerView?.Reload();
-        }
 
 
 
@@ -1658,10 +1665,7 @@ namespace TraSuaApp.WpfClient.Views
 
             if (MessengerTabItem.IsSelected)
             {
-                MessengerView.UnreadCount = 0; // reset khi chọn tab
 
-                var sb = (Storyboard)MessengerTabItem.FindResource("FlashStoryboard");
-                sb.Stop(MessengerTabItem);
 
                 var badge = MessengerTabItem.FindName("BadgeBorder") as Border;
                 if (badge != null)
@@ -2465,20 +2469,25 @@ namespace TraSuaApp.WpfClient.Views
                 string input = SearchHoaDonTextBox.Text.Trim();
                 if (string.IsNullOrEmpty(input)) input = Clipboard.GetText().Trim();
                 if (string.IsNullOrEmpty(input)) return;
-                // ✅ Dùng DTO giống shipper
-                var dto = await _quickOrder.BuildHoaDonFromQuickAsync(input); // yêu cầu bạn đã thêm method này trong QuickOrderService
-                if (dto == null || dto.ChiTietHoaDons == null || dto.ChiTietHoaDons.Count == 0)
+
+                var (hd, rawInput) = await AIOrderHelper.RunWithLoadingAsync(
+"Đang tạo hoá đơn AI...",
+() => _quick.BuildHoaDonAsync(input)
+);
+                if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
                 {
-                    MessageBox.Show("❌ Không nhận diện được món nào.");
-                    DiscordService.SendAsync(DiscordEventType.Admin, input);
+                    NotiHelper.Show("Không nhận diện được món nào.");
                     return;
                 }
 
                 // tuỳ flow: giữ nguyên như bạn đang dùng
-                dto.PhanLoai = "Ship";
+                hd.PhanLoai = "Ship";
+                Mouse.OverrideCursor = null;
 
-                var window = new HoaDonEdit(dto)
+                var window = new HoaDonEdit(hd)
                 {
+                    GptInputText = rawInput,
+
                     Width = this.ActualWidth,
                     Height = this.ActualHeight,
                     Owner = this,
@@ -2518,6 +2527,25 @@ namespace TraSuaApp.WpfClient.Views
                 else if (bt.Tag.ToString() == "hôm qua")
                     SearchChiTietHoaDonNoTextBox.Text = DateTime.Today.AddDays(-1).ToString("dd-MM-yyyy");
             }
+        }
+
+        private void ThongTinThanhToanGroupBox_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            var sv = sender as ScrollViewer;
+            if (sv == null) return;
+
+            // e.Delta > 0: cuộn lên, e.Delta < 0: cuộn xuống
+            // Dùng offset để cuộn mượt thay vì LineUp/LineDown
+            double offset = sv.VerticalOffset - Math.Sign(e.Delta) * 48;
+
+            // Giới hạn trong [0, ScrollableHeight]
+            if (offset < 0) offset = 0;
+            if (offset > sv.ScrollableHeight) offset = sv.ScrollableHeight;
+
+            sv.ScrollToVerticalOffset(offset);
+
+            // Chặn child xử lý tiếp
+            e.Handled = true;
         }
     }
 }

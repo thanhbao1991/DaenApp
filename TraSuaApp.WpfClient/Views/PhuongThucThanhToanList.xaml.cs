@@ -66,7 +66,7 @@ namespace TraSuaApp.WpfClient.AdminViews
                 return;
             }
 
-            var keyword = TextSearchHelper.NormalizeText(SearchTextBox.Text.Trim());
+            var keyword = StringHelper.NormalizeText(SearchTextBox.Text.Trim());
             e.Accepted = string.IsNullOrEmpty(keyword) || (item.TimKiem?.Contains(keyword) ?? false);
         }
         private async void ReloadButton_Click(object sender, RoutedEventArgs e)

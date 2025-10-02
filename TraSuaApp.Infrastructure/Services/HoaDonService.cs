@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Application.Interfaces;
+﻿using System.Collections.ObjectModel;
+using Microsoft.EntityFrameworkCore;
+using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Dtos;
@@ -354,7 +355,7 @@ public class HoaDonService : IHoaDonService
 
                 ChiTiets = x.ChiTietHoaDons
                 .Where(ct => !ct.IsDeleted)
-                .OrderBy(ct => ct.CreatedAt) // 🟟 sắp xếp theo thời điểm tạo
+                .OrderBy(ct => ct.Stt) // 🟟 sắp xếp theo thời điểm tạo
                 .Select(ct => new ChiTietHoaDonDto
                 {
                     Id = ct.Id,
@@ -432,7 +433,7 @@ public class HoaDonService : IHoaDonService
 
             TrangThai = ResolveTrangThai(h.ThanhTien, h.ConLai, h.HasDebt, h.CoTienMat, h.CoChuyenKhoan),
 
-            ChiTietHoaDons = h.ChiTiets,
+            ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(h.ChiTiets),
             ChiTietHoaDonToppings = h.Toppings,
             ChiTietHoaDonVouchers = h.Vouchers,
         };
@@ -626,7 +627,7 @@ public class HoaDonService : IHoaDonService
         var toppingLookup = dto.ChiTietHoaDonToppings
             .GroupBy(tp => tp.ChiTietHoaDonId)
             .ToDictionary(g => g.Key, g => g.ToList());
-
+        int autoStt = 1;
         foreach (var ct in dto.ChiTietHoaDons)
         {
             var bienThe = await _context.SanPhamBienThes
@@ -704,8 +705,11 @@ public class HoaDonService : IHoaDonService
             tongTien += thanhTienSP + tienToppingSP;
 
 
+            int stt = ct.Stt > 0 ? ct.Stt : autoStt++;  // ⬅️ ưu tiên DTO, fallback tự tăng
+
             _context.ChiTietHoaDons.Add(new ChiTietHoaDonEntity
             {
+                Stt = stt,
                 Id = chiTietId,
                 HoaDonId = hoaDonId,
                 SanPhamBienTheId = ct.SanPhamIdBienThe,

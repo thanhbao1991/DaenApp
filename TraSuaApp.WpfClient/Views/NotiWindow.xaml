@@ -20,7 +20,7 @@
             VerticalAlignment="Top"
             Panel.ZIndex="9999"
             CompactHeight="80"
-            CompactWidth="300"
+            CompactWidth="200"
             ExpandedHeight="660"
             ExpandedWidth="300" />
     </Grid>

@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using TraSuaApp.Shared.Enums;
 
@@ -51,10 +52,36 @@ namespace TraSuaApp.Shared.Services
         private static async Task SendToWebhook(string url, string message)
         {
             using var client = new HttpClient();
-            var payload = new { content = "• " + message };
-            var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            await client.PostAsync(url, content);
+
+            if (message.Length < 1900)
+            {
+                var payload = new
+                {
+                    content = message
+                };
+
+                var json = JsonSerializer.Serialize(payload);
+                var response = await client.PostAsync(url,
+                    new StringContent(json, Encoding.UTF8, "application/json"));
+
+                //   if (!response.IsSuccessStatusCode)
+                //    MessageBox.Show("❌ Gửi thất bại!");
+            }
+            else
+            {
+                var contentToSend = new MultipartFormDataContent();
+                var bytes = Encoding.UTF8.GetBytes(message);
+                var fileContent = new ByteArrayContent(bytes);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+                contentToSend.Add(fileContent, "file", "AllFiles.txt");
+
+                var response = await client.PostAsync(url, contentToSend);
+
+                //   if (!response.IsSuccessStatusCode)
+                //  MessageBox.Show("❌ Gửi file thất bại!");
+            }
+
+
         }
 
     }

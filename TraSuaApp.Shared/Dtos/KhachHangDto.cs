@@ -16,14 +16,14 @@ public class KhachHangDto : DtoBase
 
     public string TimKiem =>
     $"{Ten?.ToLower() ?? ""} " +
-    $"{TextSearchHelper.NormalizeText(Ten ?? "")} " +
-    $"{TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", ""))} " +
-    $"{TextSearchHelper.GetShortName(Ten ?? "")} " +
+    $"{StringHelper.NormalizeText(Ten ?? "")} " +
+    $"{StringHelper.NormalizeText((Ten ?? "").Replace(" ", ""))} " +
+    $"{StringHelper.GetShortName(Ten ?? "")} " +
     $"{DiaChi?.ToLower() ?? ""} " +
-    $"{TextSearchHelper.NormalizeText(DiaChi ?? "")} " +
-    $"{TextSearchHelper.NormalizeText((DiaChi ?? "").Replace(" ", ""))} " +
-    $"{TextSearchHelper.GetShortName(DiaChi ?? "")} " +
-    $"{TextSearchHelper.NormalizeText(DienThoai ?? "")}";
+    $"{StringHelper.NormalizeText(DiaChi ?? "")} " +
+    $"{StringHelper.NormalizeText((DiaChi ?? "").Replace(" ", ""))} " +
+    $"{StringHelper.GetShortName(DiaChi ?? "")} " +
+    $"{StringHelper.NormalizeText(DienThoai ?? "")}";
 
     // 🟟 Danh sách địa chỉ
 

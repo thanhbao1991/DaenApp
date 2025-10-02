@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TraSuaApp.Application.Interfaces;
+using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 

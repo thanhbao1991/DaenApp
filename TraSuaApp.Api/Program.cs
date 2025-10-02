@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TraSuaApp.Api.Hubs;
 using TraSuaApp.Api.Middleware;
-using TraSuaApp.Application.Interfaces;
+using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Infrastructure;
 using TraSuaApp.Infrastructure.Services;
 

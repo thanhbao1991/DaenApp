@@ -69,7 +69,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
                 e.Accepted = false;
                 return;
             }
-            var keyword = TextSearchHelper.NormalizeText(SearchTextBox.Text.Trim());
+            var keyword = StringHelper.NormalizeText(SearchTextBox.Text.Trim());
             e.Accepted = string.IsNullOrEmpty(keyword) || (item.TimKiem?.Contains(keyword) ?? false);
         }
 

@@ -6,6 +6,7 @@ namespace TraSuaApp.Shared.Dtos;
 public class SanPhamDto : DtoBase
 {
     public override string ApiRoute => "SanPham";
+    public string? TenKhongVietTat { get; set; }
 
     public string? DinhLuong { get; set; }
     public string? VietTat { get; set; }
@@ -22,14 +23,14 @@ public class SanPhamDto : DtoBase
     {
         get
         {
-            var ten = TextSearchHelper.NormalizeText(Ten ?? "");
+            var ten = StringHelper.NormalizeText(Ten ?? "");
             var words = ten.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var reversed = string.Join(" ", words.Reverse());
 
             return new[]
             {
-            TextSearchHelper.NormalizeText(VietTat ?? ""),      // viết tắt
-            TextSearchHelper.GetShortName(Ten ?? "") ?? "",     // shortname
+            StringHelper.NormalizeText(VietTat ?? ""),      // viết tắt
+            StringHelper.GetShortName(Ten ?? "") ?? "",     // shortname
             ten,                                                // tên đầy đủ
        //     TextSearchHelper.NormalizeText(Ten?.Replace(" ", "") ?? ""), // không dấu cách
             reversed                                            // đảo ngược
@@ -43,9 +44,9 @@ public class SanPhamDto : DtoBase
     public virtual List<SanPhamBienTheDto> SanPhamBienThes { get; set; } = new List<SanPhamBienTheDto>();
     public string TimKiem =>
         $"{Ten?.ToLower() ?? ""} " +
-        TextSearchHelper.NormalizeText(Ten ?? "") + " " +
-        TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
-        TextSearchHelper.GetShortName(Ten ?? "");
+        StringHelper.NormalizeText(Ten ?? "") + " " +
+        StringHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+        StringHelper.GetShortName(Ten ?? "");
 
 }
 

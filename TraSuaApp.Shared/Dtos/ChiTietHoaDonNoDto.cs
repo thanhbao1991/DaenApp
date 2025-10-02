@@ -31,8 +31,8 @@ public class ChiTietHoaDonNoDto : DtoBase
     public Guid? KhachHangId { get; set; }
 
     public string TimKiem =>
-    TextSearchHelper.NormalizeText(Ten ?? "") + " " +
-    TextSearchHelper.NormalizeText(Ngay.ToString("dd-MM-yyyy") ?? "") + " " +
-    TextSearchHelper.NormalizeText(GhiChu ?? "");
+    StringHelper.NormalizeText(Ten ?? "") + " " +
+    StringHelper.NormalizeText(Ngay.ToString("dd-MM-yyyy") ?? "") + " " +
+    StringHelper.NormalizeText(GhiChu ?? "");
 
 }

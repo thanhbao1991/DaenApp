@@ -1,202 +1,156 @@
-﻿using System.Text.Json;
-using OpenAI.Chat;
+﻿using System.Collections.ObjectModel;
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
 using TraSuaApp.Shared.Dtos;
 
 namespace TraSuaApp.WpfClient.Services
 {
-    public class QuickOrderDto
-    {
-        public string TenMon { get; set; } = string.Empty;     // phải khớp tên sản phẩm trong DB
-        public string BienThe { get; set; } = "Size chuẩn";    // ví dụ: Size chuẩn | Size L
-        public int SoLuong { get; set; } = 1;                  // mặc định 1
-        public string NoteText { get; set; } = "";             // ghi chú thêm: ít ngọt, ít đá, thêm trân châu...
-    }
-
+    /// <summary>
+    /// SERVICE ổn định: giữ API cho UI (MessengerTab, …) luôn giống nhau.
+    /// - OCR ảnh (OpenAI Vision qua Chat Completions)
+    /// - Ráp hoá đơn từ text/ảnh
+    /// - Dùng QuickOrderEngine để suy món (engine có thể chỉnh thoải mái)
+    /// </summary>
     public class QuickOrderService
     {
-        private readonly ChatClient _chatClient;
-
-        // ✅ Build menu đúng 1 lần khi app chạy (thread-safe)
-        private static readonly Lazy<string> _menuText = new(() => BuildMenuForGpt(), isThreadSafe: true);
+        private readonly HttpClient _http;      // OCR ảnh online
+        private readonly QuickOrderEngine _engine; // Engine linh hoạt
 
         public QuickOrderService(string apiKey)
         {
-            _chatClient = new ChatClient("gpt-4o-mini", apiKey);
+            _engine = new QuickOrderEngine(apiKey);
+
+            _http = new HttpClient { BaseAddress = new Uri("https://api.openai.com/") };
+            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         }
 
-        private static string BuildMenuForGpt()
+        // ===== Helpers ảnh / data-url =====
+        private static bool IsDataUrl(string s) => s.StartsWith("data:", StringComparison.OrdinalIgnoreCase);
+        private static bool LooksLikeBase64(string s)
+            => s.Length > 100 && System.Text.RegularExpressions.Regex.IsMatch(s, @"^[A-Za-z0-9+/=\s]+$");
+
+        // ===== OCR ONLINE (gpt-4o-mini qua Chat Completions) =====
+        private async Task<string> ExtractTextFromImageAsync(string inputOrUrl)
         {
-            // lấy từ Dashboard/AppProviders như bạn đang dùng
-            var sanPhams = AppProviders.SanPhams.Items
-                .Where(x => !x.NgungBan)
-                .OrderBy(x => x.Ten)
-                .ToList();
+            string imageUrlOrData;
 
-            var lines = new List<string>();
-            foreach (var sp in sanPhams)
+            if (File.Exists(inputOrUrl))
             {
-                if (sp.BienThe == null || sp.BienThe.Count == 0) continue;
-
-                foreach (var bt in sp.BienThe.OrderBy(b => b.TenBienThe))
+                var bytes = await File.ReadAllBytesAsync(inputOrUrl);
+                var ext = Path.GetExtension(inputOrUrl).ToLowerInvariant();
+                var mime = ext switch
                 {
-                    var tenSize = string.IsNullOrWhiteSpace(bt.TenBienThe) ? "Size chuẩn" : bt.TenBienThe;
-                    var gia = (long)Math.Round(bt.GiaBan);
-                    if (gia <= 0) continue; // bỏ biến thể chưa set giá để GPT khỏi suy sai
+                    ".png" => "image/png",
+                    ".jpg" => "image/jpeg",
+                    ".jpeg" => "image/jpeg",
+                    ".webp" => "image/webp",
+                    ".heic" => "image/heic",
+                    _ => "image/png"
+                };
+                imageUrlOrData = $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
+            }
+            else if (IsDataUrl(inputOrUrl))
+            {
+                imageUrlOrData = inputOrUrl;
+            }
+            else if (Uri.IsWellFormedUriString(inputOrUrl, UriKind.Absolute))
+            {
+                imageUrlOrData = inputOrUrl;
+            }
+            else if (LooksLikeBase64(inputOrUrl))
+            {
+                imageUrlOrData = "data:image/png;base64," + inputOrUrl;
+            }
+            else
+            {
+                throw new ArgumentException("Đầu vào ảnh không hợp lệ (không phải path/URL/base64/data-url).");
+            }
 
-                    lines.Add($"{sp.Ten} | {tenSize} | {gia}");
+            var body = new
+            {
+                model = "gpt-4o-mini",
+                temperature = 0,
+                messages = new object[]
+                {
+                    new { role = "system", content = "Bạn là công cụ OCR, trả về nguyên văn tiếng Việt/Anh trong ảnh, không thêm diễn giải." },
+                    new {
+                        role = "user",
+                        content = new object[]
+                        {
+                            new { type = "text", text = "Đọc chính xác text trong ảnh đơn hàng này:" },
+                            new { type = "image_url", image_url = new { url = imageUrlOrData } }
+                        }
+                    }
+                }
+            };
+
+            var req = new HttpRequestMessage(HttpMethod.Post, "v1/chat/completions")
+            {
+                Content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json")
+            };
+
+            using var resp = await _http.SendAsync(req);
+            resp.EnsureSuccessStatusCode();
+
+            var json = await resp.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+
+            var msg = doc.RootElement.GetProperty("choices")[0].GetProperty("message");
+
+            string? contentText = null;
+            if (msg.TryGetProperty("content", out var contentEl) && contentEl.ValueKind == JsonValueKind.String)
+            {
+                contentText = contentEl.GetString();
+            }
+            else if (msg.TryGetProperty("content", out contentEl) && contentEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var part in contentEl.EnumerateArray())
+                {
+                    if (part.TryGetProperty("type", out var t) && t.GetString() == "text" &&
+                        part.TryGetProperty("text", out var txt))
+                    {
+                        contentText = txt.GetString();
+                        break;
+                    }
                 }
             }
 
-            return string.Join("\n", lines);
+            return contentText?.Trim() ?? "";
         }
 
-        public async Task<List<QuickOrderDto>> ParseQuickOrderAsync(string input)
+        // ===== API ổn định cho UI: Build từ text/ảnh =====
+        public async Task<(HoaDonDto? HoaDon, string RawInput)> BuildHoaDonAsync(string inputOrUrl, bool isImage = false)
         {
-            var menuText = _menuText.Value; // dùng cache
+            string text = inputOrUrl;
 
-            const string systemPrompt = @"
-Bạn là hệ thống POS. Chuẩn hóa INPUT thành JSON các món có trong MENU.
-
-QUY TẮC MAP:
-- So khớp gần đúng, bỏ dấu, viết thường, chấp nhận lỗi chính tả nhẹ.
-- Dùng giá trong dòng để suy ra Size nếu có:
-  + Nếu giá trùng đúng với 1 biến thể của món → chọn biến thể đó.
-- Cho phép đồng nghĩa:
-  + ""kem trứng"" ≈ ""trứng nướng""
-  + ""tcđđ"" ≈ ""trân châu đường đen""
-  + ""olong"" ≈ ""oolong"" ≈ ""ô long""
-- Nếu tên gần nhất khớp với 1 món trong MENU → vẫn chọn món đó (không được bỏ sót chỉ vì khác chính tả).
-- Mỗi dòng có số lượng → phải sinh đúng 1 item.
-- Nếu không suy ra được size mà dòng có giá → dùng giá để chọn size. Nếu vẫn không rõ → Size Chuẩn.
-- Cuối cùng, người dùng có thể nhập nhiều sản phẩm vào một dòng, có thể nhập lung tung, không có quy tắc gì, lúc đó hãy tận dụng trí thông minh của bạn để suy luận.
-ĐỊNH DẠNG JSON CHÍNH XÁC:
-[
-  {""TenMon"":""<Tên trong MENU>"", ""BienThe"":""Size Chuẩn|Size L"", ""SoLuong"":<int>, ""NoteText"":""<chuỗi tự do>""}
-]
-
-VÍ DỤ BẮT BUỘC (làm theo đúng):
-Input line: ""1 bạc xỉu kem trứng 25k""
-→ {""TenMon"":""Bạc Xỉu Trứng Nướng"",""BienThe"":""Size Chuẩn"",""SoLuong"":1,""NoteText"":""""}
-
-Input line: ""1 bạc xỉu kem trứng 30k""
-→ {""TenMon"":""Bạc Xỉu Trứng Nướng"",""BienThe"":""Size L"",""SoLuong"":1,""NoteText"":""""}
-";
-
-            string userPrompt = $@"
-MENU (mỗi dòng: Tên món | Size | Giá-đồng):
-{menuText}
-
-INPUT (nguyên văn):
-{input}
-";
-
-            var opts = new ChatCompletionOptions
+            if (isImage ||
+                IsDataUrl(inputOrUrl) ||
+                Uri.IsWellFormedUriString(inputOrUrl, UriKind.Absolute) ||
+                LooksLikeBase64(inputOrUrl) ||
+                File.Exists(inputOrUrl))
             {
-                Temperature = 0f
-                // Nếu SDK bạn hỗ trợ JSON mode thì bật:
-                // ResponseFormat = ChatResponseFormat.Json
-            };
-
-            var result = await _chatClient.CompleteChatAsync(new ChatMessage[]
-            {
-                new SystemChatMessage(systemPrompt),
-                new UserChatMessage(userPrompt)
-            }, opts);
-
-            var raw = result.Value.Content[0].Text?.Trim() ?? "[]";
-
-            // GPT đôi khi bọc ```json ... ```
-            if (raw.StartsWith("```"))
-            {
-                int first = raw.IndexOf('\n');
-                int last = raw.LastIndexOf("```");
-                if (first >= 0 && last > first)
-                    raw = raw.Substring(first, last - first).Trim();
+                text = await ExtractTextFromImageAsync(inputOrUrl);
             }
 
-            List<QuickOrderDto> list;
-            try
+            if (string.IsNullOrWhiteSpace(text))
             {
-                list = JsonSerializer.Deserialize<List<QuickOrderDto>>(raw,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Không parse được JSON từ GPT: {ex.Message}\nRaw: {raw}");
-            }
-
-            // defaults an toàn
-            foreach (var it in list)
-            {
-                if (it.SoLuong <= 0) it.SoLuong = 1;
-                if (string.IsNullOrWhiteSpace(it.BienThe)) it.BienThe = "Size chuẩn";
-                it.NoteText ??= "";
-            }
-
-            return list;
-        }
-
-        // QuickOrderService.cs (thêm vào dưới ParseQuickOrderAsync)
-        private static SanPhamBienTheDto? ChonBienTheFallback(SanPhamDto sp, string? bienTheTen)
-        {
-            var match = sp.BienThe.FirstOrDefault(bt =>
-                bt.TenBienThe.Equals(bienTheTen ?? "", StringComparison.OrdinalIgnoreCase));
-            if (match != null) return match;
-
-            if (sp.BienThe.Count == 1) return sp.BienThe[0];
-
-            var macDinh = sp.BienThe.FirstOrDefault(bt => bt.MacDinh);
-            if (macDinh != null) return macDinh;
-
-            var sizeChuan = sp.BienThe.FirstOrDefault(bt =>
-                bt.TenBienThe.Equals("Size chuẩn", StringComparison.OrdinalIgnoreCase));
-            if (sizeChuan != null) return sizeChuan;
-
-            return sp.BienThe.FirstOrDefault();
-        }
-
-        public async Task<List<ChiTietHoaDonDto>> ParseToChiTietAsync(string input)
-        {
-            var items = await ParseQuickOrderAsync(input); // giữ nguyên logic gọi GPT
-            var sanPhams = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
-            var bienTheAll = sanPhams.SelectMany(x => x.BienThe).ToList();
-
-            var list = new List<ChiTietHoaDonDto>();
-            foreach (var it in items)
-            {
-                var sp = sanPhams.FirstOrDefault(x =>
-                    x.Ten.Equals(it.TenMon, StringComparison.OrdinalIgnoreCase));
-                if (sp == null) continue;
-
-                var bt = ChonBienTheFallback(sp, it.BienThe);
-                if (bt == null) continue;
-
-                list.Add(new ChiTietHoaDonDto
+                return (new HoaDonDto
                 {
-                    Id = Guid.NewGuid(),
-                    SanPhamIdBienThe = bt.Id,
-                    TenSanPham = sp.Ten,
-                    TenBienThe = bt.TenBienThe,
-                    DonGia = bt.GiaBan,
-                    SoLuong = it.SoLuong > 0 ? it.SoLuong : 1,
-                    Stt = 0, // lát nữa đánh lại
-                    BienTheList = bienTheAll.Where(x => x.SanPhamId == sp.Id).ToList(),
-                    ToppingDtos = new List<ToppingDto>(),
-                    NoteText = it.NoteText ?? ""
-                });
+                    Id = Guid.Empty,
+                    Ngay = DateTime.Now.Date,
+                    CreatedAt = DateTime.Now,
+                    LastModified = DateTime.Now,
+                    ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(),
+                    ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>(),
+                    ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>()
+                }, text);
             }
 
-            // đánh STT
-            int stt = 1;
-            foreach (var ct in list) ct.Stt = stt++;
+            var chiTiets = await _engine.MapToChiTietAsync(text);
 
-            return list;
-        }
-
-        public async Task<HoaDonDto> BuildHoaDonFromQuickAsync(string input)
-        {
-            var chiTiets = await ParseToChiTietAsync(input);
-            return new HoaDonDto
+            return (new HoaDonDto
             {
                 Id = Guid.Empty,
                 Ngay = DateTime.Now.Date,
@@ -205,9 +159,7 @@ INPUT (nguyên văn):
                 ChiTietHoaDons = chiTiets,
                 ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>(),
                 ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>()
-                // giữ các field khác mặc định; bạn có thể set PhanLoai/TenBan… ở chỗ gọi
-            };
+            }, text);
         }
-
     }
 }

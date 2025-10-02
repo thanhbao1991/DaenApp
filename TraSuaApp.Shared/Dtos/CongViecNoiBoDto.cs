@@ -20,8 +20,8 @@ public class CongViecNoiBoDto : DtoBase
     public DateTime? LastModified { get; set; }
     public string TimKiem =>
        $"{Ten?.ToLower() ?? ""} " +
-       TextSearchHelper.NormalizeText(Ten ?? "") + " " +
-       TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
-       TextSearchHelper.GetShortName(Ten ?? "");
+       StringHelper.NormalizeText(Ten ?? "") + " " +
+       StringHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+       StringHelper.GetShortName(Ten ?? "");
 
 }

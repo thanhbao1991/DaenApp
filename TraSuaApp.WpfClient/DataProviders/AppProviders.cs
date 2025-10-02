@@ -1,6 +1,7 @@
 ﻿using System.Media;
 using System.Net.Http.Json;
 using TraSuaApp.Shared.Config;
+using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient;
 using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
@@ -25,7 +26,19 @@ public static class AppProviders
     public static ChiTietHoaDonThanhToanDataProvider ChiTietHoaDonThanhToans { get; private set; } = null!;
     public static ChiTieuHangNgayDataProvider ChiTieuHangNgays { get; private set; } = null!;
     public static NguyenLieuDataProvider NguyenLieus { get; private set; } = null!;
+    public static string QuickOrderMenu { get; private set; } = "";
 
+    public static void BuildQuickOrderMenu()
+    {
+        var items = SanPhams.Items
+            .Where(x => !x.NgungBan)
+            .OrderBy(x => x.Ten)
+            .Select(x => $"{x.Id}\t{(string.IsNullOrWhiteSpace(x.TenKhongVietTat)
+                ? StringHelper.NormalizeText(x.Ten).ToLower()
+                : x.TenKhongVietTat)}");
+
+        QuickOrderMenu = string.Join("\n", items);
+    }
     public static async Task ReloadAllAsync()
     {
         if (HoaDons != null) await HoaDons.ReloadAsync();
@@ -33,12 +46,17 @@ public static class AppProviders
         if (ChiTietHoaDonNos != null) await ChiTietHoaDonNos.ReloadAsync();
         if (ChiTieuHangNgays != null) await ChiTieuHangNgays.ReloadAsync();
         if (CongViecNoiBos != null) await CongViecNoiBos.ReloadAsync();
-        if (SanPhams != null) await SanPhams.ReloadAsync();
+        //   if (SanPhams != null) await SanPhams.ReloadAsync();
         if (Toppings != null) await Toppings.ReloadAsync();
         if (KhachHangs != null) await KhachHangs.ReloadAsync();
         if (Vouchers != null) await Vouchers.ReloadAsync();
         if (KhachHangGiaBans != null) await KhachHangGiaBans.ReloadAsync();
         if (PhuongThucThanhToans != null) await PhuongThucThanhToans.ReloadAsync();
+        if (SanPhams != null)
+        {
+            await SanPhams.ReloadAsync();
+            BuildQuickOrderMenu();
+        }
     }
 
     public static async Task<DashboardDto?> GetDashboardAsync()
@@ -123,5 +141,7 @@ public static class AppProviders
            NguyenLieus.InitializeAsync(),
            ChiTieuHangNgays.InitializeAsync()
         );
+
+        BuildQuickOrderMenu();
     }
 }

@@ -1,15 +1,17 @@
-﻿using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Media;
+﻿using System.IO;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Media.Animation;
+using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
+using Microsoft.Win32;
+using TraSuaApp.Shared.Config;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Services;
+using TraSuaApp.WpfClient.Helpers;
+using TraSuaApp.WpfClient.HoaDonViews;
+using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.Controls
 {
@@ -18,11 +20,9 @@ namespace TraSuaApp.WpfClient.Controls
         private const string MessengerUrl = "https://www.messenger.com";
         private static readonly string UserDataFolder =
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                         "TraSuaApp.WebView2"); // profile cố định để giữ đăng nhập
+                         "TraSuaApp.WebView2");
 
-        // Toạ độ contextmenu (CSS px) do JS gửi về
-        private double _ctxClientX = 0, _ctxClientY = 0;
-        private string? _ctxLink = null;
+        private readonly QuickOrderService _quick = new(Config.apiChatGptKey);
 
         public MessengerTab()
         {
@@ -30,86 +30,19 @@ namespace TraSuaApp.WpfClient.Controls
             Loaded += MessengerTab_Loaded;
         }
 
-        // ===== UnreadCount DP =====
-        public int UnreadCount
-        {
-            get => (int)GetValue(UnreadCountProperty);
-            set => SetValue(UnreadCountProperty, value);
-        }
-        public static readonly DependencyProperty UnreadCountProperty =
-            DependencyProperty.Register(nameof(UnreadCount), typeof(int), typeof(MessengerTab),
-                new PropertyMetadata(0, OnUnreadChanged));
-
-        public void Reload() => WebView?.Reload();
-
         private async void MessengerTab_Loaded(object? sender, RoutedEventArgs e)
         {
             try
             {
-                if (WebView.CoreWebView2 != null) return; // tránh init lại
+                if (WebView.CoreWebView2 != null) return;
 
                 Directory.CreateDirectory(UserDataFolder);
                 var env = await CoreWebView2Environment.CreateAsync(userDataFolder: UserDataFolder);
                 await WebView.EnsureCoreWebView2Async(env);
 
-                // Tắt menu mặc định & lắng nghe JS
                 WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
-                WebView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
                 WebView.CoreWebView2.ProcessFailed += CoreWebView2_ProcessFailed;
                 WebView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
-
-                // JS hook Notification
-                await WebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(@"
-                    (function() {
-                        const OldNotify = window.Notification;
-                        window.Notification = function(title, options) {
-                            try {
-                                window.chrome.webview.postMessage(JSON.stringify({ type: 'notify', title: title, body: options?.body || '' }));
-                            } catch(e){}
-                            return new OldNotify(title, options);
-                        };
-                        window.Notification.requestPermission = OldNotify.requestPermission.bind(OldNotify);
-                    })();
-                ");
-
-                // JS hook unread
-                await WebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(@"
-                    (function () {
-                        function sendCount() {
-                            try {
-                                var m = (document.title || '').match(/\((\d+)\)/);
-                                var count = m ? parseInt(m[1], 10) : 0;
-                                window.chrome.webview.postMessage(JSON.stringify({ type:'unread', count: count }));
-                            } catch(e){}
-                        }
-                        sendCount();
-                        var titleEl = document.querySelector('title');
-                        if (titleEl) {
-                            new MutationObserver(sendCount).observe(titleEl, { childList: true, characterData: true, subtree: true });
-                        }
-                        setInterval(sendCount, 5000);
-                    })();
-                ");
-
-                // JS hook contextmenu
-                await WebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(@"
-                    (function() {
-                        document.addEventListener('contextmenu', function(ev){
-                            try{
-                                ev.preventDefault();
-                                const x = ev.clientX;
-                                const y = ev.clientY;
-                                let el = ev.target, link = '';
-                                for (let i=0;i<6 && el;i++){
-                                    if(el.tagName === 'A' && el.href){ link = el.href; break; }
-                                    el = el.parentElement;
-                                }
-                                window.chrome.webview.postMessage(JSON.stringify({ type:'ctx', x:x, y:y, link:link }));
-                            }catch(e){}
-                            return false;
-                        }, true);
-                    })();
-                ");
 
                 WebView.CoreWebView2.Navigate(MessengerUrl);
             }
@@ -119,149 +52,169 @@ namespace TraSuaApp.WpfClient.Controls
             }
         }
 
-        // ======= WebMessageReceived =======
-        private async void CoreWebView2_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+        // =========================
+        // Button: tạo đơn từ text đã chọn
+        // =========================
+        private async void CreateOrderFromText_Click(object sender, RoutedEventArgs e)
+        {
+            await CreateOrderFromSelectionAsync();
+        }
+
+        private async Task<string> GetSelectedTextAsync()
+        {
+            const string js = @"(() => {
+                try {
+                    const s = window.getSelection();
+                    return s ? s.toString() : '';
+                } catch(e){ return ''; }
+            })()";
+
+            var raw = await WebView.CoreWebView2.ExecuteScriptAsync(js);
+            return JsonSerializer.Deserialize<string>(raw) ?? string.Empty;
+        }
+
+        private static string CleanSelectedText(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return string.Empty;
+
+            // Bỏ ký tự ẩn / NBSP / zero-width
+            s = s.Replace('\u00A0', ' ')
+                 .Replace("\u200B", "").Replace("\u200C", "").Replace("\u200D", "").Replace("\uFEFF", "");
+
+            // Chuẩn hoá xuống dòng + khoảng trắng
+            s = s.Replace("\r\n", "\n").Replace("\r", "\n");
+            s = Regex.Replace(s, @"[ \t]+", " ");
+            s = Regex.Replace(s, @"\n{3,}", "\n\n");
+
+            // Giới hạn độ dài để tránh prompt bị quá dài
+            const int maxChars = 4000;
+            if (s.Length > maxChars) s = s.Substring(0, maxChars);
+
+            return s.Trim();
+        }
+
+        private async Task CreateOrderFromSelectionAsync()
         {
             try
             {
-                var json = e.TryGetWebMessageAsString();
-                if (string.IsNullOrWhiteSpace(json)) return;
+                var text = await GetSelectedTextAsync();
+                text = CleanSelectedText(text);
 
-                using var doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
-                var type = root.GetProperty("type").GetString();
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    MessageBox.Show("Hãy bôi đen đoạn văn bản trước khi tạo hoá đơn.");
+                    return;
+                }
 
-                if (type == "notify")
-                {
-                    string title = root.GetProperty("title").GetString() ?? "Messenger";
-                    string body = root.GetProperty("body").GetString() ?? "";
-                    _ = DiscordService.SendAsync(DiscordEventType.Admin, $"Notify: {title} - {body}");
-                }
-                else if (type == "unread")
-                {
-                    int count = root.GetProperty("count").GetInt32();
-                    UnreadCount = Math.Max(0, count);
-                }
-                else if (type == "ctx")
-                {
-                    _ctxClientX = root.GetProperty("x").GetDouble();
-                    _ctxClientY = root.GetProperty("y").GetDouble();
-                    _ctxLink = root.GetProperty("link").GetString();
+                Mouse.OverrideCursor = Cursors.Wait;
+                var (hd, rawInput) = await AIOrderHelper.RunWithLoadingAsync(
+                    "Đang tạo hoá đơn AI...",
+                    () => _quick.BuildHoaDonAsync(text) // text path
+                );
 
-                    ShowContextMenu();
+                if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
+                {
+                    MessageBox.Show("Không nhận diện được món nào từ đoạn đã chọn.");
+                    return;
                 }
+                hd.PhanLoai = "Ship";
+                Mouse.OverrideCursor = null;
+
+                var win = new HoaDonEdit(hd)
+                {
+                    GptInputText = rawInput,
+
+                    Owner = Window.GetWindow(this),
+                    Width = Window.GetWindow(this)?.ActualWidth ?? 1200,
+                    Height = Window.GetWindow(this)?.ActualHeight ?? 800
+                };
+                win.ShowDialog();
             }
             catch (Exception ex)
             {
-                _ = DiscordService.SendAsync(DiscordEventType.Admin, "Message error: " + ex);
+                MessageBox.Show("Tạo đơn lỗi: " + ex.Message);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
             }
         }
 
-        // ===== MENU CHUỘT PHẢI (WPF ContextMenu) =====
-        private void ShowContextMenu()
+        // Nút reload
+        private void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
-            var cm = new ContextMenu();
-
-            // Copy tin nhắn
-            var copyMsg = new MenuItem { Header = "Copy tin nhắn" };
-            copyMsg.Click += async (_, __) =>
+            try
             {
-                string js = $@"
-                    (function(){{
-                        var el = document.elementFromPoint({_ctxClientX.ToString(CultureInfo.InvariantCulture)}, {_ctxClientY.ToString(CultureInfo.InvariantCulture)});
-                        if (!el) return '';
-                        var cur = el, depth = 0;
-                        while (cur && depth < 6) {{
-                            if (cur.innerText && cur.innerText.trim().length > 0 && cur.tagName !== 'IMG') break;
-                            cur = cur.parentElement; depth++;
-                        }}
-                        return (cur || el).innerText || '';
-                    }})();";
-
-                var result = await WebView.CoreWebView2.ExecuteScriptAsync(js);
-                var text = JsonSerializer.Deserialize<string>(result) ?? "";
-                if (!string.IsNullOrWhiteSpace(text))
-                    Clipboard.SetText(text.Trim());
-            };
-            cm.Items.Add(copyMsg);
-
-            // Link
-            if (!string.IsNullOrEmpty(_ctxLink))
-            {
-                cm.Items.Add(new Separator());
-
-                var copyLink = new MenuItem { Header = "Copy link" };
-                copyLink.Click += (_, __) => Clipboard.SetText(_ctxLink!);
-                cm.Items.Add(copyLink);
-
-                var openLink = new MenuItem { Header = "Mở link" };
-                openLink.Click += (_, __) =>
-                {
-                    try { Process.Start(new ProcessStartInfo(_ctxLink!) { UseShellExecute = true }); }
-                    catch { }
-                };
-                cm.Items.Add(openLink);
+                WebView.Reload();
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Reload lỗi: " + ex.Message);
+            }
+        }
 
-            cm.Items.Add(new Separator());
+        // =========================
+        // Button: tạo đơn từ ảnh
+        // =========================
+        private async void CreateOrderFromImage_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog
+            {
+                Title = "Chọn ảnh để tạo hoá đơn",
+                Filter = "Ảnh (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|All files|*.*",
+                InitialDirectory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads")
+            };
 
-            // Reload
-            var reloadItem = new MenuItem { Header = "Reload ↻" };
-            reloadItem.Click += (_, __) => WebView.Reload();
-            cm.Items.Add(reloadItem);
+            if (dlg.ShowDialog() == true)
+            {
+                try
+                {
+                    Mouse.OverrideCursor = Cursors.Wait;
+                    var (hd, rawInput) = await AIOrderHelper.RunWithLoadingAsync(
+                        "Đang phân tích ảnh...",
+                        () => _quick.BuildHoaDonAsync(dlg.FileName, isImage: true) // OCR ảnh (đã vá path -> data-url)
+                    );
 
-            // Hiển thị tại vị trí chuột
-            cm.PlacementTarget = this;
-            cm.Placement = PlacementMode.MousePoint;
-            cm.IsOpen = true;
+                    if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
+                    {
+                        MessageBox.Show("Không nhận diện được món nào trong ảnh.");
+                        return;
+                    }
+                    hd.PhanLoai = "Ship";
+                    Mouse.OverrideCursor = null;
+
+                    var win = new HoaDonEdit(hd)
+                    {
+                        GptInputText = rawInput,
+
+                        Owner = Window.GetWindow(this),
+                        Width = Window.GetWindow(this)?.ActualWidth ?? 1200,
+                        Height = Window.GetWindow(this)?.ActualHeight ?? 800
+                    };
+                    win.ShowDialog();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Tạo đơn từ ảnh lỗi: " + ex.Message);
+                }
+                finally
+                {
+                    Mouse.OverrideCursor = null;
+                }
+            }
         }
 
         private void CoreWebView2_ProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
         {
             _ = DiscordService.SendAsync(DiscordEventType.Admin, $"WebView2 crashed: {e.ProcessFailedKind}");
-            Dispatcher.InvokeAsync(() =>
-            {
-                try { WebView?.Reload(); } catch { }
-            });
+            Dispatcher.InvokeAsync(() => { try { WebView?.Reload(); } catch { } });
         }
 
         private void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
         {
             if (!e.IsSuccess)
-            {
                 _ = DiscordService.SendAsync(DiscordEventType.Admin, $"Navigation failed: {e.WebErrorStatus}");
-            }
-        }
-
-        // ===== Khi UnreadCount đổi =====
-        private static void OnUnreadChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is MessengerTab tab && tab.IsLoaded)
-            {
-                int oldVal = (int)e.OldValue;
-                int newVal = (int)e.NewValue;
-                var win = Window.GetWindow(tab);
-                var tabItem = win?.FindName("MessengerTabItem") as TabItem;
-                bool isActive = tabItem?.IsSelected == true;
-
-                if (newVal > oldVal)
-                {
-                    if (!isActive)
-                    {
-                        SystemSounds.Exclamation.Play();
-                        var badge = win?.FindName("BadgeBorder") as Border;
-                        if (badge != null)
-                        {
-                            var sb = (Storyboard)System.Windows.Application.Current.FindResource("FlashStoryboard");
-                            sb?.Begin(badge, true);
-                        }
-                    }
-                    else
-                    {
-                        tab.UnreadCount = 0;
-                    }
-                }
-            }
         }
     }
 }

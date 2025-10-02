@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Application.Interfaces;
+using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
@@ -26,6 +26,7 @@ namespace TraSuaApp.Infrastructure.Services
                 Ten = entity.Ten,
                 DinhLuong = entity.DinhLuong,
                 VietTat = entity.VietTat,
+                TenKhongVietTat = entity.TenKhongVietTat,
                 DaBan = entity.DaBan,
                 NgungBan = entity.NgungBan,
                 TichDiem = entity.TichDiem,
@@ -86,6 +87,8 @@ namespace TraSuaApp.Infrastructure.Services
                 Ten = dto.Ten.Trim(),
                 DinhLuong = dto.DinhLuong?.Trim(),
                 VietTat = dto.VietTat?.Trim(),
+                TenKhongVietTat = dto.TenKhongVietTat,
+
                 DaBan = dto.DaBan,
                 NgungBan = dto.NgungBan,
                 TichDiem = dto.TichDiem,
@@ -135,6 +138,8 @@ namespace TraSuaApp.Infrastructure.Services
             entity.Ten = dto.Ten.Trim();
             entity.DinhLuong = dto.DinhLuong?.Trim();
             entity.VietTat = dto.VietTat?.Trim();
+            entity.TenKhongVietTat = dto.TenKhongVietTat;
+
             entity.DaBan = dto.DaBan;
             entity.NgungBan = dto.NgungBan;
             entity.TichDiem = dto.TichDiem;
@@ -221,6 +226,8 @@ namespace TraSuaApp.Infrastructure.Services
                     Ten = entity.Ten,
                     DinhLuong = entity.DinhLuong,
                     VietTat = entity.VietTat,
+                    TenKhongVietTat = entity.TenKhongVietTat,
+
                     DaBan = entity.DaBan,
                     NgungBan = entity.NgungBan,
                     TichDiem = entity.TichDiem,
@@ -253,6 +260,8 @@ namespace TraSuaApp.Infrastructure.Services
                     Ten = entity.Ten,
                     DinhLuong = entity.DinhLuong,
                     VietTat = entity.VietTat,
+                    TenKhongVietTat = entity.TenKhongVietTat,
+
                     DaBan = entity.DaBan,
                     NgungBan = entity.NgungBan,
                     TichDiem = entity.TichDiem,
@@ -286,6 +295,8 @@ namespace TraSuaApp.Infrastructure.Services
                     Ten = entity.Ten,
                     DinhLuong = entity.DinhLuong,
                     VietTat = entity.VietTat,
+                    TenKhongVietTat = entity.TenKhongVietTat,
+
                     DaBan = entity.DaBan,
                     NgungBan = entity.NgungBan,
                     TichDiem = entity.TichDiem,

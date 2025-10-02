@@ -16,9 +16,9 @@ namespace TraSuaApp.Shared.Dtos
         public bool DangSuDung { get; set; }
         public string TimKiem =>
      $"{Ten?.ToLower() ?? ""} " +
-     TextSearchHelper.NormalizeText(Ten ?? "") + " " +
-     TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
-     TextSearchHelper.GetShortName(Ten ?? "");
+     StringHelper.NormalizeText(Ten ?? "") + " " +
+     StringHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+     StringHelper.GetShortName(Ten ?? "");
 
     }
 }

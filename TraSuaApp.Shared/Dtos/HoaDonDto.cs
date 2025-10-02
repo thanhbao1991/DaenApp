@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Shared.Helpers;
 
@@ -144,7 +145,8 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public decimal DaThu => ThanhTien - ConLai;
     public decimal ConLai { get; set; }
     public int TichDiem => (int)ThanhTien / 10000;
-    public virtual ICollection<ChiTietHoaDonDto> ChiTietHoaDons { get; set; } = new List<ChiTietHoaDonDto>();
+    public ObservableCollection<ChiTietHoaDonDto> ChiTietHoaDons { get; set; }
+     = new ObservableCollection<ChiTietHoaDonDto>();
     public virtual ICollection<ChiTietHoaDonToppingDto> ChiTietHoaDonToppings { get; set; } = new List<ChiTietHoaDonToppingDto>();
     public ICollection<ChiTietHoaDonVoucherDto>? ChiTietHoaDonVouchers { get; set; }
 
@@ -155,9 +157,9 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public override string Ten => KhachHangId == null ? TenBan : TenKhachHangText;
     public string TimKiem =>
         $"{Ten?.ToLower() ?? ""} " +
-        TextSearchHelper.NormalizeText(Ten ?? "") + " " +
-        TextSearchHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
-        TextSearchHelper.GetShortName(Ten ?? "");
+        StringHelper.NormalizeText(Ten ?? "") + " " +
+        StringHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+        StringHelper.GetShortName(Ten ?? "");
 
 
     // 🟟 Hàm đồng bộ dữ liệu khi nhận update từ SignalR
@@ -199,7 +201,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
         ConLai = other.ConLai;
 
         // collections
-        ChiTietHoaDons = other.ChiTietHoaDons?.ToList() ?? new List<ChiTietHoaDonDto>();
+        ChiTietHoaDons = other.ChiTietHoaDons;
         ChiTietHoaDonToppings = other.ChiTietHoaDonToppings?.ToList() ?? new List<ChiTietHoaDonToppingDto>();
         ChiTietHoaDonVouchers = other.ChiTietHoaDonVouchers?.ToList();
         ChiTietHoaDonThanhToans = other.ChiTietHoaDonThanhToans?.ToList() ?? new List<ChiTietHoaDonThanhToan>();

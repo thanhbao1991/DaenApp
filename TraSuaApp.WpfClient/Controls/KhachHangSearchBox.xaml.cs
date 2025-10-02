@@ -164,7 +164,7 @@ namespace TraSuaApp.WpfClient.Controls
                 : Visibility.Visible;
 
             string raw = SearchTextBox.Text?.Trim() ?? "";
-            string keyword = TextSearchHelper.NormalizeText(raw);
+            string keyword = StringHelper.NormalizeText(raw);
 
             if (string.IsNullOrEmpty(keyword))
             {

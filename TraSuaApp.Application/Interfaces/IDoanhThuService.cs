@@ -1,6 +1,6 @@
 ﻿using TraSuaApp.Shared.Dtos;
 
-namespace TraSuaApp.Application.Interfaces;
+namespace TraSuaApp.Applicationn.Interfaces;
 
 public interface IDoanhThuService
 {
