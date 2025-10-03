@@ -1609,6 +1609,7 @@ namespace TraSuaApp.WpfClient.Views
                 newTen = newTen.Replace("Olong", "Ô Long", StringComparison.OrdinalIgnoreCase);
                 newTen = newTen.Replace("OLONG", "Ô Long", StringComparison.OrdinalIgnoreCase);
                 newTen = newTen.Replace("Cf", "Cà Phê", StringComparison.OrdinalIgnoreCase);
+                newTen = newTen.Replace("Cf", "Cà Phê", StringComparison.OrdinalIgnoreCase);
                 newTen = newTen.Replace("Cafe", "Cà Phê", StringComparison.OrdinalIgnoreCase);
                 newTen = newTen.Replace("S/MV", "Ship / Mua Về", StringComparison.OrdinalIgnoreCase);
 

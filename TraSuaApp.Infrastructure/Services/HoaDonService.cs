@@ -64,7 +64,6 @@ public class HoaDonService : IHoaDonService
 
         return new HoaDonDto
         {
-
             Id = entity.Id,
             MaHoaDon = entity.MaHoaDon,
             Ngay = entity.Ngay,
@@ -361,6 +360,7 @@ public class HoaDonService : IHoaDonService
                     Id = ct.Id,
                     HoaDonId = ct.HoaDonId,
                     SanPhamIdBienThe = ct.SanPhamBienTheId,
+                    SanPhamId = ct.SanPhamId,
                     SoLuong = ct.SoLuong,
                     DonGia = ct.DonGia,
                     TenSanPham = ct.TenSanPham ?? "",
@@ -713,6 +713,8 @@ public class HoaDonService : IHoaDonService
                 Id = chiTietId,
                 HoaDonId = hoaDonId,
                 SanPhamBienTheId = ct.SanPhamIdBienThe,
+                SanPhamId = bienThe?.SanPhamId ?? Guid.Empty,
+
                 SoLuong = ct.SoLuong,
                 DonGia = donGia,
 
@@ -785,31 +787,37 @@ public class HoaDonService : IHoaDonService
         foreach (var ct in entity.ChiTietHoaDons)
         {
             ct.IsDeleted = true;
+            ct.DeletedAt = now;
             ct.LastModified = now;
         }
         foreach (var tp in entity.ChiTietHoaDonToppings)
         {
             tp.IsDeleted = true;
+            tp.DeletedAt = now;
             tp.LastModified = now;
         }
         foreach (var v in entity.ChiTietHoaDonVouchers)
         {
             v.IsDeleted = true;
+            v.DeletedAt = now;
             v.LastModified = now;
         }
         foreach (var tt in entity.ChiTietHoaDonThanhToans)
         {
             tt.IsDeleted = true;
+            tt.DeletedAt = now;
             tt.LastModified = now;
         }
         foreach (var no in entity.ChiTietHoaDonNos)
         {
             no.IsDeleted = true;
+            no.DeletedAt = now;
             no.LastModified = now;
         }
         foreach (var p in entity.ChiTietHoaDonPoints)
         {
             p.IsDeleted = true;
+            p.DeletedAt = now;
             p.LastModified = now;
         }
 

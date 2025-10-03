@@ -87,7 +87,10 @@ namespace TraSuaApp.Infrastructure.Services
                 Ten = dto.Ten.Trim(),
                 DinhLuong = dto.DinhLuong?.Trim(),
                 VietTat = dto.VietTat?.Trim(),
-                TenKhongVietTat = dto.TenKhongVietTat,
+                TenKhongVietTat = string.IsNullOrWhiteSpace(dto.TenKhongVietTat)
+            ? StringHelper.NormalizeText(dto.Ten).ToLower()
+            : dto.TenKhongVietTat,
+
 
                 DaBan = dto.DaBan,
                 NgungBan = dto.NgungBan,
@@ -138,7 +141,10 @@ namespace TraSuaApp.Infrastructure.Services
             entity.Ten = dto.Ten.Trim();
             entity.DinhLuong = dto.DinhLuong?.Trim();
             entity.VietTat = dto.VietTat?.Trim();
-            entity.TenKhongVietTat = dto.TenKhongVietTat;
+            entity.TenKhongVietTat = string.IsNullOrWhiteSpace(dto.TenKhongVietTat)
+         ? StringHelper.NormalizeText(dto.Ten).ToLower()
+         : dto.TenKhongVietTat;
+
 
             entity.DaBan = dto.DaBan;
             entity.NgungBan = dto.NgungBan;

@@ -37,16 +37,17 @@ namespace TraSuaApp.WpfClient.Helpers
 
             if (hoaDon.KhachHangId != null)
             {
-                sb.AppendLine($"Khách hàng: {hoaDon.TenKhachHangText}");
-                sb.AppendLine($"{hoaDon.DiaChiText} - {FormatPhone(hoaDon.SoDienThoaiText)}");
+                sb.AppendLine($"KH: {hoaDon.TenKhachHangText}");
+                sb.AppendLine($"{hoaDon.DiaChiText}");
+                sb.AppendLine($"{FormatPhone(hoaDon.SoDienThoaiText)}");
 
                 var starText = StarHelper.GetStarText(hoaDon.DiemThangNay);
                 if (!string.IsNullOrEmpty(starText))
-                    sb.AppendLine($"Điểm tháng này: {starText}");
+                    sb.AppendLine($"☆ tháng này: {starText}");
 
                 var starText2 = StarHelper.GetStarText(hoaDon.DiemThangTruoc);
                 if (!string.IsNullOrEmpty(starText2))
-                    sb.AppendLine($"Điểm tháng trước: {starText2}");
+                    sb.AppendLine($"☆ tháng trước: {starText2}");
             }
             sb.AppendLine("---------------------------");
             sb.AppendLine();
@@ -142,7 +143,7 @@ namespace TraSuaApp.WpfClient.Helpers
             if (qrOnline != null)
             {
                 // in bill + QR ở cuối (canh trái, vừa cột chữ, 2 dòng trống)
-                PrintViaGdi(content, printerName, "Consolas", 10f, qrOnline);
+                PrintViaGdi(content, printerName, "Consolas", 8f, qrOnline);
             }
             else
             {
@@ -283,7 +284,7 @@ namespace TraSuaApp.WpfClient.Helpers
                 {
                     int leftPadPx = 0;                                 // sát cột chữ
                     int rightPadPx = 0;
-                    int blank2Lines = 2 * lineHpx;                        // thêm 2 dòng trống
+                    int blank2Lines = 3 * lineHpx;                        // thêm 2 dòng trống
                     int safeBottomPx = (int)Math.Round(0.1f * g.DpiY);     // ~2.5mm
 
                     int maxWidthPx = Math.Max(60, widthPx - leftPadPx - rightPadPx);

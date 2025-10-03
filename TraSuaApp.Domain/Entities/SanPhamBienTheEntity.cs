@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace TraSuaApp.Domain.Entities;
+﻿namespace TraSuaApp.Domain.Entities;
 
 public partial class SanPhamBienThe
 {
@@ -28,4 +25,6 @@ public partial class SanPhamBienThe
     public virtual ICollection<CongThuc> CongThucs { get; set; } = new List<CongThuc>();
 
     public virtual SanPham SanPham { get; set; } = null!;
+    public virtual ICollection<KhachHangGiaBan> KhachHangGiaBans { get; set; } = new List<KhachHangGiaBan>();
+
 }

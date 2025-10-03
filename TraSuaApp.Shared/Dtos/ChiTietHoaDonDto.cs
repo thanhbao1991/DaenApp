@@ -73,6 +73,7 @@ public class ChiTietHoaDonDto : DtoBase, INotifyPropertyChanged
 
     public Guid HoaDonId { get; set; }
     public Guid SanPhamIdBienThe { get; set; }
+    public Guid? SanPhamId { get; set; }
 
 
     public virtual List<SanPhamBienTheDto> BienTheList { get; set; } = new List<SanPhamBienTheDto>();
@@ -83,6 +84,7 @@ public class ChiTietHoaDonDto : DtoBase, INotifyPropertyChanged
     public decimal TongTienTopping => ToppingDtos?.Sum(x => x.Gia * x.SoLuong) ?? 0;
 
     public decimal ThanhTien => (DonGia * SoLuong) + TongTienTopping;
+
 
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void OnPropertyChanged(string propertyName) =>

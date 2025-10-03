@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TraSuaApp.Infrastructure;
 
@@ -11,9 +12,11 @@ using TraSuaApp.Infrastructure;
 namespace TraSuaApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251003033306_AddEntityIdToLodđffff")]
+    partial class AddEntityIdToLodđffff
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -789,6 +792,7 @@ namespace TraSuaApp.Infrastructure.Migrations
             modelBuilder.Entity("TraSuaApp.Domain.Entities.KhachHangGiaBan", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -798,7 +802,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("GiaBan")
-                        .HasColumnType("decimal(18, 2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -814,13 +818,9 @@ namespace TraSuaApp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("KhachHangId");
+
                     b.HasIndex("SanPhamBienTheId");
-
-                    b.HasIndex(new[] { "IsDeleted", "LastModified" }, "IX_KhachHangGiaBans_IsDeleted_LastModified")
-                        .IsDescending(false, true);
-
-                    b.HasIndex(new[] { "KhachHangId", "SanPhamBienTheId" }, "IX_KhachHangGiaBans_KH_SanPhamBienThe")
-                        .IsUnique();
 
                     b.ToTable("KhachHangGiaBans");
                 });
@@ -1438,14 +1438,12 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.NhomSanPham", null)
                         .WithMany()
                         .HasForeignKey("NhomSanPhamId")
-                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_ToppingNhomSanPhamLinks_NhomSanPham");
 
                     b.HasOne("TraSuaApp.Domain.Entities.Topping", null)
                         .WithMany()
                         .HasForeignKey("ToppingId")
-                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_ToppingNhomSanPhamLinks_Topping");
                 });
@@ -1455,13 +1453,13 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.HoaDon", "HoaDon")
                         .WithMany("ChiTietHoaDons")
                         .HasForeignKey("HoaDonId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("TraSuaApp.Domain.Entities.SanPhamBienThe", "SanPhamBienThe")
                         .WithMany("ChiTietHoaDons")
                         .HasForeignKey("SanPhamBienTheId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("HoaDon");
@@ -1474,13 +1472,13 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.HoaDonNhap", "HoaDonNhap")
                         .WithMany("ChiTietHoaDonNhaps")
                         .HasForeignKey("HoaDonNhapId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("TraSuaApp.Domain.Entities.NguyenLieu", "NguyenLieu")
                         .WithMany("ChiTietHoaDonNhaps")
                         .HasForeignKey("NguyenLieuId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("HoaDonNhap");
@@ -1493,7 +1491,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.HoaDon", "HoaDon")
                         .WithMany("ChiTietHoaDonNos")
                         .HasForeignKey("HoaDonId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_NoHoaDons_HoaDons_HoaDonId");
 
@@ -1517,7 +1515,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.KhachHang", "KhachHang")
                         .WithMany("ChiTietHoaDonPoints")
                         .HasForeignKey("KhachHangId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_CustomerPointLogs_KhachHangs_KhachHangId");
 
@@ -1535,7 +1533,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.HoaDon", "HoaDon")
                         .WithMany("ChiTietHoaDonThanhToans")
                         .HasForeignKey("HoaDonId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_Payments_HoaDons_HoaDonId");
 
@@ -1546,7 +1544,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.PhuongThucThanhToan", "PhuongThucThanhToan")
                         .WithMany("ChiTietHoaDonThanhToans")
                         .HasForeignKey("PhuongThucThanhToanId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_Payments_PaymentMethods_PaymentMethodId");
 
@@ -1564,13 +1562,13 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.HoaDon", "HoaDon")
                         .WithMany("ChiTietHoaDonToppings")
                         .HasForeignKey("HoaDonId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("TraSuaApp.Domain.Entities.Topping", "Topping")
                         .WithMany("ChiTietHoaDonToppings")
                         .HasForeignKey("ToppingId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("HoaDon");
@@ -1583,14 +1581,14 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.HoaDon", "HoaDon")
                         .WithMany("ChiTietHoaDonVouchers")
                         .HasForeignKey("HoaDonId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_VoucherLogs_HoaDons_HoaDonId");
 
                     b.HasOne("TraSuaApp.Domain.Entities.Voucher", "Voucher")
                         .WithMany("ChiTietHoaDonVouchers")
                         .HasForeignKey("VoucherId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_VoucherLogs_Vouchers_VoucherId");
 
@@ -1604,7 +1602,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.TuyChinhMon", "TuyChinhMon")
                         .WithMany("ChiTietTuyChinhMons")
                         .HasForeignKey("TuyChinhMonId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("TuyChinhMon");
@@ -1615,7 +1613,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.SanPhamBienThe", "SanPhamBienThe")
                         .WithMany("CongThucs")
                         .HasForeignKey("SanPhamBienTheId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("SanPhamBienThe");
@@ -1625,8 +1623,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                 {
                     b.HasOne("TraSuaApp.Domain.Entities.KhachHang", "KhachHang")
                         .WithMany("HoaDons")
-                        .HasForeignKey("KhachHangId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("KhachHangId");
 
                     b.Navigation("KhachHang");
                 });
@@ -1636,7 +1633,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.KhachHang", "KhachHang")
                         .WithMany("KhachHangAddresses")
                         .HasForeignKey("KhachHangId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_KhachHangAddresses_KhachHangs_IdKhachHang");
 
@@ -1646,15 +1643,15 @@ namespace TraSuaApp.Infrastructure.Migrations
             modelBuilder.Entity("TraSuaApp.Domain.Entities.KhachHangGiaBan", b =>
                 {
                     b.HasOne("TraSuaApp.Domain.Entities.KhachHang", "KhachHang")
-                        .WithMany("KhachHangGiaBans")
+                        .WithMany()
                         .HasForeignKey("KhachHangId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("TraSuaApp.Domain.Entities.SanPhamBienThe", "SanPhamBienThe")
-                        .WithMany("KhachHangGiaBans")
+                        .WithMany()
                         .HasForeignKey("SanPhamBienTheId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("KhachHang");
@@ -1667,7 +1664,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.KhachHang", "KhachHang")
                         .WithMany("KhachHangPhones")
                         .HasForeignKey("KhachHangId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_KhachHangPhones_KhachHangs_IdKhachHang");
 
@@ -1679,7 +1676,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.NguyenLieu", "NguyenLieu")
                         .WithMany("LichSuNhapXuatKhos")
                         .HasForeignKey("NguyenLieuId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("NguyenLieu");
@@ -1690,7 +1687,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.NhomSanPham", "NhomSanPham")
                         .WithMany("SanPhams")
                         .HasForeignKey("NhomSanPhamId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("FK_SanPhams_NhomSanPhams_NhomSanPhamId");
 
                     b.Navigation("NhomSanPham");
@@ -1701,7 +1698,7 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.SanPham", "SanPham")
                         .WithMany("SanPhamBienThes")
                         .HasForeignKey("SanPhamId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("SanPham");
@@ -1712,13 +1709,13 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasOne("TraSuaApp.Domain.Entities.CongThuc", "CongThuc")
                         .WithMany("SuDungNguyenLieus")
                         .HasForeignKey("CongThucId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("TraSuaApp.Domain.Entities.NguyenLieu", "NguyenLieu")
                         .WithMany("SuDungNguyenLieus")
                         .HasForeignKey("NguyenLieuId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("CongThuc");
@@ -1759,8 +1756,6 @@ namespace TraSuaApp.Infrastructure.Migrations
 
                     b.Navigation("KhachHangAddresses");
 
-                    b.Navigation("KhachHangGiaBans");
-
                     b.Navigation("KhachHangPhones");
                 });
 
@@ -1793,8 +1788,6 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Navigation("ChiTietHoaDons");
 
                     b.Navigation("CongThucs");
-
-                    b.Navigation("KhachHangGiaBans");
                 });
 
             modelBuilder.Entity("TraSuaApp.Domain.Entities.Topping", b =>

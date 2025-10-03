@@ -18,6 +18,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 {
     public partial class HoaDonEdit : Window
     {
+
         public HoaDonDto Model { get; set; } = new();
         private readonly IHoaDonApi _api;
         string _friendlyName = TuDien._tableFriendlyNames["HoaDon"];
@@ -68,6 +69,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         {
             InitializeComponent();
             AnimationHelper.FadeInWindow(this); // 🟟 mở mượt
+
 
             this.KeyDown += Window_KeyDown;
             this.Title = _friendlyName;
@@ -271,8 +273,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 Model = dto;
 
 
-
-
                 foreach (var ct in Model.ChiTietHoaDons)
                 {
                     var bienThe = _bienTheList.FirstOrDefault(bt => bt.Id == ct.SanPhamIdBienThe);
@@ -287,11 +287,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                         }
                     };
                 }
-                //int stt = 1;
-                //foreach (var ct in Model.ChiTietHoaDons)
-                //{
-                //    ct.Stt = stt++;
-                //}
+
                 ChiTietListBox.ItemsSource = Model.ChiTietHoaDons;
                 ChiTietListBox.UpdateLayout();
                 ChiTietListBox.SelectedIndex = -1;
@@ -369,6 +365,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 }
 
                 NoteTuDoTextBox.Text = dto.GhiChu;
+
+
             }
             else
             {
@@ -393,6 +391,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
             // ✅ Tính lại tổng tiền khi mở form
             CapNhatTongTien();
+
+
         }
 
         private SanPhamBienTheDto? ChonBienTheFallback(SanPhamDto sp, string? bienTheTenTuLLM)

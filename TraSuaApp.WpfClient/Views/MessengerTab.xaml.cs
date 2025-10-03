@@ -3,7 +3,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using TraSuaApp.Shared.Config;
@@ -43,6 +42,8 @@ namespace TraSuaApp.WpfClient.Controls
                 WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
                 WebView.CoreWebView2.ProcessFailed += CoreWebView2_ProcessFailed;
                 WebView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
+                WebView.CoreWebView2.DocumentTitleChanged += CoreWebView2_DocumentTitleChanged;
+
 
                 WebView.CoreWebView2.Navigate(MessengerUrl);
             }
@@ -106,7 +107,6 @@ namespace TraSuaApp.WpfClient.Controls
                     return;
                 }
 
-                Mouse.OverrideCursor = Cursors.Wait;
                 var (hd, rawInput) = await AIOrderHelper.RunWithLoadingAsync(
                     "Đang tạo hoá đơn AI...",
                     () => _quick.BuildHoaDonAsync(text) // text path
@@ -118,16 +118,16 @@ namespace TraSuaApp.WpfClient.Controls
                     return;
                 }
                 hd.PhanLoai = "Ship";
-                Mouse.OverrideCursor = null;
 
                 var win = new HoaDonEdit(hd)
                 {
                     GptInputText = rawInput,
-
                     Owner = Window.GetWindow(this),
                     Width = Window.GetWindow(this)?.ActualWidth ?? 1200,
-                    Height = Window.GetWindow(this)?.ActualHeight ?? 800
+                    Height = Window.GetWindow(this)?.ActualHeight ?? 800,
                 };
+                win.KhachHangSearchBox.SearchTextBox.Text = _latestCustomerSuggestion;
+                // win.KhachHangSearchBox.IsPopupOpen = true;
                 win.ShowDialog();
             }
             catch (Exception ex)
@@ -136,7 +136,6 @@ namespace TraSuaApp.WpfClient.Controls
             }
             finally
             {
-                Mouse.OverrideCursor = null;
             }
         }
 
@@ -170,7 +169,6 @@ namespace TraSuaApp.WpfClient.Controls
             {
                 try
                 {
-                    Mouse.OverrideCursor = Cursors.Wait;
                     var (hd, rawInput) = await AIOrderHelper.RunWithLoadingAsync(
                         "Đang phân tích ảnh...",
                         () => _quick.BuildHoaDonAsync(dlg.FileName, isImage: true) // OCR ảnh (đã vá path -> data-url)
@@ -182,16 +180,18 @@ namespace TraSuaApp.WpfClient.Controls
                         return;
                     }
                     hd.PhanLoai = "Ship";
-                    Mouse.OverrideCursor = null;
 
+                    // Sau khi có hd, rawInput
                     var win = new HoaDonEdit(hd)
                     {
                         GptInputText = rawInput,
-
                         Owner = Window.GetWindow(this),
                         Width = Window.GetWindow(this)?.ActualWidth ?? 1200,
-                        Height = Window.GetWindow(this)?.ActualHeight ?? 800
+                        Height = Window.GetWindow(this)?.ActualHeight ?? 800,
                     };
+                    win.KhachHangSearchBox.SearchTextBox.Text = _latestCustomerSuggestion;
+                    //  win.KhachHangSearchBox.IsPopupOpen = true;
+
                     win.ShowDialog();
                 }
                 catch (Exception ex)
@@ -200,7 +200,6 @@ namespace TraSuaApp.WpfClient.Controls
                 }
                 finally
                 {
-                    Mouse.OverrideCursor = null;
                 }
             }
         }
@@ -215,6 +214,16 @@ namespace TraSuaApp.WpfClient.Controls
         {
             if (!e.IsSuccess)
                 _ = DiscordService.SendAsync(DiscordEventType.Admin, $"Navigation failed: {e.WebErrorStatus}");
+        }
+
+        private string? _latestCustomerSuggestion;
+        private void CoreWebView2_DocumentTitleChanged(object? sender, object e)
+        {
+            var title = WebView.CoreWebView2?.DocumentTitle ?? "";
+            var cut = title.Split('|')[0].Trim();
+
+            _latestCustomerSuggestion = cut;   // lưu lại gợi ý mới nhất
+
         }
     }
 }

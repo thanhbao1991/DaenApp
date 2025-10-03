@@ -26,4 +26,5 @@ public partial class KhachHang
     public virtual ICollection<KhachHangAddress> KhachHangAddresses { get; set; } = new List<KhachHangAddress>();
 
     public virtual ICollection<KhachHangPhone> KhachHangPhones { get; set; } = new List<KhachHangPhone>();
+    public virtual ICollection<KhachHangGiaBan> KhachHangGiaBans { get; set; } = new List<KhachHangGiaBan>();
 }

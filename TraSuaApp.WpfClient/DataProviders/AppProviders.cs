@@ -1,7 +1,6 @@
 ﻿using System.Media;
 using System.Net.Http.Json;
 using TraSuaApp.Shared.Config;
-using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient;
 using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
@@ -33,10 +32,7 @@ public static class AppProviders
         var items = SanPhams.Items
             .Where(x => !x.NgungBan)
             .OrderBy(x => x.Ten)
-            .Select(x => $"{x.Id}\t{(string.IsNullOrWhiteSpace(x.TenKhongVietTat)
-                ? StringHelper.NormalizeText(x.Ten).ToLower()
-                : x.TenKhongVietTat)}");
-
+            .Select(x => $"{x.Id}\t{x.TenKhongVietTat}");
         QuickOrderMenu = string.Join("\n", items);
     }
     public static async Task ReloadAllAsync()

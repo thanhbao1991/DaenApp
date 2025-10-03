@@ -12,6 +12,7 @@
             DockPanel.Dock="Top"
             Orientation="Horizontal">
             <Button
+                x:Name="CreateOrderButton"
                 Margin="2"
                 Padding="6,2"
                 Click="CreateOrderFromText_Click"

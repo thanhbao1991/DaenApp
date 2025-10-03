@@ -13,6 +13,7 @@ public partial class ChiTietHoaDonEntity
     public Guid HoaDonId { get; set; }
 
     public Guid SanPhamBienTheId { get; set; }
+    public Guid? SanPhamId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

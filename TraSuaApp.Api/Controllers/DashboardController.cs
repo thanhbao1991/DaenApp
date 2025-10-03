@@ -36,6 +36,7 @@ namespace TraSuaApp.Api.Controllers
                     SoLuong = ct.SoLuong,
                     DonGia = ct.DonGia,
                     SanPhamIdBienThe = ct.SanPhamBienTheId,
+                    SanPhamId = ct.SanPhamId,
                     HoaDonId = ct.HoaDonId,
                     NoteText = ct.NoteText,
                     ToppingText = ct.ToppingText,
