@@ -15,7 +15,12 @@ public class BaseDataProvider<T> where T : DtoBase, new()
 
     private readonly ISignalRClient? _signalR;
     private readonly string _entityName = (new T()).ApiRoute;
-    private System.Timers.Timer? _fallbackTimer;
+
+    private System.Timers.Timer? _fallbackTimer;          // khi mất kết nối
+    private System.Timers.Timer? _periodicRefreshTimer;   // 🟟 NEW: luôn chạy định kỳ
+    private readonly TimeSpan _periodicInterval = TimeSpan.FromMinutes(5); // 🟟 NEW
+    private int _isReloading = 0;                         // 🟟 NEW: tránh overlap
+    private DateTime _lastReloadAt = DateTime.MinValue;   // 🟟 NEW: theo dõi lần reload gần nhất
 
     public BaseDataProvider(ISignalRClient? signalR = null)
     {
@@ -54,7 +59,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                             OnSignalReceived(item);
                     }
 
-                    // 🟟 Thông báo rõ ràng hơn cho Hóa đơn
+                    // Thông báo riêng cho Hóa đơn (giữ nguyên)
                     if (TuDien._tableFriendlyNames.TryGetValue(entityName, out var friendlyName))
                     {
                         string message = $"{GetActionVerb(action)} {friendlyName.ToLower()}.";
@@ -62,49 +67,36 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                         if (entityName.Equals("HoaDon", StringComparison.OrdinalIgnoreCase))
                         {
                             var hoaDon = Items.OfType<HoaDonDto>().FirstOrDefault(x => x.Id.ToString() == id);
-                            if (hoaDon != null)
+                            if (hoaDon != null && hoaDon.NguoiShip == "Khánh" && hoaDon.GhiChuShipper != null)
                             {
-                                if (hoaDon.NguoiShip == "Khánh")
+                                var note = hoaDon.GhiChuShipper.ToLower();
+                                if (note.StartsWith("chuyển khoản"))
                                 {
-                                    if (hoaDon.GhiChuShipper != null)
-                                    {
-                                        var note = hoaDon.GhiChuShipper.ToLower();
-
-                                        //if (note.StartsWith("tiền mặt"))
-                                        //{
-                                        //    AudioHelper.Play("tien-mat.mp3");
-                                        //    NotiHelper.ShowSilient($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                        //}
-                                        if (note.StartsWith("chuyển khoản"))
-                                        {
-                                            AudioHelper.Play("chuyen-khoan.mp3");
-                                            NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                        }
-                                        else if (note.StartsWith("ghi nợ"))
-                                        {
-                                            AudioHelper.Play("ghi-no.mp3");
-                                            NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                        }
-                                        else if (note.StartsWith("tí nữa chuyển khoản"))
-                                        {
-                                            AudioHelper.Play("chuyen-khoan-sau.mp3"); // thêm file âm thanh riêng nếu cần
-                                            NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                        }
-                                        else if (note.Contains("trả nợ"))
-                                        {
-                                            AudioHelper.Play("tra-no.mp3"); // thêm file âm thanh riêng nếu cần
-                                            NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                        }
-                                    }
+                                    AudioHelper.Play("chuyen-khoan.mp3");
+                                    NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                }
+                                else if (note.StartsWith("ghi nợ"))
+                                {
+                                    AudioHelper.Play("ghi-no.mp3");
+                                    NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                }
+                                else if (note.StartsWith("tí nữa chuyển khoản"))
+                                {
+                                    AudioHelper.Play("chuyen-khoan-sau.mp3");
+                                    NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                }
+                                else if (note.Contains("trả nợ"))
+                                {
+                                    AudioHelper.Play("tra-no.mp3");
+                                    NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
                                 }
                             }
-
                         }
                     }
                 });
             });
 
-            // Khi mất kết nối SignalR → bật fallback timer
+            // Khi mất kết nối SignalR → bật fallback timer (giữ nguyên)
             _signalR.OnDisconnected(() =>
             {
                 NotiHelper.ShowError("⚠️ Mất kết nối, Vui lòng chờ...");
@@ -118,6 +110,9 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                 StopFallbackTimer();
             });
         }
+
+        // 🟟 NEW: luôn bật periodic refresh để phòng hụt signal
+        StartPeriodicRefreshTimer();
     }
 
     private string GetActionVerb(string action)
@@ -134,6 +129,9 @@ public class BaseDataProvider<T> where T : DtoBase, new()
 
     public async Task ReloadAsync()
     {
+        // 🟟 NEW: chống overlap reload
+        if (Interlocked.Exchange(ref _isReloading, 1) == 1) return;
+
         try
         {
             var response = await ApiClient.GetAsync($"/api/{_entityName}");
@@ -149,6 +147,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                     OnChanged?.Invoke();
                 });
 
+                _lastReloadAt = DateTime.UtcNow;
                 System.Diagnostics.Debug.WriteLine($"🟟 Reload {_entityName} thành công ({result.Data.Count} items).");
             }
         }
@@ -156,6 +155,10 @@ public class BaseDataProvider<T> where T : DtoBase, new()
         {
             Console.WriteLine(ex.Message);
             System.Diagnostics.Debug.WriteLine($"❌ Reload {_entityName} lỗi: {ex.Message}");
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _isReloading, 0);
         }
     }
 
@@ -214,6 +217,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
         });
     }
 
+    // ========== Fallback khi mất kết nối (giữ nguyên) ==========
     private void StartFallbackTimer()
     {
         if (_fallbackTimer != null) return;
@@ -222,7 +226,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
         _fallbackTimer.AutoReset = true;
         _fallbackTimer.Elapsed += async (_, _) =>
         {
-            System.Diagnostics.Debug.WriteLine($"⏰ Fallback reload {_entityName}...");
+            System.Diagnostics.Debug.WriteLine($"⏰ Fallback reload (mất kết nối) - {_entityName}...");
             await ReloadAsync();
         };
         _fallbackTimer.Start();
@@ -237,4 +241,27 @@ public class BaseDataProvider<T> where T : DtoBase, new()
             _fallbackTimer = null;
         }
     }
+
+    // ========== 🟟 NEW: Periodic refresh luôn chạy ==========
+    private void StartPeriodicRefreshTimer()
+    {
+        if (_periodicRefreshTimer != null) return;
+
+        // Jitter khởi động để tránh tất cả providers cùng nổ một lúc
+        var rnd = new Random(Environment.TickCount ^ _entityName.GetHashCode());
+        int jitterMs = rnd.Next(10_000, 60_000); // 10–60s
+
+        _periodicRefreshTimer = new System.Timers.Timer(_periodicInterval.TotalMilliseconds);
+        _periodicRefreshTimer.AutoReset = true;
+        _periodicRefreshTimer.Elapsed += async (_, __) =>
+        {
+            System.Diagnostics.Debug.WriteLine($"⏰ Periodic reload {_entityName}...");
+            await ReloadAsync();
+        };
+
+        // Delay khởi động có jitter
+        Task.Delay(jitterMs).ContinueWith(_ => _periodicRefreshTimer?.Start());
+    }
+
+    // (tuỳ chọn) bạn có thể thêm hàm Dispose() để tắt timer khi cần
 }

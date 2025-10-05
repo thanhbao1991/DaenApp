@@ -2,7 +2,7 @@
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
-namespace TraSuaApp.WpfClient.Helpers
+namespace TraSuaApp.WpfClient.Ordering
 {
     // ==== Popup LoadingWindow (code-behind, không dùng XAML) ====
     public class LoadingWindow : Window
@@ -28,7 +28,7 @@ namespace TraSuaApp.WpfClient.Helpers
             SizeToContent = SizeToContent.WidthAndHeight;
             ShowInTaskbar = false;
             Topmost = true;
-            WindowStartupLocation = WindowStartupLocation.CenterScreen; // => giữa màn hình
+            WindowStartupLocation = WindowStartupLocation.CenterScreen;
             Opacity = 0;
             ResizeMode = ResizeMode.NoResize;
             var overlay = new System.Windows.Controls.Border
@@ -62,7 +62,6 @@ namespace TraSuaApp.WpfClient.Helpers
 
             Content = overlay;
 
-            // Lấy spinner đã add ở trên và animate xoay
             var panel = (System.Windows.Controls.StackPanel)((System.Windows.Controls.Border)((System.Windows.Controls.Border)overlay).Child).Child;
             var spinner = (System.Windows.Shapes.Ellipse)panel.Children[0];
             var rotate = new DoubleAnimation(0, 360, new Duration(TimeSpan.FromSeconds(1)))
@@ -72,7 +71,6 @@ namespace TraSuaApp.WpfClient.Helpers
             ((System.Windows.Media.RotateTransform)spinner.RenderTransform)
                 .BeginAnimation(System.Windows.Media.RotateTransform.AngleProperty, rotate);
 
-            // Message text
             _messageText = new System.Windows.Controls.TextBlock
             {
                 Margin = new Thickness(12, 16, 12, 0),
@@ -86,14 +84,12 @@ namespace TraSuaApp.WpfClient.Helpers
             };
             panel.Children.Add(_messageText);
 
-            // Fade in
             Loaded += (_, __) =>
             {
                 var fadeIn = new DoubleAnimation(0, 1, new Duration(TimeSpan.FromMilliseconds(300)));
                 BeginAnimation(OpacityProperty, fadeIn);
             };
 
-            // Fake tiến trình: đổi message theo thời gian
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _timer.Tick += (_, __) =>
             {
@@ -109,7 +105,6 @@ namespace TraSuaApp.WpfClient.Helpers
         public void UpdateMessage(string msg) =>
             Dispatcher.Invoke(() => _messageText.Text = msg);
 
-        // Đóng có fade out
         public new void Close()
         {
             _timer.Stop();
@@ -120,28 +115,20 @@ namespace TraSuaApp.WpfClient.Helpers
     }
 
     // ==== Helper: chạy async kèm loading ====
-    public static class AIOrderHelper
+    public static class QuickOrderHelper
     {
-        /// <summary>
-        /// Chạy một hàm async kèm LoadingWindow giữa màn hình.
-        /// Truyền owner nếu muốn "dính" theo cửa sổ cha; nếu không, để null cho an toàn.
-        /// </summary>
         public static async Task<T> RunWithLoadingAsync<T>(string initialMessage, Func<Task<T>> func, Window? owner = null)
         {
             LoadingWindow? loading = null;
             try
             {
                 loading = new LoadingWindow(initialMessage);
-
-                // 🟟 CHỈ gán Owner nếu hợp lệ, tuyệt đối không đụng Application.Current.MainWindow ở đây
                 if (owner != null && owner != loading)
                 {
                     loading.Owner = owner;
-                    loading.WindowStartupLocation = WindowStartupLocation.CenterOwner; // nếu có owner thì canh giữa owner
+                    loading.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 }
-
                 loading.Show();
-
                 var result = await func();
                 return result;
             }
@@ -157,15 +144,12 @@ namespace TraSuaApp.WpfClient.Helpers
             try
             {
                 loading = new LoadingWindow(initialMessage);
-
                 if (owner != null && owner != loading)
                 {
                     loading.Owner = owner;
                     loading.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 }
-
                 loading.Show();
-
                 await func();
             }
             finally

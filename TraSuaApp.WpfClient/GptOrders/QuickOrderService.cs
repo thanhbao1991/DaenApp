@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using TraSuaApp.Shared.Dtos;
 
-namespace TraSuaApp.WpfClient.Services
+namespace TraSuaApp.WpfClient.Ordering
 {
     /// <summary>
     /// SERVICE ổn định: giữ API cho UI (MessengerTab, …) luôn giống nhau.
@@ -15,8 +15,8 @@ namespace TraSuaApp.WpfClient.Services
     /// </summary>
     public class QuickOrderService
     {
-        private readonly HttpClient _http;      // OCR ảnh online
-        private readonly QuickOrderEngine _engine; // Engine linh hoạt
+        private readonly HttpClient _http;           // OCR ảnh online
+        private readonly QuickOrderEngine _engine;   // Engine linh hoạt
 
         public QuickOrderService(string apiKey)
         {
@@ -121,7 +121,7 @@ namespace TraSuaApp.WpfClient.Services
         }
 
         // ===== API ổn định cho UI: Build từ text/ảnh =====
-        public async Task<(HoaDonDto? HoaDon, string RawInput)> BuildHoaDonAsync(string inputOrUrl, bool isImage = false)
+        public async Task<(HoaDonDto? HoaDon, string RawInput)> BuildHoaDonAsync(string inputOrUrl, bool isImage = false, string? shortMenu = "")
         {
             string text = inputOrUrl;
 
@@ -148,7 +148,7 @@ namespace TraSuaApp.WpfClient.Services
                 }, text);
             }
 
-            var chiTiets = await _engine.MapToChiTietAsync(text);
+            var chiTiets = await _engine.MapToChiTietAsync(text, shortMenu);
 
             return (new HoaDonDto
             {

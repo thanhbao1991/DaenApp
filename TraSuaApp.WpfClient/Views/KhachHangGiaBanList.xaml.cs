@@ -9,14 +9,13 @@ using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 
-namespace TraSuaApp.WpfClient.AdminViews
+namespace TraSuaApp.WpfClient.SettingsViews
 {
     public partial class KhachHangGiaBanList : Window
     {
         private readonly CollectionViewSource _viewSource = new();
         private readonly WpfErrorHandler _errorHandler = new();
         string _friendlyName = TuDien._tableFriendlyNames["KhachHangGiaBan"];
-
         public KhachHangGiaBanList()
         {
             InitializeComponent();
@@ -33,7 +32,6 @@ namespace TraSuaApp.WpfClient.AdminViews
             // 1. Gán Source ngay
             _viewSource.Source = AppProviders.KhachHangGiaBans.Items;
             _viewSource.Filter += ViewSource_Filter;
-
             KhachHangGiaBanDataGrid.ItemsSource = _viewSource.View;
 
             // 2. Subscribe OnChanged (sau khi Source đã có)
@@ -46,6 +44,7 @@ namespace TraSuaApp.WpfClient.AdminViews
                 ApplySearch();
             };
         }
+
         private void ApplySearch()
         {
             _viewSource.View.Refresh();
@@ -76,10 +75,12 @@ namespace TraSuaApp.WpfClient.AdminViews
 
         private async void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            var window = new KhachHangGiaBanEdit();
-            window.Owner = this;
-            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
+            var window = new KhachHangGiaBanEdit()
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                Owner = this
+            };
             if (window.ShowDialog() == true)
                 await AppProviders.KhachHangGiaBans.ReloadAsync();
         }
@@ -92,9 +93,12 @@ namespace TraSuaApp.WpfClient.AdminViews
                 return;
             }
 
-            var window = new KhachHangGiaBanEdit(selected);
-            window.Owner = this;
-            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            var window = new KhachHangGiaBanEdit(selected)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                Owner = this
+            };
 
             if (window.ShowDialog() == true)
                 await AppProviders.KhachHangGiaBans.ReloadAsync();

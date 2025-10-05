@@ -113,20 +113,9 @@
                     Header="Viết tắt" />
                 <DataGridTextColumn
                     Width="100"
-                    Binding="{Binding DaBan}"
+                    Binding="{Binding TenKhongVietTat}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
-                    Header="Đã bán" />
-                <DataGridTemplateColumn Width="40" Header="">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Text="★"
-                                Visibility="{Binding TichDiem, Converter={StaticResource BoolToVisibilityConverter}}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    Header="" />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

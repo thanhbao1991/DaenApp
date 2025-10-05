@@ -49,6 +49,7 @@
     <Resource Include="Images\viettin007.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
+    <Content Include="IMG_5054 2.ico" />
     <Content Include="Resources\chuyen-khoan-sau.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -86,6 +87,9 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Update="Tools\SelectCustomerDialog.xaml.cs">
+      <SubType>Code</SubType>
     </Compile>
     <Compile Update="Tools\FileViewerWindow.xaml.cs">
       <SubType>Code</SubType>
@@ -145,6 +149,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <BaseOutputPath>D:\Denn</BaseOutputPath>
+    <ApplicationIcon>IMG_5054 2.ico</ApplicationIcon>
   </PropertyGroup>
 
 </Project>

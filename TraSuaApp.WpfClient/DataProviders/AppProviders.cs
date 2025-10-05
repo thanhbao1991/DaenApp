@@ -1,5 +1,6 @@
 ﻿using System.Media;
 using System.Net.Http.Json;
+using System.Windows;
 using TraSuaApp.Shared.Config;
 using TraSuaApp.WpfClient;
 using TraSuaApp.WpfClient.DataProviders;
@@ -17,7 +18,6 @@ public static class AppProviders
     public static KhachHangDataProvider KhachHangs { get; private set; } = null!;
     public static NhomSanPhamDataProvider NhomSanPhams { get; private set; } = null!;
     public static HoaDonDataProvider HoaDons { get; private set; } = null!;
-
     public static PhuongThucThanhToanDataProvider PhuongThucThanhToans { get; private set; } = null!;
     public static KhachHangGiaBanDataProvider KhachHangGiaBans { get; private set; } = null!;
     public static CongViecNoiBoDataProvider CongViecNoiBos { get; private set; } = null!;
@@ -80,36 +80,51 @@ public static class AppProviders
         CurrentConnectionId = await signalR.GetConnectionId();
         ApiClient.ConnectionId = CurrentConnectionId;
 
-        // 🟟 handle mất kết nối / kết nối lại
+
         signalR.OnDisconnected(() =>
         {
-            // Phát âm thanh lỗi (system beep)
             SystemSounds.Hand.Play();
 
-            // Hiện thông báo
             App.Current.Dispatcher.Invoke(() =>
             {
-                NotiHelper.ShowSilent("⚠️ Mất kết nối Server.");
+                var existing = Application.Current.Windows
+                    .OfType<TraSuaApp.WpfClient.Views.NotiWindow>()
+                    .FirstOrDefault();
+
+                if (existing == null)
+                {
+                    var win = new TraSuaApp.WpfClient.Views.NotiWindow();
+                    win.Show();
+                }
+                else
+                {
+                    existing.Topmost = true;
+                    existing.Focus();
+                }
             });
         });
 
         signalR.OnReconnected(() =>
         {
-            // Phát âm thanh thông báo thành công
             SystemSounds.Asterisk.Play();
 
-            // Hiện thông báo
             App.Current.Dispatcher.Invoke(() =>
             {
-                NotiHelper.ShowSilent("✅ Đã kết nối lại Server.");
+                var existing = Application.Current.Windows
+                    .OfType<TraSuaApp.WpfClient.Views.NotiWindow>()
+                    .FirstOrDefault();
+                existing?.Close();
             });
         });
+
 
         KhachHangs = new KhachHangDataProvider(signalR);
         NhomSanPhams = new NhomSanPhamDataProvider(signalR);
         Toppings = new ToppingDataProvider(signalR);
         TaiKhoans = new TaiKhoanDataProvider(signalR);
         SanPhams = new SanPhamDataProvider(signalR);
+        SanPhams.OnChanged += BuildQuickOrderMenu;
+
         Vouchers = new VoucherDataProvider(signalR);
         HoaDons = new HoaDonDataProvider(signalR);
         PhuongThucThanhToans = new PhuongThucThanhToanDataProvider(signalR);
@@ -119,7 +134,6 @@ public static class AppProviders
         ChiTietHoaDonThanhToans = new ChiTietHoaDonThanhToanDataProvider(signalR);
         NguyenLieus = new NguyenLieuDataProvider(signalR);
         ChiTieuHangNgays = new ChiTieuHangNgayDataProvider(signalR);
-
         // 🟟 load ban đầu
         await Task.WhenAll(
            KhachHangs.InitializeAsync(),

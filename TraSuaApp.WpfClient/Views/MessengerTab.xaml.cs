@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -10,7 +11,8 @@ using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Services;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
-using TraSuaApp.WpfClient.Services;
+using TraSuaApp.WpfClient.Ordering;
+using TraSuaApp.WpfClient.Views;
 
 namespace TraSuaApp.WpfClient.Controls
 {
@@ -44,7 +46,6 @@ namespace TraSuaApp.WpfClient.Controls
                 WebView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
                 WebView.CoreWebView2.DocumentTitleChanged += CoreWebView2_DocumentTitleChanged;
 
-
                 WebView.CoreWebView2.Navigate(MessengerUrl);
             }
             catch (Exception ex)
@@ -53,9 +54,6 @@ namespace TraSuaApp.WpfClient.Controls
             }
         }
 
-        // =========================
-        // Button: tạo đơn từ text đã chọn
-        // =========================
         private async void CreateOrderFromText_Click(object sender, RoutedEventArgs e)
         {
             await CreateOrderFromSelectionAsync();
@@ -87,59 +85,12 @@ namespace TraSuaApp.WpfClient.Controls
             s = Regex.Replace(s, @"[ \t]+", " ");
             s = Regex.Replace(s, @"\n{3,}", "\n\n");
 
-            // Giới hạn độ dài để tránh prompt bị quá dài
             const int maxChars = 4000;
             if (s.Length > maxChars) s = s.Substring(0, maxChars);
 
             return s.Trim();
         }
 
-        private async Task CreateOrderFromSelectionAsync()
-        {
-            try
-            {
-                var text = await GetSelectedTextAsync();
-                text = CleanSelectedText(text);
-
-                if (string.IsNullOrWhiteSpace(text))
-                {
-                    MessageBox.Show("Hãy bôi đen đoạn văn bản trước khi tạo hoá đơn.");
-                    return;
-                }
-
-                var (hd, rawInput) = await AIOrderHelper.RunWithLoadingAsync(
-                    "Đang tạo hoá đơn AI...",
-                    () => _quick.BuildHoaDonAsync(text) // text path
-                );
-
-                if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
-                {
-                    MessageBox.Show("Không nhận diện được món nào từ đoạn đã chọn.");
-                    return;
-                }
-                hd.PhanLoai = "Ship";
-
-                var win = new HoaDonEdit(hd)
-                {
-                    GptInputText = rawInput,
-                    Owner = Window.GetWindow(this),
-                    Width = Window.GetWindow(this)?.ActualWidth ?? 1200,
-                    Height = Window.GetWindow(this)?.ActualHeight ?? 800,
-                };
-                win.KhachHangSearchBox.SearchTextBox.Text = _latestCustomerSuggestion;
-                // win.KhachHangSearchBox.IsPopupOpen = true;
-                win.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Tạo đơn lỗi: " + ex.Message);
-            }
-            finally
-            {
-            }
-        }
-
-        // Nút reload
         private void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -152,9 +103,6 @@ namespace TraSuaApp.WpfClient.Controls
             }
         }
 
-        // =========================
-        // Button: tạo đơn từ ảnh
-        // =========================
         private async void CreateOrderFromImage_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new OpenFileDialog
@@ -169,9 +117,9 @@ namespace TraSuaApp.WpfClient.Controls
             {
                 try
                 {
-                    var (hd, rawInput) = await AIOrderHelper.RunWithLoadingAsync(
+                    var (hd, rawInput) = await Ordering.QuickOrderHelper.RunWithLoadingAsync(
                         "Đang phân tích ảnh...",
-                        () => _quick.BuildHoaDonAsync(dlg.FileName, isImage: true) // OCR ảnh (đã vá path -> data-url)
+                        () => _quick.BuildHoaDonAsync(dlg.FileName, isImage: true)
                     );
 
                     if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
@@ -181,7 +129,6 @@ namespace TraSuaApp.WpfClient.Controls
                     }
                     hd.PhanLoai = "Ship";
 
-                    // Sau khi có hd, rawInput
                     var win = new HoaDonEdit(hd)
                     {
                         GptInputText = rawInput,
@@ -189,17 +136,14 @@ namespace TraSuaApp.WpfClient.Controls
                         Width = Window.GetWindow(this)?.ActualWidth ?? 1200,
                         Height = Window.GetWindow(this)?.ActualHeight ?? 800,
                     };
-                    win.KhachHangSearchBox.SearchTextBox.Text = _latestCustomerSuggestion;
-                    //  win.KhachHangSearchBox.IsPopupOpen = true;
+                    win.KhachHangSearchBox.SearchTextBox.Text = _latestCustomerName;
 
                     win.ShowDialog();
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show("Tạo đơn từ ảnh lỗi: " + ex.Message);
-                }
-                finally
-                {
+                    await DiscordService.SendAsync(DiscordEventType.Admin, ex.Message);
                 }
             }
         }
@@ -216,14 +160,112 @@ namespace TraSuaApp.WpfClient.Controls
                 _ = DiscordService.SendAsync(DiscordEventType.Admin, $"Navigation failed: {e.WebErrorStatus}");
         }
 
-        private string? _latestCustomerSuggestion;
+        private string? _latestCustomerName;
+
         private void CoreWebView2_DocumentTitleChanged(object? sender, object e)
         {
             var title = WebView.CoreWebView2?.DocumentTitle ?? "";
             var cut = title.Split('|')[0].Trim();
 
-            _latestCustomerSuggestion = cut;   // lưu lại gợi ý mới nhất
+            _latestCustomerName = cut;
+        }
 
+        private async Task<string> BuildLichSuText(Guid khId)
+        {
+            try
+            {
+                var response = await ApiClient.GetAsync($"/api/Dashboard/topmenu-quickorder/{khId}");
+                var info = await response.Content.ReadFromJsonAsync<string>();
+                return info;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private async Task CreateOrderFromSelectionAsync()
+        {
+            try
+            {
+                var text = await GetSelectedTextAsync();
+                text = CleanSelectedText(text);
+
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    MessageBox.Show("Hãy bôi đen đoạn văn bản trước khi tạo hoá đơn.");
+                    return;
+                }
+
+                var dlg = new SelectCustomerDialog
+                {
+                    Owner = Window.GetWindow(this)
+                };
+                dlg.KhachHangBox.SearchTextBox.Text = _latestCustomerName;
+                await dlg.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    dlg.KhachHangBox.IsPopupOpen = true;
+                }), System.Windows.Threading.DispatcherPriority.Background);
+
+                if (dlg.ShowDialog() != true)
+                    return;
+
+                var kh = dlg.SelectedKhachHang;
+                string? lichSuText = null;
+
+                if (kh != null)
+                {
+                    lichSuText = await BuildLichSuText(kh.Id);
+                }
+
+                var (hd, rawInput) = await Ordering.QuickOrderHelper.RunWithLoadingAsync(
+                    "Đang tạo hoá đơn AI...",
+                    () => _quick.BuildHoaDonAsync(text, false, lichSuText)
+                );
+
+                if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
+                {
+                    MessageBox.Show("Không nhận diện được món nào từ đoạn đã chọn.");
+                    return;
+                }
+
+                hd.PhanLoai = "Ship";
+                hd.KhachHangId = kh?.Id;
+
+                var mainWin = Application.Current.MainWindow;
+
+                var win = new HoaDonEdit(hd)
+                {
+                    GptInputText = rawInput,
+                    Owner = mainWin,
+                    Width = mainWin?.ActualWidth ?? 1200,
+                    Height = mainWin?.ActualHeight ?? 800,
+                };
+
+                if (kh != null)
+                {
+                    win.ContentRendered += async (_, __) =>
+                    {
+                        await Task.Delay(100);
+                        win.KhachHangSearchBox.SetSelectedKhachHangByIdWithoutPopup(kh.Id);
+                        win.KhachHangSearchBox.TriggerSelectedEvent(kh);
+                    };
+                }
+                else
+                {
+                    win.KhachHangSearchBox.SearchTextBox.Text = _latestCustomerName;
+                }
+
+                win.ShowDialog();
+
+                mainWin?.Activate();
+                mainWin?.Focus();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Tạo đơn lỗi: " + ex.Message);
+                await DiscordService.SendAsync(DiscordEventType.Admin, ex.Message);
+            }
         }
     }
 }

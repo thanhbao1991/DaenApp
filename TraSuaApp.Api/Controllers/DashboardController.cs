@@ -119,5 +119,43 @@ namespace TraSuaApp.Api.Controllers
             };
         }
 
+
+        [HttpGet("topmenu-quickorder/{khachHangId}")]
+        public async Task<ActionResult<string>> GetTopMenuForQuickOrder(Guid khachHangId)
+        {
+            if (khachHangId == Guid.Empty)
+                return BadRequest("KhachHangId không hợp lệ.");
+
+            var threeMonthsAgo = DateTime.Now.AddMonths(-3);
+
+            // 🟟 Top 20 theo khách trong 3 tháng gần nhất
+            var topByCustomer = await (
+                from ct in _db.ChiTietHoaDons.AsNoTracking()
+                join h in _db.HoaDons.AsNoTracking() on ct.HoaDonId equals h.Id
+                join sp in _db.SanPhams.AsNoTracking() on ct.SanPhamId equals sp.Id
+                where h.KhachHangId == khachHangId
+                      && !h.IsDeleted
+                      && !ct.IsDeleted
+                      && !sp.IsDeleted
+                      && !sp.NgungBan
+                      && h.NgayGio >= threeMonthsAgo
+                group new { ct, sp } by new { sp.Id, sp.TenKhongVietTat } into g
+                orderby g.Sum(x => x.ct.SoLuong) descending
+                select new
+                {
+                    Id = g.Key.Id,
+                    Ten = g.Key.TenKhongVietTat ?? "",
+                    TongSoLuong = g.Sum(x => x.ct.SoLuong)
+                }
+            ).Take(20).ToListAsync();
+
+
+            // 🟟 Chuẩn định dạng cho Engine: "Id<TAB>Tên (normalized)"
+            var lines = topByCustomer
+                .Select(x => $"{x.Id}\t{(x.Ten)}");
+
+            var text = string.Join("\n", lines);
+            return Ok(text);
+        }
     }
 }

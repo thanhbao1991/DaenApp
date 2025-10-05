@@ -18,6 +18,7 @@ using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
+using TraSuaApp.WpfClient.Ordering;
 using TraSuaApp.WpfClient.Services;
 using TraSuaApp.WpfClient.SettingsViews;
 
@@ -1592,42 +1593,27 @@ namespace TraSuaApp.WpfClient.Views
         private DateTime today;
 
 
-        private async void Import_Click(object sender, RoutedEventArgs e)
+        private
+            void Import_Click(object sender, RoutedEventArgs e)
         {
-            var api = new SanPhamApi();
-            var result = await api.GetAllAsync();
 
-            foreach (var sp in result.Data)
+            App.Current.Dispatcher.Invoke(() =>
             {
+                var existing = Application.Current.Windows
+                    .OfType<TraSuaApp.WpfClient.Views.NotiWindow>()
+                    .FirstOrDefault();
 
-                string newTen = sp.Ten;
-
-                // thay thế viết tắt
-                newTen = newTen.Replace("TCT", "Trân Châu Trắng", StringComparison.OrdinalIgnoreCase);
-                newTen = newTen.Replace("Tct", "Trân Châu Trắng", StringComparison.OrdinalIgnoreCase);
-                newTen = newTen.Replace("TCĐĐ", "Trân Châu Đường Đen", StringComparison.OrdinalIgnoreCase);
-                newTen = newTen.Replace("Olong", "Ô Long", StringComparison.OrdinalIgnoreCase);
-                newTen = newTen.Replace("OLONG", "Ô Long", StringComparison.OrdinalIgnoreCase);
-                newTen = newTen.Replace("Cf", "Cà Phê", StringComparison.OrdinalIgnoreCase);
-                newTen = newTen.Replace("Cf", "Cà Phê", StringComparison.OrdinalIgnoreCase);
-                newTen = newTen.Replace("Cafe", "Cà Phê", StringComparison.OrdinalIgnoreCase);
-                newTen = newTen.Replace("S/MV", "Ship / Mua Về", StringComparison.OrdinalIgnoreCase);
-
-                newTen = newTen.Replace("(", " ").Replace(")", " ");
-
-                // chuẩn hóa khoảng trắng (nhiều space -> 1 space)
-                newTen = System.Text.RegularExpressions.Regex.Replace(newTen, @"\s+", " ");
-
-
-                // lưu dưới dạng lower
-                newTen = newTen.ToLowerInvariant();
-
-
-                sp.TenKhongVietTat = newTen;
-
-                await api.UpdateAsync(sp.Id, sp);
-
-            }
+                if (existing == null)
+                {
+                    var win = new TraSuaApp.WpfClient.Views.NotiWindow();
+                    win.Show();
+                }
+                else
+                {
+                    existing.Topmost = true;
+                    existing.Focus();
+                }
+            });
 
         }
         // Nhấn nút 🟟 Reload trong header
@@ -2471,7 +2457,7 @@ namespace TraSuaApp.WpfClient.Views
                 if (string.IsNullOrEmpty(input)) input = Clipboard.GetText().Trim();
                 if (string.IsNullOrEmpty(input)) return;
 
-                var (hd, rawInput) = await AIOrderHelper.RunWithLoadingAsync(
+                var (hd, rawInput) = await QuickOrderHelper.RunWithLoadingAsync(
 "Đang tạo hoá đơn AI...",
 () => _quick.BuildHoaDonAsync(input)
 );

@@ -48,8 +48,26 @@ namespace TraSuaApp.Shared.Services
 
             return SendToWebhook(url, message);
         }
+        public static Task SendAsync(DiscordEventType eventType, string message, string fileNameIfTooLong)
+        {
+            string url = eventType switch
+            {
+                DiscordEventType.Admin => AdminWebhookUrl,
+                DiscordEventType.DuyKhanh => DaGiaoHangWebhookUrl,
+                DiscordEventType.DangGiaoHang => DangGiaoHangWebhookUrl,
+                DiscordEventType.NhanDon => NhanDonWebhookUrl,
+                DiscordEventType.HenGio => HenGioWebhookUrl,
+                DiscordEventType.ThanhToan => ThanhToanWebhookUrl,
+                DiscordEventType.TraNo => TraNoWebhookUrl,
+                DiscordEventType.HoaDonNew => HoaDonNewWebhookUrl,
+                DiscordEventType.HoaDonDel => HoaDonDelWebhookUrl,
+                DiscordEventType.GhiNo => GhiNoWebhookUrl,
+                _ => throw new ArgumentOutOfRangeException(nameof(eventType), eventType, null)
+            };
 
-        private static async Task SendToWebhook(string url, string message)
+            return SendToWebhook(url, message, fileNameIfTooLong);
+        }
+        private static async Task SendToWebhook(string url, string message, string fileNameIfTooLong = "AllFiles.txt")
         {
             using var client = new HttpClient();
 
@@ -61,11 +79,7 @@ namespace TraSuaApp.Shared.Services
                 };
 
                 var json = JsonSerializer.Serialize(payload);
-                var response = await client.PostAsync(url,
-                    new StringContent(json, Encoding.UTF8, "application/json"));
-
-                //   if (!response.IsSuccessStatusCode)
-                //    MessageBox.Show("❌ Gửi thất bại!");
+                await client.PostAsync(url, new StringContent(json, Encoding.UTF8, "application/json"));
             }
             else
             {
@@ -73,16 +87,11 @@ namespace TraSuaApp.Shared.Services
                 var bytes = Encoding.UTF8.GetBytes(message);
                 var fileContent = new ByteArrayContent(bytes);
                 fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
-                contentToSend.Add(fileContent, "file", "AllFiles.txt");
 
-                var response = await client.PostAsync(url, contentToSend);
+                contentToSend.Add(fileContent, "file", fileNameIfTooLong);
 
-                //   if (!response.IsSuccessStatusCode)
-                //  MessageBox.Show("❌ Gửi file thất bại!");
+                await client.PostAsync(url, contentToSend);
             }
-
-
         }
-
     }
 }

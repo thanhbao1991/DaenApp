@@ -6,15 +6,33 @@ using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Services;
+
 namespace TraSuaApp.WpfClient.Controls
 {
     public partial class KhachHangSearchBox : UserControl
     {
         public ObservableCollection<KhachHangDto> KhachHangList = new();
         public KhachHangDto? SelectedKhachHang { get; private set; }
-        public event Action<KhachHangDto>? KhachHangSelected;
-        public event Action? KhachHangCleared;
 
+        // 🟟 Sự kiện mở rộng
+        public event Action<KhachHangDto>? KhachHangSelected;
+        public event Action<KhachHangDto>? KhachHangConfirmed;  // Double-click xác nhận chọn khách
+        public event Action? KhachHangCleared;
+        public event Action? KhachMoiSelected;                   // Chọn “Khách mới”
+
+        // 🟟 Tuỳ chọn hành vi
+        public bool ShowAllWhenEmpty { get; set; } = false;
+        public bool IncludeKhachMoiItem { get; set; } = false;
+        public bool SuppressPopup { get; set; } = false;
+        public double? FixedPopupHeight
+        {
+            get => (double?)GetValue(FixedPopupHeightProperty);
+            set => SetValue(FixedPopupHeightProperty, value);
+        }
+
+        public static readonly DependencyProperty FixedPopupHeightProperty =
+            DependencyProperty.Register(nameof(FixedPopupHeight), typeof(double?), typeof(KhachHangSearchBox),
+                new PropertyMetadata(null));
         public KhachHangSearchBox()
         {
             InitializeComponent();
@@ -25,8 +43,6 @@ namespace TraSuaApp.WpfClient.Controls
             get => Popup.IsOpen;
             set => Popup.IsOpen = value;
         }
-
-        public bool SuppressPopup { get; set; } = false;
 
         public void SetSelectedKhachHang(KhachHangDto kh)
         {
@@ -70,93 +86,9 @@ namespace TraSuaApp.WpfClient.Controls
             SearchTextBox.Focus();
         }
 
-        //        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        //        {
-        //            ClearButton.Visibility = string.IsNullOrWhiteSpace(SearchTextBox.Text)
-        //                ? Visibility.Collapsed
-        //                : Visibility.Visible;
-
-        //            string keyword = TextSearchHelper.NormalizeText(SearchTextBox.Text.Trim());
-        //            if (string.IsNullOrEmpty(keyword))
-        //            {
-        //                ListBoxResults.ItemsSource = null;
-        //                Popup.IsOpen = false;
-        //                return;
-        //            }
-
-        //            // Hàm tạo chữ cái viết tắt (acronym) từ tên
-        //            string GetInitials(string name)
-        //            {
-        //                if (string.IsNullOrWhiteSpace(name)) return "";
-        //                var words = TextSearchHelper.NormalizeText(name)
-        //                    .Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        //                return string.Concat(words.Select(w => w[0])); // ví dụ "Xuân Hải" -> "xh"
-        //            }
-
-        //            var results = KhachHangList
-        //                .Select(kh =>
-        //                {
-        //                    int score = 0;
-        //                    var ten = TextSearchHelper.NormalizeText(kh.Ten ?? "");
-        //                    var initials = GetInitials(kh.Ten ?? "");
-        //                    var sdt = TextSearchHelper.NormalizeText(kh.DienThoai ?? "");
-        //                    var diaChi = TextSearchHelper.NormalizeText(kh.DiaChi ?? "");
-        //                    var timKiem = TextSearchHelper.NormalizeText(kh.TimKiem ?? "");
-
-        //                    // Ưu tiên viết tắt
-        //                    if (initials == keyword) score += 500;
-        //                    else if (initials.StartsWith(keyword)) score += 400;
-
-        //                    // Tên
-        //                    if (ten.StartsWith(keyword)) score += 300;
-        //                    else if (ten.Contains(keyword)) score += 200;
-
-        //                    // SĐT
-        //                    if (!string.IsNullOrEmpty(sdt))
-        //                    {
-        //                        if (sdt.StartsWith(keyword)) score += 350;
-        //                        else if (sdt.Contains(keyword)) score += 150;
-        //                    }
-
-        //                    // Địa chỉ
-        //                    if (!string.IsNullOrEmpty(diaChi) && diaChi.Contains(keyword))
-        //                        score += 100;
-
-        //                    // Fallback TimKiem
-        //                    if (!string.IsNullOrEmpty(timKiem) && timKiem.Contains(keyword))
-        //                        score += 50;
-
-        //                    return new { KhachHang = kh, Score = score };
-        //                })
-        //                .Where(x => x.Score > 0)
-        //          .OrderByDescending(x => x.Score)
-        //.ThenByDescending(x => x.KhachHang.ThuTu)
-
-        //                .Take(20)
-        //                .Select(x => x.KhachHang)
-        //                .ToList();
-
-        //            ListBoxResults.ItemsSource = results;
-        //            Popup.IsOpen = !SuppressPopup && results.Any();
-        //        }
-
-        private void ListBoxResults_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            if (ListBoxResults.SelectedItem is KhachHangDto kh)
-                Select(kh);
-            SearchTextBox.Focus();
-            SearchTextBox.SelectAll();
-        }
-
-        private void Select(KhachHangDto kh)
-        {
-            SelectedKhachHang = kh;
-            SearchTextBox.Text = kh.Ten;
-            SearchTextBox.CaretIndex = SearchTextBox.Text.Length;
-            Popup.IsOpen = false;
-            KhachHangSelected?.Invoke(kh);
-        }
-
+        // ==========================
+        // 🟟 Xử lý tìm kiếm / hiển thị popup
+        // ==========================
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             ClearButton.Visibility = string.IsNullOrWhiteSpace(SearchTextBox.Text)
@@ -166,54 +98,91 @@ namespace TraSuaApp.WpfClient.Controls
             string raw = SearchTextBox.Text?.Trim() ?? "";
             string keyword = StringHelper.NormalizeText(raw);
 
+            List<KhachHangDto> results;
+
             if (string.IsNullOrEmpty(keyword))
             {
-                ListBoxResults.ItemsSource = null;
-                Popup.IsOpen = false;
-                return;
+                if (ShowAllWhenEmpty)
+                {
+                    results = KhachHangList
+                        .OrderByDescending(x => x.ThuTu)
+                        .Take(30)
+                        .ToList();
+                }
+                else
+                {
+                    ListBoxResults.ItemsSource = null;
+                    Popup.IsOpen = false;
+                    return;
+                }
+            }
+            else
+            {
+                results = KhachHangList
+                    .Where(x => x.TimKiem.Contains(keyword))
+                    .OrderByDescending(x => x.ThuTu)
+                    .Take(30)
+                    .ToList();
             }
 
-            var results = KhachHangList
-                   .Where(x => x.TimKiem.Contains(keyword))
-                .OrderByDescending(x => x.ThuTu)
-                .ToList();
+            // 🟟 Thêm dòng “Khách mới” ở đầu
+            if (IncludeKhachMoiItem)
+            {
+                results.Add(new KhachHangDto
+                {
+                    Id = Guid.Empty,
+                    Ten = "\n\tKHÁCH MỚI"
+                });
+            }
 
             ListBoxResults.ItemsSource = results;
             Popup.IsOpen = !SuppressPopup && results.Any();
         }
-
-        private void SearchBox_And_ListBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        public void TriggerSelectedEvent(KhachHangDto? kh)
         {
-            //if (sender == SearchTextBox && e.Key == Key.Down && ListBoxResults.Items.Count > 0)
-            //{
-            //    ListBoxResults.Focus();
-            //    ListBoxResults.SelectedIndex = 0;
-            //    e.Handled = true;
-            //}
-            //else if (e.Key == Key.Enter)
-            //{
-            //    KhachHangDto? kh = null;
-
-            //    if (sender == SearchTextBox && ListBoxResults.Items.Count > 0)
-            //        kh = ListBoxResults.Items[0] as KhachHangDto;
-            //    else if (sender == ListBoxResults && ListBoxResults.SelectedItem is KhachHangDto selected)
-            //        kh = selected;
-
-            //    if (kh != null)
-            //    {
-            //        Select(kh);            // chọn khách hàng
-            //        Popup.IsOpen = false;  // đóng popup
-            //        e.Handled = true;      // chặn không cho Enter chạy lên Window
-            //    }
-            //}
-            //else if (e.Key == Key.Escape)
-            //{
-            //    Popup.IsOpen = false;
-            //    SearchTextBox.Focus();
-            //    KhachHangCleared?.Invoke();
-            //    e.Handled = true;
-            //}
+            if (kh != null && KhachHangSelected != null)
+                KhachHangSelected.Invoke(kh);
         }
+        // ==========================
+        // 🟟 Chọn khách hàng
+        // ==========================
+        private void ListBoxResults_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (ListBoxResults.SelectedItem is KhachHangDto kh)
+            {
+                Select(kh);
+
+                // 🟟 Khi click chọn khách xong thì coi như xác nhận luôn
+                KhachHangConfirmed?.Invoke(kh);
+            }
+
+            SearchTextBox.Focus();
+            SearchTextBox.SelectAll();
+        }
+
+        private void Select(KhachHangDto kh)
+        {
+            if (kh.Id == Guid.Empty)
+            {
+                // 🟟 Khách mới
+                SelectedKhachHang = null;
+                SearchTextBox.Text = "!!! Nếu là KHÁCH MỚI nhấn vào đây, khách cũ nhập để tìm !!!";
+                Popup.IsOpen = false;
+                KhachMoiSelected?.Invoke();
+                return;
+            }
+
+            SelectedKhachHang = kh;
+            SearchTextBox.Text = kh.Ten;
+            SearchTextBox.CaretIndex = SearchTextBox.Text.Length;
+            if (!ShowAllWhenEmpty)
+                Popup.IsOpen = false;
+            KhachHangSelected?.Invoke(kh);
+        }
+
+        // ==========================
+        // 🟟 Điều hướng bàn phím
+        // ==========================
         private void Root_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Down && Popup.IsOpen && ListBoxResults.Items.Count > 0)
@@ -284,6 +253,9 @@ namespace TraSuaApp.WpfClient.Controls
             }
         }
 
+        // ==========================
+        // 🟟 Nút ▲ ▼ (đổi thứ tự)
+        // ==========================
         private async void MoveButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is Guid khId)
@@ -308,7 +280,7 @@ namespace TraSuaApp.WpfClient.Controls
 
                 if (neighbor != null)
                 {
-                    // 🟟 Hoán đổi ThuTu
+                    // 🟟 Hoán đổi thứ tự
                     int temp = current.ThuTu;
                     current.ThuTu = neighbor.ThuTu;
                     neighbor.ThuTu = temp;

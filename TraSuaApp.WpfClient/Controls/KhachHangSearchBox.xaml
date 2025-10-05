@@ -4,17 +4,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     x:Name="Root"
     PreviewKeyDown="Root_PreviewKeyDown">
+
     <Grid>
-        <!--  Lớp nền dùng để chứa TextBox + Button  -->
+        <!--  Ô nhập và nút X xoá  -->
         <Grid>
             <TextBox
                 x:Name="SearchTextBox"
                 Padding="4,4,28,4"
                 VerticalContentAlignment="Center"
-                PreviewKeyDown="SearchBox_And_ListBox_PreviewKeyDown"
+                PreviewKeyDown="Root_PreviewKeyDown"
                 TextChanged="SearchTextBox_TextChanged" />
 
-            <!--  Nút X để xóa  -->
             <Button
                 x:Name="ClearButton"
                 Click="ClearButton_Click"
@@ -24,7 +24,7 @@
                 Visibility="Collapsed" />
         </Grid>
 
-        <!--  Popup hiển thị danh sách kết quả  -->
+        <!--  Popup hiển thị kết quả  -->
         <Popup
             x:Name="Popup"
             AllowsTransparency="True"
@@ -34,74 +34,89 @@
             PopupAnimation="Slide"
             StaysOpen="False"
             VerticalOffset="2">
+
             <Border
+                Padding="2"
                 Background="{StaticResource LightBrush}"
                 BorderBrush="{StaticResource SecondaryBrush}"
-                BorderThickness="1">
-                <ListBox
-                    x:Name="ListBoxResults"
-                    Width="410"
+                BorderThickness="1"
+                CornerRadius="4">
+
+                <ScrollViewer
+                    Width="{Binding FixedPopupHeight, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"
+                    Height="{Binding FixedPopupHeight, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"
                     MaxHeight="410"
-                    BorderBrush="Transparent"
-                    MouseLeftButtonUp="ListBoxResults_MouseLeftButtonUp"
-                    ScrollViewer.HorizontalScrollBarVisibility="Hidden">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition />
-                                    <RowDefinition />
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" />
-                                    <ColumnDefinition Width="180" />
-                                    <ColumnDefinition Width="50" />
-                                    <ColumnDefinition Width="50" />
-                                </Grid.ColumnDefinitions>
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
 
-                                <TextBlock
-                                    Grid.ColumnSpan="2"
-                                    FontWeight="Bold"
-                                    Text="{Binding Ten}" />
-                                <TextBlock
-                                    Grid.Row="1"
-                                    Grid.Column="0"
-                                    FontSize="{StaticResource FontSizeSmall}"
-                                    Foreground="{StaticResource SecondaryBrush}"
-                                    Text="{Binding DienThoai}" />
-                                <TextBlock
-                                    Grid.Row="1"
-                                    Grid.Column="1"
-                                    FontSize="{StaticResource FontSizeSmall}"
-                                    Foreground="{StaticResource SecondaryBrush}"
-                                    Text="{Binding DiaChi}" />
+                    <ListBox
+                        x:Name="ListBoxResults"
+                        Width="410"
+                        BorderBrush="Transparent"
+                        MouseLeftButtonUp="ListBoxResults_MouseLeftButtonUp"
+                        ScrollViewer.HorizontalScrollBarVisibility="Hidden">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="4,2">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition />
+                                        <RowDefinition />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="180" />
+                                        <ColumnDefinition Width="50" />
+                                        <ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
 
-                                <!--  Nút ▲  -->
-                                <Button
-                                    Name="UpButton"
-                                    Grid.RowSpan="2"
-                                    Grid.Column="2"
-                                    Margin="4,0,0,0"
-                                    VerticalAlignment="Center"
-                                    Click="MoveButton_Click"
-                                    Content="▲"
-                                    Style="{StaticResource ThemButtonStyle}"
-                                    Tag="{Binding Id}" />
+                                    <!--  Tên khách  -->
+                                    <TextBlock
+                                        Grid.ColumnSpan="2"
+                                        FontWeight="Bold"
+                                        Text="{Binding Ten}" />
 
-                                <!--  Nút ▼  -->
-                                <Button
-                                    Grid.RowSpan="2"
-                                    Grid.Column="3"
-                                    VerticalAlignment="Center"
-                                    Click="MoveButton_Click"
-                                    Content="▼"
-                                    Style="{StaticResource XoaButtonStyle}"
-                                    Tag="{Binding Id}" />
-                            </Grid>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
+                                    <!--  SĐT  -->
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Grid.Column="0"
+                                        FontSize="{StaticResource FontSizeSmall}"
+                                        Foreground="{StaticResource SecondaryBrush}"
+                                        Text="{Binding DienThoai}" />
 
-                </ListBox>
+                                    <!--  Địa chỉ  -->
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Grid.Column="1"
+                                        FontSize="{StaticResource FontSizeSmall}"
+                                        Foreground="{StaticResource SecondaryBrush}"
+                                        Text="{Binding DiaChi}" />
+
+                                    <!--  Nút ▲  -->
+                                    <Button
+                                        Name="UpButton"
+                                        Grid.RowSpan="2"
+                                        Grid.Column="2"
+                                        Margin="4,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Click="MoveButton_Click"
+                                        Content="▲"
+                                        Style="{StaticResource ThemButtonStyle}"
+                                        Tag="{Binding Id}" />
+
+                                    <!--  Nút ▼  -->
+                                    <Button
+                                        Grid.RowSpan="2"
+                                        Grid.Column="3"
+                                        VerticalAlignment="Center"
+                                        Click="MoveButton_Click"
+                                        Content="▼"
+                                        Style="{StaticResource XoaButtonStyle}"
+                                        Tag="{Binding Id}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
             </Border>
         </Popup>
     </Grid>

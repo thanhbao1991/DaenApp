@@ -88,7 +88,7 @@ namespace TraSuaApp.Infrastructure.Services
                 DinhLuong = dto.DinhLuong?.Trim(),
                 VietTat = dto.VietTat?.Trim(),
                 TenKhongVietTat = string.IsNullOrWhiteSpace(dto.TenKhongVietTat)
-            ? StringHelper.NormalizeText(dto.Ten).ToLower()
+            ? dto.Ten.ToLower()
             : dto.TenKhongVietTat,
 
 

@@ -1,8 +1,8 @@
 ﻿<Window
-    x:Class="TraSuaApp.WpfClient.AdminViews.KhachHangGiaBanEdit"
+    x:Class="TraSuaApp.WpfClient.SettingsViews.KhachHangGiaBanEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
+    xmlns:local="clr-namespace:TraSuaApp.WpfClient.Converters"
     Style="{StaticResource EditWindowStyle}"
     WindowStartupLocation="CenterScreen">
 
@@ -21,34 +21,20 @@
                     Content="✖"
                     Style="{StaticResource CloseButtonStyle}" />
             </DockPanel>
-            <!--  Nội dung form  -->
+            <!--  Nội dung  -->
             <StackPanel Grid.Row="1">
-                <!--  Tên  -->
-                <GroupBox Margin="0,0,0,5" Header="Tên phương thức thanh toán:">
-                    <!--  Đang sử dụng / Ngừng bán  -->
-                    <StackPanel Margin="0,0,0,0" Orientation="Horizontal">
+                <GroupBox Margin="0,0,0,5" Header="Tên nhóm sản phẩm">
+                    <StackPanel Orientation="Horizontal">
                         <TextBox
                             x:Name="TenTextBox"
                             Width="200"
                             Margin="0,0,8,0" />
-
                     </StackPanel>
                 </GroupBox>
-                <GroupBox>
-                    <!--  Đang sử dụng / Ngừng bán  -->
-                    <StackPanel Margin="0,0,0,0" Orientation="Horizontal">
-                        <CheckBox
-                            x:Name="DangSuDungCheckBox"
-                            Margin="0,0,0,0"
-                            Content="Đang sử dụng" />
-                    </StackPanel>
-                </GroupBox>
-
-
 
             </StackPanel>
 
-            <!--  Nút lưu và lỗi  -->
+            <!--  Nút và lỗi  -->
             <StackPanel Grid.Row="2">
                 <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
                 <Button

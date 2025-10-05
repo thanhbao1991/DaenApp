@@ -284,7 +284,7 @@ namespace TraSuaApp.WpfClient.Helpers
                 {
                     int leftPadPx = 0;                                 // sát cột chữ
                     int rightPadPx = 0;
-                    int blank2Lines = 3 * lineHpx;                        // thêm 2 dòng trống
+                    int blank2Lines = 5 * lineHpx;                        // thêm 2 dòng trống
                     int safeBottomPx = (int)Math.Round(0.1f * g.DpiY);     // ~2.5mm
 
                     int maxWidthPx = Math.Max(60, widthPx - leftPadPx - rightPadPx);
