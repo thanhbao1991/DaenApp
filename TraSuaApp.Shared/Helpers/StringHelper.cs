@@ -6,51 +6,100 @@ namespace TraSuaApp.Shared.Helpers;
 
 public static class StringHelper
 {
-    public static string NormalizeText(string input)
+    // ⚡️ Regex cache sẵn để tránh compile lại
+    private static readonly Regex MultiSpaceRegex = new(@"\s+", RegexOptions.Compiled);
+    private static readonly Regex SqlCommentPattern = new(@"(--.*?$)|(/\*.*?\*/)", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.Multiline);
+    private static readonly Regex DangerousCharsPattern = new(@"['""`;`]|[\x00-\x1F\x7F]+", RegexOptions.Compiled);
+
+    private static readonly HashSet<string> MinorWords = new(StringComparer.OrdinalIgnoreCase)
+    { "và", "của", "the", "in", "on", "at", "by", "for", "of", "to", "a", "an" };
+
+    // =============================
+    // 🟟 1. Extension NormalizeText
+    // =============================
+    public static string NormalizeText(this string? input, bool ignoreAccentOnly = false)
     {
         if (string.IsNullOrWhiteSpace(input)) return "";
-        var normalized = input.Normalize(NormalizationForm.FormD);
-        var builder = new StringBuilder();
-        foreach (var c in normalized)
+
+        // Loại bỏ ký tự ẩn hoặc không mong muốn
+        input = input
+            .Replace("\u200B", "") // zero-width space
+            .Replace("\uFEFF", "") // BOM
+            .Replace("“", "\"").Replace("”", "\"")
+            .Replace("‘", "'").Replace("’", "'");
+
+        var sb = new StringBuilder(input.Length);
+        bool lastSpace = false;
+
+        foreach (var c in input.Normalize(NormalizationForm.FormD))
         {
-            var uc = CharUnicodeInfo.GetUnicodeCategory(c);
-            if (uc != UnicodeCategory.NonSpacingMark)
-                builder.Append(c);
+            if (char.IsWhiteSpace(c))
+            {
+                if (!lastSpace) sb.Append(' ');
+                lastSpace = true;
+                continue;
+            }
+
+            var cat = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (cat != UnicodeCategory.NonSpacingMark)
+            {
+                char ch = c switch
+                {
+                    'Đ' => 'd',
+                    'đ' => 'd',
+                    _ => c
+                };
+                sb.Append(ignoreAccentOnly ? ch : char.ToLowerInvariant(ch));
+                lastSpace = false;
+            }
         }
-        return builder.ToString()
-            .Normalize(NormalizationForm.FormC)
-            .ToLowerInvariant()
-            .Replace("đ", "d");
+
+        var result = sb.ToString().Trim();
+        if (!ignoreAccentOnly)
+            result = MultiSpaceRegex.Replace(result, " ");
+
+        return result;
     }
+
+    // ✅ Alias gọi tĩnh (nếu cần)
+    public static string NormalizeTextStatic(string? s) => s.NormalizeText();
+
+    // =============================
+    // 🟟 2. So sánh nhanh
+    // =============================
+    public static bool EqualsNormalized(this string? a, string? b)
+        => a.NormalizeText() == b.NormalizeText();
+
+    // =============================
+    // 🟟 3. Lấy tên rút gọn
+    // =============================
     public static string GetShortName(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
             return string.Empty;
 
-        string normalized = NormalizeText(input);
+        string normalized = input.NormalizeText();
         var words = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         var shortName = new StringBuilder();
-
         foreach (var word in words)
         {
             if (string.IsNullOrWhiteSpace(word))
                 continue;
 
-            // Nếu từ bắt đầu bằng chữ + số (vd: 5b, 3a) → lấy toàn bộ
+            // Nếu từ bắt đầu bằng số hoặc ký tự có số → lấy toàn bộ
             if (char.IsDigit(word[0]) || (word.Length > 1 && char.IsDigit(word[1])))
-            {
                 shortName.Append(word);
-            }
             else
-            {
                 shortName.Append(word[0]);
-            }
         }
 
         return shortName.ToString().ToLower();
     }
 
+    // =============================
+    // 🟟 4. Viết hoa mỗi từ (smart)
+    // =============================
     public static string? CapitalizeEachWord(string? input)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -59,34 +108,27 @@ public static class StringHelper
         var words = input.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i < words.Length; i++)
         {
-            var w = words[i];
-            words[i] = char.ToUpper(w[0]) + w.Substring(1).ToLower();
+            var w = words[i].ToLowerInvariant();
+            if (i == 0 || !MinorWords.Contains(w))
+                words[i] = char.ToUpper(w[0]) + w[1..];
+            else
+                words[i] = w;
         }
-        return string.Join(" ", words);
+
+        return string.Join(' ', words);
     }
 
+    // =============================
+    // 🟟 5. SQL Sanitize
+    // =============================
     private static string SoftSanitizeSql(string? input)
     {
         if (string.IsNullOrEmpty(input)) return input ?? "";
 
-        // Xoá comment SQL
-        input = Regex.Replace(input, @"--.*?$", "", RegexOptions.Multiline);
-        input = Regex.Replace(input, @"/\*.*?\*/", "", RegexOptions.Singleline);
-
-        // Escape thay vì xóa hẳn để giữ nguyên nghĩa dữ liệu
-        input = input.Replace("'", "''");   // escape nháy đơn
-        input = input.Replace("\"", "\"\""); // escape nháy kép
-
-        // Xoá các ký tự nguy hiểm khác
-        input = input.Replace(";", "");
-        input = input.Replace("`", "");
-        input = input.Replace("--", "");
-
-        // Xoá control chars
-        input = Regex.Replace(input, @"[\x00-\x1F\x7F]+", "");
-
-        // Chuẩn hóa khoảng trắng
-        input = Regex.Replace(input, @"\s{2,}", " ").Trim();
+        input = SqlCommentPattern.Replace(input, ""); // Xoá comment
+        input = DangerousCharsPattern.Replace(input, ""); // Xoá ký tự nguy hiểm
+        input = input.Replace("'", "''").Replace("\"", "\"\"");
+        input = MultiSpaceRegex.Replace(input, " ").Trim();
 
         return input;
     }
@@ -106,13 +148,15 @@ public static class StringHelper
         foreach (var kw in sqlKeywords)
         {
             input = Regex.Replace(input, $@"\b{Regex.Escape(kw)}\b", "",
-                RegexOptions.IgnoreCase);
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
 
-        input = Regex.Replace(input, @"\s{2,}", " ").Trim();
-        return input;
+        return MultiSpaceRegex.Replace(input, " ").Trim();
     }
 
+    // =============================
+    // 🟟 6. Chuẩn hoá tất cả string trong object
+    // =============================
     public static void NormalizeAllStrings<T>(T obj, bool sanitizeSql = true, bool strictSqlSanitize = false)
     {
         if (obj == null) return;
@@ -124,16 +168,26 @@ public static class StringHelper
         foreach (var prop in stringProps)
         {
             var value = prop.GetValue(obj) as string;
-            if (!string.IsNullOrEmpty(value))
-            {
-                if (sanitizeSql)
-                {
-                    value = strictSqlSanitize ? StrictSanitizeSql(value) : SoftSanitizeSql(value);
-                }
+            if (string.IsNullOrEmpty(value)) continue;
 
-                value = CapitalizeEachWord(value);
-                prop.SetValue(obj, value);
-            }
+            if (sanitizeSql)
+                value = strictSqlSanitize ? StrictSanitizeSql(value) : SoftSanitizeSql(value);
+
+            value = CapitalizeEachWord(value);
+            prop.SetValue(obj, value);
         }
     }
+
+#if DEBUG
+    // =============================
+    // 🟟 7. Test nhanh trong Debug
+    // =============================
+    public static void TestNormalize(params string[] inputs)
+    {
+        foreach (var s in inputs)
+        {
+            Console.WriteLine($"{s} → {s.NormalizeText()}");
+        }
+    }
+#endif
 }
