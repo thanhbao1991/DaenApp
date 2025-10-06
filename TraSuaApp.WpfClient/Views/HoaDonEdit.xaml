@@ -633,11 +633,11 @@
             <!--  Nút và lỗi  -->
             <StackPanel Grid.Row="2">
                 <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
-                <ctrl:LoadingButton
+                <Button
                     x:Name="SaveButton"
                     Click="SaveButton_Click"
-                    Content="Lưu (Enter)"
-                    Tag="idle" />
+                    Content="Save (Enter)"
+                    Style="{StaticResource EditButtonStyle}" />
             </StackPanel>
         </Grid>
     </Border>

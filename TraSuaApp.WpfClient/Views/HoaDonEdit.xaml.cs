@@ -392,202 +392,202 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         {
             if (_isSaving) return;
             _isSaving = true;
-            SaveButton.IsBusy = true;
             SaveButton.IsEnabled = false;
             NoiDungForm.IsEnabled = false;
-
-            try
+            using (BusyUI.Scope(this, SaveButton, "Đang lưu..."))
             {
-                if (TaiChoRadio.IsChecked == true)
-                    Model.PhanLoai = "Tại Chỗ";
-                else if (MuaVeRadio.IsChecked == true)
-                    Model.PhanLoai = "Mv";
-                else if (ShipRadio.IsChecked == true)
-                    Model.PhanLoai = "Ship";
-                else if (AppRadio.IsChecked == true)
-                    Model.PhanLoai = "App";
 
-                Model.TrangThai = "";
-                Model.TenBan = TenBanComboBox.Text;
-                Model.KhachHangId = KhachHangSearchBox.SelectedKhachHang?.Id;
-
-                // Luôn lấy text đang hiển thị
-                Model.TenKhachHangText = KhachHangSearchBox.SearchTextBox.Text?.Trim();
-                Model.SoDienThoaiText = DienThoaiComboBox.Text?.Trim();
-                Model.DiaChiText = DiaChiComboBox.Text?.Trim();
-
-                Model.VoucherId = (Guid?)VoucherComboBox.SelectedValue;
-                Model.ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>();
-                if (VoucherComboBox.SelectedItem is VoucherDto voucher && voucher.Id != Guid.Empty)
-                {
-                    Model.ChiTietHoaDonVouchers.Add(new ChiTietHoaDonVoucherDto
-                    {
-                        VoucherId = voucher.Id,
-                        GiaTriApDung = voucher.GiaTri
-                    });
-                }
-
-                if (Model.PhanLoai == "Ship")
-                {
-                    if (string.IsNullOrWhiteSpace(Model.TenKhachHangText))
-                    {
-                        ErrorTextBlock.Text = $"Tên khách hàng không được để trống.";
-                        KhachHangSearchBox.SearchTextBox.Focus();
-                        return;
-                    }
-                    if (string.IsNullOrWhiteSpace(Model.DiaChiText))
-                    {
-                        ErrorTextBlock.Text = $"Địa chỉ không được để trống.";
-                        DiaChiComboBox.Focus();
-                        return;
-                    }
-                    if (string.IsNullOrWhiteSpace(Model.SoDienThoaiText))
-                    {
-                        ErrorTextBlock.Text = $"SĐT không được để trống.";
-                        DienThoaiComboBox.Focus();
-                        return;
-                    }
-                }
-                if (TaiChoRadio.IsChecked == true && string.IsNullOrWhiteSpace(Model.TenBan))
-                {
-                    ErrorTextBlock.Text = "Tên không được để trống.";
-                    TenBanComboBox.IsDropDownOpen = true;
-                    return;
-                }
-                if (Model.ChiTietHoaDons.Count == 0)
-                {
-                    ErrorTextBlock.Text = "Chưa có sản phẩm nào trong hóa đơn.";
-                    return;
-                }
-
-                // Thêm địa chỉ/điện thoại mới vào KH nếu cần (giữ code cũ của bạn)
-                if (KhachHangSearchBox.SelectedKhachHang is KhachHangDto kh)
-                {
-                    string diaChiText = DiaChiComboBox.Text?.Trim() ?? string.Empty;
-                    if (!string.IsNullOrWhiteSpace(diaChiText) && !kh.Addresses.Any(a => a.DiaChi.Equals(diaChiText, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        var diaChiMoi = new KhachHangAddressDto { Id = Guid.NewGuid(), DiaChi = diaChiText, IsDefault = false };
-                        kh.Addresses.Add(diaChiMoi);
-                        DiaChiComboBox.ItemsSource = null;
-                        DiaChiComboBox.ItemsSource = kh.Addresses;
-                        DiaChiComboBox.SelectedItem = diaChiMoi;
-                    }
-
-                    string sdtText = DienThoaiComboBox.Text?.Trim() ?? string.Empty;
-                    if (!string.IsNullOrWhiteSpace(sdtText) && !kh.Phones.Any(p => p.SoDienThoai.Equals(sdtText, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        var sdtMoi = new KhachHangPhoneDto { Id = Guid.NewGuid(), SoDienThoai = sdtText, IsDefault = false };
-                        kh.Phones.Add(sdtMoi);
-                        DienThoaiComboBox.ItemsSource = null;
-                        DienThoaiComboBox.ItemsSource = kh.Phones;
-                        DienThoaiComboBox.SelectedItem = sdtMoi;
-                    }
-                }
-
-                if (!Model.ChiTietHoaDons.Any(ct => ct.SoLuong > 0))
-                {
-                    ErrorTextBlock.Text = "Chưa có sản phẩm nào trong hóa đơn.";
-                    return;
-                }
-
-                // Chỉ giữ dòng > 0
-                Model.ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(
-                    Model.ChiTietHoaDons.Where(ct => ct.SoLuong > 0)
-                );
-
-                // Đồng bộ topping & tính tiền
-                DongBoTatCaTopping();
-
-                // == GỌI API ==
-                bool isNew = Model.Id == Guid.Empty;
-                if (isNew) Model.Id = Guid.NewGuid();
-
-                Result<HoaDonDto> result;
-                if (isNew)
-                {
-                    result = await _api.CreateAsync(Model);
-                    if (result.IsSuccess && result.Data?.KhachHangId != null)
-                        await AppProviders.KhachHangs.ReloadAsync();
-                }
-                else if (Model.IsDeleted)
-                {
-                    result = await _api.RestoreAsync(Model.Id);
-                }
-                else
-                {
-                    result = await _api.UpdateAsync(Model.Id, Model);
-                }
-
-                if (!result.IsSuccess)
-                {
-                    ErrorTextBlock.Text = result.Message;
-                    return;
-                }
-
-                if (!string.IsNullOrWhiteSpace(GptInputText)
-               && Model?.ChiTietHoaDons?.Any() == true)
-                {
-                    var predsSafe = GptPredictions ?? new List<QuickOrderDto>(); // ⭐
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await QuickGptLearningStore.Instance.LearnAsync(
-                                customerId: Model.KhachHangId,
-                                rawInput: GptInputText,
-                                finals: Model.ChiTietHoaDons,
-                                preds: predsSafe,
-                                sanPhams: AppProviders.SanPhams.Items
-                            );
-                        }
-                        catch { /* log nếu cần */ }
-                    });
-                }
-                else if (Model?.ChiTietHoaDons?.Any() == true)
-                {
-                    // Fallback: không có input GPT → học theo TÊN món (ít thông tin hơn nhưng vẫn cá nhân hoá)
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            foreach (var ct in Model.ChiTietHoaDons)
-                            {
-                                var sp = AppProviders.SanPhams.Items
-                                    .FirstOrDefault(s => s.BienThe.Any(bt => bt.Id == ct.SanPhamIdBienThe));
-                                if (sp != null)
-                                    await QuickGptLearningStore.Instance.LearnAsync(Model.KhachHangId, sp.Ten, sp.Id, sp.Ten);
-                            }
-                        }
-                        catch { }
-                    });
-                }
-                SavedHoaDonId = Model.Id != Guid.Empty ? Model.Id : null;
-
-                // đóng cửa sổ và trả kết quả OK
-                DialogResult = true;
-                this.DialogResult = true;
-                this.Close();
-
-            }
-            catch (Exception ex)
-            {
-                ErrorTextBlock.Text = ex.Message;
-                SaveButton.IsBusy = false;
-            }
-            finally
-            {
-                // Nếu chưa đóng thì khôi phục (nếu đã Close, UI sẽ bị dispose; try-catch để an toàn)
                 try
                 {
-                    SaveButton.IsBusy = false;
-                    SaveButton.IsEnabled = true;
-                    NoiDungForm.IsEnabled = true;
+                    if (TaiChoRadio.IsChecked == true)
+                        Model.PhanLoai = "Tại Chỗ";
+                    else if (MuaVeRadio.IsChecked == true)
+                        Model.PhanLoai = "Mv";
+                    else if (ShipRadio.IsChecked == true)
+                        Model.PhanLoai = "Ship";
+                    else if (AppRadio.IsChecked == true)
+                        Model.PhanLoai = "App";
+
+                    Model.TrangThai = "";
+                    Model.TenBan = TenBanComboBox.Text;
+                    Model.KhachHangId = KhachHangSearchBox.SelectedKhachHang?.Id;
+
+                    // Luôn lấy text đang hiển thị
+                    Model.TenKhachHangText = KhachHangSearchBox.SearchTextBox.Text?.Trim();
+                    Model.SoDienThoaiText = DienThoaiComboBox.Text?.Trim();
+                    Model.DiaChiText = DiaChiComboBox.Text?.Trim();
+
+                    Model.VoucherId = (Guid?)VoucherComboBox.SelectedValue;
+                    Model.ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>();
+                    if (VoucherComboBox.SelectedItem is VoucherDto voucher && voucher.Id != Guid.Empty)
+                    {
+                        Model.ChiTietHoaDonVouchers.Add(new ChiTietHoaDonVoucherDto
+                        {
+                            VoucherId = voucher.Id,
+                            GiaTriApDung = voucher.GiaTri
+                        });
+                    }
+
+                    if (Model.PhanLoai == "Ship")
+                    {
+                        if (string.IsNullOrWhiteSpace(Model.TenKhachHangText))
+                        {
+                            ErrorTextBlock.Text = $"Tên khách hàng không được để trống.";
+                            KhachHangSearchBox.SearchTextBox.Focus();
+                            return;
+                        }
+                        if (string.IsNullOrWhiteSpace(Model.DiaChiText))
+                        {
+                            ErrorTextBlock.Text = $"Địa chỉ không được để trống.";
+                            DiaChiComboBox.Focus();
+                            return;
+                        }
+                        if (string.IsNullOrWhiteSpace(Model.SoDienThoaiText))
+                        {
+                            ErrorTextBlock.Text = $"SĐT không được để trống.";
+                            DienThoaiComboBox.Focus();
+                            return;
+                        }
+                    }
+                    if (TaiChoRadio.IsChecked == true && string.IsNullOrWhiteSpace(Model.TenBan))
+                    {
+                        ErrorTextBlock.Text = "Tên không được để trống.";
+                        TenBanComboBox.IsDropDownOpen = true;
+                        return;
+                    }
+                    if (Model.ChiTietHoaDons.Count == 0)
+                    {
+                        ErrorTextBlock.Text = "Chưa có sản phẩm nào trong hóa đơn.";
+                        return;
+                    }
+
+                    // Thêm địa chỉ/điện thoại mới vào KH nếu cần (giữ code cũ của bạn)
+                    if (KhachHangSearchBox.SelectedKhachHang is KhachHangDto kh)
+                    {
+                        string diaChiText = DiaChiComboBox.Text?.Trim() ?? string.Empty;
+                        if (!string.IsNullOrWhiteSpace(diaChiText) && !kh.Addresses.Any(a => a.DiaChi.Equals(diaChiText, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            var diaChiMoi = new KhachHangAddressDto { Id = Guid.NewGuid(), DiaChi = diaChiText, IsDefault = false };
+                            kh.Addresses.Add(diaChiMoi);
+                            DiaChiComboBox.ItemsSource = null;
+                            DiaChiComboBox.ItemsSource = kh.Addresses;
+                            DiaChiComboBox.SelectedItem = diaChiMoi;
+                        }
+
+                        string sdtText = DienThoaiComboBox.Text?.Trim() ?? string.Empty;
+                        if (!string.IsNullOrWhiteSpace(sdtText) && !kh.Phones.Any(p => p.SoDienThoai.Equals(sdtText, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            var sdtMoi = new KhachHangPhoneDto { Id = Guid.NewGuid(), SoDienThoai = sdtText, IsDefault = false };
+                            kh.Phones.Add(sdtMoi);
+                            DienThoaiComboBox.ItemsSource = null;
+                            DienThoaiComboBox.ItemsSource = kh.Phones;
+                            DienThoaiComboBox.SelectedItem = sdtMoi;
+                        }
+                    }
+
+                    if (!Model.ChiTietHoaDons.Any(ct => ct.SoLuong > 0))
+                    {
+                        ErrorTextBlock.Text = "Chưa có sản phẩm nào trong hóa đơn.";
+                        return;
+                    }
+
+                    // Chỉ giữ dòng > 0
+                    Model.ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(
+                        Model.ChiTietHoaDons.Where(ct => ct.SoLuong > 0)
+                    );
+
+                    // Đồng bộ topping & tính tiền
+                    DongBoTatCaTopping();
+
+                    // == GỌI API ==
+                    bool isNew = Model.Id == Guid.Empty;
+                    if (isNew) Model.Id = Guid.NewGuid();
+
+                    Result<HoaDonDto> result;
+                    if (isNew)
+                    {
+                        result = await _api.CreateAsync(Model);
+                        if (result.IsSuccess && result.Data?.KhachHangId != null)
+                            await AppProviders.KhachHangs.ReloadAsync();
+                    }
+                    else if (Model.IsDeleted)
+                    {
+                        result = await _api.RestoreAsync(Model.Id);
+                    }
+                    else
+                    {
+                        result = await _api.UpdateAsync(Model.Id, Model);
+                    }
+
+                    if (!result.IsSuccess)
+                    {
+                        ErrorTextBlock.Text = result.Message;
+                        return;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(GptInputText)
+                   && Model?.ChiTietHoaDons?.Any() == true)
+                    {
+                        var predsSafe = GptPredictions ?? new List<QuickOrderDto>(); // ⭐
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await QuickGptLearningStore.Instance.LearnAsync(
+                                    customerId: Model.KhachHangId,
+                                    rawInput: GptInputText,
+                                    finals: Model.ChiTietHoaDons,
+                                    preds: predsSafe,
+                                    sanPhams: AppProviders.SanPhams.Items
+                                );
+                            }
+                            catch { /* log nếu cần */ }
+                        });
+                    }
+                    else if (Model?.ChiTietHoaDons?.Any() == true)
+                    {
+                        // Fallback: không có input GPT → học theo TÊN món (ít thông tin hơn nhưng vẫn cá nhân hoá)
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                foreach (var ct in Model.ChiTietHoaDons)
+                                {
+                                    var sp = AppProviders.SanPhams.Items
+                                        .FirstOrDefault(s => s.BienThe.Any(bt => bt.Id == ct.SanPhamIdBienThe));
+                                    if (sp != null)
+                                        await QuickGptLearningStore.Instance.LearnAsync(Model.KhachHangId, sp.Ten, sp.Id, sp.Ten);
+                                }
+                            }
+                            catch { }
+                        });
+                    }
+                    SavedHoaDonId = Model.Id != Guid.Empty ? Model.Id : null;
+
+                    // đóng cửa sổ và trả kết quả OK
+                    DialogResult = true;
+                    this.DialogResult = true;
+                    this.Close();
+
                 }
-                catch { }
-                _isSaving = false;
+                catch (Exception ex)
+                {
+                    ErrorTextBlock.Text = ex.Message;
+                }
+                finally
+                {
+                    // Nếu chưa đóng thì khôi phục (nếu đã Close, UI sẽ bị dispose; try-catch để an toàn)
+                    try
+                    {
+                        SaveButton.IsEnabled = true;
+                        NoiDungForm.IsEnabled = true;
+                    }
+                    catch { }
+                    _isSaving = false;
+                }
+
             }
         }
-
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
