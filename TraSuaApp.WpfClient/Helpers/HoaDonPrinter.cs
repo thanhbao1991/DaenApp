@@ -237,7 +237,6 @@ namespace TraSuaApp.WpfClient.Helpers
         private static int _lineIndex;
         private static D.Bitmap? _qr;
         private static bool _qrPrinted;
-
         private static void PrintViaGdi(string content, string printerName, string fontName, float fontSize, D.Bitmap? qrBmp)
         {
             _lines = content.Replace("\r", "").Split('\n');
@@ -279,19 +278,26 @@ namespace TraSuaApp.WpfClient.Helpers
                     y += lineHpx;
                 }
 
-                // 2) In QR ở cuối – ép vừa chiều cao còn lại, thêm 2 dòng trống
+                // 2) In QR ở cuối – NHỚ chừa chỗ cho 3 dòng ký tự
                 if (!_qrPrinted && _qr != null)
                 {
-                    int leftPadPx = 0;                                 // sát cột chữ
+                    const int ReserveLines = 3;               // ← số dòng ký tự cần in dưới QR
+                    string footerLine = "♥"; // ← ký tự bạn muốn in
+                    int reservePx = ReserveLines * lineHpx;
+
+                    int leftPadPx = 0;
                     int rightPadPx = 0;
-                    int blank2Lines = 5 * lineHpx;                        // thêm 2 dòng trống
-                    int safeBottomPx = (int)Math.Round(0.1f * g.DpiY);     // ~2.5mm
+                    int safeBottomPx = (int)Math.Round(0.10f * g.DpiY);  // ~2.5mm để an toàn
 
                     int maxWidthPx = Math.Max(60, widthPx - leftPadPx - rightPadPx);
-                    int maxHeightPx = Math.Max(60, bottomPx - y - safeBottomPx - blank2Lines);
 
-                    int finalMaxPx = Math.Max(80, Math.Min(maxWidthPx, maxHeightPx));
+                    // CHÌA KHÓA: trừ sẵn reservePx để còn chỗ cho 3 dòng
+                    int availHeight = bottomPx - y - safeBottomPx - reservePx;
 
+                    // Nếu chỗ còn lại quá ít, sang trang mới để in QR + footer
+                    if (availHeight < 60) { e.HasMorePages = true; return; }
+
+                    int finalMaxPx = Math.Min(maxWidthPx, availHeight);
                     int quietPx = Math.Clamp(finalMaxPx / 12, 12, 24);
                     int corePx = Math.Max(64, finalMaxPx - 2 * quietPx);
 
@@ -301,8 +307,19 @@ namespace TraSuaApp.WpfClient.Helpers
                     int w = Math.Min(crisp.Width, finalMaxPx);
                     int h = Math.Min(crisp.Height, finalMaxPx);
 
+                    // Vẽ QR
                     g.DrawImage(crisp, new D.Rectangle(x, y, w, h));
-                    y += h + blank2Lines;   // 2 dòng trống để xé giấy
+                    y += h;
+
+                    // 3) In 3 dòng ký tự căn giữa, chắc chắn còn chỗ vì đã chừa trước
+                    var fmtCenter = new D.StringFormat { Alignment = D.StringAlignment.Center };
+                    for (int i = 0; i < ReserveLines; i++)
+                    {
+                        if (y + lineHpx > bottomPx) { e.HasMorePages = true; return; }
+                        g.DrawString(footerLine, font, D.Brushes.Black,
+                                     new D.RectangleF(leftPx, y, widthPx, lineHpx), fmtCenter);
+                        y += lineHpx;
+                    }
 
                     _qrPrinted = true;
                 }
@@ -310,9 +327,97 @@ namespace TraSuaApp.WpfClient.Helpers
                 e.HasMorePages = false;
             };
 
-            doc.EndPrint += (s, e) => { _qr?.Dispose(); _qr = null; };
+            doc.EndPrint += (s, e2) => { _qr?.Dispose(); _qr = null; };
             doc.Print();
         }
+        //private static void PrintViaGdi(string content, string printerName, string fontName, float fontSize, D.Bitmap? qrBmp)
+        //{
+        //    _lines = content.Replace("\r", "").Split('\n');
+        //    _lineIndex = 0;
+        //    _qr = qrBmp;                    // có thể null
+        //    _qrPrinted = (_qr == null);
+
+        //    var doc = new DP.PrintDocument();
+        //    doc.PrinterSettings.PrinterName = printerName;
+        //    doc.DefaultPageSettings.Margins = new DP.Margins(0, 0, 0, 0);
+
+        //    doc.PrintPage += (s, e) =>
+        //    {
+        //        var g = e.Graphics;
+        //        g.PageUnit = D.GraphicsUnit.Pixel;
+
+        //        // MarginBounds -> PX
+        //        int leftPx = (int)Math.Round(e.MarginBounds.Left / 100f * g.DpiX);
+        //        int topPx = (int)Math.Round(e.MarginBounds.Top / 100f * g.DpiY);
+        //        int widthPx = (int)Math.Round(e.MarginBounds.Width / 100f * g.DpiX);
+        //        int bottomPx = (int)Math.Round(e.MarginBounds.Bottom / 100f * g.DpiY);
+
+        //        using var font = new D.Font(fontName, fontSize, D.FontStyle.Regular, D.GraphicsUnit.Point);
+        //        int lineHpx = (int)Math.Ceiling(font.GetHeight(g));
+
+        //        g.SmoothingMode = SmoothingMode.None;
+        //        g.InterpolationMode = InterpolationMode.NearestNeighbor;
+        //        g.PixelOffsetMode = PixelOffsetMode.Half;
+
+        //        var fmt = new D.StringFormat(D.StringFormatFlags.NoWrap);
+        //        int y = topPx;
+
+        //        // 1) In toàn bộ text
+        //        while (_lineIndex < _lines!.Length)
+        //        {
+        //            if (y + lineHpx > bottomPx) { e.HasMorePages = true; return; }
+        //            g.DrawString(_lines[_lineIndex++], font, D.Brushes.Black,
+        //                         new D.RectangleF(leftPx, y, widthPx, lineHpx), fmt);
+        //            y += lineHpx;
+        //        }
+
+        //        // 2) In QR ở cuối – ép vừa chiều cao còn lại, thêm 2 dòng trống
+        //        if (!_qrPrinted && _qr != null)
+        //        {
+        //            int leftPadPx = 0;                                 // sát cột chữ
+        //            int rightPadPx = 0;
+        //            int blank2Lines = 1 * lineHpx;                        // thêm 2 dòng trống
+        //            int safeBottomPx = (int)Math.Round(0.1f * g.DpiY);     // ~2.5mm
+
+        //            int maxWidthPx = Math.Max(60, widthPx - leftPadPx - rightPadPx);
+        //            int maxHeightPx = Math.Max(60, bottomPx - y - safeBottomPx - blank2Lines);
+
+        //            int finalMaxPx = Math.Max(80, Math.Min(maxWidthPx, maxHeightPx));
+
+        //            int quietPx = Math.Clamp(finalMaxPx / 12, 12, 24);
+        //            int corePx = Math.Max(64, finalMaxPx - 2 * quietPx);
+
+        //            using var crisp = MakeCrispQr(_qr, corePx, extraQuietPx: quietPx);
+
+        //            int x = leftPx + leftPadPx;
+        //            int w = Math.Min(crisp.Width, finalMaxPx);
+        //            int h = Math.Min(crisp.Height, finalMaxPx);
+
+        //            g.DrawImage(crisp, new D.Rectangle(x, y, w, h));
+        //            y += h + blank2Lines;   // 2 dòng trống để xé giấy
+
+        //            // In thêm 3 dòng ký tự ngay dưới mã QR
+        //            string footerLine = "•"; // 🟟 Thay dòng này thành nội dung bạn muốn
+        //            var fmtCenter = new D.StringFormat { Alignment = D.StringAlignment.Center };
+
+        //            for (int i = 0; i < 3; i++)
+        //            {
+        //                g.DrawString(footerLine, font, D.Brushes.Black,
+        //                    new D.RectangleF(leftPx, y, widthPx, lineHpx), fmtCenter);
+        //                y += lineHpx;
+        //            }
+
+
+
+        //            _qrPrinted = true;
+        //        }
+
+        //        e.HasMorePages = false;
+        //    };
+
+        //    doc.EndPrint += (s, e) => { _qr?.Dispose(); _qr = null; };
+        //    doc.Print();
+        //}
 
         // helper phóng nét QR với quiet-zone
         private static D.Bitmap MakeCrispQr(D.Bitmap src, int targetPx, int extraQuietPx = 24)

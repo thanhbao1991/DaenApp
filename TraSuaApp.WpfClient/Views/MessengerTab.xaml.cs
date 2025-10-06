@@ -251,7 +251,6 @@ namespace TraSuaApp.WpfClient.Controls
                 // ✅ Vẫn mở form ngay cả khi không bắt được món
                 if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
                 {
-                    MessageBox.Show("Không nhận diện được món nào trong ảnh. Sẽ mở hoá đơn để bạn nhập tay (AI sẽ học lại).");
                     hd.ChiTietHoaDons ??= new();
                 }
 
@@ -415,7 +414,6 @@ namespace TraSuaApp.WpfClient.Controls
                 // 3) Mở form kể cả khi AI không nhận diện được
                 if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
                 {
-                    MessageBox.Show("Không nhận diện được món nào từ đoạn đã chọn. Sẽ mở hoá đơn để bạn nhập tay (AI sẽ học lại).");
                     hd.ChiTietHoaDons ??= new();
                 }
 

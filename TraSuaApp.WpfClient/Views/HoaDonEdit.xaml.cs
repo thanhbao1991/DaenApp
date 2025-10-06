@@ -287,7 +287,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                             var diaChiList = kh.Addresses?.ToList() ?? new();
                             DiaChiComboBox.ItemsSource = diaChiList;
                             DiaChiComboBox.SelectedItem =
-                                diaChiList.FirstOrDefault(x => x.DiaChi == Model.DiaChiText)
+                                diaChiList.FirstOrDefault(x => StringHelper.NormalizeText(x.DiaChi) == StringHelper.NormalizeText(Model.DiaChiText))
                                 ?? diaChiList.FirstOrDefault(x => x.IsDefault)
                                 ?? diaChiList.LastOrDefault();
                         }
