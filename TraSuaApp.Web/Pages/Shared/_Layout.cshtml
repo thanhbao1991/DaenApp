@@ -25,29 +25,63 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     <script>
-        // chỉ để client biết API base, không chứa secret
+        // Không chứa secret – chỉ tham khảo, các call AJAX sẽ đi qua proxy của Razor Page (same-origin)
         window.apiBaseUrl = "@Configuration["ApiSettings:BaseUrl"]";
 
-                function xemHoaDonKhachHang(khachHangId) {
+        // ================ Helpers chung ================
+        function getPageBase() {
+            // Xác định base của trang hiện tại để gọi handler đúng (Ngày/Tháng dùng chung JS)
+            const p = window.location.pathname.toLowerCase();
+            if (p.includes('/doanhthuthang')) return '/DoanhThuThang';
+            return '/DoanhThuNgay';
+        }
+
+        function getModal(id) {
+            const el = document.getElementById(id);
+            return bootstrap.Modal.getOrCreateInstance(el);
+        }
+
+        function okFlag(json) {
+            return json && (json.isSuccess === true || json.IsSuccess === true);
+        }
+
+        function getData(json) {
+            // Hỗ trợ cả data và Data
+            return Array.isArray(json?.data) ? json.data : (Array.isArray(json?.Data) ? json.Data : []);
+        }
+
+        function redirectToLogin() {
+            const returnUrl = window.location.pathname + window.location.search;
+            window.location.href = `/Login?returnUrl=${encodeURIComponent(returnUrl)}`;
+        }
+
+        // ================================
+        // 🟟 Danh sách hoá đơn theo khách (CALL QUA PROXY ↔ same-origin)
+        // ================================
+        function xemHoaDonKhachHang(khachHangId) {
             if (!khachHangId) return;
+
             const container = document.getElementById('hoaDonContent');
             container.innerHTML = "<p>Đang tải danh sách...</p>";
+            getModal('hoaDonModal').show();
 
-            // mở modal
-            new bootstrap.Modal(document.getElementById('hoaDonModal')).show();
+            const url = `${getPageBase()}?handler=DanhSach&khachHangId=${encodeURIComponent(khachHangId)}`;
 
-            const url = `${window.apiBaseUrl}/api/doanhthu/danhsach?khachHangId=${khachHangId}`;
-            fetch(url)
-                .then(res => res.json())
-                .then(res => {
-                    if (!res.isSuccess) {
+            fetch(url, { credentials: 'same-origin' })
+                .then(async res => {
+                    if (res.status === 401) { redirectToLogin(); return; }
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(json => {
+                    if (!json) return;
+                    if (!okFlag(json)) {
                         container.innerHTML = "<p class='text-danger'>Không tải được danh sách hóa đơn</p>";
                         return;
                     }
 
-                    const rows = (res.data || [])
-                        // đảm bảo sắp xếp mới nhất trước
-                        .sort((a, b) => new Date(b.ngayHoaDon) - new Date(a.ngayHoaDon));
+                    const rows = getData(json)
+                        .sort((a, b) => new Date(b.ngayHoaDon ?? b.NgayHoaDon) - new Date(a.ngayHoaDon ?? a.NgayHoaDon));
 
                     let html = `
                         <table class="table table-sm table-bordered">
@@ -61,24 +95,26 @@
                           <tbody>`;
 
                     rows.forEach(item => {
-                        // ⚠️ dùng đúng camelCase từ API: ngayHoaDon, thongTinHoaDon, tongTien, daThu, conLai, id
-                        const ngayGio = new Date(item.ngayHoaDon).toLocaleString('vi-VN', {
+                        const ngay = item.ngayHoaDon ?? item.NgayHoaDon;
+                        const tenKh = item.tenKhachHangText ?? item.TenKhachHangText;
+                        const thongTin = item.thongTinHoaDon ?? item.ThongTinHoaDon;
+
+                        const ngayGio = new Date(ngay).toLocaleString('vi-VN', {
                             day: '2-digit', month: '2-digit', year: 'numeric',
                             hour: '2-digit', minute: '2-digit'
                         });
 
-                        const tong = Number(item.tongTien || 0);
-                        const daThu = Number(item.daThu || 0);
-                        const conLai = Number(item.conLai || (tong - daThu));
+                        const tong  = Number(item.tongTien ?? item.TongTien ?? 0);
+                        const daThu = Number(item.daThu   ?? item.DaThu   ?? 0);
+                        const conLai= Number(item.conLai  ?? item.ConLai  ?? (tong - daThu));
+                        const id    = item.id ?? item.Id;
 
                         html += `
                             <tr>
                                 <td>${ngayGio}</td>
-                            <td>
-          ${[item.tenKhachHangText, item.thongTinHoaDon].filter(Boolean).join(" - ")}
-        </td>
+                                <td>${[tenKh, thongTin].filter(Boolean).join(" - ")}</td>
                                 <td class="text-end">
-                                    <a href="javascript:void(0)" onclick="xemChiTiet('${item.id}')">
+                                    <a href="javascript:void(0)" onclick="xemChiTiet('${id}')">
                                         ${conLai.toLocaleString('vi-VN')} đ
                                     </a>
                                 </td>
@@ -89,72 +125,78 @@
                     container.innerHTML = html;
                 })
                 .catch(err => {
-                    container.innerHTML = "<p class='text-danger'>Lỗi tải dữ liệu</p>";
                     console.error(err);
+                    container.innerHTML = `<p class='text-danger'>Lỗi tải dữ liệu</p>`;
                 });
         }
 
+        // ================================
+        // 🟟 Xem chi tiết hoá đơn (CALL QUA PROXY ↔ same-origin)
+        // ================================
+        function xemChiTiet(id) {
+            if (!id) return;
 
+            const container = document.getElementById('chiTietContent');
+            container.innerHTML = "<p>Đang tải dữ liệu...</p>";
+            getModal('chiTietModal').show();
 
+            const url = `${getPageBase()}?handler=ChiTiet&hoaDonId=${encodeURIComponent(id)}`;
 
+            fetch(url, { credentials: 'same-origin' })
+                .then(async res => {
+                    if (res.status === 401) { redirectToLogin(); return; }
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(json => {
+                    if (!json) return;
+                    if (!okFlag(json)) {
+                        container.innerHTML = "<p class='text-danger'>Không tải được chi tiết hóa đơn</p>";
+                        return;
+                    }
 
+                    const list = getData(json);
+                    const icons = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣"];
+                    const getIcon = (num) => {
+                        if (num === 10) return "🟟";
+                        if (num < 10) return icons[num] ?? num;
+                        return String(num).split("").map(c => icons[parseInt(c)] ?? c).join("");
+                    };
 
-              // ================================
-                // 🟟 Hàm xem chi tiết hoá đơn
-                // ================================
-                function xemChiTiet(id) {
-                    if (!id) return;
-                    $('#chiTietContent').html("<p>Đang tải dữ liệu...</p>");
-                    $('#chiTietModal').modal('show');
+                    let html = "";
+                    list.forEach(item => {
+                        const soLuong = item.soLuong ?? item.SoLuong ?? 0;
+                        const ten     = item.tenSanPham ?? item.TenSanPham ?? "";
+                        const ghiChu  = item.ghiChu ?? item.GhiChu;
+                        const tt      = Number(item.thanhTien ?? item.ThanhTien ?? 0);
+                        const iconSo  = getIcon(soLuong);
 
-                    const url = `${window.apiBaseUrl}/api/doanhthu/chitiet?hoaDonId=${id}`;
-                    fetch(url)
-                        .then(res => res.json())
-                        .then(res => {
-                            if (!res.isSuccess) {
-                                $('#chiTietContent').html("<p class='text-danger'>Không tải được chi tiết hóa đơn</p>");
-                                return;
-                            }
-
-                            const list = res.data;
-                            let html = "";
-
-                            const icons = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣"];
-                            function getIcon(num) {
-                                if (num === 10) return "🟟";
-                                if (num < 10) return icons[num];
-                                return num.toString().split("").map(c => icons[parseInt(c)]).join("");
-                            }
-
-                            list.forEach(item => {
-                                const iconSo = getIcon(item.soLuong);
-                                html += `
-                                  <div class="mx-3 d-flex justify-content-between align-items-center item-row py-2 ${item.thanhTien == 0 ? "opacity-25" : ""}">
-                                      <div>
-                                          <span class="item-text">${iconSo} ${item.tenSanPham}</span>
-                                          ${item.ghiChu ? `<div class="item-note">${item.ghiChu}</div>` : ""}
-                                      </div>
-                                      <span class="fw-bold text-danger">${item.thanhTien.toLocaleString()}</span>
-                                  </div>
-                                `;
-                            });
-
-                            const tong = list.reduce((s, x) => s + x.thanhTien, 0);
-                            html += `
-                              <div class="border-top mt-4 pt-2 d-flex justify-content-between fw-bold text-danger">
-                                  <span>Tổng</span>
-                                  <span>${tong.toLocaleString()} đ</span>
+                        html += `
+                          <div class="mx-3 d-flex justify-content-between align-items-center item-row py-2 ${tt == 0 ? "opacity-25" : ""}">
+                              <div>
+                                  <span class="item-text">${iconSo} ${ten}</span>
+                                  ${ghiChu ? `<div class="item-note">${ghiChu}</div>` : ""}
                               </div>
-                            `;
+                              <span class="fw-bold text-danger">${tt.toLocaleString('vi-VN')}</span>
+                          </div>
+                        `;
+                    });
 
-                            $('#chiTietContent').html(html);
-                        })
-                        .catch(err => {
-                            $('#chiTietContent').html("<p class='text-danger'>Lỗi tải dữ liệu</p>");
-                            console.error(err);
-                        });
-                }
+                    const tong = list.reduce((s, x) => s + Number(x.thanhTien ?? x.ThanhTien ?? 0), 0);
+                    html += `
+                      <div class="border-top mt-4 pt-2 d-flex justify-content-between fw-bold text-danger">
+                          <span>Tổng</span>
+                          <span>${tong.toLocaleString('vi-VN')} đ</span>
+                      </div>
+                    `;
 
+                    container.innerHTML = html;
+                })
+                .catch(err => {
+                    console.error(err);
+                    container.innerHTML = `<p class='text-danger'>Lỗi tải dữ liệu</p>`;
+                });
+        }
     </script>
 </head>
 
@@ -181,33 +223,31 @@
 
                             <li class="nav-item">
                                 <a class="nav-link" asp-page="/DoanhThuThang">
-                                    <span class="ico me-2">&#x1F4CA;</span> <!-- 🟟 -->
+                                    <span class="ico me-2">&#x1F4CA;</span>
                                     Doanh Thu Tháng
                                 </a>
                             </li>
 
                             <li class="nav-item">
                                 <a class="nav-link" asp-page="/ThongKe">
-                                    <span class="ico me-2">&#x1F4C8;</span> <!-- 🟟 -->
+                                    <span class="ico me-2">&#x1F4C8;</span>
                                     Thống kê
                                 </a>
                             </li>
 
                             <li class="nav-item">
                                 <a class="nav-link" asp-page="/ChiTieuNha">
-                                    <span class="ico me-2">&#x1F4B8;</span> <!-- 🟟: Ứng Nhã -->
+                                    <span class="ico me-2">&#x1F4B8;</span>
                                     Ứng Nhã
                                 </a>
                             </li>
 
                             <li class="nav-item">
                                 <a class="nav-link" asp-page="/Voucher">
-                                    <span class="ico me-2">&#x1F39F;</span> <!-- 🟟: Voucher -->
+                                    <span class="ico me-2">&#x1F39F;</span>
                                     Voucher &amp; Chiết khấu
                                 </a>
                             </li>
-
-
                         </ul>
 
                         <div class="d-flex align-items-center">

@@ -1169,44 +1169,6 @@ namespace TraSuaApp.WpfClient.Views
 
 
         private List<HoaDonDto> _fullHoaDonList = new();
-        private async void OpenHoaDonWithPhanLoai(string phanLoai)
-        {
-            var dto = new HoaDonDto
-            {
-                PhanLoai = phanLoai
-            };
-
-
-            var window = new HoaDonEdit(dto)
-            {
-                Width = this.ActualWidth,
-                Height = this.ActualHeight,
-                Owner = this,
-            };
-
-            if (window.ShowDialog() == true)
-            {
-                // Đảm bảo nhìn thấy đơn mới ngay
-                today = DateTime.Today;                     // ép scope về Hôm nay
-                await ReloadAfterHoaDonChangeAsync(
-                    reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
-                SearchHoaDonTextBox.Clear();
-
-            }
-        }
-
-        private void AddTaiChoButton_Click(object sender, RoutedEventArgs e)
-            => OpenHoaDonWithPhanLoai("Tại Chỗ");
-
-        private void AddMuaVeButton_Click(object sender, RoutedEventArgs e)
-            => OpenHoaDonWithPhanLoai("Mv");
-
-        private void AddShipButton_Click(object sender, RoutedEventArgs e)
-            => OpenHoaDonWithPhanLoai("Ship");
-
-        private void AddAppButton_Click(object sender, RoutedEventArgs e)
-            => OpenHoaDonWithPhanLoai("App");
-
 
 
 
@@ -2008,6 +1970,9 @@ namespace TraSuaApp.WpfClient.Views
                 }
 
                 HoaDonPrinter.Print(result.Data);
+                selected.NgayRa = DateTime.Now;
+                result = await api.UpdateSingleAsync(selected.Id, selected);
+
             }, requireSelectedHoaDon: true);
         }
         private async void F3Button_Click(object sender, RoutedEventArgs e)
@@ -2135,7 +2100,8 @@ namespace TraSuaApp.WpfClient.Views
                 else
                 {
                     await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true);
-                    F2Button_Click(this, new RoutedEventArgs());
+                    if (selected.NgayRa == null)
+                        F2Button_Click(this, new RoutedEventArgs());
                 }
 
 
@@ -2309,33 +2275,6 @@ namespace TraSuaApp.WpfClient.Views
                     NotiHelper.ShowError(result?.Message ?? "Không thể xoá.");
             }, requireSelectedHoaDon: true);
         }
-        private async void AppButton_Click(object sender, RoutedEventArgs e)
-        {
-            await SafeButtonHandlerAsync(AppButton, async _ =>
-            {
-                var helper = new AppShippingHelperText("12122431577", "baothanh1991");
-                var dto = await Task.Run(() => helper.GetFirstOrderPopup());
-
-                var window = new HoaDonEdit(dto)
-                {
-                    Width = this.ActualWidth,
-                    Height = this.ActualHeight,
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-
-                if (window.ShowDialog() == true)
-                {
-                    // ✅ bổ sung reloadNo để thống kê công nợ luôn được cập nhật
-                    await ReloadAfterHoaDonChangeAsync(
-                        reloadHoaDon: true,
-                        reloadThanhToan: true,
-                        reloadNo: true
-                    );
-                }
-
-            });
-        }
         private async void HisButton_Click(object sender, RoutedEventArgs e)
         {
             await SafeButtonHandlerAsync(HisButton, async selected =>
@@ -2358,6 +2297,173 @@ namespace TraSuaApp.WpfClient.Views
                 }
             }, requireSelectedHoaDon: true);
         }
+
+
+
+
+
+
+
+
+
+        private static async Task<bool> WaitUntilAsync(Func<bool> predicate, int timeoutMs = 6000, int intervalMs = 50)
+        {
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < timeoutMs)
+            {
+                try
+                {
+                    if (predicate()) return true;
+                }
+                catch { /* bỏ qua tick đầu khi ItemsSource chưa sẵn sàng */ }
+
+                await Task.Delay(intervalMs);
+
+                await Dispatcher.Yield(DispatcherPriority.Background);
+
+            }
+            // lần cuối cùng thử lại 1 nhịp
+            return predicate();
+        }
+
+        // =========================================
+        // 🟟 Chọn dòng theo ID (chắc ăn hơn theo thời gian)
+        // =========================================
+        private async Task SelectHoaDonByIdAsync(Guid id)
+        {
+            if (id == Guid.Empty) return;
+
+            var ok = await WaitUntilAsync(() =>
+            {
+                var items = HoaDonDataGrid?.Items?.OfType<HoaDonDto>();
+                return items != null && items.Any(x => x.Id == id);
+            });
+
+            if (!ok) return;
+
+            var item = HoaDonDataGrid.Items.OfType<HoaDonDto>().First(x => x.Id == id);
+
+            HoaDonDataGrid.SelectedItem = item;
+            HoaDonDataGrid.ScrollIntoView(item);
+            HoaDonDataGrid.UpdateLayout();
+
+            // lấy row container để focus
+            await Dispatcher.InvokeAsync(() =>
+            {
+                var row = (DataGridRow)HoaDonDataGrid.ItemContainerGenerator.ContainerFromItem(item);
+                row?.Focus();
+            }, System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        // =========================================
+        // 🟟 Fallback: nếu không có ID, chọn hóa đơn mới nhất theo NgayGio
+        // =========================================
+        private async Task SelectNewestHoaDonRowAsync()
+        {
+            var ok = await WaitUntilAsync(() =>
+            {
+                var items = HoaDonDataGrid?.Items?.OfType<HoaDonDto>();
+                return items != null && items.Any();
+            });
+
+            if (!ok) return;
+
+            var list = HoaDonDataGrid.Items.OfType<HoaDonDto>().ToList();
+            var newest = list.OrderByDescending(x => x.NgayGio).FirstOrDefault();
+            if (newest == null) return;
+
+            HoaDonDataGrid.SelectedItem = newest;
+            HoaDonDataGrid.ScrollIntoView(newest);
+            HoaDonDataGrid.UpdateLayout();
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                var row = (DataGridRow)HoaDonDataGrid.ItemContainerGenerator.ContainerFromItem(newest);
+                row?.Focus();
+            }, System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        // =========================================
+        // 🟟 Mở form tạo HĐ theo phân loại và auto chọn dòng vừa thêm
+        // =========================================
+        private async void OpenHoaDonWithPhanLoai(string phanLoai)
+        {
+            var dto = new HoaDonDto { PhanLoai = phanLoai };
+            var window = new HoaDonEdit(dto)
+            {
+                Owner = this,
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (window.ShowDialog() == true)
+            {
+                // ID do cửa sổ con trả về (ưu tiên)
+                var savedId = window.SavedHoaDonId ?? window.Model?.Id;
+
+                // Reload dữ liệu sau khi thêm
+                await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
+
+                // Clear filter nếu có
+                try { SearchHoaDonTextBox?.Clear(); } catch { }
+
+                // Ưu tiên chọn theo ID, nếu không có thì chọn newest
+                if (savedId.HasValue && savedId.Value != Guid.Empty)
+                    await SelectHoaDonByIdAsync(savedId.Value);
+                else
+                    await SelectNewestHoaDonRowAsync();
+            }
+        }
+
+        // ====== Các nút thêm nhanh ======
+        private void AddTaiChoButton_Click(object sender, RoutedEventArgs e)
+            => OpenHoaDonWithPhanLoai("Tại Chỗ");
+
+        private void AddMuaVeButton_Click(object sender, RoutedEventArgs e)
+            => OpenHoaDonWithPhanLoai("Mv");
+
+        private void AddShipButton_Click(object sender, RoutedEventArgs e)
+            => OpenHoaDonWithPhanLoai("Ship");
+
+        private void AddAppButton_Click(object sender, RoutedEventArgs e)
+            => OpenHoaDonWithPhanLoai("App");
+
+        // =========================================
+        // 🟟 Nếu bạn có nút tạo từ AppShipping, sửa tương tự
+        // =========================================
+        private async void AppButton_Click(object sender, RoutedEventArgs e)
+        {
+            await SafeButtonHandlerAsync(AppButton, async _ =>
+            {
+                var helper = new AppShippingHelperText("12122431577", "baothanh1991");
+                var dto = await Task.Run(() => helper.GetFirstOrderPopup());
+
+                var window = new HoaDonEdit(dto)
+                {
+                    Owner = this,
+                    Width = this.ActualWidth,
+                    Height = this.ActualHeight,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                if (window.ShowDialog() == true)
+                {
+                    var savedId = window.SavedHoaDonId ?? window.Model?.Id;
+
+                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
+
+                    try { SearchHoaDonTextBox?.Clear(); } catch { }
+
+                    if (savedId.HasValue && savedId.Value != Guid.Empty)
+                        await SelectHoaDonByIdAsync(savedId.Value);
+                    else
+                        await SelectNewestHoaDonRowAsync();
+                }
+            });
+        }
+
+
 
 
 

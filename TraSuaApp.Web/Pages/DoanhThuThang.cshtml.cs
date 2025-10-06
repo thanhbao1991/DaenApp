@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TraSuaApp.Shared.Dtos;
@@ -27,7 +28,7 @@ namespace TraSuaAppWeb.Pages
         [BindProperty(SupportsGet = true)] public int Thang { get; set; }
         [BindProperty(SupportsGet = true)] public int Nam { get; set; }
 
-        public async Task OnGetAsync()
+        public async Task<IActionResult> OnGetAsync()
         {
             if (Thang == 0 || Nam == 0)
             {
@@ -38,6 +39,13 @@ namespace TraSuaAppWeb.Pages
 
             var client = _httpClientFactory.CreateClient("Api");
             var res = await client.GetAsync($"api/doanhthu/thang?thang={Thang}&nam={Nam}");
+
+            if (res.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                var returnUrl = $"{Request.Path}{Request.QueryString}";
+                return Redirect($"/Login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+            }
+
             if (res.IsSuccessStatusCode)
             {
                 var json = await res.Content.ReadAsStringAsync();
@@ -56,6 +64,36 @@ namespace TraSuaAppWeb.Pages
                 ThuongNha = DoanhThuTheoNgay.Sum(d => d.ThuongNha);
                 ThuongKhanh = DoanhThuTheoNgay.Sum(d => d.ThuongKhanh);
             }
+
+            return Page();
+        }
+
+        // ========= PROXY CHO AJAX: Chi tiết hoá đơn =========
+        public async Task<IActionResult> OnGetChiTiet(Guid hoaDonId)
+        {
+            var client = _httpClientFactory.CreateClient("Api");
+            var upstream = await client.GetAsync($"api/doanhthu/chitiet?hoaDonId={hoaDonId}");
+            var body = await upstream.Content.ReadAsStringAsync();
+            return new ContentResult
+            {
+                Content = body,
+                ContentType = "application/json",
+                StatusCode = (int)upstream.StatusCode
+            };
+        }
+
+        // ========= PROXY CHO AJAX: Danh sách hoá đơn theo khách =========
+        public async Task<IActionResult> OnGetDanhSach(Guid khachHangId)
+        {
+            var client = _httpClientFactory.CreateClient("Api");
+            var upstream = await client.GetAsync($"api/doanhthu/danhsach?khachHangId={khachHangId}");
+            var body = await upstream.Content.ReadAsStringAsync();
+            return new ContentResult
+            {
+                Content = body,
+                ContentType = "application/json",
+                StatusCode = (int)upstream.StatusCode
+            };
         }
     }
 }

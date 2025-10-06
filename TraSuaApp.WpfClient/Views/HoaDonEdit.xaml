@@ -527,6 +527,16 @@
                                                             Foreground="{StaticResource DangerBrush}"
                                                             Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
                                                         <Button
+                                                            MinWidth="40"
+                                                            Click="MoveUpButton_Click"
+                                                            Style="{StaticResource AddButtonStyle}"
+                                                            Tag="{Binding}"
+                                                            ToolTip="Đẩy món này lên trên">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <fa:IconBlock Icon="ArrowUp" />
+                                                            </StackPanel>
+                                                        </Button>
+                                                        <Button
                                                             Grid.Column="2"
                                                             HorizontalAlignment="Right"
                                                             VerticalAlignment="Top"
