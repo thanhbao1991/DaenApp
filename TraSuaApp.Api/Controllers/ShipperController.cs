@@ -38,20 +38,16 @@ public class ShipperController : BaseApiController
         }
     }
 
-
-    // 🟟 Lấy danh sách hóa đơn dành cho shipper
+    // 🟟 Lấy danh sách hóa đơn theo ngày & shipper (mặc định hôm nay + "Khánh")
+    // GET /api/shipper/shipper?date=2025-10-06&shipper=Khánh
     [HttpGet("shipper")]
     [AllowAnonymous]
-    public async Task<ActionResult<Result<List<HoaDonDto>>>> GetForShipper()
+    public async Task<ActionResult<Result<List<HoaDonDto>>>> GetForShipper([FromQuery] DateOnly? date, [FromQuery] string? shipper = "Khánh")
     {
-        var list = await _service.GetForShipperAsync();
+        DateTime? day = date?.ToDateTime(TimeOnly.MinValue);
+        var list = await _service.GetForShipperAsync(day, shipper);
         return Result<List<HoaDonDto>>.Success(list);
     }
-
-
-
-
-
 
     // 🟟 Thu tiền mặt
     [HttpPost("shipperf1/{id}")]
@@ -60,7 +56,7 @@ public class ShipperController : BaseApiController
     {
         var result = await _service.ThuTienMatAsync(id);
         if (result.IsSuccess && result.Data != null)
-            await NotifyClients("updated", result.Data.Id);   // bắn signal cập nhật
+            await NotifyClients("updated", result.Data.Id);
         return result;
     }
 
@@ -71,21 +67,20 @@ public class ShipperController : BaseApiController
     {
         var result = await _service.ThuChuyenKhoanAsync(id);
         if (result.IsSuccess && result.Data != null)
-            await NotifyClients("updated", result.Data.Id);   // bắn signal cập nhật
+            await NotifyClients("updated", result.Data.Id);
         return result;
     }
 
-    // 🟟 Thu chuyển khoản
+    // 🟟 Tí nữa CK
     [HttpPost("shipper55/{id}")]
     [AllowAnonymous]
     public async Task<ActionResult<Result<HoaDonDto>>> TiNuaChuyenKhoan(Guid id)
     {
         var result = await _service.TiNuaChuyenKhoanAsync(id);
         if (result.IsSuccess && result.Data != null)
-            await NotifyClients("updated", result.Data.Id);   // bắn signal cập nhật
+            await NotifyClients("updated", result.Data.Id);
         return result;
     }
-
 
     // 🟟 Ghi nợ
     [HttpPost("shipper12/{id}")]
@@ -94,7 +89,7 @@ public class ShipperController : BaseApiController
     {
         var result = await _service.GhiNoAsync(id);
         if (result.IsSuccess && result.Data != null)
-            await NotifyClients("updated", result.Data.Id);   // bắn signal cập nhật
+            await NotifyClients("updated", result.Data.Id);
         return result;
     }
 
@@ -105,8 +100,7 @@ public class ShipperController : BaseApiController
     {
         var result = await _service.TraNoAsync(id, soTien);
         if (result.IsSuccess && result.Data != null)
-            await NotifyClients("updated", result.Data.Id); // bắn signal cập nhật
-
+            await NotifyClients("updated", result.Data.Id);
         return result;
     }
 }

@@ -263,8 +263,8 @@ namespace TraSuaApp.WpfClient.Controls
                     GptInputText = raw,
                     GptPredictions = preds,
                     Owner = mainWin,
-                    Width = mainWin?.ActualWidth ?? 1200,
-                    Height = mainWin?.ActualHeight ?? 800,
+                    Width = mainWin.Width,
+                    Height = mainWin.Height,
                 };
 
                 if (kh != null)
@@ -399,7 +399,7 @@ namespace TraSuaApp.WpfClient.Controls
                 // 2) Gọi AI từ TEXT đã chọn (bọc loader) — gồm luôn tải lịch sử
                 (HoaDonDto? hd, string raw, List<QuickOrderDto> preds) res;
 
-                using (BusyUI.Scope(this, sender as Button, "Đang phân tích đoạn đã chọn..."))
+                using (BusyUI.Scope(this, sender as Button))
                 {
                     string? lichSuText = kh != null ? await BuildLichSuText(kh.Id) : null; // IO-bound
                     res = await _quick.BuildHoaDonAsync(
@@ -426,8 +426,9 @@ namespace TraSuaApp.WpfClient.Controls
                     GptInputText = raw,
                     GptPredictions = preds,
                     Owner = mainWin,
-                    Width = mainWin?.ActualWidth ?? 1200,
-                    Height = mainWin?.ActualHeight ?? 800,
+                    Width = mainWin.Width,
+                    Height = mainWin.Height,
+
                 };
 
                 if (kh != null)

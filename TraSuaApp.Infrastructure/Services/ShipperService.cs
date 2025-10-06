@@ -57,17 +57,18 @@ namespace TraSuaApp.Infrastructure.Services
                 TrangThai = trangThai
             };
         }
-
-        public async Task<List<HoaDonDto>> GetForShipperAsync()
+        public async Task<List<HoaDonDto>> GetForShipperAsync(DateTime? day = null, string? shipper = "Khánh")
         {
-            var start = DateTime.Today; var end = start.AddDays(1);
+            var start = (day?.Date ?? DateTime.Today);
+            var end = start.AddDays(1);
+            var shipperName = string.IsNullOrWhiteSpace(shipper) ? "Khánh" : shipper.Trim();
 
             var list = await _context.HoaDons.AsNoTracking()
-              .Where(x => !x.IsDeleted
-             && x.PhanLoai == "Ship"
-             && x.Ngay >= start && x.Ngay < end
-             && x.NgayShip != null
-             && x.NguoiShip == "Khánh")
+                .Where(x => !x.IsDeleted
+                    && x.PhanLoai == "Ship"
+                    && x.Ngay >= start && x.Ngay < end
+                    && x.NgayShip != null
+                    && x.NguoiShip == shipperName)
                 .OrderByDescending(x => x.NgayGio)
                 .Select(x => new
                 {
@@ -88,7 +89,6 @@ namespace TraSuaApp.Infrastructure.Services
                 .ToListAsync();
 
             var result = new List<HoaDonDto>();
-
             foreach (var h in list)
             {
                 var dto = new HoaDonDto
@@ -99,7 +99,7 @@ namespace TraSuaApp.Infrastructure.Services
                     SoDienThoaiText = h.SoDienThoaiText,
                     ThanhTien = h.ThanhTien,
                     ConLai = h.ConLai,
-                    HasDebt = h.HasDebt,
+                    HasDebt = false, // không cần ở view này
                     NgayGio = h.NgayGio,
                     NgayShip = h.NgayShip,
                     NguoiShip = h.NguoiShip,
@@ -118,6 +118,68 @@ namespace TraSuaApp.Infrastructure.Services
 
             return result;
         }
+
+
+        //public async Task<List<HoaDonDto>> GetForShipperAsync()
+        //{
+        //    var start = DateTime.Today; var end = start.AddDays(1);
+
+        //    var list = await _context.HoaDons.AsNoTracking()
+        //      .Where(x => !x.IsDeleted
+        //     && x.PhanLoai == "Ship"
+        //     && x.Ngay >= start && x.Ngay < end
+        //     && x.NgayShip != null
+        //     && x.NguoiShip == "Khánh")
+        //        .OrderByDescending(x => x.NgayGio)
+        //        .Select(x => new
+        //        {
+        //            x.Id,
+        //            x.TenKhachHangText,
+        //            x.DiaChiText,
+        //            x.SoDienThoaiText,
+        //            x.ThanhTien,
+        //            x.GhiChu,
+        //            x.GhiChuShipper,
+        //            x.HasDebt,
+        //            x.ConLai,
+        //            x.NgayGio,
+        //            x.NgayShip,
+        //            x.NguoiShip,
+        //            x.KhachHangId
+        //        })
+        //        .ToListAsync();
+
+        //    var result = new List<HoaDonDto>();
+
+        //    foreach (var h in list)
+        //    {
+        //        var dto = new HoaDonDto
+        //        {
+        //            Id = h.Id,
+        //            TenKhachHangText = h.TenKhachHangText,
+        //            DiaChiText = h.DiaChiText,
+        //            SoDienThoaiText = h.SoDienThoaiText,
+        //            ThanhTien = h.ThanhTien,
+        //            ConLai = h.ConLai,
+        //            HasDebt = h.HasDebt,
+        //            NgayGio = h.NgayGio,
+        //            NgayShip = h.NgayShip,
+        //            NguoiShip = h.NguoiShip,
+        //            GhiChu = h.GhiChu,
+        //            GhiChuShipper = h.GhiChuShipper,
+        //        };
+
+        //        if (h.KhachHangId != null)
+        //        {
+        //            dto.TongNoKhachHang = await LoyaltyService
+        //                .TinhTongNoKhachHangAsync(_context, h.KhachHangId.Value, h.Id);
+        //        }
+
+        //        result.Add(dto);
+        //    }
+
+        //    return result;
+        //}
 
         public async Task<Result<HoaDonDto>> TiNuaChuyenKhoanAsync(Guid id)
         {
