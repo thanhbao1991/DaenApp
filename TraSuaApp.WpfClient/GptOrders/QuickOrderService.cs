@@ -1,41 +1,31 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text.Json;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.WpfClient.Services;
 
-namespace TraSuaApp.WpfClient.Ordering
+namespace TraSuaApp.WpfClient.AiOrdering
 {
-    /// <summary>
-    /// SERVICE ổn định: giữ API cho UI (MessengerTab, …) luôn giống nhau.
-    /// - OCR ảnh (OpenAI Vision qua Chat Completions)
-    /// - Ráp hoá đơn từ text/ảnh
-    /// - Dùng QuickOrderEngine để suy món (engine có thể chỉnh thoải mái)
-    /// </summary>
     public class QuickOrderService
     {
-        private readonly HttpClient _http;           // OCR ảnh online
-        private readonly QuickOrderEngine _engine;   // Engine linh hoạt
-
+        private readonly HttpClient _http;
+        private readonly QuickOrderEngine _engine;
         public QuickOrderService(string apiKey)
         {
             _engine = new QuickOrderEngine(apiKey);
-
             _http = new HttpClient { BaseAddress = new Uri("https://api.openai.com/") };
-            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            _http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
         }
 
-        // ===== Helpers ảnh / data-url =====
         private static bool IsDataUrl(string s) => s.StartsWith("data:", StringComparison.OrdinalIgnoreCase);
         private static bool LooksLikeBase64(string s)
             => s.Length > 100 && System.Text.RegularExpressions.Regex.IsMatch(s, @"^[A-Za-z0-9+/=\s]+$");
 
-        // ===== OCR ONLINE (gpt-4o-mini qua Chat Completions) =====
         private async Task<string> ExtractTextFromImageAsync(string inputOrUrl)
         {
             string imageUrlOrData;
-
             if (File.Exists(inputOrUrl))
             {
                 var bytes = await File.ReadAllBytesAsync(inputOrUrl);
@@ -43,30 +33,17 @@ namespace TraSuaApp.WpfClient.Ordering
                 var mime = ext switch
                 {
                     ".png" => "image/png",
-                    ".jpg" => "image/jpeg",
-                    ".jpeg" => "image/jpeg",
+                    ".jpg" or ".jpeg" => "image/jpeg",
                     ".webp" => "image/webp",
                     ".heic" => "image/heic",
                     _ => "image/png"
                 };
                 imageUrlOrData = $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
             }
-            else if (IsDataUrl(inputOrUrl))
-            {
-                imageUrlOrData = inputOrUrl;
-            }
-            else if (Uri.IsWellFormedUriString(inputOrUrl, UriKind.Absolute))
-            {
-                imageUrlOrData = inputOrUrl;
-            }
-            else if (LooksLikeBase64(inputOrUrl))
-            {
-                imageUrlOrData = "data:image/png;base64," + inputOrUrl;
-            }
-            else
-            {
-                throw new ArgumentException("Đầu vào ảnh không hợp lệ (không phải path/URL/base64/data-url).");
-            }
+            else if (IsDataUrl(inputOrUrl)) imageUrlOrData = inputOrUrl;
+            else if (Uri.IsWellFormedUriString(inputOrUrl, UriKind.Absolute)) imageUrlOrData = inputOrUrl;
+            else if (LooksLikeBase64(inputOrUrl)) imageUrlOrData = "data:image/png;base64," + inputOrUrl;
+            else throw new ArgumentException("Đầu vào ảnh không hợp lệ.");
 
             var body = new
             {
@@ -98,30 +75,21 @@ namespace TraSuaApp.WpfClient.Ordering
             using var doc = JsonDocument.Parse(json);
 
             var msg = doc.RootElement.GetProperty("choices")[0].GetProperty("message");
-
             string? contentText = null;
+
             if (msg.TryGetProperty("content", out var contentEl) && contentEl.ValueKind == JsonValueKind.String)
-            {
                 contentText = contentEl.GetString();
-            }
             else if (msg.TryGetProperty("content", out contentEl) && contentEl.ValueKind == JsonValueKind.Array)
-            {
                 foreach (var part in contentEl.EnumerateArray())
-                {
                     if (part.TryGetProperty("type", out var t) && t.GetString() == "text" &&
-                        part.TryGetProperty("text", out var txt))
-                    {
-                        contentText = txt.GetString();
-                        break;
-                    }
-                }
-            }
+                        part.TryGetProperty("text", out var txt)) { contentText = txt.GetString(); break; }
 
             return contentText?.Trim() ?? "";
         }
 
-        // ===== API ổn định cho UI: Build từ text/ảnh =====
-        public async Task<(HoaDonDto? HoaDon, string RawInput)> BuildHoaDonAsync(string inputOrUrl, bool isImage = false, string? shortMenu = "")
+        public async Task<(HoaDonDto? HoaDon, string RawInput, List<QuickOrderDto> Predictions)> BuildHoaDonAsync(
+            string inputOrUrl, bool isImage = false, string? shortMenuFromHistory = "", Guid? khachHangId = null)
+
         {
             string text = inputOrUrl;
 
@@ -134,6 +102,18 @@ namespace TraSuaApp.WpfClient.Ordering
                 text = await ExtractTextFromImageAsync(inputOrUrl);
             }
 
+            var menu = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
+
+            // DÙNG HÀM MỚI: BuildShortlistForPrompt (không cần await)
+            string learnedShort = QuickGptLearningStore.Instance.BuildShortlistForPrompt(
+                customerId: khachHangId,
+                currentMenu: menu,
+                serverTopForCustomer: null,
+                topK: 12
+            );
+            string combinedShort = string.Join("\n",
+                new[] { shortMenuFromHistory ?? "", learnedShort }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
             if (string.IsNullOrWhiteSpace(text))
             {
                 return (new HoaDonDto
@@ -145,11 +125,11 @@ namespace TraSuaApp.WpfClient.Ordering
                     ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(),
                     ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>(),
                     ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>()
-                }, text);
+                }, text, new List<QuickOrderDto>());
             }
 
-            var chiTiets = await _engine.MapToChiTietAsync(text, shortMenu);
-
+            var preds = await _engine.ParseQuickOrderAsync(text, combinedShort, khachHangId);
+            var chiTiets = await _engine.MapToChiTietAsync(text, combinedShort, khachHangId);
             return (new HoaDonDto
             {
                 Id = Guid.Empty,
@@ -159,7 +139,7 @@ namespace TraSuaApp.WpfClient.Ordering
                 ChiTietHoaDons = chiTiets,
                 ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>(),
                 ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>()
-            }, text);
+            }, text, preds);
         }
     }
 }

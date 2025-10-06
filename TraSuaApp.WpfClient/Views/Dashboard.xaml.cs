@@ -16,9 +16,9 @@ using TraSuaApp.Shared.Config;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.WpfClient.AiOrdering;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
-using TraSuaApp.WpfClient.Ordering;
 using TraSuaApp.WpfClient.Services;
 using TraSuaApp.WpfClient.SettingsViews;
 
@@ -2449,55 +2449,12 @@ namespace TraSuaApp.WpfClient.Views
 
 
 
-        private async void AddAIButton_Click(object sender, RoutedEventArgs e)
-        {
-            await SafeButtonHandlerAsync(AppButton, async _ =>
-            {
-                string input = SearchHoaDonTextBox.Text.Trim();
-                if (string.IsNullOrEmpty(input)) input = Clipboard.GetText().Trim();
-                if (string.IsNullOrEmpty(input)) return;
 
-                var (hd, rawInput) = await QuickOrderHelper.RunWithLoadingAsync(
-"Đang tạo hoá đơn AI...",
-() => _quick.BuildHoaDonAsync(input)
-);
-                if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
-                {
-                    NotiHelper.Show("Không nhận diện được món nào.");
-                    return;
-                }
-
-                // tuỳ flow: giữ nguyên như bạn đang dùng
-                hd.PhanLoai = "Ship";
-                Mouse.OverrideCursor = null;
-
-                var window = new HoaDonEdit(hd)
-                {
-                    GptInputText = rawInput,
-
-                    Width = this.ActualWidth,
-                    Height = this.ActualHeight,
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-
-                if (window.ShowDialog() == true)
-                {
-                    await ReloadAfterHoaDonChangeAsync(
-                        reloadHoaDon: true,
-                        reloadThanhToan: true,
-                        reloadNo: true
-                    );
-                }
-
-                SearchHoaDonTextBox.Clear();
-
-            });
-        }
         private void SearchHoaDonTextBox_LostFocus(object sender, RoutedEventArgs e)
         {
             SearchHoaDonTextBox.Height = 32;
         }
+
 
 
         private void TimKiemNhanhThanhToanButton_Click(object sender, RoutedEventArgs e)

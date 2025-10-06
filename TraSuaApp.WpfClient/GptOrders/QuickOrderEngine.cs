@@ -1,296 +1,263 @@
 ﻿using System.Collections.ObjectModel;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using OpenAI.Chat;
 using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
-using TraSuaApp.Shared.Services;
+using TraSuaApp.WpfClient.AiOrdering;
 
-namespace TraSuaApp.WpfClient.Ordering
+namespace TraSuaApp.WpfClient.Services
 {
-    public class QuickOrderDto
-    {
-        public int Line { get; set; } = 0;               // NEW: 1-based theo LINES
-        public Guid Id { get; set; } = Guid.Empty;       // Id sản phẩm trong MENU
-        public int SoLuong { get; set; } = 1;
-        public string NoteText { get; set; } = "";
-    }
-
     public class QuickOrderEngine
     {
-        private readonly ChatClient _chatClient;
-        private readonly QuickOrderMemory _memory = QuickOrderMemory.Instance;
+        private readonly HttpClient _http;
+        private readonly string _apiKey;
+        private const string DefaultModel = "gpt-4.1-mini";
 
         public QuickOrderEngine(string apiKey)
         {
-            //_chatClient = new ChatClient("gpt-4o", apiKey); //2.5
-            _chatClient = new ChatClient("gpt-4.1", apiKey); //2.0
-            //_chatClient = new ChatClient("gpt-4.1-mini", apiKey); //0.4
-            //_chatClient = new ChatClient("gpt-4o-mini", apiKey); //0.15
+            _apiKey = apiKey;
+            _http = new HttpClient { BaseAddress = new Uri("https://api.openai.com/") };
+            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         }
 
-        // --- Tiền xử lý: mở rộng viết tắt/phổ biến, giữ \n ---
-        private static readonly (string pattern, string repl)[] PreFilters = new[]
+        public async Task<List<QuickOrderDto>> ParseQuickOrderAsync(
+            string rawInput,
+            string? combinedShortlistText = null,
+            Guid? khachHangId = null,
+            int shortlistTopK = 12,
+            string model = DefaultModel)
         {
-            // =====================================================================
-            // 🟟 NHÓM 1 — VIẾT TẮT / ĐỒNG NGHĨA PHỔ BIẾN
-            // =====================================================================
-            (@"(?<!\w)(cf|cafe)(?!\w)", "ca phe"),
-            (@"(?<!\w)(nc)(?!\w)", "nuoc"),
-            (@"(?<!\w)(sto)(?!\w)", "sinh to"),
-            (@"(?<!\w)(st)(?!\w)", "sua tuoi"),
-            (@"(?<!\w)(ts)(?!\w)", "tra sua"),
-            (@"(?<!\w)(tcdd|tcđđ|tcdđ)(?!\w)", "tran chau duong den"),
-            (@"(?<!\w)(nuoc dua)(?!\w)", "dua tuoi"),
-            (@"(?<!\w)(nuoc cam)(?!\w)", "ep cam"),
-            (@"(?<!\w)(oolong)(?!\w)", "olong"),
+            var result = new List<QuickOrderDto>();
+            var lines = NormalizeAndEnumerateLines(rawInput).ToList();
+            if (lines.Count == 0) return result;
 
-            // =====================================================================
-            // 🟟 NHÓM 2 — CỤM GỢI Ý "SHIP / MANG VỀ"
-            // =====================================================================
-            (@"(?<!\w)(mv|ship|mang ve|ship nha|ship nhe|ship ne|mang ve nha)(?!\w)", "ship mv"),
+            var menu = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
 
-            // =====================================================================
-            // 🟟 NHÓM 3 — TỪ CẢM THÁN / FILLER KHÔNG MANG NGHĨA
-            // =====================================================================
-            (@"(?<!\w)(nha)(?!\w)", ""),
-            (@"(?<!\w)(nhe)(?!\w)", ""),
-            (@"(?<!\w)(di)(?!\w)", ""),
-            (@"(?<!\w)(ha)(?!\w)", ""),
-            (@"(?<!\w)(hen)(?!\w)", ""),
-            (@"(?<!\w)(haiz)(?!\w)", ""),
-            (@"(?<!\w)(na)(?!\w)", ""),
-            (@"(?<!\w)(ne)(?!\w)", ""),
-            (@"(?<!\w)(vay)(?!\w)", ""),
-            (@"(?<!\w)(duoc)(?!\w)", ""),
-            (@"(?<!\w)(nhe nha)(?!\w)", ""),
-            (@"(?<!\w)(nhe nhe)(?!\w)", ""),
-            (@"(?<!\w)(nhe a)(?!\w)", ""),
-            (@"(?<!\w)(nhe e)(?!\w)", ""),
-            (@"(?<!\w)(nhe c)(?!\w)", ""),
-            (@"(?<!\w)(nha a)(?!\w)", ""),
-            (@"(?<!\w)(nha e)(?!\w)", ""),
-            (@"(?<!\w)(nha c)(?!\w)", ""),
+            string learnedShort = QuickGptLearningStore.Instance.BuildShortlistForPrompt(
+                customerId: khachHangId,
+                currentMenu: menu,
+                serverTopForCustomer: null,
+                topK: shortlistTopK);
 
-            // =====================================================================
-            // 🟟 NHÓM 4 — ĐƠN VỊ, KÝ HIỆU KHÔNG ẢNH HƯỞNG
-            // =====================================================================
-            (@"(?<!\w)(ly|coc|chai|chai nho|chai lon|ly nho|ly lon)(?!\w)", ""),
-            (@"(?<!\w)(kem trung)(?!\w)", "trung"),
-            (@"(?<!\w)(kem muoi)(?!\w)", "muoi"),
-            (@"(?<!\w)(enter)(?!\w)", ""),
+            var shortFinal = JoinShortlists(combinedShortlistText, learnedShort);
+            string menuText = BuildMenuForGpt(menu);
+            string linesText = BuildNumberedLines(lines);
 
-            // =====================================================================
-            // 🟟 NHÓM 5 — TẠP ÂM KHÁC / NOISE CẦN LOẠI
-            // =====================================================================
-            (@"(?<!\w)(ok|oke|okela|okay)(?!\w)", ""),
-            (@"(?<!\w)(thanks|thank|tks|tk|cam on|c ơn)(?!\w)", ""),
-            (@"(?<!\w)(hihi|hehe|kkk|kk)(?!\w)", ""),
-        };
-
-        public static string PreFilterForModel(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return "";
-            s = s.ToLower();
-            var x = " " + s.Trim() + " ";
-
-            x = Regex.Replace(x, @"(?<=\d)(?=\p{L})|(?<=\p{L})(?=\d)", " ");
-
-            foreach (var (pattern, repl) in PreFilters)
-                x = Regex.Replace(x, pattern, repl, RegexOptions.IgnoreCase);
-
-            // giữ xuống dòng; chỉ gộp space/tab
-            x = Regex.Replace(x, @"[ \t]+", " ");
-            x = Regex.Replace(x, @"\n{2,}", "\n");
-            return x.Trim();
-        }
-
-        private static string BuildLinesBlock(string filteredInput, out int validCount)
-        {
-            var lines = filteredInput.Split('\n').Select(l => l.Trim()).ToList();
-            var kept = new List<string>();
-            foreach (var l in lines)
-            {
-                if (string.IsNullOrWhiteSpace(l)) continue;
-                kept.Add(l);
-            }
-
-            validCount = kept.Count;
-            var numbered = kept.Select((val, idx) => $"{idx + 1}) {val}");
-            return string.Join("\n", numbered);
-        }
-
-        public async Task<List<QuickOrderDto>> ParseQuickOrderAsync(string input, string? shortMenu)
-        {
-            var filteredInput = PreFilterForModel(input ?? "");
-            var menuText = StringHelper.NormalizeText(AppProviders.QuickOrderMenu);
-            if (!string.IsNullOrWhiteSpace(shortMenu))
-                shortMenu = StringHelper.NormalizeText(shortMenu);
-            var linesBlock = StringHelper.NormalizeText(BuildLinesBlock(filteredInput, out var lineCount));
-
-            const string systemPrompt = @"
+            string systemPrompt = @"
 Bạn là hệ thống POS. Chỉ trả về DUY NHẤT một mảng JSON hợp lệ, không có text nào khác.
-
-Bạn sẽ nhận 2 phần:
-1) MENU: danh sách sản phẩm dạng ""Id<TAB>Tên"" (tên đã được viết thường/không dấu).
-2) LINES: danh sách các dòng người dùng (đã lọc cơ bản), mỗi dòng tương ứng 1 món.
-
-NHIỆM VỤ (BẮT BUỘC):
-- Xử lý TỪNG DÒNG trong LINES, giữ nguyên thứ tự. 
-- Nếu dòng KHÔNG khớp sản phẩm nào trong MENU thì BỎ QUA, không tạo phần tử.
-- Nếu khớp: tạo **đúng 1** phần tử JSON.
-- Chọn sản phẩm trong MENU có TÊN KHỚP NHẤT với nội dung dòng. KHÔNG tạo tên mới.
-- Ưu tiên khớp cụm dài/đủ nghĩa:  
-  ví dụ: ""ep cam it da"" → chọn ""ep cam nguyen chat"" (nếu có), còn ""cam ca rot"" → ""ep cam ca rot"".
-- Hiểu đồng nghĩa/phổ biến: ""nuoc cam"" ≈ ""ep cam"", ""den da"" ≈ ""ca phe den da"", ""ly/coc"" chỉ là đơn vị.
-- Trích số lượng từ dòng (""x2"", ""2 ly"", ""1"", ...). Mặc định 1 nếu không ghi.
-- Phần ghi chú như ""it da"", ""it duong"", ""khong tran chau"", ""xin them bich da"", ""nong/da""... → đưa vào NoteText.
-
-""Khi có SHORTLIST:
-- Ưu tiên chọn trong SHORTLIST trước khi tìm trong MENU.
-- Nếu dòng người dùng chỉ chứa một phần tên hoặc từ khóa đặc trưng của món trong SHORTLIST,
-  vẫn coi là khớp và chọn món đó.
-  Ví dụ:
-    - '1 muoi' hoặc 'muoi' → 'ca phe muoi'
-    - '1 phe' → 'ca phe sua da'
-- Nếu nhiều món trong SHORTLIST đều có thể khớp, hãy **chọn món xuất hiện sớm hơn trong SHORTLIST**, 
-  vì danh sách này đã được sắp xếp theo tần suất khách hàng hay gọi.
-- Chỉ áp dụng lới lỏng này với SHORTLIST; không áp dụng cho toàn MENU.""
-
-ĐỊNH DẠNG PHẦN TỬ:
+Bạn sẽ nhận: SHORTLIST (Id<TAB>Tên) → MENU (Id<TAB>ten_khong_dau) → LINES (đánh số).
+Mỗi dòng tạo đúng 1 item:
 {
-  ""Line"": số nguyên (1-based, theo LINES đã đánh số),
-  ""Id"": ""Id từ MENU"",
-  ""SoLuong"": số nguyên >= 1,
-  ""NoteText"": ""ghi chú, có thể rỗng""
+  ""Id"": ""GUID sản phẩm"",
+  ""SoLuong"": số nguyên >=1,
+  ""NoteText"": ""ghi chú..."",
+  ""Line"": số dòng tương ứng trong LINES
 }
-";
-            var systemWithMenu = systemPrompt + "\n\nMENU:\n" + menuText;
+Chỉ chọn từ SHORTLIST/MENU; không tạo sản phẩm mới; chỉ xuất JSON array.
+".Trim();
 
-            var up = new StringBuilder();
-            if (!string.IsNullOrWhiteSpace(shortMenu))
+            var userPromptSb = new StringBuilder();
+            if (!string.IsNullOrWhiteSpace(shortFinal)) { userPromptSb.AppendLine(shortFinal); userPromptSb.AppendLine(); }
+            userPromptSb.AppendLine(menuText);
+            userPromptSb.AppendLine();
+            userPromptSb.AppendLine("LINES");
+            userPromptSb.AppendLine(linesText);
+            string userPrompt = userPromptSb.ToString();
+
+            string jsonOut = await CallChatCompletionsAsync(model, systemPrompt, userPrompt);
+
+            try
             {
-                up.AppendLine("SHORTLIST (Id<TAB>Tên) — ưu tiên chọn trong danh sách này; nếu không khớp, mới dùng MENU:");
-                up.AppendLine(shortMenu);
-                up.AppendLine();
-            }
-            up.AppendLine("LINES:");
-            up.AppendLine(linesBlock);
-            string userPrompt = up.ToString();
-
-            var result = await _chatClient.CompleteChatAsync(new ChatMessage[]
-            {
-                new SystemChatMessage(systemWithMenu),
-                new UserChatMessage(userPrompt)
-            }, new ChatCompletionOptions { Temperature = 0 });
-
-            var raw = result.Value.Content[0].Text?.Trim() ?? "[]";
-            if (raw.StartsWith("```"))
-            {
-                int first = raw.IndexOf('\n');
-                int last = raw.LastIndexOf("```");
-                if (first >= 0 && last > first) raw = raw.Substring(first, last - first).Trim();
-            }
-
-            var noiDung =
-                          $"userPrompt:\n{userPrompt}\n" +
-                          $"result:\n{raw}" +
-                          $"systemPrompt:\n{systemWithMenu}\n";
-
-            await DiscordService.SendAsync(DiscordEventType.Admin, noiDung, "GPT.txt");
-
-            var list = JsonSerializer.Deserialize<List<QuickOrderDto>>(raw,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-
-            // Chỉnh dữ liệu an toàn
-            foreach (var it in list)
-            {
-                if (it.SoLuong <= 0) it.SoLuong = 1;
-                it.NoteText ??= "";
-            }
-
-            // 🟟 Học & báo cáo: dựa vào "Line" để biết dòng nào đã match
-            var rawLines = filteredInput.Split('\n')
-                .Select(l => l.Trim())
-                .Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
-
-            var matchedFlags = new bool[rawLines.Count];
-            foreach (var it in list)
-            {
-                if (it.Line >= 1 && it.Line <= rawLines.Count)
-                    matchedFlags[it.Line - 1] = true;
-            }
-
-            var newMisses = new List<string>();
-            for (int i = 0; i < rawLines.Count; i++)
-            {
-                if (!matchedFlags[i])
+                using var doc = JsonDocument.Parse(jsonOut);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
                 {
-                    var ln = rawLines[i];
-                    var isNew = _memory.MarkMiss(ln);
-                    if (isNew) newMisses.Add(ln);
+                    foreach (var el in doc.RootElement.EnumerateArray())
+                    {
+                        var dto = new QuickOrderDto();
+
+                        // Id
+                        if (el.TryGetProperty("Id", out var idP))
+                        {
+                            if (Guid.TryParse(idP.GetString(), out Guid gid))
+                                dto.Id = gid;
+                        }
+
+                        // SoLuong
+                        if (el.TryGetProperty("SoLuong", out var slP) && slP.TryGetInt32(out var sl))
+                            dto.SoLuong = Math.Max(1, sl);
+
+                        // NoteText
+                        if (el.TryGetProperty("NoteText", out var nP))
+                            dto.NoteText = nP.GetString() ?? "";
+
+                        // Line
+                        if (el.TryGetProperty("Line", out var lP) && lP.TryGetInt32(out var ln))
+                            dto.Line = ln;
+
+                        if (dto.Id != Guid.Empty)
+                            result.Add(dto);
+                    }
                 }
             }
+            catch { /* nếu GPT lỡ trả sai format → để list rỗng */ }
 
-            if (newMisses.Count > 0)
-            {
-                var log = "**🟟 MISS mới (đã lưu để tự học):**\n" +
-                          string.Join("\n", newMisses.Select((l, idx) => $"{idx + 1}. {l}"));
-                await DiscordService.SendAsync(DiscordEventType.Admin, log);
-            }
-
-            return list;
+            return result;
         }
 
-        private static SanPhamBienTheDto? ChonBienTheDefault(SanPhamDto sp)
+        public async Task<ObservableCollection<ChiTietHoaDonDto>> MapToChiTietAsync(
+            string rawInput, string? combinedShortlistText = null, Guid? khachHangId = null,
+            int shortlistTopK = 12, string model = DefaultModel)
         {
-            if (sp.BienThe == null || sp.BienThe.Count == 0) return null;
-            var macDinh = sp.BienThe.FirstOrDefault(bt => bt.MacDinh);
-            if (macDinh != null) return macDinh;
-            return sp.BienThe.First(); // fallback: biến thể đầu tiên
-        }
+            var preds = await ParseQuickOrderAsync(rawInput, combinedShortlistText, khachHangId, shortlistTopK, model);
+            var chiTiets = new ObservableCollection<ChiTietHoaDonDto>();
+            if (preds == null || preds.Count == 0) return chiTiets;
 
-        public async Task<ObservableCollection<ChiTietHoaDonDto>> MapToChiTietAsync(string input, string? shortMenu)
-        {
-            var items = await ParseQuickOrderAsync(input, shortMenu);
-            var sanPhams = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
-            var bienTheAll = sanPhams.SelectMany(x => x.BienThe).ToList();
+            var spMap = AppProviders.SanPhams.Items.ToDictionary(x => x.Id, x => x);
 
-            var list = new ObservableCollection<ChiTietHoaDonDto>();
-            var baseTime = DateTime.Now;
-
-            foreach (var it in items)
+            foreach (var p in preds)
             {
-                var sp = sanPhams.SingleOrDefault(x => x.Id == it.Id);
-                if (sp == null) continue;
-
-                var bt = ChonBienTheDefault(sp);
+                if (p.Id == Guid.Empty || !spMap.TryGetValue(p.Id, out var sp)) continue;
+                var bt = sp.BienThe?.FirstOrDefault(x => x.MacDinh) ?? sp.BienThe?.FirstOrDefault();
                 if (bt == null) continue;
 
-                list.Add(new ChiTietHoaDonDto
+                chiTiets.Add(new ChiTietHoaDonDto
                 {
                     Id = Guid.NewGuid(),
-                    CreatedAt = baseTime,
-                    LastModified = baseTime,
-
+                    SanPhamId = sp.Id,
                     SanPhamIdBienThe = bt.Id,
                     TenSanPham = sp.Ten,
-                    TenBienThe = bt.TenBienThe,
                     DonGia = bt.GiaBan,
-                    SoLuong = it.SoLuong,
-                    Stt = 0,
-                    BienTheList = bienTheAll.Where(x => x.SanPhamId == sp.Id).ToList(),
-                    ToppingDtos = new List<ToppingDto>(),
-                    NoteText = it.NoteText ?? ""
+                    TenBienThe = bt.TenBienThe ?? "Size chuẩn",
+                    SoLuong = Math.Max(1, p.SoLuong),
+                    NoteText = p.NoteText ?? ""
                 });
             }
+            return chiTiets;
+        }
 
-            int stt = 1;
-            foreach (var ct in list) ct.Stt = stt++;
+        // ======== helpers ========
 
+        private async Task<string> CallChatCompletionsAsync(string model, string systemPrompt, string userPrompt)
+        {
+            var body = new
+            {
+                model,
+                temperature = 0,
+                messages = new object[]
+                {
+                    new { role = "system", content = systemPrompt },
+                    new { role = "user",   content = userPrompt }
+                }
+            };
+
+            using var req = new HttpRequestMessage(HttpMethod.Post, "v1/chat/completions")
+            { Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json") };
+
+            using var resp = await _http.SendAsync(req);
+            resp.EnsureSuccessStatusCode();
+
+            var json = await resp.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var msg = doc.RootElement.GetProperty("choices")[0].GetProperty("message");
+            if (msg.TryGetProperty("content", out var contentEl))
+            {
+                if (contentEl.ValueKind == JsonValueKind.String) return contentEl.GetString() ?? "[]";
+                if (contentEl.ValueKind == JsonValueKind.Array)
+                {
+                    var sb = new StringBuilder();
+                    foreach (var part in contentEl.EnumerateArray())
+                        if (part.TryGetProperty("type", out var t) && t.GetString() == "text" &&
+                            part.TryGetProperty("text", out var txt)) sb.Append(txt.GetString());
+                    var s = sb.ToString().Trim();
+                    if (s.StartsWith("[") || s.StartsWith("{")) return s;
+                }
+            }
+            return ExtractJsonArray(json) ?? "[]";
+        }
+
+        private static string? ExtractJsonArray(string s)
+        {
+            int start = s.IndexOf('[');
+            if (start < 0) return null;
+            int depth = 0;
+            for (int i = start; i < s.Length; i++)
+            {
+                if (s[i] == '[') depth++;
+                else if (s[i] == ']')
+                {
+                    depth--;
+                    if (depth == 0) return s.Substring(start, i - start + 1);
+                }
+            }
+            return null;
+        }
+
+        private static string BuildMenuForGpt(IEnumerable<SanPhamDto> menu)
+            => "MENU (Id<TAB>ten_khong_dau)\n" +
+               string.Join("\n", menu.Where(m => !m.NgungBan).Select(m => $"{m.Id}\t{NormalizeName(m.Ten)}"));
+
+        private static string JoinShortlists(string? a, string? b)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(a)) parts.Add(a.Trim());
+            if (!string.IsNullOrWhiteSpace(b)) parts.Add(b.Trim());
+            if (parts.Count == 0) return "";
+            var merged = string.Join("\n", parts);
+            var lines = merged.Split('\n').Select(x => x.TrimEnd()).ToList();
+            var cleaned = new List<string>();
+            bool headerWritten = false;
+            foreach (var ln in lines)
+            {
+                if (ln.StartsWith("SHORTLIST", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!headerWritten) { cleaned.Add("SHORTLIST (Id<TAB>Tên)"); headerWritten = true; }
+                    continue;
+                }
+                cleaned.Add(ln);
+            }
+            return string.Join("\n", cleaned);
+        }
+
+        private static string BuildNumberedLines(List<string> normLines)
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < normLines.Count; i++) sb.AppendLine($"{i + 1}) {normLines[i]}");
+            return sb.ToString().TrimEnd();
+        }
+
+        private static IEnumerable<string> NormalizeAndEnumerateLines(string multiLine)
+        {
+            var list = new List<string>();
+            using var reader = new System.IO.StringReader(multiLine ?? "");
+            string? line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                var n = NormalizeName(line);
+                if (!string.IsNullOrWhiteSpace(n)) list.Add(n);
+            }
             return list;
+        }
+
+        private static string NormalizeName(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return "";
+            s = s.Trim().ToLowerInvariant();
+            s = RemoveDiacritics(s);
+            s = Regex.Replace(s, @"\s+", " ");
+            return s;
+        }
+        private static string RemoveDiacritics(string text)
+        {
+            var norm = text.Normalize(System.Text.NormalizationForm.FormD);
+            var sb = new StringBuilder();
+            foreach (var ch in norm)
+            {
+                var uc = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+                if (uc != System.Globalization.UnicodeCategory.NonSpacingMark) sb.Append(ch);
+            }
+            return sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
         }
     }
 }

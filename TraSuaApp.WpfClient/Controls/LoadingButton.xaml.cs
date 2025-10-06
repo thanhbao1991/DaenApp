@@ -11,7 +11,7 @@ namespace TraSuaApp.WpfClient.Controls
         private int _dotCount = 0;
 
         public static readonly DependencyProperty ContentProperty =
-            DependencyProperty.Register(nameof(Content), typeof(string), typeof(LoadingButton), new PropertyMetadata("Lưu"));
+            DependencyProperty.Register(nameof(Content), typeof(string), typeof(LoadingButton), new PropertyMetadata("Xong"));
 
         public string Content
         {

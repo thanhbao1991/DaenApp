@@ -7,6 +7,9 @@ namespace TraSuaApp.WpfClient.Views
     {
         public KhachHangDto? SelectedKhachHang { get; private set; }
 
+        // 🟟 Cờ báo người dùng chọn “Khách mới”
+        public bool RequestedNewCustomer { get; private set; }
+
         public SelectCustomerDialog()
         {
             InitializeComponent();
@@ -22,15 +25,14 @@ namespace TraSuaApp.WpfClient.Views
                 KhachHangBox.SearchTextBox.Focus();
             };
 
-            // Double-click → xác nhận chọn
+            // Double-click / Enter → xác nhận chọn
             KhachHangBox.KhachHangConfirmed += kh =>
             {
                 SelectedKhachHang = kh;
-                DialogResult = true;
-                Close();
+                CloseAsDialog(true);
             };
 
-            // Nút chọn
+            // Chọn trong list nhưng chưa xác nhận
             KhachHangBox.KhachHangSelected += kh =>
             {
                 SelectedKhachHang = kh;
@@ -39,18 +41,24 @@ namespace TraSuaApp.WpfClient.Views
             // Chọn “Khách mới”
             KhachHangBox.KhachMoiSelected += () =>
             {
+                RequestedNewCustomer = true;
                 SelectedKhachHang = null;
-                DialogResult = true;
-                Close();
+                // KHÔNG gán DialogResult trực tiếp → tránh crash
+                CloseAsDialog(false);
             };
         }
 
+        // Nếu bạn có nút “Xác nhận”
         private void Confirm_Click(object sender, RoutedEventArgs e)
         {
-            if (SelectedKhachHang != null || KhachHangBox.SearchTextBox.Text == "🟟 Khách mới")
+            if (SelectedKhachHang != null)
             {
-                DialogResult = true;
-                Close();
+                CloseAsDialog(true);
+            }
+            else if (RequestedNewCustomer)
+            {
+                // Người dùng đã chọn “Khách mới”
+                CloseAsDialog(false);
             }
             else
             {
@@ -58,10 +66,27 @@ namespace TraSuaApp.WpfClient.Views
             }
         }
 
+        // Nếu bạn có nút “Huỷ”
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
-            Close();
+            CloseAsDialog(false);
+        }
+
+        // 🟟 Đóng dialog an toàn (không crash nếu không phải ShowDialog)
+        private void CloseAsDialog(bool? result)
+        {
+            try
+            {
+                this.DialogResult = result; // chỉ hợp lệ khi mở bằng ShowDialog()
+            }
+            catch
+            {
+                // Nếu window không phải dialog (hoặc host đặc thù), fallback
+            }
+            finally
+            {
+                this.Close();
+            }
         }
     }
 }

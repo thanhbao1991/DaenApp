@@ -7,11 +7,13 @@ using System.Windows.Controls;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using TraSuaApp.Shared.Config;
+using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Services;
+using TraSuaApp.WpfClient.AiOrdering;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
-using TraSuaApp.WpfClient.Ordering;
+using TraSuaApp.WpfClient.Services;
 using TraSuaApp.WpfClient.Views;
 
 namespace TraSuaApp.WpfClient.Controls
@@ -25,6 +27,14 @@ namespace TraSuaApp.WpfClient.Controls
 
         private readonly QuickOrderService _quick = new(Config.apiChatGptKey);
 
+        // Guards
+        private bool _isInitializing;
+        private bool _isRestarting;
+        private bool _isBusy; // chặn bấm lặp khi đang chạy
+
+        // Remember last chat title → gợi ý KH
+        private string? _latestCustomerName;
+
         public MessengerTab()
         {
             InitializeComponent();
@@ -35,18 +45,8 @@ namespace TraSuaApp.WpfClient.Controls
         {
             try
             {
-                if (WebView.CoreWebView2 != null) return;
-
-                Directory.CreateDirectory(UserDataFolder);
-                var env = await CoreWebView2Environment.CreateAsync(userDataFolder: UserDataFolder);
-                await WebView.EnsureCoreWebView2Async(env);
-
-                WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
-                WebView.CoreWebView2.ProcessFailed += CoreWebView2_ProcessFailed;
-                WebView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
-                WebView.CoreWebView2.DocumentTitleChanged += CoreWebView2_DocumentTitleChanged;
-
-                WebView.CoreWebView2.Navigate(MessengerUrl);
+                if (_isInitializing || WebView.CoreWebView2 != null) return;
+                await InitCoreWebView2Async(UserDataFolder);
             }
             catch (Exception ex)
             {
@@ -54,10 +54,99 @@ namespace TraSuaApp.WpfClient.Controls
             }
         }
 
-        private async void CreateOrderFromText_Click(object sender, RoutedEventArgs e)
+        // ================= WebView2 Init / Restart =================
+        private async Task InitCoreWebView2Async(string userDataFolder, bool isFallback = false)
         {
-            await CreateOrderFromSelectionAsync();
+            try
+            {
+                _isInitializing = true;
+
+                Directory.CreateDirectory(userDataFolder);
+                var env = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
+                await WebView.EnsureCoreWebView2Async(env);
+
+                HookCoreEvents();
+
+                WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+
+                SafeNavigateToMessenger();
+            }
+            catch (Exception ex)
+            {
+                _ = DiscordService.SendAsync(DiscordEventType.Admin,
+                    $"WebView2 init failed ({(isFallback ? "fallback" : "primary")}): {ex.Message}");
+
+                if (!isFallback)
+                {
+                    string fallback = Path.Combine(Path.GetTempPath(), "TraSuaApp.WebView2.Fallback");
+                    await InitCoreWebView2Async(fallback, isFallback: true);
+                }
+                else
+                {
+                    MessageBox.Show("Không khởi tạo được trình duyệt nhúng (WebView2). Hãy thử mở lại ứng dụng.");
+                }
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
         }
+
+        private void HookCoreEvents()
+        {
+            if (WebView.CoreWebView2 == null) return;
+
+            UnhookCoreEvents(); // tránh gắn trùng
+
+            WebView.CoreWebView2.ProcessFailed += CoreWebView2_ProcessFailed;
+            WebView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
+            WebView.CoreWebView2.DocumentTitleChanged += CoreWebView2_DocumentTitleChanged;
+
+            // KHÔNG gắn BrowserProcessExited để tương thích SDK WebView2 cũ
+        }
+
+        private void UnhookCoreEvents()
+        {
+            if (WebView.CoreWebView2 == null) return;
+
+            try { WebView.CoreWebView2.ProcessFailed -= CoreWebView2_ProcessFailed; } catch { }
+            try { WebView.CoreWebView2.NavigationCompleted -= CoreWebView2_NavigationCompleted; } catch { }
+            try { WebView.CoreWebView2.DocumentTitleChanged -= CoreWebView2_DocumentTitleChanged; } catch { }
+        }
+
+        private void SafeNavigateToMessenger()
+        {
+            try
+            {
+                WebView.CoreWebView2?.Navigate(MessengerUrl);
+            }
+            catch (Exception ex)
+            {
+                _ = DiscordService.SendAsync(DiscordEventType.Admin, "Navigate error: " + ex.Message);
+            }
+        }
+
+        private async Task RestartWebViewAsync()
+        {
+            if (_isRestarting) return;
+            _isRestarting = true;
+
+            try
+            {
+                UnhookCoreEvents();
+                await InitCoreWebView2Async(UserDataFolder);
+            }
+            catch (Exception ex)
+            {
+                _ = DiscordService.SendAsync(DiscordEventType.Admin, "RestartWebViewAsync failed: " + ex.Message);
+            }
+            finally
+            {
+                _isRestarting = false;
+            }
+        }
+
+
 
         private async Task<string> GetSelectedTextAsync()
         {
@@ -76,11 +165,9 @@ namespace TraSuaApp.WpfClient.Controls
         {
             if (string.IsNullOrWhiteSpace(s)) return string.Empty;
 
-            // Bỏ ký tự ẩn / NBSP / zero-width
             s = s.Replace('\u00A0', ' ')
                  .Replace("\u200B", "").Replace("\u200C", "").Replace("\u200D", "").Replace("\uFEFF", "");
 
-            // Chuẩn hoá xuống dòng + khoảng trắng
             s = s.Replace("\r\n", "\n").Replace("\r", "\n");
             s = Regex.Replace(s, @"[ \t]+", " ");
             s = Regex.Replace(s, @"\n{3,}", "\n\n");
@@ -105,6 +192,9 @@ namespace TraSuaApp.WpfClient.Controls
 
         private async void CreateOrderFromImage_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBusy) return;
+            _isBusy = true;
+
             var dlg = new OpenFileDialog
             {
                 Title = "Chọn ảnh để tạo hoá đơn",
@@ -113,130 +203,66 @@ namespace TraSuaApp.WpfClient.Controls
                     Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads")
             };
 
-            if (dlg.ShowDialog() == true)
+            if (dlg.ShowDialog() != true)
             {
-                try
-                {
-                    var (hd, rawInput) = await Ordering.QuickOrderHelper.RunWithLoadingAsync(
-                        "Đang phân tích ảnh...",
-                        () => _quick.BuildHoaDonAsync(dlg.FileName, isImage: true)
-                    );
-
-                    if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
-                    {
-                        MessageBox.Show("Không nhận diện được món nào trong ảnh.");
-                        return;
-                    }
-                    hd.PhanLoai = "Ship";
-
-                    var win = new HoaDonEdit(hd)
-                    {
-                        GptInputText = rawInput,
-                        Owner = Window.GetWindow(this),
-                        Width = Window.GetWindow(this)?.ActualWidth ?? 1200,
-                        Height = Window.GetWindow(this)?.ActualHeight ?? 800,
-                    };
-                    win.KhachHangSearchBox.SearchTextBox.Text = _latestCustomerName;
-
-                    win.ShowDialog();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Tạo đơn từ ảnh lỗi: " + ex.Message);
-                    await DiscordService.SendAsync(DiscordEventType.Admin, ex.Message);
-                }
+                _isBusy = false;
+                return;
             }
-        }
 
-        private void CoreWebView2_ProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
-        {
-            _ = DiscordService.SendAsync(DiscordEventType.Admin, $"WebView2 crashed: {e.ProcessFailedKind}");
-            Dispatcher.InvokeAsync(() => { try { WebView?.Reload(); } catch { } });
-        }
-
-        private void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
-        {
-            if (!e.IsSuccess)
-                _ = DiscordService.SendAsync(DiscordEventType.Admin, $"Navigation failed: {e.WebErrorStatus}");
-        }
-
-        private string? _latestCustomerName;
-
-        private void CoreWebView2_DocumentTitleChanged(object? sender, object e)
-        {
-            var title = WebView.CoreWebView2?.DocumentTitle ?? "";
-            var cut = title.Split('|')[0].Trim();
-
-            _latestCustomerName = cut;
-        }
-
-        private async Task<string> BuildLichSuText(Guid khId)
-        {
             try
             {
-                var response = await ApiClient.GetAsync($"/api/Dashboard/topmenu-quickorder/{khId}");
-                var info = await response.Content.ReadFromJsonAsync<string>();
-                return info;
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
-
-        private async Task CreateOrderFromSelectionAsync()
-        {
-            try
-            {
-                var text = await GetSelectedTextAsync();
-                text = CleanSelectedText(text);
-
-                if (string.IsNullOrWhiteSpace(text))
-                {
-                    MessageBox.Show("Hãy bôi đen đoạn văn bản trước khi tạo hoá đơn.");
-                    return;
-                }
-
-                var dlg = new SelectCustomerDialog
+                // 1) Chọn khách (không bọc loader)
+                var pick = new SelectCustomerDialog
                 {
                     Owner = Window.GetWindow(this)
                 };
-                dlg.KhachHangBox.SearchTextBox.Text = _latestCustomerName;
-                await dlg.Dispatcher.BeginInvoke(new Action(() =>
+                pick.KhachHangBox.SearchTextBox.Text = _latestCustomerName;
+                await pick.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    dlg.KhachHangBox.IsPopupOpen = true;
+                    pick.KhachHangBox.IsPopupOpen = true;
                 }), System.Windows.Threading.DispatcherPriority.Background);
 
-                if (dlg.ShowDialog() != true)
-                    return;
-
-                var kh = dlg.SelectedKhachHang;
-                string? lichSuText = null;
-
-                if (kh != null)
+                KhachHangDto? kh = null;
+                bool? pickResult = pick.ShowDialog();
+                if (pickResult == true)
                 {
-                    lichSuText = await BuildLichSuText(kh.Id);
+                    kh = pick.SelectedKhachHang;
+                }
+                else if (!pick.RequestedNewCustomer)
+                {
+                    // Hủy
+                    return;
                 }
 
-                var (hd, rawInput) = await Ordering.QuickOrderHelper.RunWithLoadingAsync(
-                    "Đang tạo hoá đơn AI...",
-                    () => _quick.BuildHoaDonAsync(text, false, lichSuText)
-                );
+                // 2) Gọi AI bên trong loader
+                (HoaDonDto? hd, string raw, List<QuickOrderDto> preds) res;
 
+                using (BusyUI.Scope(this, sender as Button, "Đang phân tích ảnh..."))
+                {
+                    string? lichSuText = kh != null ? await BuildLichSuText(kh.Id) : null; // IO-bound → chỉ await
+                    res = await _quick.BuildHoaDonAsync(
+                        dlg.FileName, isImage: true, shortMenuFromHistory: lichSuText, khachHangId: kh?.Id);
+                }
+
+                var hd = res.hd ?? new HoaDonDto { ChiTietHoaDons = new() };
+                var raw = res.raw;
+                var preds = res.preds;
+
+                // ✅ Vẫn mở form ngay cả khi không bắt được món
                 if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
                 {
-                    MessageBox.Show("Không nhận diện được món nào từ đoạn đã chọn.");
-                    return;
+                    MessageBox.Show("Không nhận diện được món nào trong ảnh. Sẽ mở hoá đơn để bạn nhập tay (AI sẽ học lại).");
+                    hd.ChiTietHoaDons ??= new();
                 }
 
                 hd.PhanLoai = "Ship";
                 hd.KhachHangId = kh?.Id;
 
                 var mainWin = Application.Current.MainWindow;
-
                 var win = new HoaDonEdit(hd)
                 {
-                    GptInputText = rawInput,
+                    GptInputText = raw,
+                    GptPredictions = preds,
                     Owner = mainWin,
                     Width = mainWin?.ActualWidth ?? 1200,
                     Height = mainWin?.ActualHeight ?? 800,
@@ -261,10 +287,185 @@ namespace TraSuaApp.WpfClient.Controls
                 mainWin?.Activate();
                 mainWin?.Focus();
             }
+            catch (TimeoutException)
+            {
+                MessageBox.Show("Mạng chậm/AI quá tải (timeout). Sẽ mở hoá đơn trống để bạn nhập tay.");
+                var hd = new HoaDonDto { PhanLoai = "Ship" };
+                var mainWin = Application.Current.MainWindow;
+                new HoaDonEdit(hd) { Owner = mainWin }.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Tạo đơn từ ảnh lỗi: " + ex.Message);
+                await DiscordService.SendAsync(DiscordEventType.Admin, ex.Message);
+            }
+            finally
+            {
+                _isBusy = false;
+            }
+        }
+
+        // ================= WebView2 Events =================
+        private void CoreWebView2_ProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
+        {
+            _ = DiscordService.SendAsync(DiscordEventType.Admin,
+                $"WebView2 crashed: {e.ProcessFailedKind}");
+
+            var kind = e.ProcessFailedKind.ToString();
+
+            Dispatcher.InvokeAsync(async () =>
+            {
+                try
+                {
+                    if (string.Equals(kind, "BrowserProcessExited", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await RestartWebViewAsync();
+                    }
+                    else
+                    {
+                        try { WebView?.Reload(); }
+                        catch { await RestartWebViewAsync(); }
+                    }
+                }
+                catch { await RestartWebViewAsync(); }
+            });
+        }
+
+        private void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+        {
+            if (!e.IsSuccess)
+                _ = DiscordService.SendAsync(DiscordEventType.Admin, $"Navigation failed: {e.WebErrorStatus}");
+        }
+
+        private void CoreWebView2_DocumentTitleChanged(object? sender, object e)
+        {
+            var title = WebView.CoreWebView2?.DocumentTitle ?? "";
+            var cut = title.Split('|')[0].Trim();
+            _latestCustomerName = cut;
+        }
+
+        private async Task<string> BuildLichSuText(Guid khId)
+        {
+            try
+            {
+                var response = await ApiClient.GetAsync($"/api/Dashboard/topmenu-quickorder/{khId}");
+                var info = await response.Content.ReadFromJsonAsync<string>();
+                return info ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+        // ================= Buttons & Helpers =================
+        private async void CreateOrderFromText_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isBusy) return;
+            _isBusy = true;
+
+            try
+            {
+                // 0) Lấy & làm sạch text đang bôi đen
+                var text = await GetSelectedTextAsync();
+                text = CleanSelectedText(text);
+
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    MessageBox.Show("Hãy bôi đen đoạn văn bản trước khi tạo hoá đơn.");
+                    return;
+                }
+
+                // 1) Hỏi khách (KHÔNG bọc loader)
+                var pick = new SelectCustomerDialog
+                {
+                    Owner = Window.GetWindow(this)
+                };
+                pick.KhachHangBox.SearchTextBox.Text = _latestCustomerName;
+                await pick.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    pick.KhachHangBox.IsPopupOpen = true;
+                }), System.Windows.Threading.DispatcherPriority.Background);
+
+                KhachHangDto? kh = null;
+                bool? pickResult = pick.ShowDialog();
+                if (pickResult == true)
+                {
+                    kh = pick.SelectedKhachHang;
+                }
+                else if (!pick.RequestedNewCustomer)
+                {
+                    return; // hủy
+                }
+
+                // 2) Gọi AI từ TEXT đã chọn (bọc loader) — gồm luôn tải lịch sử
+                (HoaDonDto? hd, string raw, List<QuickOrderDto> preds) res;
+
+                using (BusyUI.Scope(this, sender as Button, "Đang phân tích đoạn đã chọn..."))
+                {
+                    string? lichSuText = kh != null ? await BuildLichSuText(kh.Id) : null; // IO-bound
+                    res = await _quick.BuildHoaDonAsync(
+                        text, isImage: false, shortMenuFromHistory: lichSuText, khachHangId: kh?.Id);
+                }
+
+                var hd = res.hd ?? new HoaDonDto { ChiTietHoaDons = new() };
+                var raw = res.raw;
+                var preds = res.preds;
+
+
+                // 3) Mở form kể cả khi AI không nhận diện được
+                if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
+                {
+                    MessageBox.Show("Không nhận diện được món nào từ đoạn đã chọn. Sẽ mở hoá đơn để bạn nhập tay (AI sẽ học lại).");
+                    hd.ChiTietHoaDons ??= new();
+                }
+
+                hd.PhanLoai = "Ship";
+                hd.KhachHangId = kh?.Id;
+
+                var mainWin = Application.Current.MainWindow;
+                var win = new HoaDonEdit(hd)
+                {
+                    GptInputText = raw,
+                    GptPredictions = preds,
+                    Owner = mainWin,
+                    Width = mainWin?.ActualWidth ?? 1200,
+                    Height = mainWin?.ActualHeight ?? 800,
+                };
+
+                if (kh != null)
+                {
+                    win.ContentRendered += async (_, __) =>
+                    {
+                        await Task.Delay(100);
+                        win.KhachHangSearchBox.SetSelectedKhachHangByIdWithoutPopup(kh.Id);
+                        win.KhachHangSearchBox.TriggerSelectedEvent(kh);
+                    };
+                }
+                else
+                {
+                    win.KhachHangSearchBox.SearchTextBox.Text = _latestCustomerName;
+                }
+
+                win.ShowDialog();
+
+                mainWin?.Activate();
+                mainWin?.Focus();
+            }
+            catch (TimeoutException)
+            {
+                MessageBox.Show("Mạng chậm/AI quá tải (timeout). Sẽ mở hoá đơn trống để bạn nhập tay.");
+                var hd = new HoaDonDto { PhanLoai = "Ship" };
+                var mainWin = Application.Current.MainWindow;
+                new HoaDonEdit(hd) { Owner = mainWin }.ShowDialog();
+            }
             catch (Exception ex)
             {
                 MessageBox.Show("Tạo đơn lỗi: " + ex.Message);
                 await DiscordService.SendAsync(DiscordEventType.Admin, ex.Message);
+            }
+            finally
+            {
+                _isBusy = false;
             }
         }
     }

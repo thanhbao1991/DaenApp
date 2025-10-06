@@ -95,10 +95,7 @@
                             <TextBlock FontSize="{StaticResource FontSizeLarge}" Text="App" />
                         </StackPanel>
                     </RadioButton>
-                    <Button
-                        Click="ReportAiButton_Click"
-                        Content="⚠️ Bắt đơn chưa đúng lắm !!!"
-                        Style="{StaticResource DeleteButtonStyle}" />
+
                 </StackPanel>
                 <Button
                     Click="CloseButton_Click"
@@ -629,7 +626,8 @@
                 <ctrl:LoadingButton
                     x:Name="SaveButton"
                     Click="SaveButton_Click"
-                    Content="Lưu (Enter)" />
+                    Content="Lưu (Enter)"
+                    Tag="idle" />
             </StackPanel>
         </Grid>
     </Border>

@@ -136,19 +136,6 @@
                                 </StackPanel>
                             </Button>
 
-                            <Button
-                                Margin="8,0,0,0"
-                                HorizontalAlignment="Left"
-                                Panel.ZIndex="1"
-                                Click="AddAIButton_Click"
-                                Foreground="{StaticResource DarkBrush}"
-                                Style="{StaticResource XoaButtonStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa:IconBlock Margin="0,0,5,0" Icon="Robot" />
-                                    <TextBlock Text="Order Nhanh" />
-                                </StackPanel>
-                            </Button>
-
                         </StackPanel>
 
                         <DataGrid
