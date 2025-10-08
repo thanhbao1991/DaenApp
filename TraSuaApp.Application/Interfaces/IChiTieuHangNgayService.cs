@@ -5,7 +5,6 @@ namespace TraSuaApp.Applicationn.Interfaces;
 
 public interface IChiTieuHangNgayService
 {
-    Task<List<ChiTieuHangNgayDto>> GetByNguyenLieuInMonth(Guid nguyenLieuId, int year, int month);
     Task<List<ChiTieuHangNgayDto>> GetAllAsync();
     Task<ChiTieuHangNgayDto?> GetByIdAsync(Guid id);
     Task<Result<ChiTieuHangNgayDto>> CreateAsync(ChiTieuHangNgayDto dto);

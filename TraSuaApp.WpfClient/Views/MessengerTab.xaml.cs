@@ -146,8 +146,6 @@ namespace TraSuaApp.WpfClient.Controls
             }
         }
 
-
-
         private async Task<string> GetSelectedTextAsync()
         {
             const string js = @"(() => {
@@ -211,11 +209,16 @@ namespace TraSuaApp.WpfClient.Controls
 
             try
             {
+                // 🟟 Tìm owner an toàn
+                var owner = WindowOwnerHelper.FindOwner(this);
+
                 // 1) Chọn khách (không bọc loader)
-                var pick = new SelectCustomerDialog
-                {
-                    Owner = Window.GetWindow(this)
-                };
+                var pick = new SelectCustomerDialog();
+                WindowOwnerHelper.SetOwnerIfPossible(pick, owner);
+                pick.WindowStartupLocation = owner != null
+                    ? WindowStartupLocation.CenterOwner
+                    : WindowStartupLocation.CenterScreen;
+
                 pick.KhachHangBox.SearchTextBox.Text = _latestCustomerName;
                 await pick.Dispatcher.BeginInvoke(new Action(() =>
                 {
@@ -257,15 +260,23 @@ namespace TraSuaApp.WpfClient.Controls
                 hd.PhanLoai = "Ship";
                 hd.KhachHangId = kh?.Id;
 
-                var mainWin = Application.Current.MainWindow;
+                // 🟟 Mở HoaDonEdit an toàn (không đụng owner.Width/Height khi owner=null)
                 var win = new HoaDonEdit(hd)
                 {
                     GptInputText = raw,
-                    GptPredictions = preds,
-                    Owner = mainWin,
-                    Width = mainWin.Width,
-                    Height = mainWin.Height,
+                    GptPredictions = preds
                 };
+                WindowOwnerHelper.SetOwnerIfPossible(win, owner);
+                win.WindowStartupLocation = owner != null
+                    ? WindowStartupLocation.CenterOwner
+                    : WindowStartupLocation.CenterScreen;
+
+                if (owner != null)
+                {
+                    // Tùy chọn: khớp kích thước — chỉ khi có owner hợp lệ
+                    win.Width = owner.ActualWidth;
+                    win.Height = owner.ActualHeight;
+                }
 
                 if (kh != null)
                 {
@@ -283,15 +294,19 @@ namespace TraSuaApp.WpfClient.Controls
 
                 win.ShowDialog();
 
-                mainWin?.Activate();
-                mainWin?.Focus();
+                owner?.Activate();
+                owner?.Focus();
             }
             catch (TimeoutException)
             {
                 MessageBox.Show("Mạng chậm/AI quá tải (timeout). Sẽ mở hoá đơn trống để bạn nhập tay.");
                 var hd = new HoaDonDto { PhanLoai = "Ship" };
-                var mainWin = Application.Current.MainWindow;
-                new HoaDonEdit(hd) { Owner = mainWin }.ShowDialog();
+
+                var owner = WindowOwnerHelper.FindOwner(this);
+                var w = new HoaDonEdit(hd);
+                WindowOwnerHelper.SetOwnerIfPossible(w, owner);
+                w.WindowStartupLocation = owner != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen;
+                w.ShowDialog();
             }
             catch (Exception ex)
             {
@@ -356,6 +371,7 @@ namespace TraSuaApp.WpfClient.Controls
                 return string.Empty;
             }
         }
+
         // ================= Buttons & Helpers =================
         private async void CreateOrderFromText_Click(object sender, RoutedEventArgs e)
         {
@@ -374,11 +390,16 @@ namespace TraSuaApp.WpfClient.Controls
                     return;
                 }
 
+                // 🟟 Tìm owner an toàn
+                var owner = WindowOwnerHelper.FindOwner(this);
+
                 // 1) Hỏi khách (KHÔNG bọc loader)
-                var pick = new SelectCustomerDialog
-                {
-                    Owner = Window.GetWindow(this)
-                };
+                var pick = new SelectCustomerDialog();
+                WindowOwnerHelper.SetOwnerIfPossible(pick, owner);
+                pick.WindowStartupLocation = owner != null
+                    ? WindowStartupLocation.CenterOwner
+                    : WindowStartupLocation.CenterScreen;
+
                 pick.KhachHangBox.SearchTextBox.Text = _latestCustomerName;
                 await pick.Dispatcher.BeginInvoke(new Action(() =>
                 {
@@ -410,7 +431,6 @@ namespace TraSuaApp.WpfClient.Controls
                 var raw = res.raw;
                 var preds = res.preds;
 
-
                 // 3) Mở form kể cả khi AI không nhận diện được
                 if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
                 {
@@ -420,16 +440,21 @@ namespace TraSuaApp.WpfClient.Controls
                 hd.PhanLoai = "Ship";
                 hd.KhachHangId = kh?.Id;
 
-                var mainWin = Application.Current.MainWindow;
                 var win = new HoaDonEdit(hd)
                 {
                     GptInputText = raw,
-                    GptPredictions = preds,
-                    Owner = mainWin,
-                    Width = mainWin.Width,
-                    Height = mainWin.Height,
-
+                    GptPredictions = preds
                 };
+                WindowOwnerHelper.SetOwnerIfPossible(win, owner);
+                win.WindowStartupLocation = owner != null
+                    ? WindowStartupLocation.CenterOwner
+                    : WindowStartupLocation.CenterScreen;
+
+                if (owner != null)
+                {
+                    win.Width = owner.ActualWidth;
+                    win.Height = owner.ActualHeight;
+                }
 
                 if (kh != null)
                 {
@@ -447,15 +472,19 @@ namespace TraSuaApp.WpfClient.Controls
 
                 win.ShowDialog();
 
-                mainWin?.Activate();
-                mainWin?.Focus();
+                owner?.Activate();
+                owner?.Focus();
             }
             catch (TimeoutException)
             {
                 MessageBox.Show("Mạng chậm/AI quá tải (timeout). Sẽ mở hoá đơn trống để bạn nhập tay.");
                 var hd = new HoaDonDto { PhanLoai = "Ship" };
-                var mainWin = Application.Current.MainWindow;
-                new HoaDonEdit(hd) { Owner = mainWin }.ShowDialog();
+
+                var owner = WindowOwnerHelper.FindOwner(this);
+                var w = new HoaDonEdit(hd);
+                WindowOwnerHelper.SetOwnerIfPossible(w, owner);
+                w.WindowStartupLocation = owner != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen;
+                w.ShowDialog();
             }
             catch (Exception ex)
             {

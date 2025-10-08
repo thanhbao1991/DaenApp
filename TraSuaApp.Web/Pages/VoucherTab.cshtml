@@ -1,21 +1,55 @@
 ﻿@page
-@model TraSuaAppWeb.Pages.VoucherModel
+@model TraSuaAppWeb.Pages.VoucherTabModel
+@inject IHttpClientFactory HttpClientFactory
+@using TraSuaApp.Shared.Dtos
+@using TraSuaApp.Shared.Helpers
+@using System.Text.Json
 @{
     ViewData["Title"] = "Voucher theo tháng";
+
+    // 🟟 Lấy danh sách voucher
+    var client = HttpClientFactory.CreateClient("Api");
+    List<VoucherDto> vouchers = new();
+    try
+    {
+        var res = await client.GetAsync("api/voucher");
+        if (res.IsSuccessStatusCode)
+        {
+            var json = await res.Content.ReadAsStringAsync();
+            var wrapper = JsonSerializer.Deserialize<Result<List<VoucherDto>>>(
+                json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            vouchers = wrapper?.Data ?? new();
+        }
+    }
+    catch { }
+
+    // Thêm “Tất cả”
+    vouchers.Insert(0, new VoucherDto { Id = Guid.Empty, Ten = "Tất cả" });
 }
 
 <div class="container-fluid p-2">
-
-    <!-- Thanh điều hướng tháng -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <a class="btn btn-outline-primary btn-sm"
-           href="?thang=@Model.Prev.Month&nam=@Model.Prev.Year">← Tháng trước</a>
+           href="?thang=@Model.Prev.Month&nam=@Model.Prev.Year&voucherId=@Model.VoucherId">← Tháng trước</a>
 
         <span class="fw-bold fs-5">@Model.CurrentMonthStart.ToString("MM/yyyy")</span>
 
         <a class="btn btn-outline-primary btn-sm"
-           href="?thang=@Model.Next.Month&nam=@Model.Next.Year">Tháng sau →</a>
+           href="?thang=@Model.Next.Month&nam=@Model.Next.Year&voucherId=@Model.VoucherId">Tháng sau →</a>
     </div>
+
+    <!-- 🟟 Bộ lọc voucher -->
+    <form method="get" class="d-flex align-items-center mb-3">
+        <input type="hidden" name="thang" value="@Model.Thang" />
+        <input type="hidden" name="nam" value="@Model.Nam" />
+        <label class="me-2 fw-semibold">Voucher:</label>
+        <select name="voucherId" class="form-select form-select-sm" style="width:260px" onchange="this.form.submit()">
+            @foreach (var v in vouchers.OrderBy(x => x.Ten))
+            {
+                <option value="@v.Id" selected="@(v.Id == Model.VoucherId)">@v.Ten</option>
+            }
+        </select>
+    </form>
 
     <div class="d-flex justify-content-end mb-2">
         <div class="fw-bold">Tổng voucher: @String.Format("{0:N0}", Model.Tong) đ</div>

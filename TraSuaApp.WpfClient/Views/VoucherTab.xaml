@@ -9,7 +9,6 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!--  Thanh điều hướng tháng + tổng + tải lại  -->
         <StackPanel
             Grid.Row="0"
             Margin="0,0,0,8"
@@ -30,7 +29,7 @@
                 VerticalAlignment="Center"
                 FontSize="{StaticResource FontSizeLarge}"
                 FontWeight="Bold"
-                Foreground="{StaticResource DarkForeground}"
+                Foreground="{StaticResource LightBrush}"
                 Text="MM/yyyy" />
 
             <Button
@@ -41,28 +40,33 @@
                 Tháng sau →
             </Button>
 
-            <!--  Tổng voucher  -->
+            <ComboBox
+                x:Name="VoucherComboBox"
+                Width="220"
+                Margin="20,0,0,0"
+                DisplayMemberPath="Ten"
+                SelectedValuePath="Id"
+                SelectionChanged="VoucherComboBox_SelectionChanged"
+                ToolTip="Chọn voucher để lọc" />
+
             <TextBlock
                 x:Name="TongTienTextBlock"
                 Margin="20,0,0,0"
                 VerticalAlignment="Center"
                 FontSize="{StaticResource FontSizeLarge}"
                 FontWeight="Bold"
-                Foreground="{StaticResource DarkForeground}" />
+                Foreground="{StaticResource DangerForeground}" />
 
-            <!--  Nút tải lại có spinner (style trong App.xaml)  -->
             <Button
                 x:Name="ReloadButton"
                 Margin="12,0,0,0"
                 Padding="12,4"
                 Click="ReloadButton_Click"
-                Style="{StaticResource ButtonWithSpinnerStyle}"
                 ToolTip="Tải lại dữ liệu tháng đang xem">
                 Tải lại
             </Button>
         </StackPanel>
 
-        <!--  Bảng dữ liệu  -->
         <DataGrid
             x:Name="VoucherDataGrid"
             Grid.Row="1"
@@ -70,31 +74,30 @@
             IsReadOnly="True">
             <DataGrid.Columns>
                 <DataGridTextColumn
-                    Width="50"
+                    Width="60"
                     Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
                 <DataGridTextColumn
-                    Width="100"
+                    Width="120"
                     Binding="{Binding Ngay, StringFormat=dd/MM/yyyy}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Ngày" />
                 <DataGridTextColumn
                     Width="200"
-                    Binding="{Binding TenKhachHang}"
+                    Binding="{Binding TenVoucher}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
-                    Header="Khách hàng" />
+                    Header="Voucher" />
                 <DataGridTextColumn
-                    Width="100"
+                    Width="150"
                     Binding="{Binding GiaTriApDung, StringFormat=N0}"
                     ElementStyle="{StaticResource RightTextCellStyle}"
                     Header="Giá trị áp dụng" />
                 <DataGridTextColumn
                     Width="*"
-                    Binding="{Binding TenVoucher}"
+                    Binding="{Binding TenKhachHang}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
-                    Header="Tên voucher" />
-
+                    Header="Khách hàng" />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

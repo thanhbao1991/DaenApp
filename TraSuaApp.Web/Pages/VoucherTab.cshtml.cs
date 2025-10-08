@@ -6,16 +6,17 @@ using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaAppWeb.Pages
 {
-    public class VoucherModel : PageModel
+    public class VoucherTabModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        public VoucherModel(IHttpClientFactory httpClientFactory) => _httpClientFactory = httpClientFactory;
+        public VoucherTabModel(IHttpClientFactory httpClientFactory) => _httpClientFactory = httpClientFactory;
 
         public List<VoucherChiTraDto> Items { get; set; } = new();
         public decimal Tong { get; set; }
 
         [BindProperty(SupportsGet = true)] public int Thang { get; set; }
         [BindProperty(SupportsGet = true)] public int Nam { get; set; }
+        [BindProperty(SupportsGet = true)] public Guid VoucherId { get; set; } = Guid.Empty;
 
         public DateTime Prev { get; set; }
         public DateTime Next { get; set; }
@@ -35,8 +36,11 @@ namespace TraSuaAppWeb.Pages
             Next = CurrentMonthStart.AddMonths(1);
 
             var client = _httpClientFactory.CreateClient("Api");
-            // backend đã có endpoint GET api/voucher/{year}/{month}
-            var res = await client.GetAsync($"api/voucher/{Nam}/{Thang}");
+            var offset = GetOffset(Nam, Thang);
+
+            // ✅ Truyền voucherId khi gọi API
+            var url = $"api/dashboard/voucher?offset={offset}&voucherId={VoucherId}";
+            var res = await client.GetAsync(url);
             if (!res.IsSuccessStatusCode) return;
 
             var json = await res.Content.ReadAsStringAsync();
@@ -44,8 +48,16 @@ namespace TraSuaAppWeb.Pages
                 json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
             var data = wrapper?.Data ?? new List<VoucherChiTraDto>();
-            Items = data.OrderByDescending(x => x.Ngay).ToList(); // mới nhất lên đầu
+            Items = data.OrderByDescending(x => x.Ngay).ToList();
             Tong = Items.Sum(x => x.GiaTriApDung);
+        }
+
+        private static int GetOffset(int year, int month)
+        {
+            var now = DateTime.Today;
+            var baseMonth = new DateTime(now.Year, now.Month, 1);
+            var target = new DateTime(year, month, 1);
+            return (target.Year - baseMonth.Year) * 12 + (target.Month - baseMonth.Month);
         }
     }
 }

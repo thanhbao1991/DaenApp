@@ -1,7 +1,8 @@
 ﻿<UserControl
-    x:Class="TraSuaApp.WpfClient.Views.ChiTieuNhaTab"
+    x:Class="TraSuaApp.WpfClient.Views.ChiTieuTab"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:TraSuaApp.WpfClient.Controls">
 
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -9,7 +10,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!--  Thanh điều hướng tháng + tổng + tải lại  -->
+        <!--  Thanh điều hướng + lọc  -->
         <StackPanel
             Grid.Row="0"
             Margin="0,0,0,8"
@@ -41,6 +42,15 @@
                 Tháng sau →
             </Button>
 
+            <!--  🟟 ComboBox chọn nguyên liệu  -->
+            <!--  🟟 Chọn nguyên liệu  -->
+            <local:NguyenLieuSearchBox
+                x:Name="NguyenLieuBox"
+                Width="220"
+                Margin="20,0,0,0"
+                NguyenLieuCleared="NguyenLieuBox_NguyenLieuCleared"
+                NguyenLieuSelected="NguyenLieuBox_NguyenLieuSelected"
+                ToolTip="Nhập tên nguyên liệu để lọc..." />
             <TextBlock
                 x:Name="TongTienTextBlock"
                 Margin="20,0,0,0"
@@ -49,21 +59,19 @@
                 FontWeight="Bold"
                 Foreground="{StaticResource DangerForeground}" />
 
-            <!--  Nút tải lại: spinner hiển thị khi IsEnabled = false (style trong App.xaml)  -->
             <Button
                 x:Name="ReloadButton"
                 Margin="12,0,0,0"
                 Padding="12,4"
                 Click="ReloadButton_Click"
-                Style="{StaticResource ButtonWithSpinnerStyle}"
                 ToolTip="Tải lại dữ liệu tháng đang xem">
                 Tải lại
             </Button>
         </StackPanel>
 
-        <!--  DataGrid  -->
+        <!--  Bảng dữ liệu  -->
         <DataGrid
-            x:Name="ChiTieuHangNgayNhaDataGrid"
+            x:Name="ChiTieuDataGrid"
             Grid.Row="1"
             AutoGenerateColumns="False"
             IsReadOnly="True">
@@ -81,7 +89,7 @@
                 <DataGridTextColumn
                     Width="150"
                     Binding="{Binding Ten}"
-                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Tên" />
                 <DataGridTextColumn
                     Width="150"

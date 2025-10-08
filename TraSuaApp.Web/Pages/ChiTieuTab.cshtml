@@ -1,0 +1,95 @@
+@page
+@model TraSuaAppWeb.Pages.ChiTieuTabModel
+@inject IHttpClientFactory HttpClientFactory
+@using TraSuaApp.Shared.Dtos
+@using TraSuaApp.Shared.Helpers
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Chi tiêu (theo nguyên liệu)";
+
+    // Lấy danh sách nguyên liệu từ NguyenLieuController
+    var client = HttpClientFactory.CreateClient("Api");
+    List<NguyenLieuDto> nguyenLieus = new();
+    try
+    {
+        var res = await client.GetAsync("api/nguyenlieu");
+        if (res.IsSuccessStatusCode)
+        {
+            var json = await res.Content.ReadAsStringAsync();
+            var wrapper = JsonSerializer.Deserialize<Result<List<NguyenLieuDto>>>(
+                json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            nguyenLieus = wrapper?.Data ?? new();
+        }
+    }
+    catch { }
+
+    // Thêm "Tất cả" đầu danh sách
+    nguyenLieus.Insert(0, new NguyenLieuDto { Id = Guid.Empty, Ten = "Tất cả" });
+}
+
+<div class="container-fluid p-2">
+
+    <!-- Điều hướng tháng -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a class="btn btn-outline-primary btn-sm"
+           href="?thang=@Model.Prev.Month&nam=@Model.Prev.Year&nguyenLieuId=@Model.NguyenLieuId">← Tháng trước</a>
+
+        <span class="fw-bold fs-5">@Model.CurrentMonthStart.ToString("MM/yyyy")</span>
+
+        <a class="btn btn-outline-primary btn-sm"
+           href="?thang=@Model.Next.Month&nam=@Model.Next.Year&nguyenLieuId=@Model.NguyenLieuId">Tháng sau →</a>
+    </div>
+
+    <!-- Bộ lọc nguyên liệu -->
+    <form method="get" class="d-flex align-items-center mb-3">
+        <input type="hidden" name="thang" value="@Model.Thang" />
+        <input type="hidden" name="nam" value="@Model.Nam" />
+        <label class="me-2 fw-semibold">Nguyên liệu:</label>
+        <select name="nguyenLieuId" class="form-select form-select-sm" style="width:260px" onchange="this.form.submit()">
+            @foreach (var n in nguyenLieus.OrderBy(x => x.Ten))
+            {
+                <option value="@n.Id" selected="@(n.Id == Model.NguyenLieuId)">@n.Ten</option>
+            }
+        </select>
+    </form>
+
+    <div class="d-flex justify-content-end mb-2">
+        <div class="fw-bold">Tổng tiền: @String.Format("{0:N0}", Model.Tong) đ</div>
+    </div>
+
+    @if (Model.Items?.Any() == true)
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th style="width:60px">STT</th>
+                        <th style="width:120px">Ngày</th>
+                        <th style="width:200px">Tên</th>
+                        <th class="text-end" style="width:160px">Thành tiền</th>
+                        <th>Ghi chú</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var stt = 1;
+                        foreach (var it in Model.Items)
+                        {
+                            <tr>
+                                <td>@(stt++)</td>
+                                <td>@it.Ngay.ToString("dd/MM/yyyy")</td>
+                                <td>@it.Ten</td>
+                                <td class="text-end">@it.ThanhTien.ToString("N0")</td>
+                                <td>@it.GhiChu</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">Không có dữ liệu tháng này.</div>
+    }
+</div>

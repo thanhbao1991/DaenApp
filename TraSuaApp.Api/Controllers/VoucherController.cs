@@ -103,35 +103,6 @@ public class VoucherController : BaseApiController
     }
 
 
-    // GET: api/voucher/by-offset?offset=-1
-    [HttpGet("by-offset")]
-    public async Task<ActionResult<Result<List<VoucherChiTraDto>>>> GetByOffset([FromQuery] int offset = 0)
-    {
-        var list = await _service.GetByOffsetAsync(offset);
-        return Result<List<VoucherChiTraDto>>.Success(list);
-    }
-
-    [HttpGet("this-month")]
-    public async Task<ActionResult<Result<List<VoucherChiTraDto>>>> GetThisMonth()
-    {
-        var list = await _service.GetByOffsetAsync(0);
-        return Result<List<VoucherChiTraDto>>.Success(list);
-    }
-
-    [HttpGet("last-month")]
-    public async Task<ActionResult<Result<List<VoucherChiTraDto>>>> GetLastMonth()
-    {
-        var list = await _service.GetByOffsetAsync(-1);
-        return Result<List<VoucherChiTraDto>>.Success(list);
-    }
-
-    // optional: GET api/voucher/{year}/{month}
-    [HttpGet("{year:int}/{month:int}")]
-    public async Task<ActionResult<Result<List<VoucherChiTraDto>>>> GetByMonth(int year, int month)
-    {
-        var list = await _service.GetByMonthAsync(year, month);
-        return Result<List<VoucherChiTraDto>>.Success(list);
-    }
 
 
 }

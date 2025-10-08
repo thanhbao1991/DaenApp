@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using TraSuaApp.WpfClient.Helpers;
+using TraSuaApp.WpfClient.Services;
 using TraSuaApp.WpfClient.Views;
 
 namespace TraSuaApp.WpfClient
@@ -78,6 +79,13 @@ namespace TraSuaApp.WpfClient
 
             base.OnStartup(e);
 
+            _cvTts = new CongViecNoiBoTtsService
+            {
+                Enabled = true,                 // bật/tắt TTS
+                TopN = 5,                      // đọc tối đa N việc mỗi vòng
+                Interval = TimeSpan.FromMinutes(5) // chu kỳ đọc
+            };
+
 
 
             // Mở form đăng nhập lần đầu
@@ -103,6 +111,15 @@ namespace TraSuaApp.WpfClient
                 Shutdown();
             }
         }
+        protected override void OnExit(ExitEventArgs e)
+        {
+            _cvTts?.Dispose();
+            _cvTts = null;
+            base.OnExit(e);
+        }
+
+        private CongViecNoiBoTtsService? _cvTts;
+
         private static readonly DependencyProperty _attachedProperty =
             DependencyProperty.RegisterAttached("FadeAttached", typeof(bool), typeof(Window), new PropertyMetadata(false));
 

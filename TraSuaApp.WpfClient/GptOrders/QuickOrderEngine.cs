@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Services;
 using TraSuaApp.WpfClient.AiOrdering;
 
 namespace TraSuaApp.WpfClient.Services
@@ -30,7 +31,9 @@ namespace TraSuaApp.WpfClient.Services
             string model = DefaultModel)
         {
             var result = new List<QuickOrderDto>();
-            var lines = NormalizeAndEnumerateLines(rawInput).ToList();
+            List<string> baoCao = new List<string>();
+            // ✨ Dùng cleaner chung
+            var lines = OrderTextCleaner.PreCleanThenNormalizeLines(rawInput).ToList();
             if (lines.Count == 0) return result;
 
             var menu = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
@@ -66,8 +69,19 @@ Chỉ chọn từ SHORTLIST/MENU; không tạo sản phẩm mới; chỉ xuất 
             userPromptSb.AppendLine(linesText);
             string userPrompt = userPromptSb.ToString();
 
-            string jsonOut = await CallChatCompletionsAsync(model, systemPrompt, userPrompt);
 
+            baoCao.Add("learnedShort"); baoCao.Add(learnedShort);
+            baoCao.Add("shortFinal"); baoCao.Add(shortFinal);
+            baoCao.Add("menuText"); baoCao.Add(menuText);
+            baoCao.Add("linesText"); baoCao.Add(linesText);
+            baoCao.Add("systemPrompt"); baoCao.Add(systemPrompt);
+            baoCao.Add("userPrompt"); baoCao.Add(userPrompt);
+            await DiscordService.SendAsync(
+     Shared.Enums.DiscordEventType.Admin,
+     string.Join("\n", baoCao)
+ );
+
+            string jsonOut = await CallChatCompletionsAsync(model, systemPrompt, userPrompt);
             try
             {
                 using var doc = JsonDocument.Parse(jsonOut);
@@ -77,22 +91,15 @@ Chỉ chọn từ SHORTLIST/MENU; không tạo sản phẩm mới; chỉ xuất 
                     {
                         var dto = new QuickOrderDto();
 
-                        // Id
                         if (el.TryGetProperty("Id", out var idP))
                         {
                             if (Guid.TryParse(idP.GetString(), out Guid gid))
                                 dto.Id = gid;
                         }
-
-                        // SoLuong
                         if (el.TryGetProperty("SoLuong", out var slP) && slP.TryGetInt32(out var sl))
                             dto.SoLuong = Math.Max(1, sl);
-
-                        // NoteText
                         if (el.TryGetProperty("NoteText", out var nP))
                             dto.NoteText = nP.GetString() ?? "";
-
-                        // Line
                         if (el.TryGetProperty("Line", out var lP) && lP.TryGetInt32(out var ln))
                             dto.Line = ln;
 
@@ -101,7 +108,7 @@ Chỉ chọn từ SHORTLIST/MENU; không tạo sản phẩm mới; chỉ xuất 
                     }
                 }
             }
-            catch { /* nếu GPT lỡ trả sai format → để list rỗng */ }
+            catch { /* GPT có thể trả sai - an toàn để rỗng */ }
 
             return result;
         }
@@ -116,10 +123,20 @@ Chỉ chọn từ SHORTLIST/MENU; không tạo sản phẩm mới; chỉ xuất 
 
             var spMap = AppProviders.SanPhams.Items.ToDictionary(x => x.Id, x => x);
 
+            // Lấy lại danh sách line đã normalize để hỗ trợ pick size theo dòng
+            var normLines = OrderTextCleaner.PreCleanThenNormalizeLines(rawInput).ToList();
+
             foreach (var p in preds)
             {
                 if (p.Id == Guid.Empty || !spMap.TryGetValue(p.Id, out var sp)) continue;
-                var bt = sp.BienThe?.FirstOrDefault(x => x.MacDinh) ?? sp.BienThe?.FirstOrDefault();
+
+                // Lấy line text (nếu GPT trả Line) để tăng tín hiệu chọn biến thể
+                string? lineText = null;
+                if (p.Line.HasValue && p.Line.Value >= 1 && p.Line.Value <= normLines.Count)
+                    lineText = normLines[p.Line.Value - 1];
+
+                // ✨ Chọn biến thể theo keyword; fallback MacĐịnh/giá
+                var bt = PickVariantByNote(sp, $"{p.NoteText} {lineText}");
                 if (bt == null) continue;
 
                 chiTiets.Add(new ChiTietHoaDonDto
@@ -129,7 +146,7 @@ Chỉ chọn từ SHORTLIST/MENU; không tạo sản phẩm mới; chỉ xuất 
                     SanPhamIdBienThe = bt.Id,
                     TenSanPham = sp.Ten,
                     DonGia = bt.GiaBan,
-                    TenBienThe = bt.TenBienThe ?? "Size chuẩn",
+                    TenBienThe = bt.TenBienThe ?? "Size Chuẩn", // đảm bảo nhãn chuẩn
                     SoLuong = Math.Max(1, p.SoLuong),
                     NoteText = p.NoteText ?? ""
                 });
@@ -196,7 +213,8 @@ Chỉ chọn từ SHORTLIST/MENU; không tạo sản phẩm mới; chỉ xuất 
 
         private static string BuildMenuForGpt(IEnumerable<SanPhamDto> menu)
             => "MENU (Id<TAB>ten_khong_dau)\n" +
-               string.Join("\n", menu.Where(m => !m.NgungBan).Select(m => $"{m.Id}\t{NormalizeName(m.Ten)}"));
+               string.Join("\n", menu.Where(m => !m.NgungBan)
+                                     .Select(m => $"{m.Id}\t{OrderTextCleaner.NormalizeNoDiacritics(m.Ten)}"));
 
         private static string JoinShortlists(string? a, string? b)
         {
@@ -227,37 +245,48 @@ Chỉ chọn từ SHORTLIST/MENU; không tạo sản phẩm mới; chỉ xuất 
             return sb.ToString().TrimEnd();
         }
 
-        private static IEnumerable<string> NormalizeAndEnumerateLines(string multiLine)
+        // ========= Size/variant picker (2-size: Size Chuẩn & Size L) =========
+        private static SanPhamBienTheDto? PickVariantByNote(SanPhamDto sp, string? noteOrLine)
         {
-            var list = new List<string>();
-            using var reader = new System.IO.StringReader(multiLine ?? "");
-            string? line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                var n = NormalizeName(line);
-                if (!string.IsNullOrWhiteSpace(n)) list.Add(n);
-            }
-            return list;
-        }
+            if (sp.BienThe == null || sp.BienThe.Count == 0) return null;
 
-        private static string NormalizeName(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return "";
-            s = s.Trim().ToLowerInvariant();
-            s = RemoveDiacritics(s);
-            s = Regex.Replace(s, @"\s+", " ");
-            return s;
-        }
-        private static string RemoveDiacritics(string text)
-        {
-            var norm = text.Normalize(System.Text.NormalizationForm.FormD);
-            var sb = new StringBuilder();
-            foreach (var ch in norm)
+            var text = OrderTextCleaner.NormalizeNoDiacritics(noteOrLine ?? "");
+
+            // Từ khóa nghiêng về L
+            bool wantL = Regex.IsMatch(text, @"\b(size\s*l|sz\s*l|\bl\b|lon|to|bu|large|big)\b");
+            bool forceStandard = Regex.IsMatch(text,
+                @"\b(size\s*m|sz\s*m|\bm\b|chuan|thuong|vua|medium|regular|normal|size\s*chuan|"
+              + @"size\s*s|sz\s*s|\bs\b|nho|small)\b");
+
+            static string Norm(string s) => OrderTextCleaner.NormalizeNoDiacritics(s ?? "");
+            static bool EqualsStd(string s) => Norm(s) == "size chuan" || Norm(s) == "chuan";
+            static bool ContainsStd(string s) => Norm(s).Contains("size chuan") || Norm(s).Contains("chuan");
+            static bool ContainsL(string s) => Norm(s).Contains("size l") || Norm(s).Contains("l");
+
+            // 1) Nếu người dùng muốn L rõ ràng và không ép Chuẩn -> tìm theo tên "Size L"
+            if (wantL && !forceStandard)
             {
-                var uc = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
-                if (uc != System.Globalization.UnicodeCategory.NonSpacingMark) sb.Append(ch);
+                var byNameL = sp.BienThe.FirstOrDefault(v => !EqualsStd(v.TenBienThe ?? "") && ContainsL(v.TenBienThe ?? ""));
+                if (byNameL != null) return byNameL;
+
+                // Fallback: chọn biến thể có giá cao nhất coi như L
+                return sp.BienThe.OrderByDescending(v => v.GiaBan).FirstOrDefault()
+                       ?? sp.BienThe.FirstOrDefault(x => x.MacDinh)
+                       ?? sp.BienThe.FirstOrDefault();
             }
-            return sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
+
+            // 2) Ưu tiên đúng "Size Chuẩn" (khớp tên chính xác)
+            var exactStd = sp.BienThe.FirstOrDefault(v => EqualsStd(v.TenBienThe ?? ""));
+            if (exactStd != null) return exactStd;
+
+            // 3) Nếu không có đúng tên, chọn biến thể có tên chứa "size chuan"/"chuan"
+            var containStd = sp.BienThe.FirstOrDefault(v => ContainsStd(v.TenBienThe ?? ""));
+            if (containStd != null) return containStd;
+
+            // 4) Fallback: MacĐịnh → hoặc biến thể rẻ nhất coi như Chuẩn
+            return sp.BienThe.FirstOrDefault(x => x.MacDinh)
+                ?? sp.BienThe.OrderBy(v => v.GiaBan).FirstOrDefault()
+                ?? sp.BienThe.FirstOrDefault();
         }
     }
 }

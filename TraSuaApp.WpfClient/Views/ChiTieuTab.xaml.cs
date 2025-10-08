@@ -7,75 +7,80 @@ using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.Views
 {
-    public partial class VoucherTab : UserControl
+    public partial class ChiTieuTab : UserControl
     {
         private readonly DashboardApi _api = new();
-        public ObservableCollection<VoucherChiTraDto> Items { get; } = new();
+        public ObservableCollection<ChiTieuHangNgayDto> Items { get; } = new();
 
         private int _currentOffset = 0;
         private bool _isLoading;
         private bool _didInitialLoad;
 
-        public VoucherTab()
+        private readonly Guid _defaultNguyenLieuId = Guid.Parse("7995B334-44D1-4768-89C7-280E6B0413AE");
+
+        public ChiTieuTab()
         {
             InitializeComponent();
-            VoucherDataGrid.ItemsSource = Items;
-
-            Loaded += VoucherTab_Loaded;
-            IsVisibleChanged += VoucherTab_IsVisibleChanged;
-
+            ChiTieuDataGrid.ItemsSource = Items;
+            Loaded += ChiTieuNguyenLieuTab_Loaded;
+            IsVisibleChanged += ChiTieuTab_IsVisibleChanged;
             UpdateMonthLabel();
             UpdateNavButtons();
         }
 
-        private async void VoucherTab_Loaded(object sender, RoutedEventArgs e)
+        private async void ChiTieuNguyenLieuTab_Loaded(object sender, RoutedEventArgs e)
         {
             await EnsureProvidersReadyAsync();
 
-            var list = AppProviders.Vouchers?.Items?
+            // 🟟 Gán danh sách nguyên liệu (chuẩn hóa)
+            var list = AppProviders.NguyenLieus?.Items?
                 .OrderBy(x => x.Ten, StringComparer.CurrentCultureIgnoreCase)
                 .ToList() ?? new();
 
-            // 🟟 Thêm “Tất cả” lên đầu
-            list.Insert(0, new VoucherDto
-            {
-                Id = Guid.Empty,
-                Ten = "Tất cả"
-            });
+            // Thêm “Tất cả”
+            // list.Insert(0, new NguyenLieuDto { Id = Guid.Empty, Ten = "Tất cả" });
 
-            VoucherComboBox.ItemsSource = list;
-            VoucherComboBox.SelectedIndex = 0;
+            NguyenLieuBox.NguyenLieuList = list;
+
+            // Chọn mặc định nguyên liệu cố định
+            NguyenLieuBox.SetSelectedNguyenLieuByIdWithoutPopup(_defaultNguyenLieuId);
         }
 
         private async Task EnsureProvidersReadyAsync()
         {
             for (int i = 0; i < 50; i++)
             {
-                if (AppProviders.Vouchers != null && AppProviders.Vouchers.Items != null)
+                if (AppProviders.NguyenLieus?.Items != null)
                     return;
                 await Task.Delay(100);
             }
         }
 
-        private async void VoucherTab_IsVisibleChanged(object? sender, DependencyPropertyChangedEventArgs e)
+        private async void ChiTieuTab_IsVisibleChanged(object? sender, DependencyPropertyChangedEventArgs e)
         {
             if (!IsVisible) return;
-
             if (!_didInitialLoad)
             {
-                await LoadData(_currentOffset);
+                await LoadData(_currentOffset, _defaultNguyenLieuId);
                 _didInitialLoad = true;
             }
-            else await LoadData(_currentOffset);
-        }
-
-        private async void VoucherComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (IsVisible && _didInitialLoad)
+            else
                 await LoadData(_currentOffset);
         }
 
-        private async Task LoadData(int offset)
+        // 🟟 Khi chọn nguyên liệu mới → tải dữ liệu
+        private async void NguyenLieuBox_NguyenLieuSelected(NguyenLieuDto obj)
+        {
+            await LoadData(_currentOffset, obj.Id);
+        }
+
+        // 🟟 Khi xoá chọn → xem tất cả
+        private async void NguyenLieuBox_NguyenLieuCleared()
+        {
+            await LoadData(_currentOffset, Guid.Empty);
+        }
+
+        private async Task LoadData(int offset, Guid? fixedNguyenLieuId = null)
         {
             if (_isLoading) return;
             _isLoading = true;
@@ -84,8 +89,11 @@ namespace TraSuaApp.WpfClient.Views
             {
                 try
                 {
-                    var selected = (VoucherComboBox.SelectedItem as VoucherDto)?.Id ?? Guid.Empty;
-                    var result = await _api.GetVoucher(offset, selected);
+                    var selected = fixedNguyenLieuId
+                        ?? NguyenLieuBox.SelectedNguyenLieu?.Id
+                        ?? Guid.Empty;
+
+                    var result = await _api.GetChiTieuByNguyenLieuId(offset, selected);
 
                     Items.Clear();
                     if (result.IsSuccess && result.Data != null)
@@ -96,9 +104,11 @@ namespace TraSuaApp.WpfClient.Views
                             item.Stt = stt++;
                             Items.Add(item);
                         }
-                        TongTienTextBlock.Text = $"Tổng giá trị: {Items.Sum(x => x.GiaTriApDung):N0} đ";
+
+                        TongTienTextBlock.Text = $"Tổng tiền: {Items.Sum(x => x.ThanhTien):N0} đ";
                     }
-                    else TongTienTextBlock.Text = "Tổng giá trị: 0 đ";
+                    else
+                        TongTienTextBlock.Text = "Tổng tiền: 0 đ";
                 }
                 finally { _isLoading = false; }
             }

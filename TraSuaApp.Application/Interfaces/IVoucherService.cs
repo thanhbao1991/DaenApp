@@ -14,7 +14,4 @@ public interface IVoucherService
     Task<List<VoucherDto>> GetUpdatedSince(DateTime lastSync);
 
 
-    Task<List<VoucherChiTraDto>> GetByOffsetAsync(int offset);     // tháng hiện tại + offset
-    Task<List<VoucherChiTraDto>> GetByMonthAsync(int year, int month);
-
 }

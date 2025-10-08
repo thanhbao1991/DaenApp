@@ -20,7 +20,6 @@ using TraSuaApp.WpfClient.AiOrdering;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
 using TraSuaApp.WpfClient.Services;
-using TraSuaApp.WpfClient.SettingsViews;
 
 namespace TraSuaApp.WpfClient.Views
 {
@@ -102,14 +101,6 @@ namespace TraSuaApp.WpfClient.Views
             _baoDonTimer.Tick += async (s, e) => await BaoDonTimer_Tick();
             _baoDonTimer.Start();
 
-            // 🟟 Timer công việc (10 phút)
-            _congViecTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMinutes(10)
-            };
-            _congViecTimer.Tick += async (s, e) => await CongViecTimer_Tick();
-            _congViecTimer.Start();
-
 
 
             Loaded += Dashboard_Loaded;
@@ -168,48 +159,6 @@ namespace TraSuaApp.WpfClient.Views
         private DateTime _lastCvNotiDate = DateTime.MinValue;
         private readonly HashSet<Guid> _cvNotifiedToday = new(); // tránh lặp TTS trong ngày
 
-        private async Task CongViecTimer_Tick()
-        {
-            if (AppProviders.CongViecNoiBos == null) return;
-
-            var today = DateTime.Today;
-            var list = _fullCongViecNoiBoList
-                        .Where(cv => !cv.IsDeleted && !cv.DaHoanThanh);
-
-            // 1) Việc đến NGÀY hẹn = hôm nay
-            var dsHenNgay = list
-                .Where(cv => cv.NgayCanhBao.HasValue && cv.NgayCanhBao.Value.Date == today)
-                .OrderBy(cv => cv.NgayGio ?? DateTime.MaxValue)
-                .Take(_cvTopN)
-                .ToList();
-
-            // 2) Top-N việc chưa hoàn thành
-            var dsChuaHoanThanhTop = list
-                .OrderBy(cv => cv.NgayGio ?? DateTime.MaxValue)
-                .Take(_cvTopN)
-                .ToList();
-
-            // Gom cả hai danh sách lại, tránh trùng Id
-            var dsCanDoc = dsHenNgay.Concat(dsChuaHoanThanhTop)
-                                    .GroupBy(cv => cv.Id)
-                                    .Select(g => g.First())
-                                    .ToList();
-
-            // Đọc lần lượt
-            foreach (var cv in dsCanDoc)
-            {
-                if (dsHenNgay.Any(x => x.Id == cv.Id))
-                {
-                    await TTSHelper.DownloadAndPlayGoogleTTSAsync("Kiểm tra " + cv.Ten.Replace("Nấu", ""));
-                }
-                else
-                {
-                    await TTSHelper.DownloadAndPlayGoogleTTSAsync(cv.Ten);
-                }
-                await Task.Delay(400);
-            }
-        }
-
 
         private DateTime _lastSummaryUpdatedAt = DateTime.MinValue;
 
@@ -224,11 +173,7 @@ namespace TraSuaApp.WpfClient.Views
             if (sender is TextBox tb)
                 DebounceSearch(tb, "ChiTietNo", ApplyChiTietHoaDonNoFilter);
         }
-        private void SearchCongViecNoiBoTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (sender is TextBox tb)
-                DebounceSearch(tb, "CongViecNoiBo", ApplyCongViecNoiBoFilter);
-        }
+
         private void SearchChiTietHoaDonThanhToanTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox tb)
@@ -403,9 +348,6 @@ namespace TraSuaApp.WpfClient.Views
                 case "HoaDons":
                     ReloadHoaDonUI();
                     break;
-                case "CongViecNoiBos":
-                    ReloadCongViecNoiBoUI();
-                    break;
                 case "ChiTietHoaDonNos":
                     ReloadChiTietHoaDonNoUI();
                     break;
@@ -414,6 +356,9 @@ namespace TraSuaApp.WpfClient.Views
                     break;
                 case "ChiTieuHangNgays":
                     ReloadChiTieuHangNgayUI();
+                    break;
+                case "CongViecNoiBos":
+                    CongViecControl?.ReloadUI();
                     break;
             }
 
@@ -525,142 +470,6 @@ namespace TraSuaApp.WpfClient.Views
 
 
 
-        private List<CongViecNoiBoDto> _fullCongViecNoiBoList = new();
-        private async void AddCongViecNoiBoButton_Click(object sender, RoutedEventArgs e)
-        {
-            var window = new CongViecNoiBoEdit()
-            {
-                Width = this.ActualWidth,
-                Height = this.ActualHeight,
-                Owner = this,
-            };
-            if (window.ShowDialog() == true)
-                await AppProviders.CongViecNoiBos.ReloadAsync();
-        }
-        private async void SuaCongViecNoiBoButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (CongViecNoiBoDataGrid.SelectedItem is not CongViecNoiBoDto selected) return;
-            var window = new CongViecNoiBoEdit(selected)
-            {
-                Width = this.ActualWidth,
-                Height = this.ActualHeight,
-                Owner = this,
-            };
-            if (window.ShowDialog() == true)
-                await AppProviders.CongViecNoiBos.ReloadAsync();
-        }
-
-        private async void XoaCongViecNoiBoButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (CongViecNoiBoDataGrid.SelectedItem is not CongViecNoiBoDto selected)
-                return;
-            var confirm = System.Windows.MessageBox.Show(
-               $"Bạn có chắc chắn muốn xoá '{selected.Ten}'?",
-               "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (confirm != MessageBoxResult.Yes) return;
-
-            try
-            {
-                Mouse.OverrideCursor = Cursors.Wait;
-                var response = await ApiClient.DeleteAsync($"/api/CongViecNoiBo/{selected.Id}");
-                var result = await response.Content.ReadFromJsonAsync<Result<CongViecNoiBoDto>>();
-
-                if (result?.IsSuccess == true)
-                {
-                    AppProviders.CongViecNoiBos.Remove(selected.Id);
-                }
-                else
-                {
-                    _errorHandler.Handle(new Exception(result?.Message ?? "Không thể xoá."), "Delete");
-                }
-            }
-            catch (Exception ex)
-            {
-                // Khối catch này vẫn hữu ích để bắt các lỗi mạng hoặc lỗi không xác định
-                _errorHandler.Handle(ex, "Delete");
-            }
-            finally
-            {
-                Mouse.OverrideCursor = null;
-            }
-
-        }
-        private async void CongViecNoiBoDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            if (CongViecNoiBoDataGrid.SelectedItem is not CongViecNoiBoDto selected) return;
-
-            selected.DaHoanThanh = !selected.DaHoanThanh;
-            selected.NgayGio = DateTime.Now;
-            if (selected.DaHoanThanh)
-            {
-                if (selected.XNgayCanhBao != null && selected.XNgayCanhBao != 0)
-                    selected.NgayCanhBao = selected.NgayGio.Value.AddDays(selected.XNgayCanhBao ?? 0);
-            }
-            else
-            {
-                selected.NgayCanhBao = null;
-            }
-            var api = new CongViecNoiBoApi();
-            var result = await api.UpdateAsync(selected.Id, selected);
-
-            if (!result.IsSuccess)
-            {
-                NotiHelper.ShowError($"Lỗi: {result.Message}");
-                return;
-            }
-
-            var updated = result.Data!;
-            selected.DaHoanThanh = updated.DaHoanThanh;
-            selected.NgayGio = updated.NgayGio;
-            selected.NgayCanhBao = updated.NgayCanhBao;
-            selected.LastModified = updated.LastModified;
-
-            SearchCongViecNoiBoTextBox.Text = "";
-            ReloadCongViecNoiBoUI();
-            SearchCongViecNoiBoTextBox.Focus();
-        }
-        private async void ReloadCongViecNoiBoUI()
-        {
-            _fullCongViecNoiBoList = await UiListHelper.BuildListAsync(
-                AppProviders.CongViecNoiBos.Items,
-                snap => snap.Where(x => !x.IsDeleted)
-                            .OrderBy(x => x.DaHoanThanh)
-                            .ThenByDescending(x => x.LastModified)
-                            .ToList()
-            );
-
-            ApplyCongViecNoiBoFilter();
-        }
-        private void ApplyCongViecNoiBoFilter()
-        {
-            string keyword = SearchCongViecNoiBoTextBox.Text.Trim().ToLower();
-            List<CongViecNoiBoDto> sourceList;
-
-            if (string.IsNullOrWhiteSpace(keyword))
-            {
-                sourceList = _fullCongViecNoiBoList;
-            }
-            else
-            {
-                sourceList = _fullCongViecNoiBoList
-                    .Where(x => x.TimKiem.ToLower().Contains(keyword))
-                    .ToList();
-            }
-
-            // Gán số thứ tự
-            int stt = 1;
-            foreach (var item in sourceList)
-            {
-                item.Stt = stt++;
-            }
-
-            CongViecNoiBoDataGrid.ItemsSource = sourceList;
-            // tongTien = sourceList.Sum(x => x.ThanhTien);
-
-            //TongTienCongViecNoiBoTextBlock.Header = $"{tongTien:N0} đ";
-
-        }
 
 
 
@@ -1651,13 +1460,12 @@ namespace TraSuaApp.WpfClient.Views
                         reloadUi: ReloadChiTietHoaDonNoUI,
                         friendlyNameForToast: "Chi tiết HĐ nợ");
                 },
-
                 ["CongViecNoiBo"] = async () =>
                 {
                     await ExecuteWithFreshnessAsync(
                         key: "CongViecNoiBos",
                         reloadAsync: AppProviders.CongViecNoiBos.ReloadAsync,
-                        reloadUi: ReloadCongViecNoiBoUI,
+                        reloadUi: () => CongViecControl?.ReloadUI(),
                         friendlyNameForToast: "Công việc nội bộ");
                 },
 

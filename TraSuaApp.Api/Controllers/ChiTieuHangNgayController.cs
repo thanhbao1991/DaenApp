@@ -24,13 +24,6 @@ public class ChiTieuHangNgayController : BaseApiController
         _hub = hub;
     }
 
-    [HttpGet("nguyenlieu/{year:int}/{month:int}")]
-    public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> GetByNguyenLieuMonth(int year, int month)
-    {
-        Guid nguyenLieuId = Guid.Parse("7995B334-44D1-4768-89C7-280E6B0413AE");
-        var list = await _service.GetByNguyenLieuInMonth(nguyenLieuId, year, month);
-        return Result<List<ChiTieuHangNgayDto>>.Success(list);
-    }
     private async Task NotifyClients(string action, Guid id)
     {
         if (!string.IsNullOrEmpty(ConnectionId))

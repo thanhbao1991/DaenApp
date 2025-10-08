@@ -705,7 +705,12 @@
                                 Click="TimKiemNhanhThanhToanButton_Click"
                                 Content="Tiền mặt Shipper"
                                 Style="{StaticResource ThemButtonStyle}"
-                                Tag="shipper tiền mặt" />
+                                Tag="shipper tiền mặt trong ngày" />
+                            <Button
+                                Click="TimKiemNhanhThanhToanButton_Click"
+                                Content="Trả nợ Shipper"
+                                Style="{StaticResource ThemButtonStyle}"
+                                Tag="shipper tiền mặt qua ngày" />
                         </StackPanel>
                         <DataGrid
                             x:Name="ChiTietHoaDonThanhToanDataGrid"
@@ -1094,140 +1099,11 @@
                         </DataGrid>
                     </Grid>
                 </TabItem>
-                <TabItem Header="Công việc " Tag="CongViecNoiBo">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <TextBlock
-                            Padding="8"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Panel.ZIndex="1"
-                            Text="Tìm kiếm:" />
-                        <TextBox
-                            x:Name="SearchCongViecNoiBoTextBox"
-                            Margin="100,0,0,0"
-                            TextChanged="SearchCongViecNoiBoTextBox_TextChanged" />
-                        <Button
-                            HorizontalAlignment="Left"
-                            Panel.ZIndex="1"
-                            Click="AddCongViecNoiBoButton_Click"
-                            FontSize="{StaticResource FontSizeLarge}"
-                            Style="{StaticResource ThemButtonStyle}"
-                            Visibility="Collapsed">
-                            <StackPanel Orientation="Horizontal">
-                                <fa:IconBlock Margin="0,0,5,0" Icon="Plus" />
-                                <TextBlock Text="Thêm" />
-                            </StackPanel>
-                        </Button>
-                        <DataGrid
-                            x:Name="CongViecNoiBoDataGrid"
-                            Grid.Row="1"
-                            AutoGenerateColumns="False"
-                            IsReadOnly="True"
-                            MouseDoubleClick="CongViecNoiBoDataGrid_MouseDoubleClick">
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding DaHoanThanh}" Value="False">
-                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
-                                            <Setter Property="FontWeight" Value="Medium" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding DaHoanThanh}" Value="True">
-                                            <Setter Property="Foreground" Value="{StaticResource Gray500Brush}" />
-                                            <Setter Property="FontWeight" Value="Light" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-                            <DataGrid.Columns>
-                                <DataGridTextColumn
-                                    Binding="{Binding Stt}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="STT" />
-                                <DataGridTextColumn
-                                    Binding="{Binding NgayGio, StringFormat=dd-MM-yyyy}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Ngày" />
-                                <DataGridTextColumn
-                                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Giờ" />
-                                <DataGridTextColumn
-                                    Binding="{Binding Ten}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Tên việc" />
-                                <DataGridTemplateColumn Width="*" Header="Hoàn thành">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel
-                                                Height="32"
-                                                HorizontalAlignment="Center"
-                                                Orientation="Horizontal">
-                                                <fa:IconBlock
-                                                    Height="32"
-                                                    Padding="8"
-                                                    VerticalAlignment="Bottom"
-                                                    Icon="HourglassHalf"
-                                                    Visibility="{Binding DaHoanThanh, Converter={StaticResource InverseBoolToVisibilityConverter}}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTextColumn
-                                    Width="*"
-                                    Binding="{Binding NgayCanhBao, StringFormat=\{0:dd/MM/yyyy HH:mm\}}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Ngày cảnh báo" />
-                                <!--  ✅ Cột X ngày cảnh báo  -->
-                                <DataGridTextColumn
-                                    Width="*"
-                                    Binding="{Binding XNgayCanhBao}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Sau X ngày cảnh báo" />
-                                <DataGridTemplateColumn Visibility="Collapsed">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button
-                                                HorizontalAlignment="Left"
-                                                Panel.ZIndex="1"
-                                                Click="SuaCongViecNoiBoButton_Click"
-                                                FontSize="{StaticResource FontSizeLarge}"
-                                                Style="{StaticResource SuaButtonStyle}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <fa:IconBlock Margin="0,0,5,0" Icon="Pencil" />
-                                                    <TextBlock Text="Sửa" />
-                                                </StackPanel>
-                                            </Button>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Visibility="Collapsed">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button
-                                                HorizontalAlignment="Left"
-                                                Panel.ZIndex="1"
-                                                Click="XoaCongViecNoiBoButton_Click"
-                                                FontSize="{StaticResource FontSizeLarge}"
-                                                Style="{StaticResource XoaButtonStyle}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <fa:IconBlock Margin="0,0,5,0" Icon="Trash" />
-                                                    <TextBlock Text="Xoá" />
-                                                </StackPanel>
-                                            </Button>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </Grid>
+                <TabItem x:Name="CongViecNoiBoTabItem" Header="Công việc" Tag="CongViecNoiBo">
+                    <views:CongViecNoiBoTab x:Name="CongViecControl"/>
                 </TabItem>
                 <TabItem Header="Ứng Nhã" Tag="UngNha">
-                    <views:ChiTieuNhaTab />
+                    <views:ChiTieuTab />
                 </TabItem>
                 <TabItem Header="Voucher" Tag="Voucher">
                     <views:VoucherTab />

@@ -241,34 +241,4 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
             })
             .ToListAsync();
     }
-    public async Task<List<ChiTieuHangNgayDto>> GetByNguyenLieuInMonth(Guid nguyenLieuId, int year, int month)
-    {
-        var fromDate = new DateTime(year, month, 1);
-        var toDate = fromDate.AddMonths(1);
-
-        return await _context.ChiTieuHangNgays.AsNoTracking()
-            .Where(x => !x.IsDeleted &&
-                        x.NguyenLieuId == nguyenLieuId &&
-                        x.Ngay >= fromDate &&
-                        x.Ngay < toDate)
-            .OrderBy(x => x.Ngay)
-            .Select(x => new ChiTieuHangNgayDto
-            {
-                Id = x.Id,
-                Ten = x.Ten,
-                DonGia = x.DonGia,
-                SoLuong = x.SoLuong,
-                GhiChu = x.GhiChu,
-                ThanhTien = x.ThanhTien,
-                Ngay = x.Ngay,
-                NgayGio = x.NgayGio,
-                NguyenLieuId = x.NguyenLieuId,
-                CreatedAt = x.CreatedAt,
-                LastModified = x.LastModified,
-                DeletedAt = x.DeletedAt,
-                IsDeleted = x.IsDeleted,
-                BillThang = x.BillThang
-            })
-            .ToListAsync();
-    }
 }

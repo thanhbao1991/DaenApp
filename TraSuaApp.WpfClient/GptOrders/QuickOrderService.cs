@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Services;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.AiOrdering
@@ -11,6 +12,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
     {
         private readonly HttpClient _http;
         private readonly QuickOrderEngine _engine;
+
         public QuickOrderService(string apiKey)
         {
             _engine = new QuickOrderEngine(apiKey);
@@ -87,11 +89,18 @@ namespace TraSuaApp.WpfClient.AiOrdering
             return contentText?.Trim() ?? "";
         }
 
+        /// <summary>
+        /// Trả về:
+        /// - HoaDon (map từ dự đoán)
+        /// - RawInput: CHUỖI ĐÃ LỌC (OrderTextCleaner.PreClean) để hiển thị trong UI/ghi log
+        /// - Predictions: list dự đoán dòng ↔ sản phẩm (để hiển thị/learn theo Line)
+        /// </summary>
         public async Task<(HoaDonDto? HoaDon, string RawInput, List<QuickOrderDto> Predictions)> BuildHoaDonAsync(
             string inputOrUrl, bool isImage = false, string? shortMenuFromHistory = "", Guid? khachHangId = null)
-
         {
-            string text = inputOrUrl;
+            List<string> baoCao = new List<string>();
+            // 1) Lấy text gốc (từ ảnh hoặc text)
+            string sourceText = inputOrUrl;
 
             if (isImage ||
                 IsDataUrl(inputOrUrl) ||
@@ -99,12 +108,15 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 LooksLikeBase64(inputOrUrl) ||
                 File.Exists(inputOrUrl))
             {
-                text = await ExtractTextFromImageAsync(inputOrUrl);
+                sourceText = await ExtractTextFromImageAsync(inputOrUrl);
             }
+
+            // 2) Chuỗi hiển thị (đã lọc rác, giữ note) — phục vụ UI & logging
+            string cleanedForDisplay = OrderTextCleaner.PreClean(sourceText);
 
             var menu = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
 
-            // DÙNG HÀM MỚI: BuildShortlistForPrompt (không cần await)
+            // SHORTLIST học máy (theo khách + global) + lịch sử server
             string learnedShort = QuickGptLearningStore.Instance.BuildShortlistForPrompt(
                 customerId: khachHangId,
                 currentMenu: menu,
@@ -114,7 +126,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
             string combinedShort = string.Join("\n",
                 new[] { shortMenuFromHistory ?? "", learnedShort }.Where(x => !string.IsNullOrWhiteSpace(x)));
 
-            if (string.IsNullOrWhiteSpace(text))
+            if (string.IsNullOrWhiteSpace(sourceText))
             {
                 return (new HoaDonDto
                 {
@@ -125,12 +137,16 @@ namespace TraSuaApp.WpfClient.AiOrdering
                     ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(),
                     ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>(),
                     ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>()
-                }, text, new List<QuickOrderDto>());
+                }, cleanedForDisplay, new List<QuickOrderDto>());
             }
 
-            var preds = await _engine.ParseQuickOrderAsync(text, combinedShort, khachHangId);
-            var chiTiets = await _engine.MapToChiTietAsync(text, combinedShort, khachHangId);
-            return (new HoaDonDto
+            // 3) Gọi engine (Engine tự PreClean + Normalize lại nội bộ nên không lo double)
+            var preds = await _engine.ParseQuickOrderAsync(sourceText, combinedShort, khachHangId);
+            var chiTiets = await _engine.MapToChiTietAsync(sourceText, combinedShort, khachHangId);
+
+
+            // 4) Hoá đơn kết quả (mở form kể cả khi rỗng)
+            var hd = new HoaDonDto
             {
                 Id = Guid.Empty,
                 Ngay = DateTime.Now.Date,
@@ -139,7 +155,18 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 ChiTietHoaDons = chiTiets,
                 ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>(),
                 ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>()
-            }, text, preds);
+            };
+
+            baoCao.Add("sourceText"); baoCao.Add(sourceText);
+            baoCao.Add("cleanedForDisplay"); baoCao.Add(cleanedForDisplay);
+            baoCao.Add("shortMenuFromHistory"); baoCao.Add(shortMenuFromHistory);
+            baoCao.Add("learnedShort"); baoCao.Add(learnedShort);
+            await DiscordService.SendAsync(
+     Shared.Enums.DiscordEventType.Admin,
+     string.Join("\n", baoCao)
+ );
+            // Lưu ý: Trả về cleanedForDisplay để gắn vào HoaDonEdit.GptInputText → nhìn đẹp, dễ đọc.
+            return (hd, cleanedForDisplay, preds);
         }
     }
 }

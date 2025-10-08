@@ -58,8 +58,56 @@ public static class StringHelper
         if (!ignoreAccentOnly)
             result = MultiSpaceRegex.Replace(result, " ");
 
+        // ✅ Bỏ các ký tự ngoặc, dấu câu, ký tự đặc biệt
+        result = new string(result.Where(c =>
+            char.IsLetterOrDigit(c) || char.IsWhiteSpace(c)
+        ).ToArray());
+
         return result;
     }
+    //public static string NormalizeText(this string? input, bool ignoreAccentOnly = false)
+    //{
+    //    if (string.IsNullOrWhiteSpace(input)) return "";
+
+    //    // Loại bỏ ký tự ẩn hoặc không mong muốn
+    //    input = input
+    //        .Replace("\u200B", "") // zero-width space
+    //        .Replace("\uFEFF", "") // BOM
+    //        .Replace("“", "\"").Replace("”", "\"")
+    //        .Replace("‘", "'").Replace("’", "'");
+
+    //    var sb = new StringBuilder(input.Length);
+    //    bool lastSpace = false;
+
+    //    foreach (var c in input.Normalize(NormalizationForm.FormD))
+    //    {
+    //        if (char.IsWhiteSpace(c))
+    //        {
+    //            if (!lastSpace) sb.Append(' ');
+    //            lastSpace = true;
+    //            continue;
+    //        }
+
+    //        var cat = CharUnicodeInfo.GetUnicodeCategory(c);
+    //        if (cat != UnicodeCategory.NonSpacingMark)
+    //        {
+    //            char ch = c switch
+    //            {
+    //                'Đ' => 'd',
+    //                'đ' => 'd',
+    //                _ => c
+    //            };
+    //            sb.Append(ignoreAccentOnly ? ch : char.ToLowerInvariant(ch));
+    //            lastSpace = false;
+    //        }
+    //    }
+
+    //    var result = sb.ToString().Trim();
+    //    if (!ignoreAccentOnly)
+    //        result = MultiSpaceRegex.Replace(result, " ");
+
+    //    return result;
+    //}
 
     // ✅ Alias gọi tĩnh (nếu cần)
     public static string NormalizeTextStatic(string? s) => s.NormalizeText();

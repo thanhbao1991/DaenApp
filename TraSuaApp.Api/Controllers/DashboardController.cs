@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Infrastructure;
 using TraSuaApp.Infrastructure.Services; // 🟟 thêm
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Api.Controllers
 {
@@ -156,6 +157,96 @@ namespace TraSuaApp.Api.Controllers
 
             var text = string.Join("\n", lines);
             return Ok(text);
+        }
+
+
+
+
+
+
+
+        // ===== 🟟 CHI TIÊU THEO NGUYÊN LIỆU =====
+        [HttpGet("chitieubynguyenlieuid")]
+        public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> GetChiTieuByNguyenLieuId(
+            [FromQuery] int offset = 0,
+            [FromQuery] Guid? nguyenLieuId = null)
+        {
+            var (start, end) = GetMonthRange(offset);
+
+            var query = _db.ChiTieuHangNgays
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted && x.Ngay >= start && x.Ngay < end);
+
+            if (nguyenLieuId != null && nguyenLieuId != Guid.Empty)
+                query = query.Where(x => x.NguyenLieuId == nguyenLieuId);
+
+            var list = await query
+                .OrderByDescending(x => x.Ngay)
+                .Select(x => new ChiTieuHangNgayDto
+                {
+                    Id = x.Id,
+                    Ten = x.Ten,
+                    DonGia = x.DonGia,
+                    SoLuong = x.SoLuong,
+                    GhiChu = x.GhiChu,
+                    ThanhTien = x.ThanhTien,
+                    Ngay = x.Ngay,
+                    NgayGio = x.NgayGio,
+                    NguyenLieuId = x.NguyenLieuId,
+                    CreatedAt = x.CreatedAt,
+                    LastModified = x.LastModified,
+                    DeletedAt = x.DeletedAt,
+                    IsDeleted = x.IsDeleted
+                })
+                .ToListAsync();
+
+            return Result<List<ChiTieuHangNgayDto>>.Success(list);
+        }
+
+        // ===== 🟟 VOUCHER =====
+        [HttpGet("voucher")]
+        public async Task<ActionResult<Result<List<VoucherChiTraDto>>>> GetVoucherByOffset(
+            [FromQuery] int offset = 0,
+            [FromQuery] Guid? voucherId = null)
+        {
+            var (start, end) = GetMonthRange(offset);
+
+            var query = from v in _db.ChiTietHoaDonVouchers.AsNoTracking()
+                        where !v.IsDeleted && v.CreatedAt >= start && v.CreatedAt < end
+                        join h0 in _db.HoaDons.AsNoTracking() on v.HoaDonId equals h0.Id into hj
+                        from h in hj.DefaultIfEmpty()
+                        join k0 in _db.KhachHangs.AsNoTracking() on h.KhachHangId equals k0.Id into kj
+                        from k in kj.DefaultIfEmpty()
+                        select new { v, h, k };
+
+            if (voucherId != null && voucherId != Guid.Empty)
+                query = query.Where(x => x.v.VoucherId == voucherId);
+
+            var list = await query
+                .OrderByDescending(x => x.v.CreatedAt)
+                .Select(x => new VoucherChiTraDto
+                {
+                    Id = x.v.Id,
+                    Ngay = x.v.CreatedAt,
+                    TenVoucher = x.v.TenVoucher ?? "",
+                    GiaTriApDung = x.v.GiaTriApDung,
+                    HoaDonId = x.v.HoaDonId,
+                    VoucherId = x.v.VoucherId,
+                    TenKhachHang = (x.h.TenKhachHangText ?? x.k.Ten) ?? ""
+                })
+                .ToListAsync();
+
+            return Result<List<VoucherChiTraDto>>.Success(list);
+        }
+
+        // ===== Helper =====
+        private static (DateTime start, DateTime end) GetMonthRange(int offset)
+        {
+            var today = DateTime.Today;
+            var first = new DateTime(today.Year, today.Month, 1);
+            var start = first.AddMonths(offset);
+            var end = start.AddMonths(1);
+            return (start, end);
         }
     }
 }

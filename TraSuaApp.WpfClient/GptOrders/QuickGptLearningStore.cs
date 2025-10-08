@@ -1,8 +1,5 @@
-﻿using System.Globalization;
-using System.IO;
-using System.Text;
+﻿using System.IO;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using TraSuaApp.Shared.Config;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
@@ -25,24 +22,29 @@ namespace TraSuaApp.WpfClient.AiOrdering
         private readonly string _storePath;
         private readonly SemaphoreSlim _mu = new(1, 1);
 
+        private Task _loadTask;
+        private DateTime _lastSave = DateTime.MinValue;
+        private bool _dirty = false;
+        private static readonly TimeSpan SaveThrottle = TimeSpan.FromSeconds(3);
+
         private class Entry
         {
-            public string LineText { get; set; } = "";      // raw line
-            public string NormText { get; set; } = "";      // đã chuẩn hoá
+            public string LineText { get; set; } = "";
+            public string NormText { get; set; } = "";
             public Guid ProductId { get; set; }
             public string ProductName { get; set; } = "";
-            public Guid? CustomerId { get; set; }           // null = học chung
+            public Guid? CustomerId { get; set; }
             public int Count { get; set; } = 0;
             public DateTime FirstSeen { get; set; } = DateTime.UtcNow;
             public DateTime LastSeen { get; set; } = DateTime.UtcNow;
-            public float[]? Embedding { get; set; }         // optional
+            public float[]? Embedding { get; set; }
         }
 
         private class StoreModel
         {
             public List<Entry> Items { get; set; } = new();
             public DateTime LastSavedAt { get; set; } = DateTime.UtcNow;
-            public int Version { get; set; } = 2; // v2: thêm NormText + CustomerId
+            public int Version { get; set; } = 2;
         }
 
         private StoreModel _model = new();
@@ -57,7 +59,8 @@ namespace TraSuaApp.WpfClient.AiOrdering
             Directory.CreateDirectory(baseDir);
             _storePath = Path.Combine(baseDir, "gpt-learning-store.json");
 
-            try { _ = LoadAsync(); } catch { /* ignore */ } // khởi chạy async, KHÔNG block UI
+            // 🟟 Load và giữ Task lại để những API khác có thể chờ
+            _loadTask = LoadAsync();
         }
 
         // ================== PUBLIC: LEARN ==================
@@ -65,7 +68,10 @@ namespace TraSuaApp.WpfClient.AiOrdering
         /// <summary>Học 1 cặp (line → sản phẩm) sau khi lưu hóa đơn thành công.</summary>
         public async Task LearnAsync(Guid? customerId, string lineText, Guid productId, string productName)
         {
-            var norm = Normalize(lineText);
+            EnsureLoaded();
+
+            var pre = OrderTextCleaner.PreClean(lineText);
+            var norm = OrderTextCleaner.NormalizeNoDiacritics(pre);
 
             await _mu.WaitAsync();
             try
@@ -80,7 +86,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
                     e = new Entry
                     {
                         CustomerId = customerId,
-                        LineText = StringHelper.NormalizeText(lineText),
+                        LineText = StringHelper.NormalizeText(pre),
                         NormText = StringHelper.NormalizeText(norm),
                         ProductId = productId,
                         ProductName = StringHelper.NormalizeText(productName),
@@ -93,11 +99,14 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 e.Count += 1;
                 e.LastSeen = DateTime.UtcNow;
 
-                try { e.Embedding = await GetOrCreateEmbeddingAsync(norm); } catch { /* optional */ }
-
-                await SaveAsync();
+                if (e.Embedding == null)
+                {
+                    try { e.Embedding = await GetOrCreateEmbeddingAsync(norm); } catch { /* optional */ }
+                }
             }
             finally { _mu.Release(); }
+
+            await TrySaveThrottledAsync();
         }
 
         /// <summary>
@@ -110,9 +119,11 @@ namespace TraSuaApp.WpfClient.AiOrdering
             IEnumerable<QuickOrderDto> preds,
             IEnumerable<SanPhamDto> sanPhams)
         {
+            EnsureLoaded();
+
             if (string.IsNullOrWhiteSpace(rawInput)) return;
 
-            var lines = NormalizeAndSplitLines(rawInput);
+            var lines = OrderTextCleaner.PreCleanThenNormalizeLines(rawInput).ToList();
             var lineMap = lines.Select((txt, i) => (Line: i + 1, Text: txt))
                                .ToDictionary(x => x.Line, x => x.Text);
 
@@ -153,14 +164,14 @@ namespace TraSuaApp.WpfClient.AiOrdering
                     if (g.Value.Any(v => v.Id == spId)) { bestLine = g.Key; break; }
                 }
 
-                // 2) Fallback token-overlap nếu không có line
+                // 2) Fallback overlap token nếu không có line
                 if (bestLine == null)
                 {
-                    string spName = Normalize(sp.Ten);
+                    string spName = OrderTextCleaner.NormalizeNoDiacritics(sp.Ten);
                     int bestScore = -1, bestLineTmp = -1;
                     foreach (var l in lineMap)
                     {
-                        int sc = TokenOverlapScore(spName, l.Value);
+                        int sc = OrderTextCleaner.TokenOverlapScore(spName, l.Value);
                         if (sc > bestScore) { bestScore = sc; bestLineTmp = l.Key; }
                     }
                     if (bestScore > 0 && bestLineTmp > 0) bestLine = bestLineTmp;
@@ -173,14 +184,15 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 }
             }
 
-            await SaveAsync();
+            await TrySaveThrottledAsync();
         }
 
         // =============== PUBLIC: SHORTLIST / PROMPT ===============
 
-        /// <summary>Build shortlist tính điểm (theo khách + học chung) để chèn vào prompt.</summary>
         public List<(Guid id, string name, double score)> BuildShortlist(Guid? customerId, int topK = 12)
         {
+            EnsureLoaded();
+
             static double Decay(Entry x)
             {
                 double lambda = Math.Log(2) / 30.0; // half-life ~30 ngày
@@ -210,13 +222,14 @@ namespace TraSuaApp.WpfClient.AiOrdering
                          .ToList();
         }
 
-        /// <summary>Xuất chuỗi SHORTLIST đúng format engine (Id&lt;TAB&gt;Tên).</summary>
         public string BuildShortlistForPrompt(
             Guid? customerId,
             IEnumerable<SanPhamDto> currentMenu,
             IEnumerable<(Guid id, string name)>? serverTopForCustomer = null,
             int topK = 12)
         {
+            EnsureLoaded();
+
             var byLearn = BuildShortlist(customerId, topK);
 
             if (serverTopForCustomer != null)
@@ -236,71 +249,10 @@ namespace TraSuaApp.WpfClient.AiOrdering
 
         // ====================== INTERNALS ======================
 
-        private static string Normalize(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return "";
-            s = s.Trim().ToLowerInvariant();
-            s = RemoveDiacritics(s);
-            s = Regex.Replace(s, @"\s+", " ");
-            return s;
-        }
-
-        private static string RemoveDiacritics(string text)
-        {
-            var norm = text.Normalize(NormalizationForm.FormD);
-            var sb = new StringBuilder();
-            foreach (var ch in norm)
-            {
-                var uc = CharUnicodeInfo.GetUnicodeCategory(ch);
-                if (uc != UnicodeCategory.NonSpacingMark) sb.Append(ch);
-            }
-            return sb.ToString().Normalize(NormalizationForm.FormC);
-        }
-
-        private static IEnumerable<string> NormalizeAndSplitLines(string multiLine)
-        {
-            var list = new List<string>();
-            using var reader = new StringReader(multiLine ?? "");
-            string? line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                var n = Normalize(line);
-                if (!string.IsNullOrWhiteSpace(n)) list.Add(n);
-            }
-            return list;
-        }
-
-        private static int TokenOverlapScore(string a, string b)
-        {
-            var A = a.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var B = b.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (A.Length == 0 || B.Length == 0) return 0;
-            var setB = new HashSet<string>(B);
-            int c = 0; foreach (var t in A) if (setB.Contains(t)) c++;
-            return c;
-        }
-
-        private static double Cosine(float[]? u, float[]? v)
-        {
-            if (u == null || v == null) return 0;
-            int n = Math.Min(u.Length, v.Length);
-            double dot = 0, uu = 0, vv = 0;
-            for (int i = 0; i < n; i++) { dot += u[i] * v[i]; uu += u[i] * u[i]; vv += v[i] * v[i]; }
-            if (uu == 0 || vv == 0) return 0;
-            return dot / (Math.Sqrt(uu) * Math.Sqrt(vv));
-        }
-
-        private static double Similarity(string normLine, float[]? lineVec, Entry e)
-        {
-            double token = Math.Min(1.0, TokenOverlapScore(normLine, e.NormText) / 5.0);
-            if (lineVec != null && e.Embedding != null)
-                return 0.7 * Cosine(lineVec, e.Embedding) + 0.3 * token;
-            return token;
-        }
-
         private async Task UpsertEntryAsync(Guid? customerId, string rawLine, Guid productId, string productName, int qty = 1)
         {
-            var norm = Normalize(rawLine);
+            var pre = OrderTextCleaner.PreClean(rawLine);
+            var norm = OrderTextCleaner.NormalizeNoDiacritics(pre);
 
             await _mu.WaitAsync();
             try
@@ -315,7 +267,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
                     e = new Entry
                     {
                         CustomerId = customerId,
-                        LineText = rawLine,
+                        LineText = pre,
                         NormText = norm,
                         ProductId = productId,
                         ProductName = productName,
@@ -344,6 +296,14 @@ namespace TraSuaApp.WpfClient.AiOrdering
             return null;
         }
 
+        // ===== Load / Save (debounce + atomic replace) =====
+
+        private void EnsureLoaded()
+        {
+            // Block sync tới khi _loadTask hoàn thành (đảm bảo data đã có trước khi dùng)
+            _loadTask?.GetAwaiter().GetResult();
+        }
+
         private async Task LoadAsync()
         {
             await _mu.WaitAsync();
@@ -357,16 +317,68 @@ namespace TraSuaApp.WpfClient.AiOrdering
             finally { _mu.Release(); }
         }
 
-        private async Task SaveAsync()
+        private async Task TrySaveThrottledAsync()
         {
             await _mu.WaitAsync();
             try
             {
-                _model.LastSavedAt = DateTime.UtcNow;
-                var json = JsonSerializer.Serialize(_model, new JsonSerializerOptions { WriteIndented = true });
-                await File.WriteAllTextAsync(_storePath, json);
+                _dirty = true;
+                if (DateTime.UtcNow - _lastSave >= SaveThrottle)
+                {
+                    await SaveToDiskLockedAsync();
+                }
+                // else: lần tới sẽ save (khi qua ngưỡng)
             }
             finally { _mu.Release(); }
+        }
+
+        public async Task FlushAsync()
+        {
+            await _mu.WaitAsync();
+            try
+            {
+                if (_dirty)
+                {
+                    await SaveToDiskLockedAsync();
+                }
+            }
+            finally { _mu.Release(); }
+        }
+
+        private async Task SaveToDiskLockedAsync()
+        {
+            _model.LastSavedAt = DateTime.UtcNow;
+            var json = JsonSerializer.Serialize(_model, new JsonSerializerOptions { WriteIndented = true });
+
+            var tmp = _storePath + ".tmp";
+            await File.WriteAllTextAsync(tmp, json);
+
+            if (File.Exists(_storePath))
+            {
+                var bak = _storePath + ".bak";
+                try { File.Replace(tmp, _storePath, bak, ignoreMetadataErrors: true); }
+                catch
+                {
+                    // Fallback nếu Replace lỗi vì hệ thống file
+                    File.Copy(tmp, _storePath, overwrite: true);
+                }
+                finally
+                {
+                    try { if (File.Exists(tmp)) File.Delete(tmp); } catch { /* ignore */ }
+                }
+            }
+            else
+            {
+#if NET6_0_OR_GREATER
+                File.Move(tmp, _storePath, overwrite: true);
+#else
+                File.Copy(tmp, _storePath, overwrite: true);
+                try { File.Delete(tmp); } catch { }
+#endif
+            }
+
+            _lastSave = DateTime.UtcNow;
+            _dirty = false;
         }
     }
 }
