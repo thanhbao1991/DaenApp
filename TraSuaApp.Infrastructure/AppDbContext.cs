@@ -44,6 +44,7 @@ public partial class AppDbContext : DbContext, IAppDbContext
     public virtual DbSet<SuDungNguyenLieu> SuDungNguyenLieus { get; set; }
     public virtual DbSet<TaiKhoan> TaiKhoans { get; set; }
     public virtual DbSet<Topping> Toppings { get; set; }
+    public virtual DbSet<TuDienTraCuu> TuDienTraCuus { get; set; }
     public virtual DbSet<TuyChinhMon> TuyChinhMons { get; set; }
     public virtual DbSet<Voucher> Vouchers { get; set; }
 

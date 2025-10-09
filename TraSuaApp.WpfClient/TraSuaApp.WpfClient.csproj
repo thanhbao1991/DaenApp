@@ -88,9 +88,6 @@
     <Compile Update="Tools\RegionCaptureWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Tools\SelectCustomerDialog.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Update="Tools\FileViewerWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

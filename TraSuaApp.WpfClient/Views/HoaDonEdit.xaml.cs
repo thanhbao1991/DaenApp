@@ -1,10 +1,12 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
+using TraSuaApp.Shared.Config;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
@@ -22,9 +24,12 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         public HoaDonDto Model { get; set; } = new();
         private readonly IHoaDonApi _api;
         string _friendlyName = TuDien._tableFriendlyNames["HoaDon"];
+
         public string? GptInputText { get; set; }   // 🟟 giữ input GPT lại
         public List<QuickOrderDto>? GptPredictions { get; set; }      // ✅ dự đoán GPT (có Line/Id)
         public Guid? SavedHoaDonId { get; internal set; }
+        private readonly QuickOrderService _quick = new(Config.apiChatGptKey);
+        private bool _openedFromMessenger;
 
         private List<SanPhamDto> _sanPhamList = new();
         private List<SanPhamBienTheDto> _bienTheList = new();
@@ -369,24 +374,122 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
         }
 
-        private SanPhamBienTheDto? ChonBienTheFallback(SanPhamDto sp, string? bienTheTenTuLLM)
+        private async Task RunGptFromMessengerIfNeededAsync(string latestCustomerName)
         {
-            var match = sp.BienThe.FirstOrDefault(bt =>
-                bt.TenBienThe.Equals(bienTheTenTuLLM ?? "", StringComparison.OrdinalIgnoreCase));
-            if (match != null) return match;
+            try
+            {
+                // Chỉ chạy khi mở từ Messenger và có truyền chuỗi
+                if (!_openedFromMessenger) return;
+                if (string.IsNullOrWhiteSpace(GptInputText)) return;
 
-            if (sp.BienThe.Count == 1) return sp.BienThe[0];
+                // Xác định kiểu input: TEXT hay ẢNH
+                bool isImage = false;
+                string input = GptInputText!;
+                if (File.Exists(input))
+                {
+                    var ext = Path.GetExtension(input).ToLowerInvariant();
+                    isImage = ext == ".png" || ext == ".jpg" || ext == ".jpeg";
+                }
 
-            var macDinh = sp.BienThe.FirstOrDefault(bt => bt.MacDinh);
-            if (macDinh != null) return macDinh;
+                // Lấy lịch sử/”short menu” theo khách (nếu đã chọn)
+                string? lichSuText = null;
+                Guid? khId = null;
+                if (KhachHangSearchBox.SelectedKhachHang is KhachHangDto kh)
+                {
+                    khId = kh.Id;
+                    try
+                    {
+                        var resp = await ApiClient.GetAsync($"/api/Dashboard/topmenu-quickorder/{kh.Id}");
+                        lichSuText = await resp.Content.ReadFromJsonAsync<string>();
+                    }
+                    catch { /* ignore: lịch sử là optional */ }
+                }
 
-            var sizeChuan = sp.BienThe.FirstOrDefault(bt =>
-                bt.TenBienThe.Equals("Size chuẩn", StringComparison.OrdinalIgnoreCase));
-            if (sizeChuan != null) return sizeChuan;
+                using (BusyUI.Scope(this, SaveButton, isImage ? "Đang phân tích ảnh..." : "Đang phân tích văn bản..."))
+                {
+                    // Gọi AI ngay tại form
+                    var (hd, raw, preds) = await _quick.BuildHoaDonAsync(
+                        input,
+                        isImage: isImage,
+                        shortMenuFromHistory: lichSuText,
+                        khachHangId: khId,
+    customerNameHint: latestCustomerName    // ✅ giúp bỏ dòng "Mun"
+);
 
-            return sp.BienThe.FirstOrDefault();
+                    // Lưu lại input + gợi ý để có thể hiển thị/nốt lại nếu cần
+                    GptInputText = raw;
+                    GptPredictions = preds;
+
+                    // Nếu AI không nhận ra gì vẫn mở đơn rỗng để nhập tay
+                    var parsed = hd ?? new HoaDonDto { ChiTietHoaDons = new() };
+                    parsed.ChiTietHoaDons ??= new();
+
+                    // Giữ loại đơn hiện tại (mặc định Ship)
+                    parsed.PhanLoai = string.IsNullOrWhiteSpace(Model.PhanLoai) ? "Ship" : Model.PhanLoai;
+
+                    // Áp kết quả vào UI hiện tại
+                    // 1) thay danh sách chi tiết
+                    Model.ChiTietHoaDons.Clear();
+                    foreach (var ct in parsed.ChiTietHoaDons)
+                    {
+                        // gắn lắng nghe để tự tính tiền khi sửa số lượng/đơn giá
+                        ct.PropertyChanged += (s, e) =>
+                        {
+                            if (e.PropertyName == nameof(ChiTietHoaDonDto.SoLuong) ||
+                                e.PropertyName == nameof(ChiTietHoaDonDto.DonGia) ||
+                                e.PropertyName == nameof(ChiTietHoaDonDto.ThanhTien))
+                            {
+                                CapNhatTongTien();
+                            }
+                        };
+                        Model.ChiTietHoaDons.Add(ct);
+                    }
+
+                    // 2) topping, voucher, KH, ghi chú...
+                    Model.ChiTietHoaDonToppings = parsed.ChiTietHoaDonToppings;
+                    Model.VoucherId = parsed.VoucherId;
+                    Model.GhiChu = parsed.GhiChu;
+
+                    // 3) cập nhật các control phụ
+                    ChiTietListBox.ItemsSource = Model.ChiTietHoaDons;
+                    ChiTietListBox.Items.Refresh();
+                    CapNhatTongTien();
+
+                    if (Model.VoucherId != null)
+                    {
+                        VoucherComboBox.SelectedValue = Model.VoucherId;
+                        HuyVoucherButton.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        VoucherComboBox.SelectedIndex = -1;
+                        HuyVoucherButton.Visibility = Visibility.Collapsed;
+                    }
+                }
+            }
+            catch (TimeoutException)
+            {
+                MessageBox.Show("Mạng chậm/AI quá tải (timeout). Bạn có thể nhập tay tiếp.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("GPT lỗi: " + ex.Message);
+                Debug.WriteLine(ex);
+            }
         }
+        public HoaDonEdit(HoaDonDto? dto, string? gptInput, string? latestCustomerName, bool openedFromMessenger)
+    : this(dto) // gọi lại constructor gốc để khởi tạo UI/bindings
+        {
+            _openedFromMessenger = openedFromMessenger;
+            GptInputText = gptInput;
 
+            // Gợi ý sẵn tên khách lấy từ Messenger (chỉ set text, chưa auto chọn)
+            if (!string.IsNullOrWhiteSpace(latestCustomerName))
+                KhachHangSearchBox.SearchTextBox.Text = latestCustomerName;
+
+            // Khi UI hiển thị xong mới chạy GPT (nếu đủ điều kiện)
+            this.ContentRendered += async (_, __) => await RunGptFromMessengerIfNeededAsync(latestCustomerName);
+        }
         private bool _isSaving = false;
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {

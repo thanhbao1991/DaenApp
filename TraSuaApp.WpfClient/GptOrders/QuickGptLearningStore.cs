@@ -52,20 +52,17 @@ namespace TraSuaApp.WpfClient.AiOrdering
         private QuickGptLearningStore(string apiKey)
         {
             _apiKey = apiKey;
-
             var baseDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "TraSuaApp", "AiOrdering");
             Directory.CreateDirectory(baseDir);
             _storePath = Path.Combine(baseDir, "gpt-learning-store.json");
 
-            // 🟟 Load và giữ Task lại để những API khác có thể chờ
-            _loadTask = LoadAsync();
+            // ✅ chạy LoadAsync trong threadpool, tránh block UI
+            _loadTask = Task.Run(() => LoadAsync());
         }
 
         // ================== PUBLIC: LEARN ==================
-
-        /// <summary>Học 1 cặp (line → sản phẩm) sau khi lưu hóa đơn thành công.</summary>
         public async Task LearnAsync(Guid? customerId, string lineText, Guid productId, string productName)
         {
             EnsureLoaded();
@@ -101,7 +98,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
 
                 if (e.Embedding == null)
                 {
-                    try { e.Embedding = await GetOrCreateEmbeddingAsync(norm); } catch { /* optional */ }
+                    try { e.Embedding = await GetOrCreateEmbeddingAsync(norm); } catch { }
                 }
             }
             finally { _mu.Release(); }
@@ -109,9 +106,6 @@ namespace TraSuaApp.WpfClient.AiOrdering
             await TrySaveThrottledAsync();
         }
 
-        /// <summary>
-        /// Học theo batch: dùng text gốc, chi tiết đã chốt và dự đoán để tìm lại dòng phù hợp.
-        /// </summary>
         public async Task LearnAsync(
             Guid? customerId,
             string rawInput,
@@ -120,18 +114,15 @@ namespace TraSuaApp.WpfClient.AiOrdering
             IEnumerable<SanPhamDto> sanPhams)
         {
             EnsureLoaded();
-
             if (string.IsNullOrWhiteSpace(rawInput)) return;
 
             var lines = OrderTextCleaner.PreCleanThenNormalizeLines(rawInput).ToList();
             var lineMap = lines.Select((txt, i) => (Line: i + 1, Text: txt))
                                .ToDictionary(x => x.Line, x => x.Text);
 
-            // BienTheId -> SanPham
-            var bt2sp = sanPhams.SelectMany(sp => sp.BienThe.Select(bt => (BienTheId: bt.Id, Sp: sp)))
-                                .ToDictionary(x => x.BienTheId, x => x.Sp);
+            var bt2sp = sanPhams.SelectMany(sp => sp.BienThe.Select(bt => (bt.Id, Sp: sp)))
+                                .ToDictionary(x => x.Id, x => x.Sp);
 
-            // Gộp final theo sản phẩm
             var finalAgg = new Dictionary<Guid, (SanPhamDto sp, int qty)>();
             foreach (var ct in finals)
             {
@@ -145,26 +136,18 @@ namespace TraSuaApp.WpfClient.AiOrdering
             }
             if (finalAgg.Count == 0) return;
 
-            // Nếu preds có Line thì dùng thẳng
             var predsByLine = preds.Where(p => p != null && p.Line.HasValue)
                                    .GroupBy(p => p.Line!.Value)
                                    .ToDictionary(g => g.Key, g => g.ToList());
 
             foreach (var kv in finalAgg)
             {
-                var spId = kv.Key;
                 var sp = kv.Value.sp;
-                var qty = Math.Max(1, kv.Value.qty);
-
                 int? bestLine = null;
 
-                // 1) Ưu tiên line do GPT trả về
                 foreach (var g in predsByLine)
-                {
-                    if (g.Value.Any(v => v.Id == spId)) { bestLine = g.Key; break; }
-                }
+                    if (g.Value.Any(v => v.Id == sp.Id)) { bestLine = g.Key; break; }
 
-                // 2) Fallback overlap token nếu không có line
                 if (bestLine == null)
                 {
                     string spName = OrderTextCleaner.NormalizeNoDiacritics(sp.Ten);
@@ -180,22 +163,21 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 if (bestLine != null)
                 {
                     string rawLine = lineMap.TryGetValue(bestLine.Value, out var t) ? t : sp.Ten;
-                    await UpsertEntryAsync(customerId, rawLine, sp.Id, sp.Ten, qty);
+                    await UpsertEntryAsync(customerId, rawLine, sp.Id, sp.Ten, kv.Value.qty);
                 }
             }
 
             await TrySaveThrottledAsync();
         }
 
-        // =============== PUBLIC: SHORTLIST / PROMPT ===============
-
+        // =============== PUBLIC: SHORTLIST ===============
         public List<(Guid id, string name, double score)> BuildShortlist(Guid? customerId, int topK = 12)
         {
             EnsureLoaded();
 
             static double Decay(Entry x)
             {
-                double lambda = Math.Log(2) / 30.0; // half-life ~30 ngày
+                double lambda = Math.Log(2) / 30.0;
                 var days = (DateTime.Now - x.LastSeen).TotalDays;
                 return x.Count * Math.Exp(-lambda * Math.Max(0, days));
             }
@@ -214,7 +196,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
             var globalTop = Agg(_model.Items.Where(x => x.CustomerId == null));
 
             var merged = new Dictionary<Guid, (string name, double score)>();
-            foreach (var it in custTop) merged[it.id] = (it.name, it.score + 1.0); // bias theo KH
+            foreach (var it in custTop) merged[it.id] = (it.name, it.score + 1.0);
             foreach (var it in globalTop) if (!merged.ContainsKey(it.id)) merged[it.id] = (it.name, it.score);
 
             return merged.OrderByDescending(kv => kv.Value.score)
@@ -236,7 +218,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
             {
                 var set = new HashSet<Guid>(byLearn.Select(x => x.id));
                 foreach (var (id, name) in serverTopForCustomer)
-                    if (set.Add(id)) byLearn.Add((id, name, 0.75)); // bias nhẹ
+                    if (set.Add(id)) byLearn.Add((id, name, 0.75));
             }
 
             var menuSet = new HashSet<Guid>(currentMenu.Select(m => m.Id));
@@ -247,8 +229,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
             return "SHORTLIST (Id<TAB>Tên)\n" + string.Join("\n", lines);
         }
 
-        // ====================== INTERNALS ======================
-
+        // ================= INTERNALS =================
         private async Task UpsertEntryAsync(Guid? customerId, string rawLine, Guid productId, string productName, int qty = 1)
         {
             var pre = OrderTextCleaner.PreClean(rawLine);
@@ -283,7 +264,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
 
                 if (e.Embedding == null)
                 {
-                    try { e.Embedding = await GetOrCreateEmbeddingAsync(norm); } catch { /* optional */ }
+                    try { e.Embedding = await GetOrCreateEmbeddingAsync(norm); } catch { }
                 }
             }
             finally { _mu.Release(); }
@@ -291,55 +272,54 @@ namespace TraSuaApp.WpfClient.AiOrdering
 
         private async Task<float[]?> GetOrCreateEmbeddingAsync(string normText)
         {
-            // Nếu có client embeddings, thay vào đây.
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             return null;
         }
 
-        // ===== Load / Save (debounce + atomic replace) =====
-
+        // ============= Load / Save (debounce) =============
         private void EnsureLoaded()
         {
-            // Block sync tới khi _loadTask hoàn thành (đảm bảo data đã có trước khi dùng)
             _loadTask?.GetAwaiter().GetResult();
         }
 
         private async Task LoadAsync()
         {
-            await _mu.WaitAsync();
+            await _mu.WaitAsync().ConfigureAwait(false);
             try
             {
                 if (!File.Exists(_storePath)) return;
-                var json = await File.ReadAllTextAsync(_storePath);
+                var json = await File.ReadAllTextAsync(_storePath).ConfigureAwait(false);
                 var model = JsonSerializer.Deserialize<StoreModel>(json);
                 if (model != null) _model = model;
             }
-            finally { _mu.Release(); }
+            finally
+            {
+                _mu.Release();
+            }
         }
 
         private async Task TrySaveThrottledAsync()
         {
-            await _mu.WaitAsync();
+            await _mu.WaitAsync().ConfigureAwait(false);
             try
             {
                 _dirty = true;
                 if (DateTime.UtcNow - _lastSave >= SaveThrottle)
                 {
-                    await SaveToDiskLockedAsync();
+                    await SaveToDiskLockedAsync().ConfigureAwait(false);
                 }
-                // else: lần tới sẽ save (khi qua ngưỡng)
             }
             finally { _mu.Release(); }
         }
 
         public async Task FlushAsync()
         {
-            await _mu.WaitAsync();
+            await _mu.WaitAsync().ConfigureAwait(false);
             try
             {
                 if (_dirty)
                 {
-                    await SaveToDiskLockedAsync();
+                    await SaveToDiskLockedAsync().ConfigureAwait(false);
                 }
             }
             finally { _mu.Release(); }
@@ -351,7 +331,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
             var json = JsonSerializer.Serialize(_model, new JsonSerializerOptions { WriteIndented = true });
 
             var tmp = _storePath + ".tmp";
-            await File.WriteAllTextAsync(tmp, json);
+            await File.WriteAllTextAsync(tmp, json).ConfigureAwait(false);
 
             if (File.Exists(_storePath))
             {
@@ -359,12 +339,11 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 try { File.Replace(tmp, _storePath, bak, ignoreMetadataErrors: true); }
                 catch
                 {
-                    // Fallback nếu Replace lỗi vì hệ thống file
                     File.Copy(tmp, _storePath, overwrite: true);
                 }
                 finally
                 {
-                    try { if (File.Exists(tmp)) File.Delete(tmp); } catch { /* ignore */ }
+                    try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
                 }
             }
             else

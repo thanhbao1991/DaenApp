@@ -11,6 +11,7 @@
             HorizontalAlignment="Center"
             DockPanel.Dock="Top"
             Orientation="Horizontal">
+
             <Button
                 x:Name="CreateOrderButton"
                 Margin="2"

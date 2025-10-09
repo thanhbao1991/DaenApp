@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -13,8 +12,6 @@ using TraSuaApp.Shared.Services;
 using TraSuaApp.WpfClient.AiOrdering;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
-using TraSuaApp.WpfClient.Services;
-using TraSuaApp.WpfClient.Views;
 
 namespace TraSuaApp.WpfClient.Controls
 {
@@ -209,63 +206,17 @@ namespace TraSuaApp.WpfClient.Controls
 
             try
             {
-                // 🟟 Tìm owner an toàn
+                // Mở thẳng HoaDonEdit, KHÔNG hỏi khách, KHÔNG gọi GPT ở đây
                 var owner = WindowOwnerHelper.FindOwner(this);
+                var hd = new HoaDonDto { PhanLoai = "Ship" };
 
-                // 1) Chọn khách (không bọc loader)
-                var pick = new SelectCustomerDialog();
-                WindowOwnerHelper.SetOwnerIfPossible(pick, owner);
-                pick.WindowStartupLocation = owner != null
-                    ? WindowStartupLocation.CenterOwner
-                    : WindowStartupLocation.CenterScreen;
+                var win = new HoaDonEdit(
+                    dto: hd,
+                    gptInput: dlg.FileName,                  // truyền chuỗi đường dẫn ảnh
+                    latestCustomerName: _latestCustomerName,
+                    openedFromMessenger: true
+                );
 
-                pick.KhachHangBox.SearchTextBox.Text = _latestCustomerName;
-                await pick.Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    pick.KhachHangBox.IsPopupOpen = true;
-                }), System.Windows.Threading.DispatcherPriority.Background);
-
-                KhachHangDto? kh = null;
-                bool? pickResult = pick.ShowDialog();
-                if (pickResult == true)
-                {
-                    kh = pick.SelectedKhachHang;
-                }
-                else if (!pick.RequestedNewCustomer)
-                {
-                    // Hủy
-                    return;
-                }
-
-                // 2) Gọi AI bên trong loader
-                (HoaDonDto? hd, string raw, List<QuickOrderDto> preds) res;
-
-                using (BusyUI.Scope(this, sender as Button, "Đang phân tích ảnh..."))
-                {
-                    string? lichSuText = kh != null ? await BuildLichSuText(kh.Id) : null; // IO-bound → chỉ await
-                    res = await _quick.BuildHoaDonAsync(
-                        dlg.FileName, isImage: true, shortMenuFromHistory: lichSuText, khachHangId: kh?.Id);
-                }
-
-                var hd = res.hd ?? new HoaDonDto { ChiTietHoaDons = new() };
-                var raw = res.raw;
-                var preds = res.preds;
-
-                // ✅ Vẫn mở form ngay cả khi không bắt được món
-                if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
-                {
-                    hd.ChiTietHoaDons ??= new();
-                }
-
-                hd.PhanLoai = "Ship";
-                hd.KhachHangId = kh?.Id;
-
-                // 🟟 Mở HoaDonEdit an toàn (không đụng owner.Width/Height khi owner=null)
-                var win = new HoaDonEdit(hd)
-                {
-                    GptInputText = raw,
-                    GptPredictions = preds
-                };
                 WindowOwnerHelper.SetOwnerIfPossible(win, owner);
                 win.WindowStartupLocation = owner != null
                     ? WindowStartupLocation.CenterOwner
@@ -273,23 +224,8 @@ namespace TraSuaApp.WpfClient.Controls
 
                 if (owner != null)
                 {
-                    // Tùy chọn: khớp kích thước — chỉ khi có owner hợp lệ
                     win.Width = owner.ActualWidth;
                     win.Height = owner.ActualHeight;
-                }
-
-                if (kh != null)
-                {
-                    win.ContentRendered += async (_, __) =>
-                    {
-                        await Task.Delay(100);
-                        win.KhachHangSearchBox.SetSelectedKhachHangByIdWithoutPopup(kh.Id);
-                        win.KhachHangSearchBox.TriggerSelectedEvent(kh);
-                    };
-                }
-                else
-                {
-                    win.KhachHangSearchBox.SearchTextBox.Text = _latestCustomerName;
                 }
 
                 win.ShowDialog();
@@ -310,7 +246,7 @@ namespace TraSuaApp.WpfClient.Controls
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Tạo đơn từ ảnh lỗi: " + ex.Message);
+                MessageBox.Show("Tạo đơn từ ẢNH lỗi: " + ex.Message);
                 await DiscordService.SendAsync(DiscordEventType.Admin, ex.Message);
             }
             finally
@@ -318,7 +254,6 @@ namespace TraSuaApp.WpfClient.Controls
                 _isBusy = false;
             }
         }
-
         // ================= WebView2 Events =================
         private void CoreWebView2_ProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
         {
@@ -358,21 +293,7 @@ namespace TraSuaApp.WpfClient.Controls
             _latestCustomerName = cut;
         }
 
-        private async Task<string> BuildLichSuText(Guid khId)
-        {
-            try
-            {
-                var response = await ApiClient.GetAsync($"/api/Dashboard/topmenu-quickorder/{khId}");
-                var info = await response.Content.ReadFromJsonAsync<string>();
-                return info ?? string.Empty;
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
 
-        // ================= Buttons & Helpers =================
         private async void CreateOrderFromText_Click(object sender, RoutedEventArgs e)
         {
             if (_isBusy) return;
@@ -380,7 +301,7 @@ namespace TraSuaApp.WpfClient.Controls
 
             try
             {
-                // 0) Lấy & làm sạch text đang bôi đen
+                // 1) Lấy & làm sạch text đang bôi đen
                 var text = await GetSelectedTextAsync();
                 text = CleanSelectedText(text);
 
@@ -390,61 +311,17 @@ namespace TraSuaApp.WpfClient.Controls
                     return;
                 }
 
-                // 🟟 Tìm owner an toàn
+                // 2) Mở thẳng HoaDonEdit, KHÔNG dùng SelectCustomerDialog, KHÔNG gọi GPT ở đây
                 var owner = WindowOwnerHelper.FindOwner(this);
+                var hd = new HoaDonDto { PhanLoai = "Ship" };
 
-                // 1) Hỏi khách (KHÔNG bọc loader)
-                var pick = new SelectCustomerDialog();
-                WindowOwnerHelper.SetOwnerIfPossible(pick, owner);
-                pick.WindowStartupLocation = owner != null
-                    ? WindowStartupLocation.CenterOwner
-                    : WindowStartupLocation.CenterScreen;
+                var win = new HoaDonEdit(
+                    dto: hd,
+                    gptInput: text,                          // chuỗi text từ Messenger
+                    latestCustomerName: _latestCustomerName, // gợi ý tên KH từ tiêu đề chat
+                    openedFromMessenger: true                 // cờ để HoaDonEdit tự chạy GPT
+                );
 
-                pick.KhachHangBox.SearchTextBox.Text = _latestCustomerName;
-                await pick.Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    pick.KhachHangBox.IsPopupOpen = true;
-                }), System.Windows.Threading.DispatcherPriority.Background);
-
-                KhachHangDto? kh = null;
-                bool? pickResult = pick.ShowDialog();
-                if (pickResult == true)
-                {
-                    kh = pick.SelectedKhachHang;
-                }
-                else if (!pick.RequestedNewCustomer)
-                {
-                    return; // hủy
-                }
-
-                // 2) Gọi AI từ TEXT đã chọn (bọc loader) — gồm luôn tải lịch sử
-                (HoaDonDto? hd, string raw, List<QuickOrderDto> preds) res;
-
-                using (BusyUI.Scope(this, sender as Button))
-                {
-                    string? lichSuText = kh != null ? await BuildLichSuText(kh.Id) : null; // IO-bound
-                    res = await _quick.BuildHoaDonAsync(
-                        text, isImage: false, shortMenuFromHistory: lichSuText, khachHangId: kh?.Id);
-                }
-
-                var hd = res.hd ?? new HoaDonDto { ChiTietHoaDons = new() };
-                var raw = res.raw;
-                var preds = res.preds;
-
-                // 3) Mở form kể cả khi AI không nhận diện được
-                if (hd.ChiTietHoaDons == null || hd.ChiTietHoaDons.Count == 0)
-                {
-                    hd.ChiTietHoaDons ??= new();
-                }
-
-                hd.PhanLoai = "Ship";
-                hd.KhachHangId = kh?.Id;
-
-                var win = new HoaDonEdit(hd)
-                {
-                    GptInputText = raw,
-                    GptPredictions = preds
-                };
                 WindowOwnerHelper.SetOwnerIfPossible(win, owner);
                 win.WindowStartupLocation = owner != null
                     ? WindowStartupLocation.CenterOwner
@@ -452,22 +329,9 @@ namespace TraSuaApp.WpfClient.Controls
 
                 if (owner != null)
                 {
+                    // tuỳ chọn khớp kích thước với cửa sổ cha
                     win.Width = owner.ActualWidth;
                     win.Height = owner.ActualHeight;
-                }
-
-                if (kh != null)
-                {
-                    win.ContentRendered += async (_, __) =>
-                    {
-                        await Task.Delay(100);
-                        win.KhachHangSearchBox.SetSelectedKhachHangByIdWithoutPopup(kh.Id);
-                        win.KhachHangSearchBox.TriggerSelectedEvent(kh);
-                    };
-                }
-                else
-                {
-                    win.KhachHangSearchBox.SearchTextBox.Text = _latestCustomerName;
                 }
 
                 win.ShowDialog();
@@ -475,20 +339,9 @@ namespace TraSuaApp.WpfClient.Controls
                 owner?.Activate();
                 owner?.Focus();
             }
-            catch (TimeoutException)
-            {
-                MessageBox.Show("Mạng chậm/AI quá tải (timeout). Sẽ mở hoá đơn trống để bạn nhập tay.");
-                var hd = new HoaDonDto { PhanLoai = "Ship" };
-
-                var owner = WindowOwnerHelper.FindOwner(this);
-                var w = new HoaDonEdit(hd);
-                WindowOwnerHelper.SetOwnerIfPossible(w, owner);
-                w.WindowStartupLocation = owner != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen;
-                w.ShowDialog();
-            }
             catch (Exception ex)
             {
-                MessageBox.Show("Tạo đơn lỗi: " + ex.Message);
+                MessageBox.Show("Tạo đơn từ TEXT lỗi: " + ex.Message);
                 await DiscordService.SendAsync(DiscordEventType.Admin, ex.Message);
             }
             finally
@@ -496,5 +349,6 @@ namespace TraSuaApp.WpfClient.Controls
                 _isBusy = false;
             }
         }
+
     }
 }

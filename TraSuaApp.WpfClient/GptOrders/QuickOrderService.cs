@@ -1,9 +1,10 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Services;
+using TraSuaApp.Shared.Helpers;                // dùng OrderTextCleaner
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.AiOrdering
@@ -92,13 +93,15 @@ namespace TraSuaApp.WpfClient.AiOrdering
         /// <summary>
         /// Trả về:
         /// - HoaDon (map từ dự đoán)
-        /// - RawInput: CHUỖI ĐÃ LỌC (OrderTextCleaner.PreClean) để hiển thị trong UI/ghi log
+        /// - RawInput: chuỗi LINES đã đánh số (hiển thị trong UI/log)
         /// - Predictions: list dự đoán dòng ↔ sản phẩm (để hiển thị/learn theo Line)
         /// </summary>
         public async Task<(HoaDonDto? HoaDon, string RawInput, List<QuickOrderDto> Predictions)> BuildHoaDonAsync(
-            string inputOrUrl, bool isImage = false, string? shortMenuFromHistory = "", Guid? khachHangId = null)
+            string inputOrUrl, bool isImage = false, string? shortMenuFromHistory = "", Guid? khachHangId = null,
+            string? customerNameHint = null)
         {
-            List<string> baoCao = new List<string>();
+            var baoCao = new List<string>();
+
             // 1) Lấy text gốc (từ ảnh hoặc text)
             string sourceText = inputOrUrl;
 
@@ -111,20 +114,23 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 sourceText = await ExtractTextFromImageAsync(inputOrUrl);
             }
 
-            // 2) Chuỗi hiển thị (đã lọc rác, giữ note) — phục vụ UI & logging
-            string cleanedForDisplay = OrderTextCleaner.PreClean(sourceText);
+            // 2) Dựng LINES (không build CHAT)
+            var normLines = OrderTextCleaner.PreCleanThenNormalizeLines(sourceText, customerNameHint).ToList(); // ✅ dùng hint
+            string numberedLines = BuildNumberedLines(normLines);
+            string cleanedForDisplay = string.IsNullOrWhiteSpace(numberedLines) ? "" : numberedLines;
+
 
             var menu = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
 
-            // SHORTLIST học máy (theo khách + global) + lịch sử server
-            string learnedShort = QuickGptLearningStore.Instance.BuildShortlistForPrompt(
-                customerId: khachHangId,
-                currentMenu: menu,
-                serverTopForCustomer: null,
-                topK: 12
-            );
-            string combinedShort = string.Join("\n",
-                new[] { shortMenuFromHistory ?? "", learnedShort }.Where(x => !string.IsNullOrWhiteSpace(x)));
+            //// SHORTLIST học máy (theo khách + global) + lịch sử server
+            //string learnedShort = QuickGptLearningStore.Instance.BuildShortlistForPrompt(
+            //    customerId: khachHangId,
+            //    currentMenu: menu,
+            //    serverTopForCustomer: null,
+            //    topK: 12
+            //);
+            //string combinedShort = string.Join("\n",
+            //    new[] { shortMenuFromHistory ?? "", learnedShort }.Where(x => !string.IsNullOrWhiteSpace(x)));
 
             if (string.IsNullOrWhiteSpace(sourceText))
             {
@@ -140,12 +146,24 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 }, cleanedForDisplay, new List<QuickOrderDto>());
             }
 
-            // 3) Gọi engine (Engine tự PreClean + Normalize lại nội bộ nên không lo double)
-            var preds = await _engine.ParseQuickOrderAsync(sourceText, combinedShort, khachHangId);
-            var chiTiets = await _engine.MapToChiTietAsync(sourceText, combinedShort, khachHangId);
+            // 3) Gọi engine (LINES-only)
+            var preds = await _engine.ParseQuickOrderAsync(
+              rawInput: sourceText,
+              HisList: shortMenuFromHistory,
+              // LearnList: learnedShort,
+              khachHangId: khachHangId,
+              shortlistTopK: 12,
+              model: "gpt-4.1-mini",
+              chatContext: null,
+              customerNameHint: customerNameHint);
 
+            var chiTiets = await _engine.MapToChiTietAsync(
+      rawInput: sourceText,
+      preds: preds,                         // ✅ dùng preds vừa parse
+      customerNameHint: customerNameHint);
+            // ✨ truyền vào để khỏi gọi GPT lần 2
 
-            // 4) Hoá đơn kết quả (mở form kể cả khi rỗng)
+            // 4) Hoá đơn kết quả
             var hd = new HoaDonDto
             {
                 Id = Guid.Empty,
@@ -157,16 +175,22 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>()
             };
 
-            baoCao.Add("sourceText"); baoCao.Add(sourceText);
-            baoCao.Add("cleanedForDisplay"); baoCao.Add(cleanedForDisplay);
-            baoCao.Add("shortMenuFromHistory"); baoCao.Add(shortMenuFromHistory);
-            baoCao.Add("learnedShort"); baoCao.Add(learnedShort);
-            await DiscordService.SendAsync(
-     Shared.Enums.DiscordEventType.Admin,
-     string.Join("\n", baoCao)
- );
-            // Lưu ý: Trả về cleanedForDisplay để gắn vào HoaDonEdit.GptInputText → nhìn đẹp, dễ đọc.
+            // Audit Discord
+            //baoCao.Add("sourceText"); baoCao.Add(sourceText);
+            //baoCao.Add("cleanedForDisplay"); baoCao.Add(cleanedForDisplay);
+            //baoCao.Add("shortMenuFromHistory"); baoCao.Add(shortMenuFromHistory ?? "");
+            //baoCao.Add("learnedShort"); baoCao.Add(learnedShort);
+            //await DiscordService.SendAsync(Shared.Enums.DiscordEventType.Admin, string.Join("\n", baoCao));
+
             return (hd, cleanedForDisplay, preds);
+
+            // local helper
+            static string BuildNumberedLines(List<string> lines)
+            {
+                var sb = new StringBuilder();
+                for (int i = 0; i < lines.Count; i++) sb.AppendLine($"{i + 1}) {lines[i]}");
+                return sb.ToString().TrimEnd();
+            }
         }
     }
 }

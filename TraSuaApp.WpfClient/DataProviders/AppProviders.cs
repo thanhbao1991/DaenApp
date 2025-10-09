@@ -11,6 +11,7 @@ public static class AppProviders
 {
     public static string? CurrentConnectionId { get; set; }
 
+    public static TuDienTraCuuDataProvider TuDienTraCuus { get; private set; } = null!;
     public static VoucherDataProvider Vouchers { get; private set; } = null!;
     public static SanPhamDataProvider SanPhams { get; private set; } = null!;
     public static TaiKhoanDataProvider TaiKhoans { get; private set; } = null!;
@@ -42,17 +43,18 @@ public static class AppProviders
         if (ChiTietHoaDonNos != null) await ChiTietHoaDonNos.ReloadAsync();
         if (ChiTieuHangNgays != null) await ChiTieuHangNgays.ReloadAsync();
         if (CongViecNoiBos != null) await CongViecNoiBos.ReloadAsync();
-        //   if (SanPhams != null) await SanPhams.ReloadAsync();
         if (Toppings != null) await Toppings.ReloadAsync();
         if (KhachHangs != null) await KhachHangs.ReloadAsync();
         if (Vouchers != null) await Vouchers.ReloadAsync();
         if (KhachHangGiaBans != null) await KhachHangGiaBans.ReloadAsync();
         if (PhuongThucThanhToans != null) await PhuongThucThanhToans.ReloadAsync();
+        if (TuDienTraCuus != null) await TuDienTraCuus.ReloadAsync();
         if (SanPhams != null)
         {
             await SanPhams.ReloadAsync();
             BuildQuickOrderMenu();
         }
+
     }
 
     public static async Task<DashboardDto?> GetDashboardAsync()
@@ -128,6 +130,7 @@ public static class AppProviders
         Vouchers = new VoucherDataProvider(signalR);
         HoaDons = new HoaDonDataProvider(signalR);
         PhuongThucThanhToans = new PhuongThucThanhToanDataProvider(signalR);
+        TuDienTraCuus = new TuDienTraCuuDataProvider(signalR);
         KhachHangGiaBans = new KhachHangGiaBanDataProvider(signalR);
         CongViecNoiBos = new CongViecNoiBoDataProvider(signalR);
         ChiTietHoaDonNos = new ChiTietHoaDonNoDataProvider(signalR);
@@ -144,6 +147,7 @@ public static class AppProviders
            Vouchers.InitializeAsync(),
            HoaDons.InitializeAsync(),
            PhuongThucThanhToans.InitializeAsync(),
+           TuDienTraCuus.InitializeAsync(),
            KhachHangGiaBans.InitializeAsync(),
            CongViecNoiBos.InitializeAsync(),
            ChiTietHoaDonNos.InitializeAsync(),
