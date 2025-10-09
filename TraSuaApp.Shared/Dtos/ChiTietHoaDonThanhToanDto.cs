@@ -26,10 +26,10 @@ public class ChiTietHoaDonThanhToanDto : DtoBase
     public string? GhiChu { get; set; }
 
     public string TimKiem =>
-    StringHelper.NormalizeText(Ten ?? "") + " " +
-    StringHelper.NormalizeText(TenPhuongThucThanhToan ?? "") + " " +
-    StringHelper.NormalizeText(LoaiThanhToan ?? "") + " " +
-    StringHelper.NormalizeText(GhiChu ?? "");
+    StringHelper.MyNormalizeText(Ten ?? "") + " " +
+    StringHelper.MyNormalizeText(TenPhuongThucThanhToan ?? "") + " " +
+    StringHelper.MyNormalizeText(LoaiThanhToan ?? "") + " " +
+    StringHelper.MyNormalizeText(GhiChu ?? "");
 
 
 }

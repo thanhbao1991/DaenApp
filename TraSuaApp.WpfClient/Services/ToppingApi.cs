@@ -38,11 +38,11 @@ public class ToppingApi : BaseApi, IToppingApi
 
     public async Task<Result<ToppingDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<ToppingDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<ToppingDto>($"{BASE_URL}/{id}/restore", null!);
     }
 
     public async Task<Result<List<ToppingDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<ToppingDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<ToppingDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
 }

@@ -28,9 +28,8 @@ namespace TraSuaApp.WpfClient.AdminViews
             if (dto != null)
             {
                 Model = dto;
-                // Đổ dữ liệu lên form
                 TenTextBox.Text = dto.Ten;
-                // Kiểu giảm
+                TenPhienDichTextBox.Text = dto.TenPhienDich;
                 DangSuDungCheckBox.IsChecked = dto.DangSuDung;
 
 
@@ -61,10 +60,9 @@ namespace TraSuaApp.WpfClient.AdminViews
                 return;
             }
 
-            // Gán vào Model
             Model.Ten = (TenTextBox.Text).Trim();
+            Model.TenPhienDich = (TenPhienDichTextBox.Text).Trim();
             Model.DangSuDung = DangSuDungCheckBox.IsChecked == true;
-            // Lấy danh sách nhóm SP chọn
 
             Result<TuDienTraCuuDto> result;
             if (Model.Id == Guid.Empty)

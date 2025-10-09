@@ -657,7 +657,7 @@ namespace TraSuaApp.WpfClient.Views
             else
             {
                 // Tách keyword theo khoảng trắng
-                keyword = StringHelper.NormalizeText(keyword);
+                keyword = StringHelper.MyNormalizeText(keyword);
                 var keywords = keyword
                     .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     .Select(k => k.ToLower())

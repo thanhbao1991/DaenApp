@@ -62,7 +62,7 @@ public class TuDienTraCuuService : ITuDienTraCuuService
         var entity = new TuDienTraCuu
         {
             Id = Guid.NewGuid(),
-            Ten = dto.Ten.Trim(),
+            Ten = dto.Ten.MyNormalizeText(),
             TenPhienDich = dto.TenPhienDich.Trim(),
             DangSuDung = dto.DangSuDung,
 
@@ -101,7 +101,7 @@ public class TuDienTraCuuService : ITuDienTraCuuService
 
         var before = ToDto(entity);
 
-        entity.Ten = dto.Ten.Trim();
+        entity.Ten = dto.Ten.MyNormalizeText();
         entity.TenPhienDich = dto.TenPhienDich.Trim();
         entity.DangSuDung = dto.DangSuDung;
         entity.LastModified = DateTime.Now;

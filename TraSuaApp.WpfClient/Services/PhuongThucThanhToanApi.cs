@@ -38,11 +38,11 @@ public class PhuongThucThanhToanApi : BaseApi, IPhuongThucThanhToanApi
 
     public async Task<Result<PhuongThucThanhToanDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<PhuongThucThanhToanDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<PhuongThucThanhToanDto>($"{BASE_URL}/{id}/restore", null!);
     }
 
     public async Task<Result<List<PhuongThucThanhToanDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<PhuongThucThanhToanDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<PhuongThucThanhToanDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
 }

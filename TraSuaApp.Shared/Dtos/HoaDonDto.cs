@@ -157,8 +157,8 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public override string Ten => KhachHangId == null ? TenBan : TenKhachHangText;
     public string TimKiem =>
         $"{Ten?.ToLower() ?? ""} " +
-        StringHelper.NormalizeText(Ten ?? "") + " " +
-        StringHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+        StringHelper.MyNormalizeText(Ten ?? "") + " " +
+        StringHelper.MyNormalizeText((Ten ?? "").Replace(" ", "")) + " " +
         StringHelper.GetShortName(Ten ?? "");
 
 

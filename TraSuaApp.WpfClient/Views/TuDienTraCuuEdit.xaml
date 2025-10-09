@@ -23,28 +23,23 @@
             </DockPanel>
             <!--  Nội dung form  -->
             <StackPanel Grid.Row="1">
-                <!--  Tên  -->
-                <GroupBox Margin="0,0,0,5" Header="Tên phương thức thanh toán:">
-                    <!--  Đang sử dụng / Ngừng bán  -->
-                    <StackPanel Margin="0,0,0,0" Orientation="Horizontal">
-                        <TextBox
-                            x:Name="TenTextBox"
-                            Width="200"
-                            Margin="0,0,8,0" />
-
-                    </StackPanel>
+                <GroupBox Margin="0,0,0,5" Header="Từ khoá tra cứu (không dấu):">
+                    <TextBox
+                        x:Name="TenTextBox"
+                        Width="300"
+                        Margin="0,0,8,0" />
                 </GroupBox>
+
+                <GroupBox Margin="0,0,0,5" Header="Chuẩn (dịch) sang:">
+                    <TextBox
+                        x:Name="TenPhienDichTextBox"
+                        Width="300"
+                        Margin="0,0,8,0" />
+                </GroupBox>
+
                 <GroupBox>
-                    <!--  Đang sử dụng / Ngừng bán  -->
-                    <StackPanel Margin="0,0,0,0" Orientation="Horizontal">
-                        <CheckBox
-                            x:Name="DangSuDungCheckBox"
-                            Margin="0,0,0,0"
-                            Content="Đang sử dụng" />
-                    </StackPanel>
+                    <CheckBox x:Name="DangSuDungCheckBox" Content="Đang sử dụng" />
                 </GroupBox>
-
-
 
             </StackPanel>
 

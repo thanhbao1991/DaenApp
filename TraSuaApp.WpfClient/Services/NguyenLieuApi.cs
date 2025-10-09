@@ -38,11 +38,11 @@ public class NguyenLieuApi : BaseApi, INguyenLieuApi
 
     public async Task<Result<NguyenLieuDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<NguyenLieuDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<NguyenLieuDto>($"{BASE_URL}/{id}/restore", null!);
     }
 
     public async Task<Result<List<NguyenLieuDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<NguyenLieuDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<NguyenLieuDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
 }

@@ -82,7 +82,7 @@ namespace TraSuaApp.WpfClient.Controls
                 : Visibility.Visible;
 
             string raw = SearchTextBox.Text?.Trim() ?? "";
-            string keyword = StringHelper.NormalizeText(raw);
+            string keyword = StringHelper.MyNormalizeText(raw);
             if (string.IsNullOrEmpty(keyword))
             {
                 ListBoxResults.ItemsSource = null;

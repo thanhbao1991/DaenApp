@@ -38,12 +38,12 @@ public class ChiTieuHangNgayApi : BaseApi, IChiTieuHangNgayApi
 
     public async Task<Result<ChiTieuHangNgayDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<ChiTieuHangNgayDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<ChiTieuHangNgayDto>($"{BASE_URL}/{id}/restore", null!);
     }
 
     public async Task<Result<List<ChiTieuHangNgayDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<ChiTieuHangNgayDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<ChiTieuHangNgayDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
     public async Task<Result<List<ChiTieuHangNgayDto>>> GetByNguyenLieuInMonth(int year, int month)
     {

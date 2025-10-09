@@ -12,8 +12,8 @@ public class PhuongThucThanhToanDto : DtoBase
     public virtual ICollection<ChiTietHoaDonThanhToan> ChiTietHoaDonThanhToans { get; set; } = new List<ChiTietHoaDonThanhToan>();
     public string TimKiem =>
         $"{Ten?.ToLower() ?? ""} " +
-        StringHelper.NormalizeText(Ten ?? "") + " " +
-        StringHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+        StringHelper.MyNormalizeText(Ten ?? "") + " " +
+        StringHelper.MyNormalizeText((Ten ?? "").Replace(" ", "")) + " " +
         StringHelper.GetShortName(Ten ?? "");
 
 }

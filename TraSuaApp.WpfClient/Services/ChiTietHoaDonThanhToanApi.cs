@@ -38,11 +38,11 @@ public class ChiTietHoaDonThanhToanApi : BaseApi, IChiTietHoaDonThanhToanApi
 
     public async Task<Result<ChiTietHoaDonThanhToanDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<ChiTietHoaDonThanhToanDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<ChiTietHoaDonThanhToanDto>($"{BASE_URL}/{id}/restore", null!);
     }
 
     public async Task<Result<List<ChiTietHoaDonThanhToanDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<ChiTietHoaDonThanhToanDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<ChiTietHoaDonThanhToanDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
 }

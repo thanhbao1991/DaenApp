@@ -38,11 +38,11 @@ public class TaiKhoanApi : BaseApi, ITaiKhoanApi
 
     public async Task<Result<TaiKhoanDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<TaiKhoanDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<TaiKhoanDto>($"{BASE_URL}/{id}/restore", null!);
     }
 
     public async Task<Result<List<TaiKhoanDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<TaiKhoanDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<TaiKhoanDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
 }

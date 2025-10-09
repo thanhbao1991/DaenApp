@@ -38,12 +38,12 @@ public class VoucherApi : BaseApi, IVoucherApi
 
     public async Task<Result<VoucherDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<VoucherDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<VoucherDto>($"{BASE_URL}/{id}/restore", null!);
     }
 
     public async Task<Result<List<VoucherDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<VoucherDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<VoucherDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
 
 

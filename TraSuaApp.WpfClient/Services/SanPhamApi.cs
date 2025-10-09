@@ -38,7 +38,7 @@ public class SanPhamApi : BaseApi, ISanPhamApi
 
     public async Task<Result<SanPhamDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<SanPhamDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<SanPhamDto>($"{BASE_URL}/{id}/restore", null!);
     }
     public async Task<Result<SanPhamDto>> UpdateSingleAsync(Guid id, SanPhamDto dto)
     {
@@ -46,6 +46,6 @@ public class SanPhamApi : BaseApi, ISanPhamApi
     }
     public async Task<Result<List<SanPhamDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<SanPhamDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<SanPhamDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
 }

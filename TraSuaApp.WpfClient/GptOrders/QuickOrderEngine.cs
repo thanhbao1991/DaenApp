@@ -1,13 +1,13 @@
 ﻿using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;              // dùng OrderTextCleaner
+using TraSuaApp.Shared.Helpers;
 using TraSuaApp.Shared.Services;
-using TraSuaApp.WpfClient.AiOrdering;
 
 namespace TraSuaApp.WpfClient.Services
 {
@@ -24,86 +24,84 @@ namespace TraSuaApp.WpfClient.Services
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         }
 
-        /// <summary>
-        /// Chỉ gửi LINES (đã normalize & đánh số) như cơ chế cũ. Bỏ qua chatContext.
-        /// </summary>
+
         public async Task<List<QuickOrderDto>> ParseQuickOrderAsync(
             string rawInput,
-            string? HisList = null,
-            string? LearnList = null,
-            Guid? khachHangId = null,
-            int shortlistTopK = 12,
             string model = DefaultModel,
             string? chatContext = null,
-            string? customerNameHint = null) // ✅ thêm
+            string? customerNameHint = null)
         {
             var result = new List<QuickOrderDto>();
             var baoCao = new List<string>();
 
             // ==== 1) Chuẩn bị menu & shortlist
             var menu = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
-
-            // SHORTLIST học máy (theo khách + global) + lịch sử server
-            string learnedShort = QuickGptLearningStore.Instance.BuildShortlistForPrompt(
-                customerId: khachHangId,
-                currentMenu: menu,
-                serverTopForCustomer: null,
-                topK: 12
-            );
-
-            var shortFinal = JoinShortlists(HisList, LearnList);
             string menuText = BuildMenuForGpt(menu);
 
-            // ==== 2) Luôn dùng LINES từ rawInput (không dùng CHAT)
+            // ==== 2) Lấy và chuẩn hoá LINES
             var normLines = OrderTextCleaner.PreCleanThenNormalizeLines(rawInput, customerNameHint).ToList();
             string linesText = BuildNumberedLines(normLines);
 
-            // ==== 3) Prompt chỉ có SHORTLIST + MENU + LINES
             var systemPrompt = @"
-Bạn là hệ thống POS. Chỉ trả về DUY NHẤT một mảng JSON hợp lệ (không kèm giải thích).
+Bạn là hệ thống POS đọc hội thoại order nước.
 Đầu vào gồm:
-- SHORTLIST (Id<TAB>Tên)
 - MENU (Id<TAB>ten_khong_dau)
-- LINES (các dòng KH nhập, đã đánh số: 1), 2), 3)...)
+- LINES (các dòng KH nhập, đã đánh số: 1), 2), 3)...
 
 YÊU CẦU:
-- Một Line có thể không có món hoặc có nhiều hơn 1 món.
-- Chỉ tạo item KH thực sự đặt món (bỏ qua xã giao, trò chuyện...).
-- Không tạo sản phẩm mới; chỉ chọn Id có trong SHORTLIST/MENU.
-- Map từng item về:
+1. Một Line có thể chứa nhiều món hoặc không có món.
+2. Chỉ tạo item KH thật sự đặt (bỏ qua lời xã giao, chào hỏi, giờ giấc...).
+3. Không tạo sản phẩm mới; chỉ chọn Id có trong MENU.
+4. Nếu thấy giá (vd: '1 ly 25k', '35k nước dừa') → ghi vào Gia (đồng, không có 'k'); nếu không thấy thì Gia = null.
+5. Không đưa các từ/cụm đã nằm trong tên sản phẩm vào NoteText.
+6. Chỉ giữ các ghi chú thật sự: 'ít ngọt', 'ít đá', 'nóng', 'mang đi', 'bớt đường', 'uống tại quán', v.v.
+7. Nếu có dòng riêng chỉ gồm ghi chú (không có món) như 'xin thêm ly', 'ít đường thôi', 'mang đi nha',
+   hoặc dòng bắt đầu bằng các từ: 'xin', 'cho', 'bớt', 'ít', 'thêm', 'đừng', 'nhiều', 'mang', 'uống', 'trà',
+   thì coi đó là **NoteText** cho nhóm món gần nhất ở trên.
+   → Nếu dòng đó nằm ngay sau dòng có món, gán NoteText cho món cuối cùng trong nhóm đó.
+   → Nếu nhiều dòng ghi chú liên tiếp, hãy gộp chúng lại thành một NoteText duy nhất.
+8. Nếu không có ghi chú, để NoteText = rỗng.
+9. Nếu khách nhắc đến món không có trong MENU như 'trà đá', 'ống hút', 'ly đá' → 
+   thêm vào NoteText của món gần nhất.
+
+Trả về duy nhất một MẢNG JSON hợp lệ:
+[
   {
     ""Id"": ""GUID sản phẩm"",
-    ""SoLuong"": số nguyên >=1,
+    ""SoLuong"": int >= 1,
     ""NoteText"": ""ghi chú..."",
-    ""Line"": số dòng nguồn trong LINES
+    ""Line"": số thứ tự dòng có món,
+    ""Gia"": số tiền hoặc null
   }
-Trả về **một mảng JSON duy nhất**.
+]
 ".Trim();
 
+
+
             var userPromptSb = new StringBuilder();
-            if (!string.IsNullOrWhiteSpace(shortFinal)) { userPromptSb.AppendLine(shortFinal); userPromptSb.AppendLine(); }
             userPromptSb.AppendLine(menuText);
             userPromptSb.AppendLine();
             userPromptSb.AppendLine("LINES");
             userPromptSb.AppendLine(linesText);
             string userPrompt = userPromptSb.ToString();
 
-            // ==== 4) Audit Discord (chỉ những gì còn dùng)
+            // ==== 4) Audit input
+
+            // ==== 5) Gọi GPT ====
+            var sw = Stopwatch.StartNew();
+            string jsonOut = await CallChatCompletionsAsync(model, systemPrompt, userPrompt);
+            sw.Stop();
+            var elapsedMs = sw.ElapsedMilliseconds;
+
+            baoCao.Add(".");
+            baoCao.Add(".");
+            baoCao.Add(".");
+            baoCao.Add($"Model: {model} | GPT time: {elapsedMs} ms");
             baoCao.Add("-----customerNameHint-----"); baoCao.Add(customerNameHint);
             baoCao.Add("-----rawInput-----"); baoCao.Add(rawInput);
             baoCao.Add("-----linesText------"); baoCao.Add(linesText);
-            baoCao.Add("-----HisList-----"); baoCao.Add(HisList);
-            baoCao.Add("-----LearnList-----"); baoCao.Add(LearnList);
 
-            //baoCao.Add("menuText"); baoCao.Add(menuText);
-            // baoCao.Add("linesText"); baoCao.Add(linesText);
-            //baoCao.Add("systemPrompt"); baoCao.Add(systemPrompt);
-            // baoCao.Add("userPrompt"); baoCao.Add(userPrompt);
-            await DiscordService.SendAsync(Shared.Enums.DiscordEventType.Admin, string.Join("\n", baoCao), customerNameHint);
-            //return null;
 
-            // ==== 5) Call OpenAI
-            string jsonOut = await CallChatCompletionsAsync(model, systemPrompt, userPrompt);
             try
             {
                 using var doc = JsonDocument.Parse(jsonOut);
@@ -118,25 +116,61 @@ Trả về **một mảng JSON duy nhất**.
                             if (Guid.TryParse(idP.GetString(), out Guid gid))
                                 dto.Id = gid;
                         }
+
                         if (el.TryGetProperty("SoLuong", out var slP) && slP.TryGetInt32(out var sl))
                             dto.SoLuong = Math.Max(1, sl);
+
                         if (el.TryGetProperty("NoteText", out var nP))
                             dto.NoteText = nP.GetString() ?? "";
+
                         if (el.TryGetProperty("Line", out var lP) && lP.TryGetInt32(out var ln))
                             dto.Line = ln;
+
+                        // 🟟 NEW: đọc thêm giá nếu có
+                        if (el.TryGetProperty("Gia", out var gP))
+                        {
+                            if (gP.ValueKind == JsonValueKind.Number && gP.TryGetDecimal(out var g))
+                                dto.Gia = g;
+                            else if (decimal.TryParse(gP.GetString(), out var gStr))
+                                dto.Gia = gStr;
+                        }
 
                         if (dto.Id != Guid.Empty)
                             result.Add(dto);
                     }
                 }
             }
-            catch { /* nếu GPT trả sai format thì để trống */ }
+            catch
+            {
+                // nếu GPT trả sai format thì để trống
+            }
 
+            // ==== 6) Ghi log GPT trả về & kết quả parse
+            //baoCao.Add("-----gptOutput-----");
+            //baoCao.Add(JsonSerializer.Serialize(JsonDocument.Parse(jsonOut), new JsonSerializerOptions { WriteIndented = true }));
+
+            if (result.Any())
+            {
+                baoCao.Add("-----parsedItems-----");
+
+                // 🟟 Map Id → Tên món từ menu hiện có
+
+                foreach (var r in result)
+                {
+                    var spMap = AppProviders.SanPhams.Items.SingleOrDefault(x => x.Id == r.Id);
+
+                    if (spMap != null)
+                        baoCao.Add($"{r.Line}): {r.SoLuong} {spMap.Ten} - {r.Gia?.ToString()} - {r.NoteText}");
+                }
+            }
+
+            await DiscordService.SendAsync(Shared.Enums.DiscordEventType.Admin, string.Join("\n", baoCao), customerNameHint);
             return result;
         }
+
         public async Task<ObservableCollection<ChiTietHoaDonDto>> MapToChiTietAsync(
             string rawInput,
-            IEnumerable<QuickOrderDto> preds,          // ✅ truyền sẵn
+            IEnumerable<QuickOrderDto> preds,
             string? customerNameHint = null)
         {
             var chiTiets = new ObservableCollection<ChiTietHoaDonDto>();
@@ -144,6 +178,7 @@ Trả về **một mảng JSON duy nhất**.
 
             var spMap = AppProviders.SanPhams.Items.ToDictionary(x => x.Id, x => x);
             var normLines = OrderTextCleaner.PreCleanThenNormalizeLines(rawInput, customerNameHint).ToList();
+            int i = 1;
 
             foreach (var p in preds)
             {
@@ -153,11 +188,27 @@ Trả về **một mảng JSON duy nhất**.
                 if (p.Line.HasValue && p.Line.Value >= 1 && p.Line.Value <= normLines.Count)
                     lineText = normLines[p.Line.Value - 1];
 
-                var bt = PickVariantByNote(sp, $"{p.NoteText} {lineText}");
-                if (bt == null) continue;
+                SanPhamBienTheDto? bt = null;
 
+                // 🟟 Ưu tiên chọn theo note như cũ
+                bt = PickVariantByNote(sp, $"{p.NoteText} {lineText}");
+
+                // 🟟 Nếu GPT có giá và chưa chọn được biến thể
+                if (bt == null && p.Gia.HasValue)
+                {
+                    var giaGpt = p.Gia.Value;
+                    bt = sp.BienThe
+                        ?.OrderBy(v => Math.Abs(v.GiaBan - giaGpt))  // chọn giá gần nhất GPT dự đoán
+                        .FirstOrDefault();
+                }
+
+                // 🟟 Nếu vẫn chưa có → fallback mặc định
+                bt ??= sp.BienThe.FirstOrDefault(x => x.MacDinh)
+                    ?? sp.BienThe.OrderBy(v => v.GiaBan).FirstOrDefault();
+                if (bt == null) continue;
                 chiTiets.Add(new ChiTietHoaDonDto
                 {
+                    Stt = i++,
                     Id = Guid.NewGuid(),
                     SanPhamId = sp.Id,
                     SanPhamIdBienThe = bt.Id,
@@ -167,54 +218,25 @@ Trả về **một mảng JSON duy nhất**.
                     SoLuong = Math.Max(1, p.SoLuong),
                     NoteText = p.NoteText ?? ""
                 });
+
+                var lines = new List<string>();
+                lines.Add("===== GPT ORDER FINALIZED =====");
+
+                foreach (var ct in chiTiets)
+                {
+                    lines.Add($"{ct.Stt}. {ct.TenSanPham} - {ct.TenBienThe} x{ct.SoLuong} - {ct.DonGia:N0}đ {ct.NoteText}");
+                }
+
+                await DiscordService.SendAsync(
+                    Shared.Enums.DiscordEventType.Admin,
+                    string.Join("\n", lines)
+
+                );
+
+
             }
             return chiTiets;
         }
-
-        //public async Task<ObservableCollection<ChiTietHoaDonDto>> MapToChiTietAsync(
-        //   string rawInput, string? combinedShortlistText = null, Guid? khachHangId = null,
-        //   int shortlistTopK = 12, string model = DefaultModel, string? chatContext = null,
-        //   string? customerNameHint = null) // ✅ thêm
-        //{
-
-
-        //    var preds = await ParseQuickOrderAsync(rawInput, combinedShortlistText, khachHangId, shortlistTopK, model, chatContext, customerNameHint);
-
-        //    var chiTiets = new ObservableCollection<ChiTietHoaDonDto>();
-        //    if (preds == null || preds.Count == 0) return chiTiets;
-
-        //    var spMap = AppProviders.SanPhams.Items.ToDictionary(x => x.Id, x => x);
-
-        //    // LINES chuẩn hoá để map Line -> ghi chú/biến thể
-        //    var normLines = OrderTextCleaner.PreCleanThenNormalizeLines(rawInput, customerNameHint).ToList(); // ✅
-
-        //    foreach (var p in preds)
-        //    {
-        //        if (p.Id == Guid.Empty || !spMap.TryGetValue(p.Id, out var sp)) continue;
-
-        //        string? lineText = null;
-        //        if (p.Line.HasValue && p.Line.Value >= 1 && p.Line.Value <= normLines.Count)
-        //            lineText = normLines[p.Line.Value - 1];
-
-        //        var bt = PickVariantByNote(sp, $"{p.NoteText} {lineText}");
-        //        if (bt == null) continue;
-
-        //        chiTiets.Add(new ChiTietHoaDonDto
-        //        {
-        //            Id = Guid.NewGuid(),
-        //            SanPhamId = sp.Id,
-        //            SanPhamIdBienThe = bt.Id,
-        //            TenSanPham = sp.Ten,
-        //            DonGia = bt.GiaBan,
-        //            TenBienThe = bt.TenBienThe ?? "Size Chuẩn",
-        //            SoLuong = Math.Max(1, p.SoLuong),
-        //            NoteText = p.NoteText ?? ""
-        //        });
-        //    }
-        //    return chiTiets;
-        //}
-
-        //// ======== helpers ========
 
         private async Task<string> CallChatCompletionsAsync(string model, string systemPrompt, string userPrompt)
         {
@@ -238,6 +260,7 @@ Trả về **một mảng JSON duy nhất**.
             var json = await resp.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
             var msg = doc.RootElement.GetProperty("choices")[0].GetProperty("message");
+
             if (msg.TryGetProperty("content", out var contentEl))
             {
                 if (contentEl.ValueKind == JsonValueKind.String) return contentEl.GetString() ?? "[]";
@@ -276,28 +299,6 @@ Trả về **một mảng JSON duy nhất**.
                string.Join("\n", menu.Where(m => !m.NgungBan)
                                      .Select(m => $"{m.Id}\t{OrderTextCleaner.NormalizeNoDiacritics(m.Ten)}"));
 
-        private static string JoinShortlists(string? a, string? b)
-        {
-            var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(a)) parts.Add(a.Trim());
-            if (!string.IsNullOrWhiteSpace(b)) parts.Add(b.Trim());
-            if (parts.Count == 0) return "";
-            var merged = string.Join("\n", parts);
-            var lines = merged.Split('\n').Select(x => x.TrimEnd()).ToList();
-            var cleaned = new List<string>();
-            bool headerWritten = false;
-            foreach (var ln in lines)
-            {
-                if (ln.StartsWith("SHORTLIST", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (!headerWritten) { cleaned.Add("SHORTLIST (Id<TAB>Tên)"); headerWritten = true; }
-                    continue;
-                }
-                cleaned.Add(ln);
-            }
-            return string.Join("\n", cleaned);
-        }
-
         private static string BuildNumberedLines(List<string> normLines)
         {
             var sb = new StringBuilder();
@@ -305,13 +306,11 @@ Trả về **một mảng JSON duy nhất**.
             return sb.ToString().TrimEnd();
         }
 
-        // ========= Size/variant picker (2-size: Chuẩn & L) =========
         private static SanPhamBienTheDto? PickVariantByNote(SanPhamDto sp, string? noteOrLine)
         {
             if (sp.BienThe == null || sp.BienThe.Count == 0) return null;
 
             var text = OrderTextCleaner.NormalizeNoDiacritics(noteOrLine ?? "");
-
             bool wantL = Regex.IsMatch(text, @"\b(size\s*l|sz\s*l|\bl\b|lon|to|bu|large|big)\b");
             bool forceStandard = Regex.IsMatch(text,
                 @"\b(size\s*m|sz\s*m|\bm\b|chuan|thuong|vua|medium|regular|normal|size\s*chuan|"

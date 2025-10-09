@@ -17,7 +17,7 @@ public static class StringHelper
     // =============================
     // 🟟 1. Extension NormalizeText
     // =============================
-    public static string NormalizeText(this string? input, bool ignoreAccentOnly = false)
+    public static string MyNormalizeText(this string? input, bool ignoreAccentOnly = false)
     {
         if (string.IsNullOrWhiteSpace(input)) return "";
 
@@ -110,13 +110,13 @@ public static class StringHelper
     //}
 
     // ✅ Alias gọi tĩnh (nếu cần)
-    public static string NormalizeTextStatic(string? s) => s.NormalizeText();
+    public static string NormalizeText(string? s) => s.MyNormalizeText();
 
     // =============================
     // 🟟 2. So sánh nhanh
     // =============================
     public static bool EqualsNormalized(this string? a, string? b)
-        => a.NormalizeText() == b.NormalizeText();
+        => a.MyNormalizeText() == b.MyNormalizeText();
 
     // =============================
     // 🟟 3. Lấy tên rút gọn
@@ -126,7 +126,7 @@ public static class StringHelper
         if (string.IsNullOrWhiteSpace(input))
             return string.Empty;
 
-        string normalized = input.NormalizeText();
+        string normalized = input.MyNormalizeText();
         var words = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         var shortName = new StringBuilder();
@@ -234,7 +234,7 @@ public static class StringHelper
     {
         foreach (var s in inputs)
         {
-            Console.WriteLine($"{s} → {s.NormalizeText()}");
+            Console.WriteLine($"{s} → {s.MyNormalizeText()}");
         }
     }
 #endif

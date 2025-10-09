@@ -142,42 +142,6 @@ namespace TraSuaApp.Shared.Helpers
         private static readonly Regex _rxInt = new(@"\b\d+\b", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex _rxKAmount = new(@"\b(\d{1,3})\s*[kK]\b", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        // “25k” → “25000”
-        public static string ExpandKNotationNumbers(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return input;
-            return _rxKAmount.Replace(input, m =>
-            {
-                if (!int.TryParse(m.Groups[1].Value, out var n)) return m.Value;
-                return (n * 1000).ToString();
-            });
-        }
-
-        // “25” → “25000” (né giờ)
-        public static string InflateNumbersToThousands(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return input;
-
-            return _rxInt.Replace(input, m =>
-            {
-                var numStr = m.Value;
-                if (!int.TryParse(numStr, out var n)) return numStr;
-
-                int end = m.Index + m.Length;
-                if (end < input.Length)
-                {
-                    char next = input[end];
-                    if ((next == ':' || next == 'h' || next == 'H') &&
-                        end + 1 < input.Length && char.IsDigit(input[end + 1]))
-                        return numStr;
-                }
-
-                if (n < 15 || n >= 1000 || numStr.EndsWith("000"))
-                    return numStr;
-
-                return numStr + "000";
-            });
-        }
 
         // =========================
         // 🟟 CHUẨN HOÁ DÒNG CHAT
@@ -218,31 +182,35 @@ namespace TraSuaApp.Shared.Helpers
                     // nếu dòng chỉ là giờ "13 20" thì bỏ qua
                     if (Regex.IsMatch(n, @"^(?:[01]?\d|2[0-3])\s+\d{2}(?:\s*(?:am|pm))?$")) continue;
 
-                    n = ExpandKNotationNumbers(n);
-                    n = InflateNumbersToThousands(n);
                     list.Add(n);
                 }
             }
 
             // Bỏ dòng 1 từ lặp nhiều lần (anti-noise)
-            var oneWordCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            foreach (var s in list)
+            if (customerNameHint == "Messenger")
             {
-                var toks = s.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (toks.Length == 1)
-                {
-                    var key = toks[0];
-                    oneWordCounts[key] = oneWordCounts.TryGetValue(key, out var c) ? c + 1 : 1;
-                }
+                // ✅ Loại tất cả dòng trùng (xuất hiện > 1 lần)
+                var dupCounts = list
+                    .GroupBy(s => s.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+
+                list = list.Where(s => dupCounts[s.Trim()] == 1).ToList();
             }
-
-            list = list.Where(s =>
+            else
             {
-                var toks = s.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (toks.Length != 1) return true;
-                return oneWordCounts[toks[0]] <= 1;
-            }).ToList();
+                // ✅ Loại dòng 1 từ bị lặp nhiều lần (anti-noise)
+                var oneWordCounts = list
+                    .Select(s => s.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                    .Where(toks => toks.Length == 1)
+                    .GroupBy(toks => toks[0], StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
 
+                list = list.Where(s =>
+                {
+                    var toks = s.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    return toks.Length != 1 || oneWordCounts[toks[0]] <= 1;
+                }).ToList();
+            }
             return list;
         }
 
@@ -389,8 +357,6 @@ namespace TraSuaApp.Shared.Helpers
                 norm = ApplyWordReplacements(norm);
                 if (!string.IsNullOrWhiteSpace(norm))
                 {
-                    norm = ExpandKNotationNumbers(norm);
-                    norm = InflateNumbersToThousands(norm);
                     result.Add(norm);
                 }
             }

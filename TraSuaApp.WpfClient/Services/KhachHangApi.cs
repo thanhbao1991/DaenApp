@@ -42,11 +42,11 @@ public class KhachHangApi : BaseApi, IKhachHangApi
 
     public async Task<Result<KhachHangDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<KhachHangDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<KhachHangDto>($"{BASE_URL}/{id}/restore", null!);
     }
 
     public async Task<Result<List<KhachHangDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<KhachHangDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<KhachHangDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
 }

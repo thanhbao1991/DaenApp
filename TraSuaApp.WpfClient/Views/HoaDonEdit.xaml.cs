@@ -10,6 +10,7 @@ using TraSuaApp.Shared.Config;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Shared.Services;
 using TraSuaApp.WpfClient.AiOrdering;
 using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Controls;
@@ -631,21 +632,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     if (!string.IsNullOrWhiteSpace(GptInputText)
                    && Model?.ChiTietHoaDons?.Any() == true)
                     {
-                        var predsSafe = GptPredictions ?? new List<QuickOrderDto>(); // ⭐
-                        _ = Task.Run(async () =>
-                        {
-                            try
-                            {
-                                await QuickGptLearningStore.Instance.LearnAsync(
-                                    customerId: Model.KhachHangId,
-                                    rawInput: GptInputText,
-                                    finals: Model.ChiTietHoaDons,
-                                    preds: predsSafe,
-                                    sanPhams: AppProviders.SanPhams.Items
-                                );
-                            }
-                            catch { /* log nếu cần */ }
-                        });
+
                     }
                     else if (Model?.ChiTietHoaDons?.Any() == true)
                     {
@@ -658,8 +645,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                                 {
                                     var sp = AppProviders.SanPhams.Items
                                         .FirstOrDefault(s => s.BienThe.Any(bt => bt.Id == ct.SanPhamIdBienThe));
-                                    if (sp != null)
-                                        await QuickGptLearningStore.Instance.LearnAsync(Model.KhachHangId, sp.Ten, sp.Id, sp.Ten);
                                 }
                             }
                             catch { }
@@ -690,6 +675,62 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 }
 
             }
+
+
+
+
+            // 🟟 Chỉ log khi mở từ Messenger
+            // 🟟 Chỉ log khi mở từ Messenger
+            if (_openedFromMessenger && Model?.ChiTietHoaDons?.Any() == true)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var lines = new List<string>();
+                        lines.Add("===== MESSENGER ORDER FINALIZED =====");
+                        lines.Add("-----Sau khi nhân viên chỉnh sửa & lưu-----");
+
+                        foreach (var ct in Model.ChiTietHoaDons.OrderBy(x => x.Stt))
+                        {
+                            // Lấy biến thể
+                            var bienThe = AppProviders.SanPhams.Items
+                                .SelectMany(s => s.BienThe)
+                                .FirstOrDefault(bt => bt.Id == ct.SanPhamIdBienThe);
+
+                            string tenBienThe = bienThe?.TenBienThe;
+                            string tenHienThi = ct.TenSanPham +
+                                                (string.IsNullOrWhiteSpace(tenBienThe)
+                                                    ? ""
+                                                    : $" – {tenBienThe}");
+
+                            // Ghi chú + topping
+                            string noteText = string.IsNullOrWhiteSpace(ct.NoteText) ? "" : $" - {ct.NoteText}";
+                            string toppingText = "";
+                            if (ct.ToppingDtos?.Any() == true)
+                                toppingText = " topping: " + string.Join(", ", ct.ToppingDtos.Select(t => $"{t.Ten} x{t.SoLuong}"));
+
+                            // Tính thành tiền
+                            decimal thanhTien = (ct.DonGia * ct.SoLuong)
+                                                + (ct.ToppingDtos?.Sum(t => t.Gia * t.SoLuong) ?? 0);
+
+                            lines.Add($"{ct.Stt}. {tenHienThi} x{ct.SoLuong} - {ct.DonGia:N0}đ {noteText}{toppingText}");
+                        }
+
+
+                        await DiscordService.SendAsync(
+                            Shared.Enums.DiscordEventType.Admin,
+                            string.Join("\n", lines)
+
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("Lỗi gửi log Discord cuối (Messenger): " + ex.Message);
+                    }
+                });
+            }
+
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)

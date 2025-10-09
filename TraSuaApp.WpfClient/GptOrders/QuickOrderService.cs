@@ -149,12 +149,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
             // 3) Gọi engine (LINES-only)
             var preds = await _engine.ParseQuickOrderAsync(
               rawInput: sourceText,
-              HisList: shortMenuFromHistory,
-              // LearnList: learnedShort,
-              khachHangId: khachHangId,
-              shortlistTopK: 12,
-              model: "gpt-4.1-mini",
-              chatContext: null,
+              model: "gpt-4.1",
               customerNameHint: customerNameHint);
 
             var chiTiets = await _engine.MapToChiTietAsync(

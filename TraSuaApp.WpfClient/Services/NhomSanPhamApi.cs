@@ -38,11 +38,11 @@ public class NhomSanPhamApi : BaseApi, INhomSanPhamApi
 
     public async Task<Result<NhomSanPhamDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<NhomSanPhamDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<NhomSanPhamDto>($"{BASE_URL}/{id}/restore", null!);
     }
 
     public async Task<Result<List<NhomSanPhamDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<NhomSanPhamDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<NhomSanPhamDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
 }

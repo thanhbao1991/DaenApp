@@ -22,8 +22,8 @@ public class VoucherDto : DtoBase
     public virtual List<Guid> NhomSanPhamIds { get; set; } = new List<Guid>();
     public string TimKiem =>
        $"{Ten?.ToLower() ?? ""} " +
-       StringHelper.NormalizeText(Ten ?? "") + " " +
-       StringHelper.NormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+       StringHelper.MyNormalizeText(Ten ?? "") + " " +
+       StringHelper.MyNormalizeText((Ten ?? "").Replace(" ", "")) + " " +
        StringHelper.GetShortName(Ten ?? "");
 
 }

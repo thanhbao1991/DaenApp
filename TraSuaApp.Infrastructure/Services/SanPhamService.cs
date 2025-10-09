@@ -142,7 +142,7 @@ namespace TraSuaApp.Infrastructure.Services
             entity.DinhLuong = dto.DinhLuong?.Trim();
             entity.VietTat = dto.VietTat?.Trim();
             entity.TenKhongVietTat = string.IsNullOrWhiteSpace(dto.TenKhongVietTat)
-         ? StringHelper.NormalizeText(dto.Ten).ToLower()
+         ? StringHelper.MyNormalizeText(dto.Ten).ToLower()
          : dto.TenKhongVietTat;
 
 

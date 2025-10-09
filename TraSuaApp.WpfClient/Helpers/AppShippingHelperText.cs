@@ -141,7 +141,7 @@ public class AppShippingHelperText
             string? tenBienThe = optionsDiv.FirstOrDefault()?.Text;
             if (!string.IsNullOrEmpty(tenBienThe))
             {
-                tenBienThe = StringHelper.NormalizeText(tenBienThe).ToLower()
+                tenBienThe = StringHelper.MyNormalizeText(tenBienThe).ToLower()
                     .Replace("x 1", "", StringComparison.OrdinalIgnoreCase)
                     .Trim();
             }
@@ -161,7 +161,7 @@ public class AppShippingHelperText
                     SoLuong = soLuong,
                     ToppingDtos = optionsDiv.Skip(1).Select(opt =>
                     {
-                        string name = StringHelper.NormalizeText(opt.Text).ToLower();
+                        string name = StringHelper.MyNormalizeText(opt.Text).ToLower();
                         return new ToppingDto
                         {
                             Id = MapToppingId(name),
@@ -232,8 +232,8 @@ public class AppShippingHelperText
     private Guid MapSanPhamBienTheId(string tenSanPham, string? tenBienThe, decimal donGiaWeb)
     {
         var sp = _sanPhamList.FirstOrDefault(x =>
-            StringHelper.NormalizeText(x.Ten).ToLower() ==
-            StringHelper.NormalizeText(tenSanPham.Replace("Trân Châu Đường Đen", "TCĐĐ")).ToLower());
+            StringHelper.MyNormalizeText(x.Ten).ToLower() ==
+            StringHelper.MyNormalizeText(tenSanPham.Replace("Trân Châu Đường Đen", "TCĐĐ")).ToLower());
 
         if (sp == null)
         {
@@ -249,13 +249,13 @@ public class AppShippingHelperText
         }
 
         if (!string.IsNullOrEmpty(tenBienThe))
-            tenBienThe = StringHelper.NormalizeText(tenBienThe).ToLower()
+            tenBienThe = StringHelper.MyNormalizeText(tenBienThe).ToLower()
                 .Replace("x 1", "", StringComparison.OrdinalIgnoreCase)
                 .Trim();
 
         var bienThe = _bienTheList.Where(b => b.SanPhamId == sp.Id)
             .FirstOrDefault(b =>
-                StringHelper.NormalizeText(b.TenBienThe ?? "").ToLower() ==
+                StringHelper.MyNormalizeText(b.TenBienThe ?? "").ToLower() ==
                 (tenBienThe ?? "").ToLower());
 
         if (bienThe == null && donGiaWeb > 0)
@@ -285,8 +285,8 @@ public class AppShippingHelperText
     private Guid MapToppingId(string tenTopping)
     {
         var tp = _toppingList.FirstOrDefault(t =>
-            StringHelper.NormalizeText(t.Ten).ToLower() ==
-            StringHelper.NormalizeText(tenTopping).ToLower());
+            StringHelper.MyNormalizeText(t.Ten).ToLower() ==
+            StringHelper.MyNormalizeText(tenTopping).ToLower());
 
         return tp?.Id ?? Guid.Empty;
     }
@@ -295,8 +295,8 @@ public class AppShippingHelperText
     {
         return _toppingList
             .FirstOrDefault(t =>
-                StringHelper.NormalizeText(t.Ten).ToLower() ==
-                StringHelper.NormalizeText(tenTopping).ToLower())
+                StringHelper.MyNormalizeText(t.Ten).ToLower() ==
+                StringHelper.MyNormalizeText(tenTopping).ToLower())
             ?.Gia ?? 0;
     }
 }

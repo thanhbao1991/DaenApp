@@ -4,26 +4,23 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace TraSuaApp.WpfClient.Helpers
 {
     public static class BusyUI
     {
-        /// <summary>
-        /// Tạo spinner (vòng cung quay) thuần C# để nhét vào nút.
-        /// </summary>
+        // 🟟 Spinner thuần C#
         private static FrameworkElement CreateSpinner(double size = 16, double strokeThickness = 2.0, double durationSeconds = 1.0)
         {
-            // Vòng nền nhạt
             var track = new Ellipse
             {
                 Width = size,
                 Height = size,
                 StrokeThickness = strokeThickness,
-                Stroke = new SolidColorBrush(Color.FromArgb(80, 0, 0, 0)), // nhạt
+                Stroke = new SolidColorBrush(Color.FromArgb(60, 0, 0, 0))
             };
 
-            // Cung quay (1/3 vòng)
             var radius = size / 2;
             var startPoint = new Point(radius, 0);
             var endPoint = new Point(size, radius);
@@ -48,13 +45,11 @@ namespace TraSuaApp.WpfClient.Helpers
                                 IsLargeArc = false,
                                 SweepDirection = SweepDirection.Clockwise
                             }
-                        },
-                        IsClosed = false
+                        }
                     }
                 })
             };
 
-            // Container có RotateTransform để quay cả cung
             var spinner = new Grid
             {
                 Width = size,
@@ -73,37 +68,35 @@ namespace TraSuaApp.WpfClient.Helpers
                 EasingFunction = new CircleEase { EasingMode = EasingMode.EaseInOut }
             };
 
-            // Bắt đầu animation
             spinner.Loaded += (_, __) =>
             {
                 (spinner.RenderTransform as RotateTransform)?.BeginAnimation(RotateTransform.AngleProperty, rotate);
             };
-
-            // Dừng nếu bị unload (phòng ngừa leak)
             spinner.Unloaded += (_, __) =>
             {
                 (spinner.RenderTransform as RotateTransform)?.BeginAnimation(RotateTransform.AngleProperty, null);
             };
 
-            // Co giãn theo nút: bọc Viewbox để auto-scale
-            return new Viewbox
-            {
-                Stretch = Stretch.Uniform,
-                Width = size,
-                Height = size,
-                Child = spinner
-            };
+            return new Viewbox { Width = size, Height = size, Stretch = Stretch.Uniform, Child = spinner };
         }
 
-        /// <summary>
-        /// Token điều khiển trạng thái "bận" của một thao tác UI.
-        /// </summary>
+        // 🟟 Token điều khiển trạng thái bận
         private sealed class Token : IDisposable
         {
             private readonly FrameworkElement _root;
             private readonly Button? _btn;
             private readonly object? _oldContent;
             private readonly object? _oldTag;
+            private readonly DispatcherTimer? _timer;
+            private readonly string[] _messages = new[]
+            {
+                "Đang xử lý...",
+                "Đang tính toán...",
+                "Đang gửi dữ liệu...",
+                "Đang chuẩn bị...",
+                "Đang học hỏi..."
+            };
+            private int _index = 0;
 
             public Token(FrameworkElement root, Button? btn, string? busyText)
             {
@@ -112,12 +105,13 @@ namespace TraSuaApp.WpfClient.Helpers
                 _oldContent = _btn?.Content;
                 _oldTag = _btn?.Tag;
 
-                // ❗ Chỉ khoá NÚT, không khoá toàn UI
                 if (_btn != null)
                 {
-                    _btn.IsEnabled = false;
+                    // ❌ Không dùng IsEnabled=false (vì sẽ bị mờ)
+                    // Thay bằng overlay bắt chuột, chặn click
+                    _btn.IsHitTestVisible = false;
 
-                    // Layout nút: [spinner] [text]
+                    // Layout spinner + text
                     var sp = new StackPanel
                     {
                         Orientation = Orientation.Horizontal,
@@ -125,19 +119,33 @@ namespace TraSuaApp.WpfClient.Helpers
                         HorizontalAlignment = HorizontalAlignment.Center
                     };
 
-                    sp.Children.Add(CreateSpinner(size: 16, strokeThickness: 2.0, durationSeconds: 0.9));
-                    sp.Children.Add(new TextBlock
+                    var spinner = CreateSpinner(size: 16, strokeThickness: 2.0, durationSeconds: 0.9);
+                    var txt = new TextBlock
                     {
-                        Text = string.IsNullOrWhiteSpace(busyText) ? "Đang xử lý..." : busyText,
+                        Text = busyText ?? "Đang xử lý...",
                         Margin = new Thickness(8, 0, 0, 0),
                         VerticalAlignment = VerticalAlignment.Center
-                    });
+                    };
+
+                    sp.Children.Add(spinner);
+                    sp.Children.Add(txt);
 
                     _btn.Content = sp;
                     _btn.Tag = "loading";
+
+                    // ⏱ Chuỗi "ảo" thay đổi mỗi 1.5 giây
+                    _timer = new DispatcherTimer
+                    {
+                        Interval = TimeSpan.FromSeconds(1.5)
+                    };
+                    _timer.Tick += (_, __) =>
+                    {
+                        _index = (_index + 1) % _messages.Length;
+                        txt.Text = _messages[_index];
+                    };
+                    _timer.Start();
                 }
 
-                // Con trỏ nhẹ nhàng (không gây cảm giác đơ)
                 Mouse.OverrideCursor = Cursors.AppStarting;
             }
 
@@ -145,19 +153,19 @@ namespace TraSuaApp.WpfClient.Helpers
             {
                 if (_btn != null)
                 {
+                    _timer?.Stop();
                     _btn.Content = _oldContent;
                     _btn.Tag = _oldTag ?? "idle";
-                    _btn.IsEnabled = true;
+                    _btn.IsHitTestVisible = true; // bật lại click
                 }
-
                 Mouse.OverrideCursor = null;
             }
         }
 
         /// <summary>
-        /// Dùng: using (BusyUI.Scope(this, button, "Đang phân tích…")) { await ... }
+        /// Dùng: using (BusyUI.Scope(this, btnSave, "Đang lưu...")) { await ... }
         /// </summary>
-        public static IDisposable Scope(FrameworkElement root, Button? button = null, string? busyText = "Vui lòng chờ...")
+        public static IDisposable Scope(FrameworkElement root, Button? button = null, string? busyText = "Đang xử lý...")
             => new Token(root, button, busyText);
     }
 }

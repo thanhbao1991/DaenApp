@@ -23,7 +23,7 @@ public class HoaDonApi : BaseApi, IHoaDonApi
 
     public async Task<Result<List<HoaDonDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<HoaDonDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<HoaDonDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
 
     public async Task<Result<HoaDonDto>> CreateAsync(HoaDonDto dto)
@@ -46,6 +46,6 @@ public class HoaDonApi : BaseApi, IHoaDonApi
 
     public async Task<Result<HoaDonDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<HoaDonDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<HoaDonDto>($"{BASE_URL}/{id}/restore", null!);
     }
 }

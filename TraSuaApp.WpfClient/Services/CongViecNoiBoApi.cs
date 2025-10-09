@@ -38,11 +38,12 @@ public class CongViecNoiBoApi : BaseApi, ICongViecNoiBoApi
 
     public async Task<Result<CongViecNoiBoDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<CongViecNoiBoDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<CongViecNoiBoDto>($"{BASE_URL}/{id}/restore", null!);
     }
 
     public async Task<Result<List<CongViecNoiBoDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<CongViecNoiBoDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<CongViecNoiBoDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
+
     }
 }

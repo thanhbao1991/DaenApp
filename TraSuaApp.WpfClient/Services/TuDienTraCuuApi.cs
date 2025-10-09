@@ -28,7 +28,7 @@ public class TuDienTraCuuApi : BaseApi, ITuDienTraCuuApi
 
     public async Task<Result<TuDienTraCuuDto>> UpdateAsync(Guid id, TuDienTraCuuDto dto)
     {
-        return await PutAsync<TuDienTraCuuDto>($"{BASE_URL}/{id}", dto);
+        return await PostAsync<TuDienTraCuuDto>($"{BASE_URL}/{id}", dto);
     }
 
     public async Task<Result<TuDienTraCuuDto>> DeleteAsync(Guid id)
@@ -38,11 +38,11 @@ public class TuDienTraCuuApi : BaseApi, ITuDienTraCuuApi
 
     public async Task<Result<TuDienTraCuuDto>> RestoreAsync(Guid id)
     {
-        return await PostAsync<TuDienTraCuuDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<TuDienTraCuuDto>($"{BASE_URL}/{id}/restore", null!);
     }
 
     public async Task<Result<List<TuDienTraCuuDto>>> GetUpdatedSince(DateTime since)
     {
-        return await GetAsync<List<TuDienTraCuuDto>>($"{BASE_URL}/updated-since/{since:yyyy-MM-ddTHH:mm:ss}");
+        return await GetAsync<List<TuDienTraCuuDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
     }
 }
