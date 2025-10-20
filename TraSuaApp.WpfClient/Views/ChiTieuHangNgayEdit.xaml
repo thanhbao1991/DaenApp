@@ -62,14 +62,28 @@
 
 
             <!--  Nút và lỗi  -->
-            <StackPanel Grid.Row="2">
+            <!--  Nút và lỗi  -->
+            <StackPanel Grid.Row="2" Orientation="Vertical">
                 <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
-                <Button
-                    Name="SaveButton"
-                    Click="SaveButton_Click"
-                    Content="Lưu Và Thêm Tiếp"
-                    Style="{StaticResource SaveButtonStyle}" />
 
+                <StackPanel
+                    Margin="0,8,0,0"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+
+                    <Button
+                        Name="SaveButton"
+                        Click="SaveButton_Click"
+                        Content="Lưu và tiếp"
+                        Style="{StaticResource AddButtonStyle}" />
+                    <Button
+                        Name="SaveAndCloseButton"
+                        Margin="8,0,0,0"
+                        Click="SaveAndCloseButton_Click"
+                        Content="Lưu và đóng"
+                        Style="{StaticResource EditButtonStyle}" />
+
+                </StackPanel>
             </StackPanel>
         </Grid>
     </Border>

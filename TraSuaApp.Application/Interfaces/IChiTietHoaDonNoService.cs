@@ -1,10 +1,13 @@
 ﻿using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Dtos.Requests;
 using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Applicationn.Interfaces;
 
 public interface IChiTietHoaDonNoService
 {
+    Task<Result<ChiTietHoaDonThanhToanDto>> PayDebtAsync(Guid id, PayDebtRequest req);
+
     Task<List<ChiTietHoaDonNoDto>> GetAllAsync();
     Task<ChiTietHoaDonNoDto?> GetByIdAsync(Guid id);
     Task<Result<ChiTietHoaDonNoDto>> CreateAsync(ChiTietHoaDonNoDto dto);

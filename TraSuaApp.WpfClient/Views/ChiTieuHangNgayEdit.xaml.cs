@@ -85,36 +85,37 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 if (NguyenLieuComboBox.IsPopupOpen)
                     return;
 
-
-                SaveButton_Click(SaveButton, new RoutedEventArgs());
+                SaveButton_Click(SaveButton, new RoutedEventArgs()); // Enter = Lưu & thêm tiếp
             }
         }
 
 
 
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
-        {
 
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+        public bool KeepAdding { get; private set; } = true; // mặc định như hành vi cũ
+
+        private async Task<bool> SaveAsync()
+        {
             ErrorTextBlock.Text = "";
+
             Model.NguyenLieuId = NguyenLieuComboBox.SelectedNguyenLieu?.Id ?? Guid.Empty;
             if (Model.NguyenLieuId == Guid.Empty || NguyenLieuComboBox.SearchTextBox.Text.Trim() == "")
             {
                 ErrorTextBlock.Text = "Nguyên liệu không được để trống.";
                 NguyenLieuComboBox.SearchTextBox.Focus();
-                return;
+                return false;
             }
+
             Model.GhiChu = GhiChuTextBox.Text;
             Model.Ten = NguyenLieuComboBox.SearchTextBox.Text;
             Model.DonGia = DonGiaTextBox.Value;
             Model.SoLuong = SoLuongTextBox.Value;
             Model.ThanhTien = ThanhTienTextBox.Value;
-            Model.BillThang = BillThangCheckBox.IsChecked == true ? true : false;
-            Model.Ngay = NgayDatePicker.SelectedDate ?? DateTime.Today;  // lấy ngày người dùng chọn
-            Model.NgayGio = Model.Ngay == DateTime.Today ?
-                DateTime.Now : Model.Ngay.AddDays(1).AddMinutes(-1);
-
-
-
+            Model.BillThang = BillThangCheckBox.IsChecked == true;
+            Model.Ngay = NgayDatePicker.SelectedDate ?? DateTime.Today;
+            Model.NgayGio = Model.Ngay == DateTime.Today ? DateTime.Now : Model.Ngay.AddDays(1).AddMinutes(-1);
 
             Result<ChiTieuHangNgayDto> result;
             if (Model.Id == Guid.Empty)
@@ -127,14 +128,30 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             if (!result.IsSuccess)
             {
                 ErrorTextBlock.Text = result.Message;
-                return;
+                return false;
             }
 
-            DialogResult = true;
-            Close();
+            return true;
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            KeepAdding = true; // "Lưu & thêm tiếp"
+            if (await SaveAsync())
+            {
+                DialogResult = true;
+                Close();
+            }
+        }
 
+        private async void SaveAndCloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            KeepAdding = false; // "Lưu & đóng"
+            if (await SaveAsync())
+            {
+                DialogResult = true;
+                Close();
+            }
+        }
     }
 }

@@ -13,28 +13,6 @@ namespace TraSuaApp.WpfClient.Views
 {
     public partial class CongViecNoiBoTab : UserControl
     {
-        // Debounce tối giản (copy từ Dashboard để giữ nhịp lọc)
-        private class DebounceDispatcher
-        {
-            private CancellationTokenSource? _cts;
-            public void Debounce(int milliseconds, Action action)
-            {
-                _cts?.Cancel();
-                _cts = new CancellationTokenSource();
-                Task.Delay(milliseconds, _cts.Token)
-                    .ContinueWith(t => { if (!t.IsCanceled) action(); },
-                                  TaskScheduler.FromCurrentSynchronizationContext());
-            }
-        }
-        private class DebounceManager
-        {
-            private readonly Dictionary<string, DebounceDispatcher> _map = new();
-            public void Debounce(string key, int milliseconds, Action action)
-            {
-                if (!_map.ContainsKey(key)) _map[key] = new DebounceDispatcher();
-                _map[key].Debounce(milliseconds, action);
-            }
-        }
 
         private readonly DebounceManager _debouncer = new();
         private readonly WpfErrorHandler _errorHandler = new();

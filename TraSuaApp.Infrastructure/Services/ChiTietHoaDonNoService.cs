@@ -2,6 +2,7 @@
 using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Dtos.Requests;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.Shared.Services;
@@ -115,6 +116,46 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
     }
 
 
+    public async Task<Result<ChiTietHoaDonThanhToanDto>> PayDebtAsync(Guid id, PayDebtRequest req)
+    {
+        var no = await _context.ChiTietHoaDonNos
+            .Include(x => x.HoaDon).Include(x => x.KhachHang)
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+        if (no == null)
+            return Result<ChiTietHoaDonThanhToanDto>.Failure("Không tìm thấy công nợ.");
+
+        if (no.SoTienConLai <= 0)
+            return Result<ChiTietHoaDonThanhToanDto>.Failure("Công nợ đã thanh toán.");
+
+        var now = DateTime.Now;
+
+        // GUID phương thức — giống WPF
+        var tienMatId = Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C");
+        var chuyenKhoanId = Guid.Parse("2cf9a88f-3bc0-4d4b-940d-f8ffa4affa02");
+
+        var isTienMat = string.Equals(req.Type, "TienMat", StringComparison.OrdinalIgnoreCase);
+
+        var dto = new ChiTietHoaDonThanhToanDto
+        {
+            ChiTietHoaDonNoId = no.Id,
+            HoaDonId = no.HoaDonId,
+            KhachHangId = no.KhachHangId,
+            SoTien = no.SoTienConLai,             // auto full debt
+            Ngay = now.Date,
+            NgayGio = now,
+            LoaiThanhToan = (no.Ngay == now.Date) ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
+            TenPhuongThucThanhToan = isTienMat ? "Tiền mặt" : "Chuyển khoản",
+            PhuongThucThanhToanId = isTienMat ? tienMatId : chuyenKhoanId,
+            GhiChu = no.GhiChu
+        };
+
+        // Tận dụng service hiện có để bảo toàn toàn bộ nghiệp vụ (trừ nợ, recalc, discord…)
+        var result = await new ChiTietHoaDonThanhToanService(_context)
+            .CreateAsync(dto);
+
+        return result;
+    }
     public async Task<Result<ChiTietHoaDonNoDto>> RestoreAsync(Guid id)
     {
         var entity = await _context.ChiTietHoaDonNos

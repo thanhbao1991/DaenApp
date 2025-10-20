@@ -2,7 +2,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using TraSuaApp.WpfClient.Helpers;
-using TraSuaApp.WpfClient.Services;
 using TraSuaApp.WpfClient.Views;
 
 namespace TraSuaApp.WpfClient
@@ -24,40 +23,32 @@ namespace TraSuaApp.WpfClient
                 pb.SelectAll();
         }
 
-        protected override async void OnStartup(StartupEventArgs e)
-
+        protected override void OnStartup(StartupEventArgs e)
         {
             const string mutexName = "TraSuaApp_WpfClient_OnlyOneInstance";
             _mutex = new Mutex(true, mutexName, out bool isNewInstance);
-
 
             if (!isNewInstance)
             {
                 try
                 {
-                    // Lấy process hiện tại
                     var current = Process.GetCurrentProcess();
-
-                    // Tìm các process khác cùng tên nhưng khác Id
                     var others = Process.GetProcessesByName(current.ProcessName)
                                         .Where(p => p.Id != current.Id);
-
                     foreach (var p in others)
                     {
                         try
                         {
                             p.Kill();
-                            p.WaitForExit(2000); // chờ thoát hẳn
+                            p.WaitForExit(2000);
                         }
-                        catch { /* ignore */ }
+                        catch { }
                     }
                 }
-                catch { /* ignore */ }
+                catch { }
             }
 
-
-
-            // Tự động select all khi focus TextBox / PasswordBox
+            // Tự động select-all cho TextBox / PasswordBox
             EventManager.RegisterClassHandler(typeof(TextBox),
                 UIElement.GotKeyboardFocusEvent,
                 new RoutedEventHandler(TextBox_SelectAll));
@@ -70,109 +61,68 @@ namespace TraSuaApp.WpfClient
             EventManager.RegisterClassHandler(typeof(PasswordBox),
                 UIElement.GotMouseCaptureEvent,
                 new RoutedEventHandler(PasswordBox_SelectAll));
-
-
-
-
-
-
 
             base.OnStartup(e);
 
-            _cvTts = new CongViecNoiBoTtsService
-            {
-                Enabled = true,                 // bật/tắt TTS
-                TopN = 5,                      // đọc tối đa N việc mỗi vòng
-                Interval = TimeSpan.FromMinutes(5) // chu kỳ đọc
-            };
+            // Đăng ký handler hết hạn token: lần login lại sau sẽ tự init ngay trong LoginForm
+            RegisterTokenExpiredHandler();
 
-
-
-            // Mở form đăng nhập lần đầu
-            // var login = new FileViewerWindow();
+            // 🟟 Mở Login — LoginForm sẽ tự: login → hiển thị tiến trình load → init AppProviders → start TTS → mở Dashboard
             var login = new LoginForm();
-            if (login.ShowDialog() == true)
-            {
-                // ✅ bật loading ngay trong login
-                //0login.SetLoading(true);
-                try
-                {
-                    await AppProviders.InitializeAsync();
-                    RegisterTokenExpiredHandler();
-                }
-                finally
-                {
-                    //0login.SetLoading(false);
-                    login.Close();
-                }
-            }
-            else
+            if (login.ShowDialog() != true)
             {
                 Shutdown();
             }
         }
+
         protected override void OnExit(ExitEventArgs e)
         {
-            _cvTts?.Dispose();
-            _cvTts = null;
             base.OnExit(e);
         }
-
-        private CongViecNoiBoTtsService? _cvTts;
 
         private static readonly DependencyProperty _attachedProperty =
             DependencyProperty.RegisterAttached("FadeAttached", typeof(bool), typeof(Window), new PropertyMetadata(false));
 
-
         private static void RegisterTokenExpiredHandler()
         {
-            // Tránh đăng ký nhiều lần
             ApiClient.OnTokenExpired -= HandleTokenExpired;
             ApiClient.OnTokenExpired += HandleTokenExpired;
         }
+
         private static void HandleTokenExpired()
         {
             if (_isLoggingIn) return;
             _isLoggingIn = true;
 
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                     {
-                         // 🟟 Đóng tất cả cửa sổ (trừ LoginForm nếu có)
-                         foreach (Window w in System.Windows.Application.Current.Windows.OfType<Window>().ToList())
-                         {
-                             if (w is not LoginForm)
-                                 w.Close();
-                         }
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                // Đóng tất cả cửa sổ (trừ LoginForm)
+                foreach (Window w in Application.Current.Windows.OfType<Window>().ToList())
+                {
+                    if (w is not LoginForm)
+                        w.Close();
+                }
 
-                         // 🟟 Nếu đã có LoginForm đang mở thì focus nó
-                         var existingLogin = System.Windows.Application.Current.Windows.OfType<LoginForm>().FirstOrDefault();
-                         if (existingLogin != null)
-                         {
-                             existingLogin.Activate();
-                             _isLoggingIn = false;
-                             return;
-                         }
+                // Nếu LoginForm đã mở → focus lại
+                var existingLogin = Application.Current.Windows.OfType<LoginForm>().FirstOrDefault();
+                if (existingLogin != null)
+                {
+                    existingLogin.Activate();
+                    _isLoggingIn = false;
+                    return;
+                }
 
-                         // 🟟 Hiện form đăng nhập
-                         var loginWindow = new LoginForm();
-                         var result = loginWindow.ShowDialog();
+                // Hiện form đăng nhập (LoginForm sẽ tự xử lý init + TTS + mở Dashboard)
+                var loginWindow = new LoginForm();
+                loginWindow.ShowDialog();
 
-                         if (result == true)
-                         {
-                             AppProviders.InitializeAsync().Wait();
-                             var main = new Dashboard();
-                             main.Show();
-                         }
-
-                         _isLoggingIn = false;
-                     });
+                _isLoggingIn = false;
+            });
         }
 
         private void Application_Exit(object sender, ExitEventArgs e)
         {
-            // Đóng ChromeDriver khi app thoát
             AppShippingHelperText.DisposeDriver();
         }
-
     }
 }

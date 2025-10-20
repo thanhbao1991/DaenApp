@@ -1,0 +1,136 @@
+﻿<UserControl
+    x:Class="TraSuaApp.WpfClient.Views.ChiTietHoaDonNoTab"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:fa="clr-namespace:FontAwesome.Sharp;assembly=FontAwesome.Sharp">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Thanh tìm kiếm + tổng tiền (giữ nguyên tên control để code-behind cũ không phải đổi)  -->
+        <DockPanel Margin="4">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                <TextBlock
+                    Padding="8"
+                    VerticalAlignment="Center"
+                    Text="Tìm kiếm:" />
+                <TextBox
+                    x:Name="SearchChiTietHoaDonNoTextBox"
+                    Width="320"
+                    Margin="8,0,0,0"
+                    TextChanged="SearchChiTietHoaDonNoTextBox_TextChanged" />
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button
+                    Click="TimKiemNhanhCongNoButton_Click"
+                    Content="Công nợ hôm nay"
+                    Foreground="White"
+                    Style="{StaticResource ThemButtonStyle}"
+                    Tag="hôm nay" />
+                <Button
+                    Click="TimKiemNhanhCongNoButton_Click"
+                    Content="Công nợ hôm qua"
+                    Foreground="White"
+                    Style="{StaticResource ThemButtonStyle}"
+                    Tag="hôm qua" />
+
+                <Button
+                    x:Name="F1Button"
+                    Click="F1aButton_Click"
+                    Style="{StaticResource EditButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <fa:IconImage
+                            Width="16"
+                            Height="16"
+                            Foreground="{StaticResource LightBrush}"
+                            Icon="MoneyBill" />
+                        <TextBlock Margin="5,0,0,0" Text=" F1 - Tiền mặt" />
+                    </StackPanel>
+                </Button>
+                <Button
+                    Name="F4Button"
+                    Click="F4aButton_Click"
+                    Style="{StaticResource EditButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <fa:IconImage
+                            Width="16"
+                            Height="16"
+                            Foreground="{StaticResource LightBrush}"
+                            Icon="CreditCard" />
+                        <TextBlock Margin="5,0,0,0" Text=" F4 - Chuyển khoản" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+        </DockPanel>
+
+        <DataGrid
+            x:Name="ChiTietHoaDonNoDataGrid"
+            Grid.Row="1"
+            AutoGenerateColumns="False"
+            IsReadOnly="True"
+            MouseDoubleClick="ChiTietHoaDonNoDataGrid_MouseDoubleClick">
+
+            <!--  Giữ style giống các tab khác  -->
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="FontSize" Value="{StaticResource FontSizeNormal}" />
+                </Style>
+            </DataGrid.RowStyle>
+
+            <DataGrid.Columns>
+                <DataGridTextColumn
+                    Width="60"
+                    Binding="{Binding Stt}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="STT" />
+                <DataGridTextColumn
+                    Width="110"
+                    Binding="{Binding Ngay, StringFormat=dd-MM-yyyy}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="Ngày" />
+                <DataGridTextColumn
+                    Width="90"
+                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="Giờ" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Ten}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Tên" />
+                <DataGridTextColumn
+                    x:Name="TongTienChiTietHoaDonNoTextBlock"
+                    Width="140"
+                    Binding="{Binding SoTienConLai, StringFormat={}{0:N0} đ}"
+                    ElementStyle="{StaticResource RightTextCellStyle}"
+                    Header="Còn lại" />
+                <DataGridTextColumn
+                    Width="2*"
+                    Binding="{Binding GhiChu}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Ghi chú" />
+
+                <!--  Cột nút Xoá (để ẩn như tab Công Việc)  -->
+                <DataGridTemplateColumn Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button
+                                HorizontalAlignment="Right"
+                                Click="XoaChiTietHoaDonNoButton_Click"
+                                Style="{StaticResource XoaButtonStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa:IconBlock Margin="0,0,5,0" Icon="Trash" />
+                                    <TextBlock Text="Xoá" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

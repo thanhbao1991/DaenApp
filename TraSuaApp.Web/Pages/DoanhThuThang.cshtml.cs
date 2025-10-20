@@ -54,7 +54,7 @@ namespace TraSuaAppWeb.Pages
 
                 DoanhThuTheoNgay = wrapper?.Data ?? new();
 
-                // Dùng dữ liệu từ backend đã tính sẵn
+                // Tổng hợp
                 TongDoanhThu = DoanhThuTheoNgay.Sum(d => d.TongTien);
                 TongChiTieu = DoanhThuTheoNgay.Sum(d => d.ChiTieu);
                 TongSoDon = DoanhThuTheoNgay.Sum(d => d.SoDon);
@@ -87,6 +87,21 @@ namespace TraSuaAppWeb.Pages
         {
             var client = _httpClientFactory.CreateClient("Api");
             var upstream = await client.GetAsync($"api/doanhthu/danhsach?khachHangId={khachHangId}");
+            var body = await upstream.Content.ReadAsStringAsync();
+            return new ContentResult
+            {
+                Content = body,
+                ContentType = "application/json",
+                StatusCode = (int)upstream.StatusCode
+            };
+        }
+
+        // ========= PROXY CHO AJAX: Số đơn theo giờ trong THÁNG =========
+        public async Task<IActionResult> OnGetThangByHour(int thang, int nam, int startHour = 6, int endHour = 22)
+        {
+            var client = _httpClientFactory.CreateClient("Api");
+            var upstream = await client.GetAsync(
+                $"api/doanhthu/thang-by-hour?thang={thang}&nam={nam}&startHour={startHour}&endHour={endHour}");
             var body = await upstream.Content.ReadAsStringAsync();
             return new ContentResult
             {

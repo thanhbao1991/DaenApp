@@ -134,6 +134,9 @@ namespace TraSuaApp.Shared.Helpers
             var s = input.Trim();
             s = Regex.Replace(s, @"[^\p{L}\p{N}\s\.,%-/]", " "); // giữ .,%-/
             s = Regex.Replace(s, @"\s+", " ");
+            s = Regex.Replace(s, @"(?<=\d)(?=\p{L})", " ");
+
+
             return s.Trim();
         }
 

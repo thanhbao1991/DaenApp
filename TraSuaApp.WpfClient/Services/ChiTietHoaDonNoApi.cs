@@ -15,7 +15,12 @@ public class ChiTietHoaDonNoApi : BaseApi, IChiTietHoaDonNoApi
     {
         return await GetAsync<List<ChiTietHoaDonNoDto>>(BASE_URL);
     }
-
+    public async Task<Result<ChiTietHoaDonThanhToanDto>> PayAsync(Guid id, string type)
+    {
+        var res = await PostAsync<ChiTietHoaDonThanhToanDto>($"/api/ChiTietHoaDonNo/{id}/pay",
+            new TraSuaApp.Shared.Dtos.Requests.PayDebtRequest { Type = type });
+        return res;
+    }
     public async Task<Result<ChiTietHoaDonNoDto>> GetByIdAsync(Guid id)
     {
         return await GetAsync<ChiTietHoaDonNoDto>($"{BASE_URL}/{id}");

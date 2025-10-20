@@ -1,4 +1,5 @@
 ﻿@page
+@using Newtonsoft.Json
 @model TraSuaAppWeb.Pages.DoanhThuNgayModel
 @{
     ViewData["Title"] = "Doanh Thu Ngày";
@@ -42,6 +43,13 @@
 <div id="imagePreview" style="margin-top: 10px;"></div>
 
 <div id="modalContent" class="container mt-3">
+    <div class="card mt-3">
+        <div class="card-header bg-light fw-bold">Số đơn theo giờ (hôm nay)</div>
+        <div class="card-body">
+            <canvas id="ordersByHourChart" height="120"></canvas>
+        </div>
+    </div>
+    <br />
     <div style="position: relative; width: 300px; height: 300px; margin: auto;">
         <canvas id="doughnutChart" width="300" height="300"></canvas>
 
@@ -220,6 +228,64 @@
             plugins: [ChartDataLabels]
         };
         new Chart(ctx, config);
+
+
+    
+    
+const HOUR_START = 6;
+    const HOUR_END = 22; // 10 tối (inclusive)
+            // ✅ Sửa lỗi: coalesce trước rồi mới Select để không lệch kiểu
+            const orders = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                            (Model.Data?.HoaDons ?? new List<TraSuaApp.Shared.Dtos.DoanhThuHoaDonDto>())
+                                    .Select(h => new { hour = h.NgayHoaDon.Hour })
+                    ));
+
+
+    const bucketCount = HOUR_END - HOUR_START + 1;
+    const counts = Array(bucketCount).fill(0);
+
+    orders.forEach(o => {
+        if (o.hour >= HOUR_START && o.hour <= HOUR_END) {
+            counts[o.hour - HOUR_START]++;
+        }
+    });
+
+    const labels = Array.from({ length: bucketCount }, (_, i) => (HOUR_START + i) + "h");
+
+    // Tô màu nổi bật cột "đông khách" nhất
+    const maxVal = counts.length ? Math.max(...counts) : 0;
+    const bg = counts.map(c => c === maxVal && maxVal > 0
+        ? 'rgba(255, 99, 132, 0.85)'
+        : 'rgba(54, 162, 235, 0.6)');
+    const border = counts.map(c => c === maxVal && maxVal > 0
+        ? 'rgba(255, 99, 132, 1)'
+        : 'rgba(54, 162, 235, 1)');
+
+    const ctxOrders = document.getElementById('ordersByHourChart').getContext('2d');
+    new Chart(ctxOrders, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Số đơn',
+                data: counts,
+                backgroundColor: bg,
+                borderColor: border,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                x: { title: { display: false, text: 'Giờ trong ngày (6h → 22h)' } },
+                y: { beginAtZero: true, title: { display: false, text: 'Số đơn' }, ticks: { precision: 0 } }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => `${ctx.parsed.y} đơn` } }
+            }
+        }
+    });
+
     </script>
 
 

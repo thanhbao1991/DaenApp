@@ -1,0 +1,95 @@
+﻿@page
+@model TraSuaAppWeb.Pages.XepHangKhachHangModel
+@{
+    ViewData["Title"] = "Xếp hạng Khách hàng";
+    var stt = 1;
+}
+
+<div class="container-fluid p-2">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center">
+            <a class="btn btn-outline-primary btn-sm me-2" href="?year=@Model.PrevYear">← Năm trước</a>
+            <h5 class="mb-0">TOP <b>@Model.CurrentYear</b></h5>
+            <a class="btn btn-outline-primary btn-sm ms-2" href="?year=@Model.NextYear">Năm sau →</a>
+        </div>
+
+        <div class="d-flex align-items-center">
+            <input id="searchBox" class="form-control form-control-sm me-2" style="width:300px"
+                   placeholder="Tìm khách hàng (tên/điện thoại)..." />
+            <a class="btn btn-outline-secondary btn-sm" href="?year=@Model.CurrentYear">Tải lại</a>
+        </div>
+    </div>
+
+    <div class="mb-2 text-muted">Tổng khách: <b>@Model.Items.Count.ToString("N0")</b></div>
+
+    @if (Model.Items?.Any() == true)
+    {
+        <div class="table-responsive">
+            <table id="khTable" class="table table-striped table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:70px">STT</th>
+                        <th style="width:260px">Khách hàng</th>
+                        <th class="text-end" style="width:110px">Số đơn</th>
+                        <th class="text-end" style="width:160px">Doanh thu (đ)</th>
+                        <th style="width:170px">Đơn gần nhất</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var it in Model.Items)
+                    {
+                        var ten = it.TenKhachHang ?? "";
+                        var sdt = it.SoDienThoai ?? "";
+                        <tr data-khachid="@it.KhachHangId"
+                            data-key="@($"{ten} {sdt}".ToLower())"
+                            data-kwnorm="@RemoveDiacritics($"{ten} {sdt}")">
+                            <td>@(stt++)</td>
+                            <td>@ten</td>
+                            <td class="text-end">@it.TongSoDon</td>
+                            <td class="text-end">@it.TongDoanhThu.ToString("N0")</td>
+                            <td>@(it.LanCuoiMua.HasValue? it.LanCuoiMua.Value.ToString("dd/MM/yyyy HH:mm") : "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">Không có dữ liệu.</div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        const rm = s => (s || "").toLowerCase().normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+
+        let tId;
+        document.getElementById('searchBox').addEventListener('input', function(){
+            clearTimeout(tId);
+            const kw = rm(this.value);
+            tId = setTimeout(() => {
+                const rows = document.querySelectorAll('#khTable tbody tr');
+                rows.forEach(r => {
+                    const key = r.getAttribute('data-key') || '';
+                    const norm = r.getAttribute('data-kwnorm') || '';
+                    const hit = key.includes(kw) || norm.includes(kw) || kw.includes(norm);
+                    r.style.display = hit ? '' : 'none';
+                });
+                let no = 1;
+                rows.forEach(r => { if (r.style.display !== 'none') r.children[0].textContent = no++; });
+            }, 300);
+        });
+    </script>
+}
+
+@functions {
+    private static string RemoveDiacritics(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return "";
+        var norm = s.Normalize(System.Text.NormalizationForm.FormD);
+        var arr = norm.Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark).ToArray();
+        return new string(arr).Normalize(System.Text.NormalizationForm.FormC).ToLower();
+    }
+}

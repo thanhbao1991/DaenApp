@@ -6,5 +6,6 @@ namespace TraSuaApp.WpfClient.DataProviders
     public class ChiTietHoaDonThanhToanDataProvider : BaseDataProvider<ChiTietHoaDonThanhToanDto>
     {
         public ChiTietHoaDonThanhToanDataProvider(ISignalRClient signalR) : base(signalR) { }
+
     }
 }

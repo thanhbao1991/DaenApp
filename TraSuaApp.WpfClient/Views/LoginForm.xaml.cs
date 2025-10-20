@@ -1,9 +1,11 @@
 ﻿using System.Net.Http.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
+using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.Views
 {
@@ -11,10 +13,30 @@ namespace TraSuaApp.WpfClient.Views
     {
         private readonly WpfErrorHandler _errorHandler;
 
+        // Tham chiếu status UI (nếu không có LoadingStatusText thì dùng ErrorTextBlock làm status)
+        private TextBlock? _statusText;
+        private CancellationTokenSource? _progressCts;
+
+        // 🟟 Giữ TTS sống suốt vòng đời app (tránh GC thu dọn khi LoginForm đóng)
+        private static CongViecNoiBoTtsService? _cvTtsSingleton;
+
+        // 🟟 Đá TTS mỗi khi danh sách công việc thay đổi
+        private static async void OnCongViecChanged()
+        {
+            try
+            {
+                if (_cvTtsSingleton?.Enabled == true)
+                    await _cvTtsSingleton.KickAsync();
+            }
+            catch { /* ignore */ }
+        }
+
         public LoginForm()
         {
             InitializeComponent();
             _errorHandler = new WpfErrorHandler(ErrorTextBlock);
+
+            _statusText = this.FindName("LoadingStatusText") as TextBlock ?? ErrorTextBlock;
 
             // 🟟 Khôi phục RememberMe & AutoLogin từ setting
             RememberMeCheckBox.IsChecked = Properties.Settings.Default.Luu;
@@ -75,6 +97,7 @@ namespace TraSuaApp.WpfClient.Views
             _errorHandler.Clear();
             LoginButton.IsEnabled = false;
             LoginProgressBar.Visibility = Visibility.Visible;
+            LoginProgressBar.IsIndeterminate = false;
             Mouse.OverrideCursor = Cursors.Wait;
 
             var username = UsernameTextBox.Text.Trim();
@@ -95,6 +118,8 @@ namespace TraSuaApp.WpfClient.Views
 
             try
             {
+                SetLoadingStatus("Đang gửi thông tin đăng nhập...", 10);
+
                 var response = await ApiClient.PostAsync("/api/auth/login", request, includeToken: false);
 
                 if (response.IsSuccessStatusCode)
@@ -130,9 +155,53 @@ namespace TraSuaApp.WpfClient.Views
                         System.Diagnostics.Debug.WriteLine(
                             $"[Login Saved] Luu={Properties.Settings.Default.Luu}, AutoLogin={Properties.Settings.Default.AutoLogin}, User={Properties.Settings.Default.TaiKhoan}");
 
+                        // ================================
+                        // ⏳ HIỂN THỊ TIẾN TRÌNH LOAD NGAY TRÊN LOGIN
+                        // ================================
+                        _progressCts?.Cancel();
+                        _progressCts = new CancellationTokenSource();
+                        var token = _progressCts.Token;
 
+                        // Luồng mô phỏng tiến độ mượt (tối đa 85% trong lúc await)
+                        var simulateTask = SimulateProgressAsync(maxPercent: 85, token);
+
+                        // Các mốc trạng thái "thật"
+                        SetLoadingStatus("Đang kết nối máy chủ...", 20);
+
+                        // Gọi init thật — giữ nguyên code cũ, không làm mất logic
+                        SetLoadingStatus("Đang tải dữ liệu hệ thống...", 30);
+                        await AppProviders.InitializeAsync();
+
+                        // 🟟 Đăng ký sự kiện cập nhật công việc → đá TTS mỗi lần đổi
+                        //if (AppProviders.CongViecNoiBos != null)
+                        //{
+                        //AppProviders.CongViecNoiBos.OnChanged -= OnCongViecChanged;
+                        //AppProviders.CongViecNoiBos.OnChanged += OnCongViecChanged;
+                        //}
+
+                        // 🟟 Khởi tạo (hoặc tái sử dụng) singleton TTS và Start (idempotent)
+                        if (_cvTtsSingleton == null)
+                        {
+                            _cvTtsSingleton = new CongViecNoiBoTtsService
+                            {
+                                Enabled = true,
+                                TopN = 5,
+                                Interval = TimeSpan.FromMinutes(5)
+                            };
+                        }
+                        _cvTtsSingleton.Start();
+
+                        // Kết thúc mô phỏng, đẩy 100%
+                        _progressCts.Cancel();
+                        await Task.WhenAny(simulateTask, Task.Delay(50));
+                        SetLoadingStatus("Hoàn tất. Đang khởi động giao diện...", 100);
+
+                        await Task.Delay(200);
+
+                        // Mở Dashboard
                         var mainWindow = new Dashboard();
                         mainWindow.Show();
+
                         this.DialogResult = true;
                         this.Close();
                     }
@@ -156,6 +225,7 @@ namespace TraSuaApp.WpfClient.Views
                 ResetUI();
             }
         }
+
         private void ResetUI()
         {
             LoginButton.IsEnabled = true;
@@ -172,6 +242,58 @@ namespace TraSuaApp.WpfClient.Views
         {
             AutoLoginCheckBox.IsChecked = false;
             AutoLoginCheckBox.IsEnabled = false;
+        }
+
+        // ================================
+        // Helpers: cập nhật trạng thái + mô phỏng tiến trình mượt
+        // ================================
+
+        private void SetLoadingStatus(string text, int? percent = null)
+        {
+            try
+            {
+                if (_statusText != null)
+                {
+                    _statusText.Text = text;                 // hiện trạng thái ngay trên form
+                    _statusText.Foreground = System.Windows.Media.Brushes.White;
+                    _statusText.Opacity = 0.95;
+                }
+
+                if (percent.HasValue)
+                {
+                    if (percent.Value < 0) percent = 0;
+                    if (percent.Value > 100) percent = 100;
+
+                    LoginProgressBar.IsIndeterminate = false;
+                    LoginProgressBar.Value = percent.Value;
+                }
+                else
+                {
+                    LoginProgressBar.IsIndeterminate = true;
+                }
+            }
+            catch { /* ignore UI update errors */ }
+        }
+
+        private async Task SimulateProgressAsync(int maxPercent, CancellationToken token)
+        {
+            // Tăng dần đều đến maxPercent, dừng khi bị cancel
+            try
+            {
+                double v = Math.Min(LoginProgressBar.Value, maxPercent);
+                while (!token.IsCancellationRequested && v < maxPercent)
+                {
+                    v += 1.5; // tốc độ tăng
+                    Dispatcher.Invoke(() =>
+                    {
+                        LoginProgressBar.IsIndeterminate = false;
+                        LoginProgressBar.Value = Math.Min(v, maxPercent);
+                    });
+                    await Task.Delay(90, token);
+                }
+            }
+            catch (TaskCanceledException) { }
+            catch { /* ignore */ }
         }
     }
 }

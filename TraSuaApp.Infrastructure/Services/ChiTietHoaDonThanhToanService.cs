@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Domain.Entities;
+using TraSuaApp.Infrastructure.Guards;
 using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
@@ -100,6 +101,8 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         // Recalc ConLai/HasDebt
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();
+        await AuditDebtGuard.CheckAndNotifyAsync(_context, entity.HoaDonId, "CreatePayment");
+
 
         var afterEntity = await _context.ChiTietHoaDonThanhToans
             .Include(x => x.KhachHang)

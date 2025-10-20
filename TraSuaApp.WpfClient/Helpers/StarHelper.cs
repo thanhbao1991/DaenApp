@@ -28,7 +28,7 @@
                 if (halfStar) starIcons += "☆";
             }
 
-            return $"\t{starIcons} ({diem / 10})";
+            return $"\t{diem / 100} ({starIcons})";
         }
     }
 }

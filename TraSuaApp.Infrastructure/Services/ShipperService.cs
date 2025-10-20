@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Domain.Entities;
+using TraSuaApp.Infrastructure.Guards;
 using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
@@ -57,6 +58,7 @@ namespace TraSuaApp.Infrastructure.Services
                 TrangThai = trangThai
             };
         }
+
         public async Task<List<HoaDonDto>> GetForShipperAsync(DateTime? day = null, string? shipper = "Khánh")
         {
             var start = (day?.Date ?? DateTime.Today);
@@ -118,68 +120,6 @@ namespace TraSuaApp.Infrastructure.Services
 
             return result;
         }
-
-
-        //public async Task<List<HoaDonDto>> GetForShipperAsync()
-        //{
-        //    var start = DateTime.Today; var end = start.AddDays(1);
-
-        //    var list = await _context.HoaDons.AsNoTracking()
-        //      .Where(x => !x.IsDeleted
-        //     && x.PhanLoai == "Ship"
-        //     && x.Ngay >= start && x.Ngay < end
-        //     && x.NgayShip != null
-        //     && x.NguoiShip == "Khánh")
-        //        .OrderByDescending(x => x.NgayGio)
-        //        .Select(x => new
-        //        {
-        //            x.Id,
-        //            x.TenKhachHangText,
-        //            x.DiaChiText,
-        //            x.SoDienThoaiText,
-        //            x.ThanhTien,
-        //            x.GhiChu,
-        //            x.GhiChuShipper,
-        //            x.HasDebt,
-        //            x.ConLai,
-        //            x.NgayGio,
-        //            x.NgayShip,
-        //            x.NguoiShip,
-        //            x.KhachHangId
-        //        })
-        //        .ToListAsync();
-
-        //    var result = new List<HoaDonDto>();
-
-        //    foreach (var h in list)
-        //    {
-        //        var dto = new HoaDonDto
-        //        {
-        //            Id = h.Id,
-        //            TenKhachHangText = h.TenKhachHangText,
-        //            DiaChiText = h.DiaChiText,
-        //            SoDienThoaiText = h.SoDienThoaiText,
-        //            ThanhTien = h.ThanhTien,
-        //            ConLai = h.ConLai,
-        //            HasDebt = h.HasDebt,
-        //            NgayGio = h.NgayGio,
-        //            NgayShip = h.NgayShip,
-        //            NguoiShip = h.NguoiShip,
-        //            GhiChu = h.GhiChu,
-        //            GhiChuShipper = h.GhiChuShipper,
-        //        };
-
-        //        if (h.KhachHangId != null)
-        //        {
-        //            dto.TongNoKhachHang = await LoyaltyService
-        //                .TinhTongNoKhachHangAsync(_context, h.KhachHangId.Value, h.Id);
-        //        }
-
-        //        result.Add(dto);
-        //    }
-
-        //    return result;
-        //}
 
         public async Task<Result<HoaDonDto>> TiNuaChuyenKhoanAsync(Guid id)
         {
@@ -357,7 +297,7 @@ namespace TraSuaApp.Infrastructure.Services
                     NgayGio = now,
                     SoTienNo = soTienNo,
                     SoTienConLai = soTienNo,
-                    GhiChu = "Shipper",
+                    GhiChu = entity.GhiChu,
                     CreatedAt = now,
                     LastModified = now,
                     IsDeleted = false
@@ -442,6 +382,7 @@ namespace TraSuaApp.Infrastructure.Services
             await _context.SaveChangesAsync();
             await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
             await _context.SaveChangesAsync();
+            await AuditDebtGuard.CheckAndNotifyAsync(_context, entity.Id, "CreatePayment");
 
             var after = ToDto(entity);
             return Result<HoaDonDto>.Success(after, "Đã thu tiền mặt.")
@@ -509,6 +450,7 @@ namespace TraSuaApp.Infrastructure.Services
             await _context.SaveChangesAsync();
             await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
             await _context.SaveChangesAsync();
+            await AuditDebtGuard.CheckAndNotifyAsync(_context, entity.Id, "CreatePayment");
 
             var after = ToDto(entity);
             return Result<HoaDonDto>.Success(after, "Đã thu chuyển khoản.")

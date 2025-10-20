@@ -75,27 +75,22 @@ public class DoanhThuService : IDoanhThuService
                          !ct.IsDeleted)
             .SumAsync(ct => (decimal?)ct.SoTien) ?? 0m;
 
-        // Nợ còn lại của các hoá đơn trong ngày (đã ghi nợ): dùng SoTienConLai
         var tongNoTuNoLines = await _context.ChiTietHoaDonNos.AsNoTracking()
             .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
             .SumAsync(ct => (decimal?)ct.SoTienConLai) ?? 0m;
 
-        // Phần CHƯA THU của các hóa đơn chưa ghi nợ
         var chuaThuKhongNo = await _context.HoaDons.AsNoTracking()
             .Where(h => hoaDonIds.Contains(h.Id) && !h.IsDeleted && !h.ChiTietHoaDonNos.Any(n => !n.IsDeleted))
-            .Select(h => (decimal?)(
-                h.ThanhTien - (h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted)
-                                .Sum(t => (decimal?)t.SoTien) ?? 0m)))
+            .Select(h => (decimal?)(h.ThanhTien - (h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted).Sum(t => (decimal?)t.SoTien) ?? 0m)))
             .SumAsync() ?? 0m;
 
         var tongConLai = await _context.HoaDons.AsNoTracking()
-      .Where(h => !h.IsDeleted && h.Ngay >= ngayBatDau && h.Ngay < ngayKetThuc)
-      .SumAsync(h => (decimal?)h.ConLai) ?? 0m;
+            .Where(h => !h.IsDeleted && h.Ngay >= ngayBatDau && h.Ngay < ngayKetThuc)
+            .SumAsync(h => (decimal?)h.ConLai) ?? 0m;
 
         var tongChiTieu = await _context.ChiTieuHangNgays.AsNoTracking()
-        .Where(ct => !ct.IsDeleted && !ct.BillThang
-                  && ct.Ngay >= ngayBatDau && ct.Ngay < ngayKetThuc)
-        .SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0m;
+            .Where(ct => !ct.IsDeleted && !ct.BillThang && ct.Ngay >= ngayBatDau && ct.Ngay < ngayKetThuc)
+            .SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0m;
 
         string viecChuaLam = string.Join(", ",
             await _context.CongViecNoiBos
@@ -114,7 +109,7 @@ public class DoanhThuService : IDoanhThuService
             TongConLai = tongConLai,
             TongChiTieu = tongChiTieu,
             TongChuyenKhoan = tongChuyenKhoan,
-            TongTienNo = tongNoTuNoLines, // nợ còn lại hôm nay (đã ghi nợ)
+            TongTienNo = tongNoTuNoLines,
             TongCongNo = tongNoTuNoLines,
 
             TaiCho = list.Where(x => x.PhanLoai == "Tại Chỗ").Sum(x => x.ThanhTien),
@@ -123,7 +118,6 @@ public class DoanhThuService : IDoanhThuService
             AppShipping = list.Where(x => x.PhanLoai == "App").Sum(x => x.ThanhTien),
             ViecChuaLam = viecChuaLam,
 
-            // chi tiết theo hoá đơn (ưu tiên SoTienConLai)
             HoaDons = list.Select(h => new DoanhThuHoaDonDto
             {
                 Id = h.Id,
@@ -141,7 +135,7 @@ public class DoanhThuService : IDoanhThuService
             }).ToList()
         };
 
-        dto.TongTienMat = -1;// dto.TongDoanhThu - dto.TongChiTieu - dto.TongChuyenKhoan - dto.TongTienNo;
+        dto.TongTienMat = -1;
         return dto;
     }
 
@@ -158,8 +152,7 @@ public class DoanhThuService : IDoanhThuService
 
         var chiTieus = await _context.ChiTieuHangNgays
             .AsNoTracking()
-            .Where(ct => !ct.IsDeleted && !ct.BillThang
-                      && ct.Ngay >= monthStart && ct.Ngay < monthEnd)
+            .Where(ct => !ct.IsDeleted && !ct.BillThang && ct.Ngay >= monthStart && ct.Ngay < monthEnd)
             .ToListAsync();
 
         var hoaDonIds = hoaDons.Select(x => x.Id).ToList();
@@ -174,7 +167,6 @@ public class DoanhThuService : IDoanhThuService
             .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
             .Select(ct => new { ct.HoaDonId, ct.SoTienConLai })
             .ToListAsync();
-
 
         var result = hoaDons
             .GroupBy(x => x.Ngay.Date)
@@ -216,5 +208,36 @@ public class DoanhThuService : IDoanhThuService
             .ToList();
 
         return result;
+    }
+
+    // 🟟 mới: tổng số đơn theo giờ trong tháng (NHANH — 1 query, fill missing hours)
+    public async Task<List<DoanhThuHourBucketDto>> GetSoDonTheoGioTrongThangAsync(int thang, int nam, int startHour = 6, int endHour = 22)
+    {
+        if (startHour < 0) startHour = 0;
+        if (endHour > 23) endHour = 23;
+        if (endHour < startHour) (startHour, endHour) = (0, 23);
+
+        var monthStart = new DateTime(nam, thang, 1);
+        var monthEnd = monthStart.AddMonths(1);
+
+        // Group ở DB theo giờ (dùng NgayGio vì có time)
+        var grouped = await _context.HoaDons
+            .AsNoTracking()
+            .Where(h => !h.IsDeleted && h.Ngay >= monthStart && h.Ngay < monthEnd)
+            .GroupBy(h => h.NgayGio.Hour)
+            .Select(g => new { Hour = g.Key, SoDon = g.Count() })
+            .ToListAsync();
+
+        // Fill thiếu giờ bằng 0
+        var dict = Enumerable.Range(startHour, endHour - startHour + 1).ToDictionary(h => h, _ => 0);
+        foreach (var g in grouped)
+        {
+            if (g.Hour >= startHour && g.Hour <= endHour)
+                dict[g.Hour] = g.SoDon;
+        }
+
+        return dict.Select(kv => new DoanhThuHourBucketDto { Hour = kv.Key, SoDon = kv.Value })
+                   .OrderBy(x => x.Hour)
+                   .ToList();
     }
 }

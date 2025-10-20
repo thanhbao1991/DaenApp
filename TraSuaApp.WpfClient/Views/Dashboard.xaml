@@ -29,7 +29,7 @@
                 Visibility="Collapsed" />
             <ProgressBar
                 x:Name="ProgressBar"
-                Height="16"
+                Height="20"
                 VerticalAlignment="Bottom"
                 Panel.ZIndex="2"
                 IsIndeterminate="True"
@@ -41,1075 +41,114 @@
                 Margin="4"
                 Background="{StaticResource SuccessBrush}"
                 SelectionChanged="TabControl_SelectionChanged">
-                <TabItem x:Name="MessengerTabItem" Tag="Messenger">
-                    <TabItem.Header>
-                        <Grid Margin="0,2,0,2">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock
-                                    Margin="0,0,4,0"
-                                    VerticalAlignment="Center"
-                                    Text="Messenger" />
-                            </StackPanel>
-                            <!--  Badge  -->
-                        </Grid>
-                    </TabItem.Header>
-
-                    <!--  Nội dung Messenger  -->
+                <TabItem
+                    x:Name="MessengerTabItem"
+                    Header="Messenger"
+                    Tag="Messenger">
                     <ctrl:MessengerTab x:Name="MessengerView" />
                 </TabItem>
-
                 <TabItem Header="Thống kê" Tag="ThongKe">
                     <views:ThongKeTab />
                 </TabItem>
                 <TabItem Header="Hóa đơn " Tag="HoaDon">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="175" />
-                            <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <TextBox
-                            x:Name="SearchHoaDonTextBox"
-                            Grid.Column="1"
-                            Grid.ColumnSpan="2"
-                            Padding="440,0,0,0"
-                            AcceptsReturn="True"
-                            LostFocus="SearchHoaDonTextBox_LostFocus"
-                            TextChanged="SearchHoaDonTextBox_TextChanged" />
-                        <StackPanel
-                            Grid.Column="1"
-                            Grid.ColumnSpan="2"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Top"
-                            Panel.ZIndex="1"
-                            Orientation="Horizontal">
-
-                            <Button
-                                HorizontalAlignment="Left"
-                                Panel.ZIndex="1"
-                                Click="AddTaiChoButton_Click"
-                                Style="{StaticResource SuaButtonStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa:IconBlock Margin="0,0,5,0" Icon="Chair" />
-                                    <TextBlock Text="Tại chỗ" />
-                                </StackPanel>
-                            </Button>
-
-                            <Button
-                                Margin="8,0,0,0"
-                                HorizontalAlignment="Left"
-                                Panel.ZIndex="1"
-                                Click="AddMuaVeButton_Click"
-                                Style="{StaticResource TaiLaiButtonStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa:IconBlock Margin="0,0,5,0" Icon="ShoppingBag" />
-                                    <TextBlock Text="Mua về" />
-                                </StackPanel>
-                            </Button>
-                            <Button
-                                Margin="8,0,0,0"
-                                HorizontalAlignment="Left"
-                                Panel.ZIndex="1"
-                                Click="AddShipButton_Click"
-                                Style="{StaticResource ThemButtonStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa:IconBlock Margin="0,0,5,0" Icon="Motorcycle" />
-                                    <TextBlock Text="Ship" />
-                                </StackPanel>
-                            </Button>
-
-
-                            <Button
-                                Margin="8,0,0,0"
-                                HorizontalAlignment="Left"
-                                Panel.ZIndex="1"
-                                Click="AddAppButton_Click"
-                                Style="{StaticResource XoaButtonStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa:IconBlock Margin="0,0,5,0" Icon="Mobile" />
-                                    <TextBlock Text="App" />
-                                </StackPanel>
-                            </Button>
-
-                        </StackPanel>
-
-                        <DataGrid
-                            x:Name="HoaDonDataGrid"
-                            Grid.Row="1"
-                            Grid.Column="1"
-                            AutoGenerateColumns="False"
-                            FontWeight="Bold"
-                            IsReadOnly="True"
-                            MouseDoubleClick="HoaDonDataGrid_MouseDoubleClick"
-                            SelectionChanged="HoaDonDataGrid_SelectionChangedAsync"
-                            VirtualizingPanel.VirtualizationMode="Standard"
-                            Visibility="Visible">
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding DaThuHoacGhiNo}" Value="True">
-                                            <Setter Property="FontWeight" Value="Normal" />
-                                        </DataTrigger>
-
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-
-                            <DataGrid.Columns>
-                                <!--<DataGridTextColumn
-                                    Binding="{Binding Stt}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="STT" />-->
-                                <DataGridTextColumn
-                                    Binding="{Binding GioHienThi}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Giờ" />
-                                <DataGridTemplateColumn Width="48" Header="">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Grid Height="32">
-                                                <fa:IconBlock
-                                                    x:Name="StatusIcon"
-                                                    Width="20"
-                                                    Height="20"
-                                                    Loaded="StatusIcon_Loaded"
-                                                    Opacity="1"
-                                                    Visibility="Collapsed" />
-                                            </Grid>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTextColumn
-                                    Width="*"
-                                    Binding="{Binding Ten}"
-                                    Header="Tên bàn/khách">
-                                    <DataGridTextColumn.ElementStyle>
-                                        <Style BasedOn="{StaticResource LeftTextCellStyle}" TargetType="TextBlock">
-                                            <Setter Property="Background" Value="{Binding RowBackground}" />
-                                            <Setter Property="Foreground" Value="{Binding RowForeground}" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding DaThuHoacGhiNo}" Value="True">
-                                                    <Setter Property="TextDecorations" Value="Strikethrough" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn
-                                    Width="150"
-                                    Binding="{Binding GhiChuShipper}"
-                                    ElementStyle="{StaticResource LeftTextCellStyle}"
-                                    Header="" />
-
-                                <!--<DataGridTextColumn
-                                    Width="100"
-                                    Binding="{Binding TrangThai}"
-                                    ElementStyle="{StaticResource LeftTextCellStyle}"
-                                    Header="" />-->
-
-                            </DataGrid.Columns>
-
-                        </DataGrid>
-
-                        <Grid
-                            Grid.Row="0"
-                            Grid.RowSpan="2"
-                            Grid.Column="0"
-                            Background="#f0f0f0">
-                            <StackPanel x:Name="HoaDonButtonStack" Margin="8">
-                                <Button
-                                    Name="EscButton"
-                                    Margin="5"
-                                    Background="{StaticResource PrimaryBrush}"
-                                    Click="EscButton_Click"
-                                    Foreground="{StaticResource LightBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="{StaticResource LightBrush}"
-                                            Icon="Motorcycle" />
-                                        <TextBlock Margin="5,0,0,0" Text=" Esc - KHÁNH" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    x:Name="F1Button"
-                                    Margin="5"
-                                    Click="F1Button_Click"
-                                    Style="{StaticResource EditButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="{StaticResource LightBrush}"
-                                            Icon="MoneyBill" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F1 - Tiền mặt" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F2Button"
-                                    Margin="5"
-                                    Background="{StaticResource PrimaryBrush}"
-                                    Click="F2Button_Click"
-                                    Foreground="{StaticResource LightBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="{StaticResource LightBrush}"
-                                            Icon="Print" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F2 - In bill" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F3Button"
-                                    Margin="5"
-                                    Background="{StaticResource PrimaryBrush}"
-                                    Click="F3Button_Click"
-                                    Foreground="{StaticResource LightBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="{StaticResource LightBrush}"
-                                            Icon="ShareSquare" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F3 - Gửi bill" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F4Button"
-                                    Margin="5"
-                                    Background="{StaticResource WarningBrush}"
-                                    Click="F4Button_Click"
-                                    Foreground="{StaticResource DarkBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="{StaticResource DarkBrush}"
-                                            Icon="CreditCard" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F4 - Chuyển khoản" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F12Button"
-                                    Margin="5"
-                                    Background="{StaticResource DangerBrush}"
-                                    Click="F12Button_Click"
-                                    Foreground="{StaticResource LightBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="{StaticResource LightBrush}"
-                                            Icon="PencilAlt" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F12 - Ghi nợ" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="DelButton"
-                                    Margin="5"
-                                    Click="DelButton_Click"
-                                    Foreground="{StaticResource LightBrush}"
-                                    Style="{StaticResource DeleteButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="{StaticResource LightBrush}"
-                                            Icon="Trash" />
-                                        <TextBlock Margin="5,0,0,0" Text=" Del - Xoá" />
-                                    </StackPanel>
-                                </Button>
-
-
-                                <Button
-                                    Name="F5Button"
-                                    Margin="5"
-                                    Background="Transparent"
-                                    Click="F5Button_Click"
-                                    Foreground="{StaticResource DarkBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Foreground="{StaticResource DarkBrush}"
-                                            Icon="Refresh" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F5 - Làm mới" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F6Button"
-                                    Margin="5"
-                                    Background="Transparent"
-                                    Click="F6Button_Click"
-                                    Foreground="{StaticResource DarkBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Icon="Qrcode" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F6 - Gửi Stk" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F7Button"
-                                    Margin="5"
-                                    Background="Transparent"
-                                    Click="F7Button_Click"
-                                    Foreground="{StaticResource DarkBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Icon="Bell" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F7 - Báo đơn" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F8Button"
-                                    Margin="5"
-                                    Background="Transparent"
-                                    Click="F8Button_Click"
-                                    Foreground="{StaticResource DarkBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Icon="Star" />
-                                        <TextBlock Margin="5,0,0,0" Text="F8 - Ưu tiên" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F9Button"
-                                    Margin="5"
-                                    Background="Transparent"
-                                    Click="F9Button_Click"
-                                    Foreground="{StaticResource DarkBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Icon="Book" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F9 - Gửi Menu" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="F10Button"
-                                    Margin="5"
-                                    Background="Transparent"
-                                    Click="F10Button_Click"
-                                    Foreground="{StaticResource DarkBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Icon="Clock" />
-                                        <TextBlock Margin="5,0,0,0" Text=" F10 - Hẹn giờ" />
-                                    </StackPanel>
-                                </Button>
-                                <StackPanel
-                                    Name="HenGioStackPanel"
-                                    Margin="5"
-                                    Visibility="Collapsed">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ComboBox x:Name="GioCombo" />
-                                        <TextBlock VerticalAlignment="Center" Text=":" />
-                                        <ComboBox x:Name="PhutCombo" />
-                                        <Button
-                                            x:Name="OkHenGio"
-                                            Click="OkHenGioButton_Click"
-                                            Content="OK"
-                                            Style="{StaticResource ThemButtonStyle}" />
-                                    </StackPanel>
-                                </StackPanel>
-
-                                <Button
-                                    Name="HisButton"
-                                    Margin="5"
-                                    Background="Transparent"
-                                    Click="HisButton_Click"
-                                    Foreground="{StaticResource DarkBrush}"
-                                    Style="{StaticResource AddButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Icon="History" />
-                                        <TextBlock Margin="5,0,0,0" Text=" Lịch sử" />
-                                    </StackPanel>
-                                </Button>
-                                <Button
-                                    Name="AppButton"
-                                    Margin="5"
-                                    Click="AppButton_Click"
-                                    Style="{StaticResource ReloadButtonStyle}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa:IconImage
-                                            Width="16"
-                                            Height="16"
-                                            Icon="Heart" />
-                                        <TextBlock Margin="5,0,0,0" Text="App Shipping" />
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
-                        </Grid>
-
-
-                        <Grid
-                            Grid.Row="1"
-                            Grid.Column="2"
-                            Background="{Binding ElementName=ThongTinThanhToanGroupBox, Path=Background}">
-                            <ScrollViewer
-                                x:Name="ThongTinThanhToanGroupBox"
-                                HorizontalScrollBarVisibility="Disabled"
-                                PreviewMouseWheel="ThongTinThanhToanGroupBox_PreviewMouseWheel"
-                                VerticalScrollBarVisibility="Auto">
-
-                                <!--  Panel chứa chi tiết hóa đơn  -->
-                                <StackPanel
-                                    x:Name="HoaDonDetailPanel"
-                                    Opacity="0"
-                                    Visibility="Collapsed">
-
-                                    <!--  Nội dung hóa đơn  -->
-                                    <TextBlock
-                                        x:Name="TenHoaDonTextBlock"
-                                        Padding="8"
-                                        HorizontalAlignment="Stretch"
-                                        VerticalAlignment="Center"
-                                        FontSize="{StaticResource FontSizeLarge}"
-                                        FontWeight="Bold"
-                                        Foreground="{Binding ElementName=ThongTinThanhToanGroupBox, Path=Foreground}"
-                                        TextAlignment="Center" />
-
-                                    <TextBox
-                                        x:Name="SearchChiTietHoaDonTextBox"
-                                        Opacity=".8"
-                                        TextChanged="SearchChiTietHoaDonTextBox_TextChanged"
-                                        Visibility="Collapsed" />
-
-                                    <!--  Danh sách chi tiết hóa đơn  -->
-                                    <ListBox
-                                        x:Name="ChiTietHoaDonListBox"
-                                        Margin="0,8,0,0"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        ScrollViewer.CanContentScroll="False"
-                                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                        ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                                        SelectionChanged="ChiTietHoaDonListBox_SelectionChanged">
-                                        <ListBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="40" />
-                                                        <ColumnDefinition Width="*" />
-                                                    </Grid.ColumnDefinitions>
-
-                                                    <!--  Số lượng  -->
-                                                    <Border
-                                                        Grid.Column="0"
-                                                        Background="{StaticResource SecondaryBrush}"
-                                                        BorderBrush="{StaticResource SecondaryBrush}"
-                                                        BorderThickness="1,1,0,1"
-                                                        CornerRadius="4,0,0,4">
-                                                        <TextBlock
-                                                            Padding="8"
-                                                            HorizontalAlignment="Center"
-                                                            VerticalAlignment="Center"
-                                                            FontSize="{StaticResource FontSizeBig}"
-                                                            FontWeight="Medium"
-                                                            Foreground="{StaticResource LightBrush}"
-                                                            Text="{Binding SoLuong}" />
-                                                    </Border>
-
-                                                    <!--  Nội dung  -->
-                                                    <Border
-                                                        Grid.Column="1"
-                                                        Padding="8"
-                                                        Background="{StaticResource LightBrush}"
-                                                        BorderBrush="{StaticResource SecondaryBrush}"
-                                                        BorderThickness="0,1,1,1"
-                                                        CornerRadius="0,4,4,0">
-                                                        <Grid VerticalAlignment="Center">
-                                                            <StackPanel>
-                                                                <!--  Ngày giờ  -->
-                                                                <TextBlock
-                                                                    HorizontalAlignment="Right"
-                                                                    FontSize="{StaticResource FontSizeSmall}"
-                                                                    Text="{Binding NgayGio, StringFormat=dd-MM-yyyy HH:mm}"
-                                                                    Visibility="{Binding NgayGio, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-
-                                                                <!--  Tên sản phẩm + biến thể  -->
-                                                                <StackPanel Orientation="Horizontal">
-                                                                    <TextBlock
-                                                                        FontWeight="Bold"
-                                                                        Foreground="{StaticResource PrimaryBrush}"
-                                                                        Text="{Binding TenSanPham}" />
-                                                                    <TextBlock
-                                                                        Margin="4,0,0,0"
-                                                                        FontWeight="Medium"
-                                                                        Foreground="{StaticResource DangerBrush}"
-                                                                        Text="{Binding TenBienThe}">
-                                                                        <TextBlock.Style>
-                                                                            <Style TargetType="TextBlock">
-                                                                                <Setter Property="Visibility" Value="Visible" />
-                                                                                <Style.Triggers>
-                                                                                    <DataTrigger Binding="{Binding TenBienThe}" Value="Size Chuẩn">
-                                                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                                                    </DataTrigger>
-                                                                                    <DataTrigger Binding="{Binding TenBienThe}" Value="Size L">
-                                                                                        <DataTrigger.EnterActions>
-                                                                                            <BeginStoryboard>
-                                                                                                <Storyboard AutoReverse="True" RepeatBehavior="Forever">
-                                                                                                    <DoubleAnimation
-                                                                                                        Storyboard.TargetProperty="Opacity"
-                                                                                                        From="1.0"
-                                                                                                        To="0.3"
-                                                                                                        Duration="0:0:0.5" />
-                                                                                                </Storyboard>
-                                                                                            </BeginStoryboard>
-                                                                                        </DataTrigger.EnterActions>
-                                                                                    </DataTrigger>
-                                                                                </Style.Triggers>
-                                                                            </Style>
-                                                                        </TextBlock.Style>
-                                                                    </TextBlock>
-                                                                    <TextBlock
-                                                                        Margin="4,0,0,0"
-                                                                        HorizontalAlignment="Right"
-                                                                        VerticalAlignment="Center"
-                                                                        FontWeight="Bold"
-                                                                        Foreground="{StaticResource DangerBrush}"
-                                                                        Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
-                                                                </StackPanel>
-
-                                                                <!--  Topping  -->
-                                                                <TextBlock
-                                                                    FontSize="{StaticResource FontSizeSmall}"
-                                                                    Foreground="{StaticResource SuccessBrush}"
-                                                                    Text="{Binding ToppingText}"
-                                                                    TextWrapping="Wrap"
-                                                                    Visibility="{Binding ToppingText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-
-                                                                <!--  Ghi chú  -->
-                                                                <TextBox
-                                                                    AcceptsReturn="True"
-                                                                    Background="Transparent"
-                                                                    BorderBrush="Transparent"
-                                                                    FontSize="{StaticResource FontSizeNormal}"
-                                                                    Foreground="{StaticResource SuccessBrush}"
-                                                                    Text="{Binding NoteText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                    TextWrapping="Wrap"
-                                                                    Visibility="{Binding NoteText, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-
-                                                                <!--  Định lượng  -->
-                                                                <TextBlock
-                                                                    Margin="0,0,0,2"
-                                                                    FontSize="{StaticResource FontSizeSmall}"
-                                                                    Foreground="{StaticResource PrimaryBrush}"
-                                                                    Text="{Binding DinhLuong}"
-                                                                    TextWrapping="Wrap"
-                                                                    Visibility="{Binding DinhLuong, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-                                                            </StackPanel>
-                                                        </Grid>
-                                                    </Border>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ListBox.ItemTemplate>
-                                    </ListBox>
-
-                                    <!--  Footer panel  -->
-                                    <Grid>
-                                        <Border
-                                            Margin="8"
-                                            Background="#11111111"
-                                            CornerRadius="8"
-                                            Visibility="{Binding ElementName=TongSoSanPhamTextBlock, Path=Visibility}">
-                                            <StackPanel x:Name="ThongTinThanhToanPanel" Margin="8" />
-                                        </Border>
-
-                                        <TextBlock
-                                            x:Name="TongSoSanPhamTextBlock"
-                                            Padding="8"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            FontSize="{StaticResource FontSizeXXX}"
-                                            FontWeight="Bold"
-                                            Foreground="{Binding ElementName=TenHoaDonTextBlock, Path=Foreground}"
-                                            TextAlignment="Center" />
-                                    </Grid>
-                                </StackPanel>
-                            </ScrollViewer>
-                        </Grid>
-
-
-
-
-
-                    </Grid>
+                    <views:HoaDonTab x:Name="HoaDonTabControl" />
                 </TabItem>
                 <TabItem Header="Thanh toán " Tag="ChiTietHoaDonThanhToan">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <TextBlock
-                            Padding="8"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Panel.ZIndex="1"
-                            Text="Tìm kiếm:" />
-                        <TextBox
-                            x:Name="SearchChiTietHoaDonThanhToanTextBox"
-                            Margin="100,0,0,0"
-                            TextChanged="SearchChiTietHoaDonThanhToanTextBox_TextChanged" />
-                        <StackPanel
-                            HorizontalAlignment="Right"
-                            Panel.ZIndex="1"
-                            Orientation="Horizontal">
-                            <Button
-                                Click="TimKiemNhanhThanhToanButton_Click"
-                                Content="Tiền mặt hôm nay"
-                                Style="{StaticResource ThemButtonStyle}"
-                                Tag="thanh toán tiền mặt trong ngày" />
-                            <Button
-                                Click="TimKiemNhanhThanhToanButton_Click"
-                                Content="Chuyển khoản hôm nay"
-                                Style="{StaticResource ThemButtonStyle}"
-                                Tag="chuyển khoản trong ngày" />
-                            <Button
-                                Click="TimKiemNhanhThanhToanButton_Click"
-                                Content="Trả nợ hôm nay"
-                                Style="{StaticResource ThemButtonStyle}"
-                                Tag="qua ngày" />
-                            <Button
-                                Click="TimKiemNhanhThanhToanButton_Click"
-                                Content="Tiền mặt Shipper"
-                                Style="{StaticResource ThemButtonStyle}"
-                                Tag="shipper tiền mặt trong ngày" />
-                            <Button
-                                Click="TimKiemNhanhThanhToanButton_Click"
-                                Content="Trả nợ Shipper"
-                                Style="{StaticResource ThemButtonStyle}"
-                                Tag="shipper tiền mặt qua ngày" />
-                        </StackPanel>
-                        <DataGrid
-                            x:Name="ChiTietHoaDonThanhToanDataGrid"
-                            Grid.Row="1"
-                            AutoGenerateColumns="False"
-                            IsReadOnly="True"
-                            MouseDoubleClick="ChiTietHoaDonThanhToanDataGrid_MouseDoubleClick">
-
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
-                                            <Setter Property="FontWeight" Value="Medium" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsToday}" Value="False">
-                                            <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}" />
-                                            <Setter Property="FontWeight" Value="Light" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-
-
-                            <DataGrid.Columns>
-                                <!--  1. Số thứ tự nên đặt đầu cho dễ theo dõi  -->
-                                <DataGridTextColumn
-                                    Binding="{Binding Stt}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="STT" />
-
-                                <!--  2. Ngày đặt sau STT  -->
-                                <DataGridTextColumn
-                                    Binding="{Binding Ngay, StringFormat=dd-MM-yyyy}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Ngày" />
-
-                                <!--  3. Giờ chi tiết đi kèm với ngày  -->
-                                <DataGridTextColumn
-                                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Giờ" />
-
-                                <!--  4. Tên bàn/khách  -->
-                                <DataGridTextColumn
-                                    Binding="{Binding Ten}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Tên bàn/khách" />
-
-                                <!--  7. Số tiền (đặt cuối cùng trong phần tiền, căn phải nếu có thể)  -->
-                                <!--<DataGridTextColumn
-                                    x:Name="TongTienThanhToanTextBlock"
-                                    Binding="{Binding SoTien, StringFormat=N0}"
-                                    ElementStyle="{StaticResource RightTextCellStyle}"
-                                    Header="Số tiền" />-->
-
-                                <DataGridTemplateColumn x:Name="TongTienThanhToanTextBlock" Header="Thành tiền">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock
-                                                Padding="16,8,16,8"
-                                                VerticalAlignment="Center"
-                                                Text="{Binding SoTien, StringFormat=N0}"
-                                                TextAlignment="Right">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Style.Triggers>
-                                                            <!--<DataTrigger Binding="{Binding TenPhuongThucThanhToan}" Value="Tiền mặt">
-                                                                <Setter Property="Background" Value="{StaticResource SuccessBrush}" />
-                                                            </DataTrigger>-->
-                                                            <DataTrigger Binding="{Binding TenPhuongThucThanhToan}" Value="Chuyển khoản">
-                                                                <Setter Property="Background" Value="{StaticResource WarningBrush}" />
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding TenPhuongThucThanhToan}" Value="Banking Nhã">
-                                                                <Setter Property="Background" Value="Gold" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-
-                                <!--  8. ghi chu  -->
-
-                                <!--  5. Phương thức thanh toán  -->
-                                <DataGridTextColumn
-                                    Binding="{Binding TenPhuongThucThanhToan}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Phương thức" />
-
-                                <!--  6. Loại thanh toán (thanh toán hay trả nợ)  -->
-                                <DataGridTextColumn
-                                    Binding="{Binding LoaiThanhToan}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Thanh toán" />
-                                <DataGridTextColumn
-                                    Width="*"
-                                    Binding="{Binding GhiChu}"
-                                    ElementStyle="{StaticResource LeftTextCellStyle}"
-                                    Header="Ghi chú" />
-
-                                <DataGridTemplateColumn Header="Xoá">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button
-                                                Click="XoaChiTietHoaDonThanhToanButton_Click"
-                                                Content="❌"
-                                                Style="{StaticResource XoaButtonStyle}"
-                                                ToolTip="Xoá" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </Grid>
+                    <views:ChiTietHoaDonThanhToanTab x:Name="ChiTietHoaDonThanhToanTabControl" />
                 </TabItem>
                 <TabItem Header="Công nợ " Tag="ChiTietHoaDonNo">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <TextBlock
-                            Padding="8"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Panel.ZIndex="1"
-                            Text="Tìm kiếm:" />
-                        <StackPanel
-                            HorizontalAlignment="Right"
-                            Panel.ZIndex="1"
-                            Orientation="Horizontal">
-                            <Button
-                                Click="TimKiemNhanhCongNoButton_Click"
-                                Content="Công nợ hôm nay"
-                                Style="{StaticResource ThemButtonStyle}"
-                                Tag="hôm nay" />
-                            <Button
-                                Click="TimKiemNhanhCongNoButton_Click"
-                                Content="Công nợ hôm qua"
-                                Style="{StaticResource ThemButtonStyle}"
-                                Tag="hôm qua" />
-                        </StackPanel>
-                        <TextBox
-                            x:Name="SearchChiTietHoaDonNoTextBox"
-                            Grid.Row="0"
-                            Margin="100,0,0,0"
-                            TextChanged="SearchChiTietHoaDonNoTextBox_TextChanged" />
-                        <DataGrid
-                            x:Name="ChiTietHoaDonNoDataGrid"
-                            Grid.Row="1"
-                            AutoGenerateColumns="False"
-                            IsReadOnly="True"
-                            MouseDoubleClick="ChiTietHoaDonNoDataGrid_MouseDoubleClick">
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
-                                            <Setter Property="FontWeight" Value="Medium" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsToday}" Value="False">
-                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
-                                            <Setter Property="FontWeight" Value="Normal" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-                            <DataGrid.Columns>
-                                <!--  1. Số thứ tự nên đặt đầu cho dễ theo dõi  -->
-                                <DataGridTextColumn
-                                    Binding="{Binding Stt}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="STT" />
-
-                                <!--  2. Ngày đặt sau STT  -->
-                                <DataGridTextColumn
-                                    Binding="{Binding Ngay, StringFormat=dd-MM-yyyy}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Ngày" />
-
-
-                                <DataGridTextColumn
-                                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Giờ" />
-
-                                <DataGridTextColumn
-                                    Binding="{Binding Ten}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Tên khách hàng" />
-
-                                <DataGridTextColumn
-                                    x:Name="TongTienChiTietHoaDonNoTextBlock"
-                                    Binding="{Binding SoTienNo, StringFormat=N0}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Số tiền" />
-                                <!--<DataGridTextColumn
-                                    Binding="{Binding SoTienDaTra, StringFormat=N0}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Đã thu" />-->
-                                <DataGridTextColumn
-                                    Binding="{Binding SoTienConLai, StringFormat=N0}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Còn lại" />
-                                <DataGridTextColumn
-                                    Width="*"
-                                    Binding="{Binding GhiChu}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Ghi chú" />
-                                <!--<DataGridTextColumn
-                                    Binding="{Binding MaHoaDon}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Mã hoá đơn" />-->
-                                <DataGridTemplateColumn Header="Xoá">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button
-                                                Click="XoaChiTietHoaDonNoButton_Click"
-                                                Content="❌"
-                                                Style="{StaticResource XoaButtonStyle}"
-                                                ToolTip="Xoá" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                        <StackPanel
-                            Grid.Row="1"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Bottom"
-                            Panel.ZIndex="1"
-                            Orientation="Horizontal">
-                            <Button
-                                x:Name="F1aButton"
-                                Margin="5"
-                                Background="{StaticResource SuccessBrush}"
-                                Click="F1aButton_Click"
-                                Foreground="{StaticResource LightBrush}"
-                                Style="{StaticResource AddButtonStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa:IconImage
-                                        Width="16"
-                                        Height="16"
-                                        Foreground="{StaticResource LightBrush}"
-                                        Icon="MoneyBill" />
-                                    <TextBlock Margin="5,0,0,0" Text=" F1 - Tiền mặt" />
-                                </StackPanel>
-                            </Button>
-                            <Button
-                                Name="F4aButton"
-                                Margin="5"
-                                Background="{StaticResource WarningBrush}"
-                                Click="F4aButton_Click"
-                                Foreground="{StaticResource DarkBrush}"
-                                Style="{StaticResource AddButtonStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa:IconImage
-                                        Width="16"
-                                        Height="16"
-                                        Foreground="{StaticResource DarkBrush}"
-                                        Icon="CreditCard" />
-                                    <TextBlock Margin="5,0,0,0" Text=" F4 - Chuyển khoản" />
-                                </StackPanel>
-                            </Button>
-                            <Button
-                                Name="F5aButton"
-                                Margin="5"
-                                Background="Gold"
-                                Click="F5aButton_Click"
-                                Foreground="{StaticResource DarkBrush}"
-                                Style="{StaticResource AddButtonStyle}"
-                                Visibility="Collapsed">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa:IconImage
-                                        Width="16"
-                                        Height="16"
-                                        Foreground="{StaticResource DarkBrush}"
-                                        Icon="University" />
-                                    <TextBlock Margin="5,0,0,0" Text=" F5 - Banking Nhã" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-                    </Grid>
+                    <views:ChiTietHoaDonNoTab x:Name="ChiTietHoaDonNoTabControl" />
                 </TabItem>
                 <TabItem Header="Chi tiêu " Tag="ChiTieuHangNgay">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <TextBox
-                            x:Name="SearchChiTieuHangNgayTextBox"
-                            Padding="150,0,0,0"
-                            TextChanged="SearchChiTieuHangNgayTextBox_TextChanged" />
-                        <Button
-                            HorizontalAlignment="Left"
-                            Panel.ZIndex="1"
-                            Click="AddChiTieuHangNgayButton_Click"
-                            Content="➕ Thêm chi tiêu mới"
-                            Style="{StaticResource ThemButtonStyle}" />
+                    <views:ChiTieuHangNgayTab x:Name="ChiTieuHangNgayTabControl" />
+                </TabItem>
+                <TabItem x:Name="CongViecTab" Tag="CongViecTab">
+                    <TabItem.Header>
+                        <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                            <TextBlock Text="Công việc" />
+                            <Border
+                                x:Name="CvBadge"
+                                Height="20"
+                                MinWidth="22"
+                                Margin="5,0,0,0"
+                                Background="#E53935"
+                                CornerRadius="10"
+                                Visibility="Collapsed">
+                                <TextBlock
+                                    x:Name="CvBadgeText"
+                                    Margin="4,0,4,0"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontSize="12"
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="0"
+                                    TextAlignment="Center" />
+                            </Border>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <views:CongViecNoiBoTab x:Name="CongViecNoiBoTab" />
+                </TabItem>
+                <TabItem x:Name="ReportsTab" Tag="ReportsLauncher">
+                    <TabItem.Header>
+                        <!--  Click vào header để mở ContextMenu  -->
+                        <Border
+                            Cursor="Hand"
+                            MouseLeftButtonDown="ReportsHeader_MouseLeftButtonDown"
+                            MouseRightButtonDown="ReportsHeader_MouseLeftButtonDown">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock x:Name="ReportsHeaderText" Text="Báo cáo" />
+                                <TextBlock Text="  ▼" />
+                            </StackPanel>
 
-                        <DataGrid
-                            x:Name="ChiTieuHangNgayDataGrid"
-                            Grid.Row="1"
-                            AutoGenerateColumns="False"
-                            IsReadOnly="True"
-                            MouseDoubleClick="ChiTieuHangNgayDataGrid_MouseDoubleClick">
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
-                                            <Setter Property="FontWeight" Value="Medium" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsToday}" Value="False">
-                                            <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}" />
-                                            <Setter Property="FontWeight" Value="Light" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-                            <DataGrid.Columns>
-                                <DataGridTextColumn
-                                    Binding="{Binding Stt}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="STT" />
-                                <DataGridTextColumn
-                                    Binding="{Binding Ngay, StringFormat=dd-MM-yyyy}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Ngày" />
-                                <DataGridTextColumn
-                                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Giờ" />
-                                <DataGridCheckBoxColumn
-                                    Binding="{Binding BillThang}"
-                                    ElementStyle="{StaticResource DataGridCheckBoxElementStyle}"
-                                    Header="Bill tháng"
-                                    IsReadOnly="True" />
-                                <DataGridTextColumn
-                                    Binding="{Binding Ten}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Tên nguyên vật liệu" />
-                                <DataGridTextColumn
-                                    Binding="{Binding SoLuong, StringFormat=N0}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Số lượng" />
-                                <DataGridTextColumn
-                                    Binding="{Binding DonGia, StringFormat=N0}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Đơn giá" />
-                                <DataGridTextColumn
-                                    x:Name="TongTienChiTieuHangNgayTextBlock"
-                                    Binding="{Binding ThanhTien, StringFormat=N0}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Số tiền" />
-                                <DataGridTextColumn
-                                    Width="*"
-                                    Binding="{Binding GhiChu}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Ghi chú" />
-                                <DataGridTextColumn
-                                    Binding="{Binding CreatedAt, StringFormat=dd-MM-yyyy HH:mm}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Ngày nhập" />
-                                <DataGridTextColumn
-                                    Binding="{Binding LastModified, StringFormat=dd-MM-yyyy HH:mm}"
-                                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                                    Header="Ngày sửa" />
-                                <DataGridTemplateColumn Header="Xoá">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button
-                                                Click="XoaChiTieuHangNgayButton_Click"
-                                                Content="❌"
-                                                Style="{StaticResource XoaButtonStyle}"
-                                                ToolTip="Xoá" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
+                            <Border.ContextMenu>
+                                <ContextMenu x:Name="ReportsContextMenu">
+                                    <MenuItem
+                                        Padding="8"
+                                        Click="ReportMenu_Click"
+                                        Header="Ứng Nhã"
+                                        Tag="UngNha" />
+                                    <MenuItem
+                                        Padding="8"
+                                        Click="ReportMenu_Click"
+                                        Header="Chi Tiêu"
+                                        Tag="ChiTieu" />
+                                    <MenuItem
+                                        Padding="8"
+                                        Click="ReportMenu_Click"
+                                        Header="Vouchers"
+                                        Tag="Vouchers" />
+                                    <MenuItem
+                                        Padding="8"
+                                        Click="ReportMenu_Click"
+                                        Header="TOP Sản Phẩm"
+                                        Tag="SanPham" />
+                                    <MenuItem
+                                        Padding="8"
+                                        Click="ReportMenu_Click"
+                                        Header="TOP Khách Hàng"
+                                        Tag="KhachHang" />
+                                    <Separator />
+                                    <MenuItem
+                                        Padding="8"
+                                        Click="ReportMenu_Click"
+                                        Header="Xoá"
+                                        Tag="__Clear" />
+                                </ContextMenu>
+                            </Border.ContextMenu>
+                        </Border>
+                    </TabItem.Header>
+                    <Grid>
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontStyle="Italic"
+                            Opacity="0.7"
+                            Text="Chọn báo cáo từ tiêu đề tab..." />
                     </Grid>
                 </TabItem>
-                <TabItem x:Name="CongViecNoiBoTabItem" Header="Công việc" Tag="CongViecNoiBo">
-                    <views:CongViecNoiBoTab x:Name="CongViecControl"/>
-                </TabItem>
-                <TabItem Header="Ứng Nhã" Tag="UngNha">
-                    <views:ChiTieuTab />
-                </TabItem>
-                <TabItem Header="Voucher" Tag="Voucher">
-                    <views:VoucherTab />
-                </TabItem>
-
             </TabControl>
+
             <Grid
                 x:Name="Menu"
                 HorizontalAlignment="Right"
@@ -1139,14 +178,7 @@
                             Margin="4"
                             VerticalAlignment="Center"
                             VerticalContentAlignment="Center"
-                            Header="Admin">
-                            <MenuItem
-                                Margin="4"
-                                VerticalAlignment="Center"
-                                VerticalContentAlignment="Center"
-                                Click="Import_Click"
-                                Header="Import" />
-                        </MenuItem>
+                            Header="Admin" />
                     </MenuItem>
                     <MenuItem
                         Name="HoaDonMenu"
@@ -1154,10 +186,8 @@
                         VerticalAlignment="Center"
                         VerticalContentAlignment="Center"
                         Header="Hoá đơn" />
-
-
-
                 </Menu>
+
                 <StackPanel
                     Grid.Column="1"
                     HorizontalAlignment="Right"
@@ -1192,4 +222,3 @@
         </Grid>
     </Border>
 </Window>
-

@@ -46,41 +46,52 @@ namespace TraSuaApp.WpfClient.Services
 Bạn là hệ thống POS đọc hội thoại order nước.
 Đầu vào gồm:
 - MENU (Id<TAB>ten_khong_dau)
+- CUSTOMER_NAME (tên khách, có thể rỗng)
 - LINES (các dòng KH nhập, đã đánh số: 1), 2), 3)...
 
 YÊU CẦU:
-1. Một Line có thể chứa nhiều món hoặc không có món.
-2. Chỉ tạo item KH thật sự đặt (bỏ qua lời xã giao, chào hỏi, giờ giấc...).
-3. Không tạo sản phẩm mới; chỉ chọn Id có trong MENU.
-4. Nếu thấy giá (vd: '1 ly 25k', '35k nước dừa') → ghi vào Gia (đồng, không có 'k'); nếu không thấy thì Gia = null.
-5. Không đưa các từ/cụm đã nằm trong tên sản phẩm vào NoteText.
-6. Chỉ giữ các ghi chú thật sự: 'ít ngọt', 'ít đá', 'nóng', 'mang đi', 'bớt đường', 'uống tại quán', v.v.
-7. Nếu có dòng riêng chỉ gồm ghi chú (không có món) như 'xin thêm ly', 'ít đường thôi', 'mang đi nha',
-   hoặc dòng bắt đầu bằng các từ: 'xin', 'cho', 'bớt', 'ít', 'thêm', 'đừng', 'nhiều', 'mang', 'uống', 'trà',
-   thì coi đó là **NoteText** cho nhóm món gần nhất ở trên.
-   → Nếu dòng đó nằm ngay sau dòng có món, gán NoteText cho món cuối cùng trong nhóm đó.
-   → Nếu nhiều dòng ghi chú liên tiếp, hãy gộp chúng lại thành một NoteText duy nhất.
-8. Nếu không có ghi chú, để NoteText = rỗng.
-9. Nếu khách nhắc đến món không có trong MENU như 'trà đá', 'ống hút', 'ly đá' → 
-   thêm vào NoteText của món gần nhất.
+1) Một Line có thể chứa nhiều món hoặc không có món.
+2) Chỉ tạo item KH thật sự đặt (bỏ qua chào hỏi/giờ giấc).
+3) Không tạo sản phẩm mới; chỉ chọn Id có trong MENU.
+4) Nếu thấy giá (“25k”, “35k nước dừa”) → Gia = số tiền (đồng, không chữ “k”); nếu không thấy thì Gia = null.
+5) Không đưa các từ đã nằm trong tên sản phẩm vào NoteText.
+6) Giữ các ghi chú thật sự: “ít ngọt”, “ít đá”, “nóng”, “mang đi”, “bớt đường”, “uống tại quán”, …
+7) Dòng chỉ có ghi chú (“xin thêm ly”, “ít đường thôi”, “mang đi nha”, …) → gán vào món gần nhất ở trên. Nhiều ghi chú liên tiếp thì gộp thành một NoteText.
+8) Nếu khách nhắc đến vật phẩm không có trong MENU (“trà đá”, “ống hút”, “ly đá”) → thêm vào NoteText của món gần nhất.
+9) Mapping giá trị biến thể theo ngữ nghĩa kích cỡ: size L/large/to → chọn biến thể giá cao hơn; size M/chuẩn/nhỏ → biến thể chuẩn.
 
-Trả về duy nhất một MẢNG JSON hợp lệ:
+— QUY ƯỚC MẶC ĐỊNH (BIAS):
+10) Nếu khách chỉ ghi “matcha latte” chung chung → hiểu là **Matcha Latte Kem**.
+11) Nếu khách chỉ ghi “trà sữa” chung chung → hiểu là **Trà sữa Truyền thống**.
+    TRỪ KHI tên khách là:
+      - “An Nhi” → mặc định **trà sữa socola**.
+    (So khớp tên KH không phân biệt hoa/thường/dấu.)
+12) Nếu khách ghi “nước ép X” hoặc “ép X” mà không nói mix/phối → hiểu là **ép X nguyên chất**.
+13) Nếu khách ghi “cà phê” chung chung → hiểu là **cà phê sữa đá**,
+    TRỪ KHI tên khách là:
+      - “Oanh Trần” → mặc định **cà phê đen pha máy**.
+      - “Dung Trương” → mặc định **cà phê kem**.
+      - “Phạm Hương” → mặc định **cà phê sữa đá ( s )**.
+      - “Nguyễn Thị Vân Kiều” → mặc định **cà phê sữa đá ( s )**.
+    (So khớp tên KH không phân biệt hoa/thường/dấu.)
+14) Nếu khách ghi rõ “cà phê đen” → hiểu là **cà phê đen đá s/mv**.
+    Tương tự cà phê sữa → hiểu là **cà phê sữa đá s/mv**.
+15) Luôn chọn đúng Id trong MENU tương ứng với tên sản phẩm sau khi áp các mặc định/ngoại lệ trên.
+16) **Phải hiểu và chấp nhận lỗi chính tả, sai dấu, thiếu dấu hoặc chữ gần giống**.
+    - Ví dụ: 'đắc' có thể là 'đác', 'sưa' là 'sữa', 'chanh da' là 'chanh đá', 'tra sua' là 'trà sữa'.
+    - Hiểu cả cách viết không dấu hoặc sai dấu của người dùng.
+    - Khi gặp lỗi chính tả, hãy chọn sản phẩm hợp lý nhất trong MENU, không bỏ qua món đó.
+
+Trả về DUY NHẤT một MẢNG JSON hợp lệ:
 [
-  {
-    ""Id"": ""GUID sản phẩm"",
-    ""SoLuong"": int >= 1,
-    ""NoteText"": ""ghi chú..."",
-    ""Line"": số thứ tự dòng có món,
-    ""Gia"": số tiền hoặc null
-  }
+  { ""Id"": ""GUID sản phẩm"", ""SoLuong"": int>=1, ""NoteText"": ""ghi chú..."", ""Line"": số dòng, ""Gia"": số tiền hoặc null }
 ]
 ".Trim();
-
-
 
             var userPromptSb = new StringBuilder();
             userPromptSb.AppendLine(menuText);
             userPromptSb.AppendLine();
+            userPromptSb.AppendLine($"CUSTOMER_NAME: {customerNameHint}");
             userPromptSb.AppendLine("LINES");
             userPromptSb.AppendLine(linesText);
             string userPrompt = userPromptSb.ToString();
@@ -93,6 +104,13 @@ Trả về duy nhất một MẢNG JSON hợp lệ:
             sw.Stop();
             var elapsedMs = sw.ElapsedMilliseconds;
 
+            baoCao.Add(".");
+            baoCao.Add(".");
+            baoCao.Add(".");
+            baoCao.Add(".");
+            baoCao.Add(".");
+            baoCao.Add(".");
+            baoCao.Add(".");
             baoCao.Add(".");
             baoCao.Add(".");
             baoCao.Add(".");
@@ -160,7 +178,7 @@ Trả về duy nhất một MẢNG JSON hợp lệ:
                     var spMap = AppProviders.SanPhams.Items.SingleOrDefault(x => x.Id == r.Id);
 
                     if (spMap != null)
-                        baoCao.Add($"{r.Line}): {r.SoLuong} {spMap.Ten} - {r.Gia?.ToString()} - {r.NoteText}");
+                        baoCao.Add($"{r.Line}) {r.SoLuong} {spMap.Ten} - {r.Gia?.ToString()}đ - {r.NoteText}");
                 }
             }
 
@@ -178,6 +196,7 @@ Trả về duy nhất một MẢNG JSON hợp lệ:
 
             var spMap = AppProviders.SanPhams.Items.ToDictionary(x => x.Id, x => x);
             var normLines = OrderTextCleaner.PreCleanThenNormalizeLines(rawInput, customerNameHint).ToList();
+
             int i = 1;
 
             foreach (var p in preds)
@@ -214,27 +233,24 @@ Trả về duy nhất một MẢNG JSON hợp lệ:
                     SanPhamIdBienThe = bt.Id,
                     TenSanPham = sp.Ten,
                     DonGia = bt.GiaBan,
-                    TenBienThe = bt.TenBienThe ?? "Size Chuẩn",
+                    TenBienThe = bt.TenBienThe,
                     SoLuong = Math.Max(1, p.SoLuong),
                     NoteText = p.NoteText ?? ""
                 });
-
-                var lines = new List<string>();
-                lines.Add("===== GPT ORDER FINALIZED =====");
-
-                foreach (var ct in chiTiets)
-                {
-                    lines.Add($"{ct.Stt}. {ct.TenSanPham} - {ct.TenBienThe} x{ct.SoLuong} - {ct.DonGia:N0}đ {ct.NoteText}");
-                }
-
-                await DiscordService.SendAsync(
-                    Shared.Enums.DiscordEventType.Admin,
-                    string.Join("\n", lines)
-
-                );
-
-
             }
+
+            var lines = new List<string>();
+            lines.Add("===== GPT ORDER FINALIZED =====");
+            foreach (var ct in chiTiets)
+            {
+                lines.Add($"{ct.Stt}. {ct.TenSanPham} - {ct.TenBienThe} x{ct.SoLuong} - {ct.DonGia:N0}đ - {ct.NoteText}");
+            }
+            await DiscordService.SendAsync(
+             Shared.Enums.DiscordEventType.Admin,
+             string.Join("\n", lines)
+
+         );
+
             return chiTiets;
         }
 

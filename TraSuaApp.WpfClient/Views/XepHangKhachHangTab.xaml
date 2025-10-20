@@ -1,0 +1,92 @@
+﻿<UserControl
+    x:Class="TraSuaApp.WpfClient.Views.XepHangKhachHangTab"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <DockPanel Margin="4">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                <TextBlock
+                    Padding="8"
+                    VerticalAlignment="Center"
+                    Text="Tìm kiếm:" />
+                <TextBox
+                    x:Name="SearchBox"
+                    Width="320"
+                    Margin="8,0,0,0"
+                    TextChanged="SearchBox_TextChanged" />
+                <!--  Điều hướng năm  -->
+            </StackPanel>
+            <!--  ⬇️ NÚT TÌM NHANH KHÔI PHỤC  -->
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button
+                    x:Name="PrevYearButton"
+                    Margin="8,0,0,0"
+                    Click="PrevYearButton_Click"
+                    Content="← Năm trước"
+                    Style="{StaticResource AddButtonStyle}" />
+                <TextBlock
+                    x:Name="YearTextBlock"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    FontWeight="Bold"
+                    Text="{Binding CurrentYear}" />
+                <Button
+                    x:Name="NextYearButton"
+                    Margin="8,0,0,0"
+                    Padding="12,4"
+                    Click="NextYearButton_Click"
+                    Content="Năm sau →"
+                    Style="{StaticResource AddButtonStyle}" />
+
+                <Button
+                    x:Name="ReloadButton"
+                    Margin="8,0,0,0"
+                    Click="ReloadButton_Click"
+                    Style="{StaticResource ReloadButtonStyle}"
+                    ToolTip="Tải lại dữ liệu tháng đang xem">
+                    Tải lại
+                </Button>
+
+            </StackPanel>
+
+        </DockPanel>
+
+        <DataGrid
+            x:Name="XepHangDataGrid"
+            Grid.Row="1"
+            AutoGenerateColumns="False"
+            CanUserSortColumns="True"
+            IsReadOnly="True"
+            ItemsSource="{Binding FilteredItems}">
+            <DataGrid.Columns>
+                <DataGridTextColumn
+                    Width="60"
+                    Binding="{Binding Stt}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="STT" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding TenKhachHang}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Khách hàng" />
+                <DataGridTextColumn
+                    x:Name="TongTextBlock"
+                    Width="160"
+                    Binding="{Binding TongSoDon}"
+                    ElementStyle="{StaticResource RightTextCellStyle}"
+                    Header="Số đơn" />
+                <!-- <DataGridTextColumn Width="160" Binding="{Binding TongDoanhThu, StringFormat=N0}" ElementStyle="{StaticResource RightTextCellStyle}" Header="Doanh thu (đ)" /> -->
+                <DataGridTextColumn
+                    Width="160"
+                    Binding="{Binding LanCuoiMua, StringFormat=dd/MM/yyyy HH:mm}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="Đơn gần nhất" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

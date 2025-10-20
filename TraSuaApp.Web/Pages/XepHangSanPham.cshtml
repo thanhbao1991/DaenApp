@@ -1,0 +1,89 @@
+﻿@page
+@model TraSuaAppWeb.Pages.XepHangSanPhamModel
+@{
+    ViewData["Title"] = "Xếp hạng Sản phẩm";
+    var stt = 1;
+}
+
+<div class="container-fluid p-2">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center">
+            <a class="btn btn-outline-primary btn-sm me-2" href="?year=@Model.PrevYear">← Năm trước</a>
+            <h5 class="mb-0">TOP <b>@Model.CurrentYear</b></h5>
+            <a class="btn btn-outline-primary btn-sm ms-2" href="?year=@Model.NextYear">Năm sau →</a>
+        </div>
+
+        <div class="d-flex align-items-center">
+            <input id="searchBox" class="form-control form-control-sm me-2" style="width:260px"
+                   placeholder="Tìm kiếm sản phẩm..." />
+            <a class="btn btn-outline-secondary btn-sm" href="?year=@Model.CurrentYear">Tải lại</a>
+        </div>
+    </div>
+
+    <div class="mb-2 text-muted">Tổng sản phẩm: <b>@Model.Items.Count.ToString("N0")</b></div>
+
+    @if (Model.Items?.Any() == true)
+    {
+        <div class="table-responsive">
+            <table id="spTable" class="table table-striped table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:70px">STT</th>
+                        <th style="width:320px">Sản phẩm</th>
+                        <th class="text-end" style="width:140px">Số lượng</th>
+                        @* <th class="text-end" style="width:160px">Doanh thu (đ)</th> *@
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var it in Model.Items)
+                    {
+                        <tr data-key="@((it.TenSanPham ?? "").ToLower())"
+                            data-kwnorm="@RemoveDiacritics(it.TenSanPham)">
+                            <td>@(stt++)</td>
+                            <td>@it.TenSanPham</td>
+                            <td class="text-end">@it.TongSoLuong</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">Không có dữ liệu.</div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        const rm = s => (s || "").toLowerCase().normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+
+        let tId;
+        document.getElementById('searchBox').addEventListener('input', function(){
+            clearTimeout(tId);
+            const kw = rm(this.value);
+            tId = setTimeout(() => {
+                const rows = document.querySelectorAll('#spTable tbody tr');
+                rows.forEach(r => {
+                    const key = r.getAttribute('data-key') || '';
+                    const norm = r.getAttribute('data-kwnorm') || '';
+                    const hit = key.includes(kw) || norm.includes(kw) || kw.includes(norm);
+                    r.style.display = hit ? '' : 'none';
+                });
+                let no = 1;
+                rows.forEach(r => { if (r.style.display !== 'none') r.children[0].textContent = no++; });
+            }, 300);
+        });
+    </script>
+}
+
+@functions {
+    private static string RemoveDiacritics(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return "";
+        var norm = s.Normalize(System.Text.NormalizationForm.FormD);
+        var arr = norm.Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark).ToArray();
+        return new string(arr).Normalize(System.Text.NormalizationForm.FormC).ToLower();
+    }
+}

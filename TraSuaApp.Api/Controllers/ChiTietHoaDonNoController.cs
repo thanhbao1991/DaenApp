@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using TraSuaApp.Api.Hubs;
 using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Dtos.Requests;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 
@@ -38,6 +39,13 @@ public class ChiTietHoaDonNoController : BaseApiController
         }
     }
 
+    [HttpPost("{id}/pay")]
+    public async Task<ActionResult<Result<ChiTietHoaDonThanhToanDto>>> Pay(Guid id, PayDebtRequest req)
+    {
+        var result = await _service.PayDebtAsync(id, req);
+        if (result.IsSuccess) await NotifyClients("updated", id);
+        return result;
+    }
     [HttpGet]
     public async Task<ActionResult<Result<List<ChiTietHoaDonNoDto>>>> GetAll()
     {

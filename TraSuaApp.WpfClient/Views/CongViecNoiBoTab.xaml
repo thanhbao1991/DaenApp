@@ -10,30 +10,22 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock
-            Padding="8"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Center"
-            Panel.ZIndex="1"
-            Text="Tìm kiếm:" />
 
-        <TextBox
-            x:Name="SearchCongViecNoiBoTextBox"
-            Margin="100,0,0,0"
-            TextChanged="SearchCongViecNoiBoTextBox_TextChanged" />
-
-        <Button
-            HorizontalAlignment="Left"
-            Panel.ZIndex="1"
-            Click="AddCongViecNoiBoButton_Click"
-            FontSize="{StaticResource FontSizeLarge}"
-            Style="{StaticResource ThemButtonStyle}"
-            Visibility="Collapsed">
-            <StackPanel Orientation="Horizontal">
-                <fa:IconBlock Margin="0,0,5,0" Icon="Plus" />
-                <TextBlock Text="Thêm" />
+        <!--  Thanh tìm kiếm + tổng tiền  -->
+        <DockPanel Margin="4">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                <TextBlock
+                    Padding="8"
+                    VerticalAlignment="Center"
+                    Text="Tìm kiếm:" />
+                <TextBox
+                    x:Name="SearchCongViecNoiBoTextBox"
+                    Width="320"
+                    Margin="8,0,0,0"
+                    TextChanged="SearchCongViecNoiBoTextBox_TextChanged" />
             </StackPanel>
-        </Button>
+
+        </DockPanel>
 
         <DataGrid
             x:Name="CongViecNoiBoDataGrid"
@@ -58,22 +50,26 @@
 
             <DataGrid.Columns>
                 <DataGridTextColumn
+                    Width="60"
                     Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
                 <DataGridTextColumn
+                    Width="110"
                     Binding="{Binding NgayGio, StringFormat=dd-MM-yyyy}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Ngày" />
                 <DataGridTextColumn
+                    Width="90"
                     Binding="{Binding NgayGio, StringFormat=HH:mm}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Giờ" />
                 <DataGridTextColumn
+                    Width="*"
                     Binding="{Binding Ten}"
-                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Tên việc" />
-                <DataGridTemplateColumn Width="*" Header="Hoàn thành">
+                <DataGridTemplateColumn Width="160" Header="Chờ làm">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel
@@ -91,12 +87,12 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTextColumn
-                    Width="*"
+                    Width="160"
                     Binding="{Binding NgayCanhBao, StringFormat=\{0:dd/MM/yyyy HH:mm\}}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Ngày cảnh báo" />
                 <DataGridTextColumn
-                    Width="*"
+                    Width="160"
                     Binding="{Binding XNgayCanhBao}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Sau X ngày cảnh báo" />

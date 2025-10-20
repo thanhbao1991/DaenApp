@@ -114,18 +114,28 @@
                         <ColumnDefinition Width="auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Orientation="Vertical">
-                        <GroupBox Header="Nhập để tìm khách hàng">
+                        <GroupBox>
+                            <GroupBox.Header>
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <fa:IconBlock
+                                        Margin="0,0,5,0"
+                                        Foreground="{StaticResource DangerBrush}"
+                                        Icon="Person" />
+                                    <TextBlock VerticalAlignment="Center" Text="Tên khách hàng" />
+                                </StackPanel>
+                            </GroupBox.Header>
                             <ctrl:KhachHangSearchBox x:Name="KhachHangSearchBox" Width="175" />
                         </GroupBox>
-                        <GroupBox Header="Địa chỉ/Shipper">
-                            <ComboBox
-                                x:Name="DiaChiComboBox"
-                                Width="175"
-                                DisplayMemberPath="DiaChi"
-                                IsEditable="True"
-                                SelectedValuePath="Id" />
-                        </GroupBox>
-                        <GroupBox Header="Điện thoại">
+                        <GroupBox>
+                            <GroupBox.Header>
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <fa:IconBlock
+                                        Margin="0,0,5,0"
+                                        Foreground="{StaticResource DangerBrush}"
+                                        Icon="Phone" />
+                                    <TextBlock VerticalAlignment="Center" Text="Điện thoại" />
+                                </StackPanel>
+                            </GroupBox.Header>
                             <ComboBox
                                 x:Name="DienThoaiComboBox"
                                 Width="175"
@@ -133,23 +143,68 @@
                                 IsEditable="True"
                                 SelectedValuePath="Id" />
                         </GroupBox>
-                        <GroupBox Header="Điểm tháng này">
+                        <GroupBox>
+                            <GroupBox.Header>
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <fa:IconBlock
+                                        Margin="0,0,5,0"
+                                        Foreground="{StaticResource DangerBrush}"
+                                        Icon="House" />
+                                    <TextBlock VerticalAlignment="Center" Text="Địa chỉ" />
+                                </StackPanel>
+                            </GroupBox.Header>
+                            <ComboBox
+                                x:Name="DiaChiComboBox"
+                                Width="175"
+                                DisplayMemberPath="DiaChi"
+                                IsEditable="True"
+                                SelectedValuePath="Id" />
+                        </GroupBox>
+                        <GroupBox>
+                            <GroupBox.Header>
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <fa:IconBlock
+                                        Margin="0,0,5,0"
+                                        Foreground="{StaticResource DangerBrush}"
+                                        Icon="Star" />
+                                    <TextBlock VerticalAlignment="Center" Text="Điểm tháng này" />
+                                </StackPanel>
+                            </GroupBox.Header>
                             <TextBlock
                                 x:Name="DiemThangNayTextBlock"
                                 Width="175"
                                 FontWeight="Medium" />
                         </GroupBox>
+
                         <GroupBox
                             x:Name="DiemThangTruocGroupBox"
                             Foreground="{StaticResource PrimaryBrush}"
-                            Header="Điểm tháng trước"
                             MouseDown="DiemThangTruocTextBlock_MouseDown">
+                            <GroupBox.Header>
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <fa:IconBlock
+                                        Margin="0,0,5,0"
+                                        Foreground="{StaticResource DangerBrush}"
+                                        Icon="Star" />
+                                    <TextBlock VerticalAlignment="Center" Text="Điểm tháng trước" />
+                                </StackPanel>
+                            </GroupBox.Header>
                             <TextBlock
                                 x:Name="DiemThangTruocTextBlock"
                                 Width="175"
                                 FontWeight="Medium" />
                         </GroupBox>
-                        <GroupBox Header="Voucher">
+                        <GroupBox>
+                            <GroupBox.Header>
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <fa:IconBlock
+                                        Margin="0,0,5,0"
+                                        Foreground="{StaticResource DangerBrush}"
+                                        Icon="Percent" />
+                                    <TextBlock VerticalAlignment="Center" Text="Voucher" />
+                                </StackPanel>
+                            </GroupBox.Header>
+
                             <Grid>
                                 <ComboBox
                                     x:Name="VoucherComboBox"
@@ -228,10 +283,28 @@
                         </GroupBox>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Vertical">
-                        <GroupBox Header="Nhập để tìm sản phẩm">
+                        <GroupBox>
+                            <GroupBox.Header>
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <fa:IconBlock
+                                        Margin="0,0,5,0"
+                                        Foreground="{StaticResource DangerBrush}"
+                                        Icon="Coffee" />
+                                    <TextBlock VerticalAlignment="Center" Text="Tên sản phẩm" />
+                                </StackPanel>
+                            </GroupBox.Header>
                             <ctrl:SanPhamSearchBox x:Name="SanPhamSearchBox" Width="175" />
                         </GroupBox>
-                        <GroupBox Header="Ghi chú">
+                        <GroupBox>
+                            <GroupBox.Header>
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <fa:IconBlock
+                                        Margin="0,0,5,0"
+                                        Foreground="{StaticResource DangerBrush}"
+                                        Icon="Pen" />
+                                    <TextBlock VerticalAlignment="Center" Text="Note" />
+                                </StackPanel>
+                            </GroupBox.Header>
                             <TextBox
                                 x:Name="NoteTuDoTextBox"
                                 Grid.Row="2"
@@ -241,7 +314,6 @@
                                 TextChanged="NoteTuDoTextBox_TextChanged"
                                 TextWrapping="Wrap" />
                         </GroupBox>
-
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition />
@@ -289,7 +361,6 @@
                                     GroupName="Duong"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
-
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Vertical">
                                 <RadioButton
@@ -357,7 +428,6 @@
                                     GroupName="Khac"
                                     PreviewMouseLeftButtonDown="RadioButton_PreviewMouseLeftButtonDown_Common"
                                     Unchecked="NoteRadio_Checked" />
-
                             </StackPanel>
                             <StackPanel
                                 Grid.Row="1"
@@ -390,9 +460,17 @@
                                     Unchecked="NoteRadio_Checked" />
                             </StackPanel>
                         </Grid>
-
                     </StackPanel>
-                    <GroupBox Grid.Column="2" Header="Danh sách món đã chọn">
+                    <GroupBox Grid.Column="2">
+                        <GroupBox.Header>
+                            <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                <fa:IconBlock
+                                    Margin="0,0,5,0"
+                                    Foreground="{StaticResource DangerBrush}"
+                                    Icon="List" />
+                                <TextBlock VerticalAlignment="Center" Text="Danh sách món đã chọn" />
+                            </StackPanel>
+                        </GroupBox.Header>
                         <Grid>
                             <TextBlock
                                 x:Name="TongSoSanPhamTextBlock"

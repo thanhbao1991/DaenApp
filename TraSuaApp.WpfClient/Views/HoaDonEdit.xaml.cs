@@ -26,8 +26,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         private readonly IHoaDonApi _api;
         string _friendlyName = TuDien._tableFriendlyNames["HoaDon"];
 
-        public string? GptInputText { get; set; }   // 🟟 giữ input GPT lại
-        public List<QuickOrderDto>? GptPredictions { get; set; }      // ✅ dự đoán GPT (có Line/Id)
         public Guid? SavedHoaDonId { get; internal set; }
         private readonly QuickOrderService _quick = new(Config.apiChatGptKey);
         private bool _openedFromMessenger;
@@ -182,6 +180,10 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
                         ChiTietListBox.ItemsSource = null;
                         ChiTietListBox.ItemsSource = Model.ChiTietHoaDons;
+
+                        // 🟟 Gợi ý món yêu thích theo ID (không phụ thuộc tên)
+                        SuggestFavoriteIntoSearchBoxByName(info.MonYeuThich);
+
                         CapNhatTongTien();
                     }
 
@@ -375,17 +377,44 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
         }
 
-        private async Task RunGptFromMessengerIfNeededAsync(string latestCustomerName)
+        /// <summary>
+        /// Đưa "món yêu thích" vào ô tìm kiếm sản phẩm và mở popup để user chọn.
+        /// - Không hiển thị MessageBox.
+        /// - Bôi đen text để user xoá nhanh nếu không cần.
+        /// - Mặc định chỉ gợi ý khi bill đang trống (có thể bỏ điều kiện nếu muốn).
+        /// </summary>
+        private void SuggestFavoriteIntoSearchBoxByName(string? favName)
+        {
+            try
+            {
+                if (_openedFromMessenger) return;             // không gợi ý khi mở từ Messenger
+                if (string.IsNullOrWhiteSpace(favName)) return;
+                if (Model.ChiTietHoaDons.Count != 0) return;  // chỉ gợi ý khi bill trống (tuỳ bạn)
+
+                // Điền text, focus, select-all để user xoá nhanh nếu không cần
+                SanPhamSearchBox.SuppressPopup = false;
+                SanPhamSearchBox.SearchTextBox.Text = favName;
+                SanPhamSearchBox.SearchTextBox.Focus();
+                SanPhamSearchBox.SearchTextBox.SelectAll();
+
+                // Mở popup để người dùng bấm chọn biến thể → event SanPhamBienTheSelected của bạn sẽ tự add dòng
+                SanPhamSearchBox.IsPopupOpen = true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("SuggestFavoriteIntoSearchBoxByName error: " + ex.Message);
+            }
+        }
+        private async Task RunGptFromMessengerIfNeededAsync(string latestCustomerName, string input)
         {
             try
             {
                 // Chỉ chạy khi mở từ Messenger và có truyền chuỗi
                 if (!_openedFromMessenger) return;
-                if (string.IsNullOrWhiteSpace(GptInputText)) return;
+                if (string.IsNullOrWhiteSpace(input)) return;
 
                 // Xác định kiểu input: TEXT hay ẢNH
                 bool isImage = false;
-                string input = GptInputText!;
                 if (File.Exists(input))
                 {
                     var ext = Path.GetExtension(input).ToLowerInvariant();
@@ -393,17 +422,10 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 }
 
                 // Lấy lịch sử/”short menu” theo khách (nếu đã chọn)
-                string? lichSuText = null;
                 Guid? khId = null;
                 if (KhachHangSearchBox.SelectedKhachHang is KhachHangDto kh)
                 {
                     khId = kh.Id;
-                    try
-                    {
-                        var resp = await ApiClient.GetAsync($"/api/Dashboard/topmenu-quickorder/{kh.Id}");
-                        lichSuText = await resp.Content.ReadFromJsonAsync<string>();
-                    }
-                    catch { /* ignore: lịch sử là optional */ }
                 }
 
                 using (BusyUI.Scope(this, SaveButton, isImage ? "Đang phân tích ảnh..." : "Đang phân tích văn bản..."))
@@ -412,14 +434,10 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     var (hd, raw, preds) = await _quick.BuildHoaDonAsync(
                         input,
                         isImage: isImage,
-                        shortMenuFromHistory: lichSuText,
                         khachHangId: khId,
     customerNameHint: latestCustomerName    // ✅ giúp bỏ dòng "Mun"
 );
 
-                    // Lưu lại input + gợi ý để có thể hiển thị/nốt lại nếu cần
-                    GptInputText = raw;
-                    GptPredictions = preds;
 
                     // Nếu AI không nhận ra gì vẫn mở đơn rỗng để nhập tay
                     var parsed = hd ?? new HoaDonDto { ChiTietHoaDons = new() };
@@ -445,7 +463,15 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                         };
                         Model.ChiTietHoaDons.Add(ct);
                     }
-
+                    // ✅ Nếu đã chọn KH từ trước, áp lại giá riêng cho toàn bộ dòng GPT vừa đổ
+                    if (KhachHangSearchBox.SelectedKhachHang is KhachHangDto khSel)
+                    {
+                        ApplyCustomerPricingForAllLines(khSel.Id, showMessage: false); // im lặng, tránh popup trùng
+                    }
+                    else if (Model.KhachHangId != null)
+                    {
+                        ApplyCustomerPricingForAllLines(Model.KhachHangId.Value, showMessage: false);
+                    }
                     // 2) topping, voucher, KH, ghi chú...
                     Model.ChiTietHoaDonToppings = parsed.ChiTietHoaDonToppings;
                     Model.VoucherId = parsed.VoucherId;
@@ -482,14 +508,13 @@ namespace TraSuaApp.WpfClient.HoaDonViews
     : this(dto) // gọi lại constructor gốc để khởi tạo UI/bindings
         {
             _openedFromMessenger = openedFromMessenger;
-            GptInputText = gptInput;
 
             // Gợi ý sẵn tên khách lấy từ Messenger (chỉ set text, chưa auto chọn)
             if (!string.IsNullOrWhiteSpace(latestCustomerName))
                 KhachHangSearchBox.SearchTextBox.Text = latestCustomerName;
 
             // Khi UI hiển thị xong mới chạy GPT (nếu đủ điều kiện)
-            this.ContentRendered += async (_, __) => await RunGptFromMessengerIfNeededAsync(latestCustomerName);
+            this.ContentRendered += async (_, __) => await RunGptFromMessengerIfNeededAsync(latestCustomerName, gptInput);
         }
         private bool _isSaving = false;
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -629,34 +654,12 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                         return;
                     }
 
-                    if (!string.IsNullOrWhiteSpace(GptInputText)
-                   && Model?.ChiTietHoaDons?.Any() == true)
-                    {
-
-                    }
-                    else if (Model?.ChiTietHoaDons?.Any() == true)
-                    {
-                        // Fallback: không có input GPT → học theo TÊN món (ít thông tin hơn nhưng vẫn cá nhân hoá)
-                        _ = Task.Run(async () =>
-                        {
-                            try
-                            {
-                                foreach (var ct in Model.ChiTietHoaDons)
-                                {
-                                    var sp = AppProviders.SanPhams.Items
-                                        .FirstOrDefault(s => s.BienThe.Any(bt => bt.Id == ct.SanPhamIdBienThe));
-                                }
-                            }
-                            catch { }
-                        });
-                    }
                     SavedHoaDonId = Model.Id != Guid.Empty ? Model.Id : null;
 
                     // đóng cửa sổ và trả kết quả OK
                     DialogResult = true;
                     this.DialogResult = true;
                     this.Close();
-
                 }
                 catch (Exception ex)
                 {
@@ -680,7 +683,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
 
             // 🟟 Chỉ log khi mở từ Messenger
-            // 🟟 Chỉ log khi mở từ Messenger
             if (_openedFromMessenger && Model?.ChiTietHoaDons?.Any() == true)
             {
                 _ = Task.Run(async () =>
@@ -688,49 +690,37 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     try
                     {
                         var lines = new List<string>();
-                        lines.Add("===== MESSENGER ORDER FINALIZED =====");
-                        lines.Add("-----Sau khi nhân viên chỉnh sửa & lưu-----");
+                        lines.Add("----- USER ORDER FINALIZED -----");
 
                         foreach (var ct in Model.ChiTietHoaDons.OrderBy(x => x.Stt))
                         {
-                            // Lấy biến thể
                             var bienThe = AppProviders.SanPhams.Items
                                 .SelectMany(s => s.BienThe)
                                 .FirstOrDefault(bt => bt.Id == ct.SanPhamIdBienThe);
 
                             string tenBienThe = bienThe?.TenBienThe;
-                            string tenHienThi = ct.TenSanPham +
-                                                (string.IsNullOrWhiteSpace(tenBienThe)
-                                                    ? ""
-                                                    : $" – {tenBienThe}");
+                            string tenHienThi = ct.TenSanPham + $" – {tenBienThe}";
 
-                            // Ghi chú + topping
                             string noteText = string.IsNullOrWhiteSpace(ct.NoteText) ? "" : $" - {ct.NoteText}";
                             string toppingText = "";
                             if (ct.ToppingDtos?.Any() == true)
-                                toppingText = " topping: " + string.Join(", ", ct.ToppingDtos.Select(t => $"{t.Ten} x{t.SoLuong}"));
+                                toppingText = "  + " + string.Join(", ", ct.ToppingDtos.Select(t => $"{t.Ten} x{t.SoLuong}"));
 
-                            // Tính thành tiền
-                            decimal thanhTien = (ct.DonGia * ct.SoLuong)
-                                                + (ct.ToppingDtos?.Sum(t => t.Gia * t.SoLuong) ?? 0);
-
-                            lines.Add($"{ct.Stt}. {tenHienThi} x{ct.SoLuong} - {ct.DonGia:N0}đ {noteText}{toppingText}");
+                            string gia = $"{ct.DonGia:N0}đ";
+                            lines.Add($"{ct.Stt}. {tenHienThi} x{ct.SoLuong} - {ct.DonGia:N0}đ - {noteText}");
                         }
-
 
                         await DiscordService.SendAsync(
                             Shared.Enums.DiscordEventType.Admin,
                             string.Join("\n", lines)
-
                         );
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine("Lỗi gửi log Discord cuối (Messenger): " + ex.Message);
+                        Debug.WriteLine("Lỗi gửi log Discord GPT vs USER: " + ex.Message);
                     }
                 });
             }
-
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -1235,79 +1225,40 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
 
         }
-        //  private void ChiTietListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        //  {
-        //      if (ChiTietListBox.SelectedItem is not ChiTietHoaDonDto selected)
-        //      {
-        //          ToppingGroupBox.Visibility = Visibility.Collapsed;
-        //          return;
-        //      }
-        //      ToppingGroupBox.Visibility = Visibility.Visible;
 
+        #region Giá riêng theo khách hàng
+        private void ApplyCustomerPricingForAllLines(Guid khId, bool showMessage = true)
+        {
+            if (Model?.ChiTietHoaDons == null) return;
 
-        //      _isLoadingNote = true;
+            var dsMonCapNhat = new List<string>();
 
-        //      // Bỏ chọn tất cả radio trước
-        //      foreach (var radio in this.FindVisualChildren<RadioButton>().Where(r => r.GroupName != "LoaiDon"))
-        //          radio.IsChecked = false;
+            foreach (var ct in Model.ChiTietHoaDons)
+            {
+                var customGia = AppProviders.KhachHangGiaBans.Items
+                    .FirstOrDefault(x => x.KhachHangId == khId
+                                      && x.SanPhamBienTheId == ct.SanPhamIdBienThe
+                                      && !x.IsDeleted);
+                if (customGia != null && ct.DonGia != customGia.GiaBan)
+                {
+                    ct.DonGia = customGia.GiaBan;
+                    dsMonCapNhat.Add($"{ct.TenSanPham} ({ct.DonGia:N0})");
+                }
+            }
 
-        //      _isLoadingNote = false;
+            // Thông báo gộp (tránh spam khi nhiều món)
+            if (showMessage && dsMonCapNhat.Any())
+            {
+                string msg = "Đã cập nhật giá riêng cho các món:\n- " + string.Join("\n- ", dsMonCapNhat);
+                MessageBox.Show(msg, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
 
-        //      // ✅ Chọn sản phẩm tương ứng
-        //      var sanPham = _sanPhamList.FirstOrDefault(sp => sp.BienThe.Any(bt => bt.Id == selected.SanPhamIdBienThe));
-        //      if (sanPham != null)
-        //      {
-        //          SanPhamSearchBox.SuppressPopup = true;
-        //          SanPhamSearchBox.SetSelectedSanPham(sanPham);
-        //          SanPhamSearchBox.SuppressPopup = false;
-
-        //          // ✅ Luôn nạp lại danh sách biến thể từ _bienTheList
-        //          var bienThes = _bienTheList.Where(x => x.SanPhamId == sanPham.Id).ToList();
-        //          BienTheComboBox.ItemsSource = bienThes;
-        //          BienTheComboBox.SelectedValue = selected.SanPhamIdBienThe;
-
-        //          // ✅ Cập nhật số lượng topping
-        //          LoadToppingPanel(sanPham.NhomSanPhamId);
-        //      }
-
-        //      if (ToppingListBox.ItemsSource is List<ToppingDto> ds)
-        //      {
-        //          foreach (var t in ds)
-        //          {
-        //              var match = selected.ToppingDtos.FirstOrDefault(x => x.Id == t.Id);
-        //              t.SoLuong = match?.SoLuong ?? 0;
-        //          }
-        //          ToppingListBox.Items.Refresh();
-        //      }
-
-        //      // ✅ Cập nhật note
-        //      var allNotes = selected.NoteText?.Split('#')
-        //          .Select(x => x.Trim())
-        //          .ToList() ?? new List<string>();
-
-        //      // Tick các radio tương ứng
-        //      foreach (var radio in this.FindVisualChildren<RadioButton>().Where(r => r.GroupName != "LoaiDon"))
-        //      {
-        //          radio.IsChecked = allNotes?.Contains(radio.Content?.ToString() ?? "") ?? false;
-        //      }
-
-        //      // Hiển thị note tự do (không nằm trong radio)
-        //      var predefinedNotes = this.FindVisualChildren<RadioButton>()
-        //          .Select(r => r.Content.ToString())
-        //          .ToHashSet();
-
-        //      var freeNotes = allNotes?
-        //.Where(n => !predefinedNotes.Contains(n))
-        //?? Enumerable.Empty<string>();
-        //      NoteTuDoTextBox.Text = string.Join(" # ", freeNotes);
-
-        //      // ✅ Cập nhật số lượng
-        //      SoLuongTextBox.Text = selected.SoLuong.ToString();
-
-        //  }
-
-
-
+            // Refresh UI & tổng
+            ChiTietListBox.ItemsSource = null;
+            ChiTietListBox.ItemsSource = Model.ChiTietHoaDons;
+            CapNhatTongTien();
+        }
+        #endregion
         private void ThemDongButton_Click(object sender, RoutedEventArgs e)
         {
             if (ChiTietListBox.SelectedItem is not ChiTietHoaDonDto selected)

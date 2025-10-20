@@ -96,9 +96,9 @@ namespace TraSuaApp.WpfClient.Views
                             item.Stt = stt++;
                             Items.Add(item);
                         }
-                        TongTienTextBlock.Text = $"Tổng giá trị: {Items.Sum(x => x.GiaTriApDung):N0} đ";
+                        TongTienTextBlock.Header = $"{Items.Sum(x => x.GiaTriApDung):N0} đ";
                     }
-                    else TongTienTextBlock.Text = "Tổng giá trị: 0 đ";
+                    else TongTienTextBlock.Header = "0 đ";
                 }
                 finally { _isLoading = false; }
             }

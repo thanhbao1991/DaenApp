@@ -5,6 +5,7 @@ using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
+
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
@@ -44,5 +45,15 @@ public class DoanhThuController : ControllerBase
     {
         var dto = await _service.GetHoaDonKhachHangAsync(khachHangId);
         return Result<List<DoanhThuHoaDonDto>>.Success(dto);
+    }
+
+    // 🟟 mới: tổng số đơn theo giờ trong tháng (1 call duy nhất)
+    // GET /api/DoanhThu/thang-by-hour?thang=10&nam=2025&startHour=6&endHour=22
+    [HttpGet("thang-by-hour")]
+    public async Task<ActionResult<Result<List<DoanhThuHourBucketDto>>>> GetThangByHour(
+        int thang, int nam, int startHour = 6, int endHour = 22)
+    {
+        var dto = await _service.GetSoDonTheoGioTrongThangAsync(thang, nam, startHour, endHour);
+        return Result<List<DoanhThuHourBucketDto>>.Success(dto);
     }
 }

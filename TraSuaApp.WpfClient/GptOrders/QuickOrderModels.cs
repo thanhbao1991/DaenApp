@@ -10,12 +10,4 @@
         // 🟟 thêm giá bán GPT suy ra (nếu có)
         public decimal? Gia { get; set; }
     }
-    public class QuickOrderNameDto
-    {
-        public string TenMon { get; set; } = string.Empty;
-        public string BienThe { get; set; } = "Size Chuẩn"; // chuẩn hoá nhãn
-        public int SoLuong { get; set; } = 1;
-        public string NoteText { get; set; } = "";
-        public int? Line { get; set; }
-    }
 }

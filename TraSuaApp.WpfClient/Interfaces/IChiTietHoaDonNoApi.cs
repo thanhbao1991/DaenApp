@@ -5,6 +5,7 @@ namespace TraSuaApp.WpfClient.Apis;
 
 public interface IChiTietHoaDonNoApi
 {
+    Task<Result<ChiTietHoaDonThanhToanDto>> PayAsync(Guid id, string type);
     Task<Result<List<ChiTietHoaDonNoDto>>> GetAllAsync();
     Task<Result<ChiTietHoaDonNoDto>> GetByIdAsync(Guid id);
     Task<Result<List<ChiTietHoaDonNoDto>>> GetUpdatedSince(DateTime since);

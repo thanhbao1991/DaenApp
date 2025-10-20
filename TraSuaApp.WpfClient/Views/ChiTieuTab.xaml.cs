@@ -15,10 +15,9 @@ namespace TraSuaApp.WpfClient.Views
         private int _currentOffset = 0;
         private bool _isLoading;
         private bool _didInitialLoad;
+        private bool _ungNha;
 
-        private readonly Guid _defaultNguyenLieuId = Guid.Parse("7995B334-44D1-4768-89C7-280E6B0413AE");
-
-        public ChiTieuTab()
+        public ChiTieuTab(bool ungNha)
         {
             InitializeComponent();
             ChiTieuDataGrid.ItemsSource = Items;
@@ -26,6 +25,7 @@ namespace TraSuaApp.WpfClient.Views
             IsVisibleChanged += ChiTieuTab_IsVisibleChanged;
             UpdateMonthLabel();
             UpdateNavButtons();
+            _ungNha = ungNha;
         }
 
         private async void ChiTieuNguyenLieuTab_Loaded(object sender, RoutedEventArgs e)
@@ -43,7 +43,10 @@ namespace TraSuaApp.WpfClient.Views
             NguyenLieuBox.NguyenLieuList = list;
 
             // Chọn mặc định nguyên liệu cố định
-            NguyenLieuBox.SetSelectedNguyenLieuByIdWithoutPopup(_defaultNguyenLieuId);
+            if (_ungNha)
+                NguyenLieuBox.SetSelectedNguyenLieuByIdWithoutPopup(
+        Guid.Parse("7995B334-44D1-4768-89C7-280E6B0413AE")
+                    );
         }
 
         private async Task EnsureProvidersReadyAsync()
@@ -59,13 +62,20 @@ namespace TraSuaApp.WpfClient.Views
         private async void ChiTieuTab_IsVisibleChanged(object? sender, DependencyPropertyChangedEventArgs e)
         {
             if (!IsVisible) return;
-            if (!_didInitialLoad)
+            if (_ungNha)
             {
-                await LoadData(_currentOffset, _defaultNguyenLieuId);
-                _didInitialLoad = true;
+                await LoadData(_currentOffset,
+            Guid.Parse("7995B334-44D1-4768-89C7-280E6B0413AE")
+
+                    );
+                NguyenLieuBox.Visibility = Visibility.Collapsed;
             }
             else
+            {
+                NguyenLieuBox.Visibility = Visibility.Visible;
                 await LoadData(_currentOffset);
+
+            }
         }
 
         // 🟟 Khi chọn nguyên liệu mới → tải dữ liệu
@@ -105,10 +115,10 @@ namespace TraSuaApp.WpfClient.Views
                             Items.Add(item);
                         }
 
-                        TongTienTextBlock.Text = $"Tổng tiền: {Items.Sum(x => x.ThanhTien):N0} đ";
+                        TongTienTextBlock.Header = $"{Items.Sum(x => x.ThanhTien):N0} đ";
                     }
                     else
-                        TongTienTextBlock.Text = "Tổng tiền: 0 đ";
+                        TongTienTextBlock.Header = "0 đ";
                 }
                 finally { _isLoading = false; }
             }

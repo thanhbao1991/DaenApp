@@ -43,13 +43,13 @@ namespace TraSuaApp.WpfClient.Helpers
 
                 var starText = StarHelper.GetStarText(hoaDon.DiemThangNay);
                 if (!string.IsNullOrEmpty(starText))
-                    sb.AppendLine($"☆ tháng này: {starText}");
+                    sb.AppendLine($"• điểm tháng này: {starText}");
 
                 var starText2 = StarHelper.GetStarText(hoaDon.DiemThangTruoc);
                 if (!string.IsNullOrEmpty(starText2))
-                    sb.AppendLine($"☆ tháng trước: {starText2}");
+                    sb.AppendLine($"• điểm tháng trước: {starText2}");
             }
-            sb.AppendLine("---------------------------");
+            sb.AppendLine("----------30đ/★/10k----------");
             sb.AppendLine();
 
             // Chi tiết món

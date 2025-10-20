@@ -9,5 +9,7 @@ public class KhachHangFavoriteDto
     public int DiemThangNay { get; set; }
     public int DiemThangTruoc { get; set; }
     public decimal TongNo { get; set; }
-    //    public List<ChiTietHoaDonDto> TopChiTiets { get; set; } = new();
+
+    // 🟟 Favorite dựa trên hoá đơn chỉ có 1 món và SUM(SoLuong)=1 trong năm nay
+    public string? MonYeuThich { get; set; }                // Ten sp
 }

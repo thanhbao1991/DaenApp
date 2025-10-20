@@ -97,7 +97,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
         /// - Predictions: list dự đoán dòng ↔ sản phẩm (để hiển thị/learn theo Line)
         /// </summary>
         public async Task<(HoaDonDto? HoaDon, string RawInput, List<QuickOrderDto> Predictions)> BuildHoaDonAsync(
-            string inputOrUrl, bool isImage = false, string? shortMenuFromHistory = "", Guid? khachHangId = null,
+            string inputOrUrl, bool isImage = false, Guid? khachHangId = null,
             string? customerNameHint = null)
         {
             var baoCao = new List<string>();
@@ -121,16 +121,6 @@ namespace TraSuaApp.WpfClient.AiOrdering
 
 
             var menu = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
-
-            //// SHORTLIST học máy (theo khách + global) + lịch sử server
-            //string learnedShort = QuickGptLearningStore.Instance.BuildShortlistForPrompt(
-            //    customerId: khachHangId,
-            //    currentMenu: menu,
-            //    serverTopForCustomer: null,
-            //    topK: 12
-            //);
-            //string combinedShort = string.Join("\n",
-            //    new[] { shortMenuFromHistory ?? "", learnedShort }.Where(x => !string.IsNullOrWhiteSpace(x)));
 
             if (string.IsNullOrWhiteSpace(sourceText))
             {
@@ -170,12 +160,6 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>()
             };
 
-            // Audit Discord
-            //baoCao.Add("sourceText"); baoCao.Add(sourceText);
-            //baoCao.Add("cleanedForDisplay"); baoCao.Add(cleanedForDisplay);
-            //baoCao.Add("shortMenuFromHistory"); baoCao.Add(shortMenuFromHistory ?? "");
-            //baoCao.Add("learnedShort"); baoCao.Add(learnedShort);
-            //await DiscordService.SendAsync(Shared.Enums.DiscordEventType.Admin, string.Join("\n", baoCao));
 
             return (hd, cleanedForDisplay, preds);
 
