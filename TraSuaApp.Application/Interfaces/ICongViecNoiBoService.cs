@@ -5,6 +5,7 @@ namespace TraSuaApp.Applicationn.Interfaces;
 
 public interface ICongViecNoiBoService
 {
+    Task<Result<CongViecNoiBoDto>> ToggleAsync(Guid id);
     Task<List<CongViecNoiBoDto>> GetAllAsync();
     Task<CongViecNoiBoDto?> GetByIdAsync(Guid id);
     Task<Result<CongViecNoiBoDto>> CreateAsync(CongViecNoiBoDto dto);

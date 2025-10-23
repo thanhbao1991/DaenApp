@@ -1,0 +1,143 @@
+﻿@page
+@model TraSuaAppWeb.Pages.ChiTieuHangNgayTabModel
+@{
+    ViewData["Title"] = "Chi Tiêu Hằng Ngày";
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">
+            <i class="fa fa-wallet text-success"></i>
+            Chi Tiêu Hằng Ngày
+        </h4>
+        <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">
+            <i class="fa fa-sync"></i> Tải lại
+        </button>
+    </div>
+
+    <!-- 🟟 Thanh tìm kiếm -->
+    <div class="input-group mb-3">
+        <span class="input-group-text"><i class="fa fa-search"></i></span>
+        <input type="text"
+               id="searchBox"
+               class="form-control"
+               placeholder="Tìm chi tiêu, ghi chú..."
+               onkeyup="filterChiTieu(this.value)">
+        <button class="btn btn-success" onclick="openAdd()">➕ Thêm chi tiêu</button>
+    </div>
+
+    <!-- 🟟 Bảng chi tiêu -->
+    <div class="table-responsive">
+        <table id="chiTieuTable" class="table table-striped table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>STT</th>
+                    <th>Ngày</th>
+                    <th>Giờ</th>
+                    <th>Tên</th>
+                    <th>Thành tiền</th>
+                    <th>Ghi chú</th>
+                    <th class="text-center">Xoá</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int stt = 1;
+                    decimal tong = 0;
+                    foreach (var item in Model.Items)
+                    {
+                        tong += item.ThanhTien;
+                        <tr ondblclick="editChiTieu('@item.Id')">
+                            <td>@(stt++)</td>
+                            <td>@item.Ngay.ToString("dd/MM")</td>
+                            <td>@item.NgayGio.ToString("HH:mm")</td>
+                            <td>@item.Ten</td>
+                            <td class="text-end text-success fw-semibold">@item.ThanhTien.ToString("N0") đ</td>
+                            <td>@item.GhiChu</td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-danger" onclick="deleteChiTieu('@item.Id')">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <th colspan="4" class="text-end">Tổng:</th>
+                    <th class="text-end text-danger fw-bold">@tong.ToString("N0") đ</th>
+                    <th colspan="2"></th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 🟟 Chuẩn hóa không dấu
+        function normalizeText(str) {
+            return str.toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/[^a-z0-9]/g, '');
+        }
+
+        function filterChiTieu(keyword) {
+            const key = normalizeText(keyword);
+            document.querySelectorAll("#chiTieuTable tbody tr").forEach(row => {
+                const text = normalizeText(row.innerText);
+                row.style.display = text.includes(key) ? "" : "none";
+            });
+        }
+
+        // ➕ Thêm chi tiêu
+        async function openAdd() {
+            const ten = prompt("Tên chi tiêu:");
+            if (!ten) return;
+            const soTien = parseFloat(prompt("Số tiền (đ):") || "0");
+            const ghiChu = prompt("Ghi chú (tuỳ chọn):") || "";
+
+            const body = { ten, thanhTien: soTien, ghiChu };
+
+            const res = await fetch('/ChiTieuHangNgayTab?handler=Add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const result = await res.json();
+            alert(result.message);
+            if (result.success) location.reload();
+        }
+
+        // ✏️ Sửa chi tiêu (double click)
+        async function editChiTieu(id) {
+            const newGhiChu = prompt("Nhập ghi chú mới (bỏ trống nếu không đổi):");
+            if (newGhiChu === null) return;
+
+            const res = await fetch('/ChiTieuHangNgayTab?handler=Edit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, ghiChu: newGhiChu })
+            });
+            const result = await res.json();
+            alert(result.message);
+            if (result.success) location.reload();
+        }
+
+        // ❌ Xoá chi tiêu
+        async function deleteChiTieu(id) {
+            if (!confirm("Xác nhận xoá chi tiêu này?")) return;
+            const res = await fetch('/ChiTieuHangNgayTab?handler=Delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            const result = await res.json();
+            alert(result.message);
+            if (result.success) location.reload();
+        }
+    </script>
+}

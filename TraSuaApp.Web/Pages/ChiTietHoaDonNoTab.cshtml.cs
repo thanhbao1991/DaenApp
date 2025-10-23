@@ -6,6 +6,8 @@ using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaAppWeb.Pages
 {
+    // BỎ Anti-Forgery cho các POST AJAX trong trang này
+    [IgnoreAntiforgeryToken]
     public class ChiTietHoaDonNoTabModel : PageModel
     {
         private readonly IHttpClientFactory _clientFactory;
@@ -18,7 +20,7 @@ namespace TraSuaAppWeb.Pages
             _clientFactory = factory;
         }
 
-        // 🟟 Load danh sách công nợ
+        // Load danh sách công nợ
         public async Task OnGetAsync()
         {
             var client = _clientFactory.CreateClient("Api");
@@ -27,21 +29,29 @@ namespace TraSuaAppWeb.Pages
                 Items = res.Data!;
         }
 
-        // 🟟 Request từ JS
+        // Payload nhận từ JS
         public class PayRequest
         {
             public Guid Id { get; set; }
-            public string Type { get; set; } = "";
+            public string Type { get; set; } = "";   // "TienMat" | "ChuyenKhoan"
+            public decimal? Amount { get; set; }     // null => thu đủ (SoTienConLai)
+            public string? Note { get; set; }        // ghi chú
         }
 
-        // 🟟 Gọi API backend chung /api/ChiTietHoaDonNo/{id}/pay
+        // POST: /ChiTietHoaDonNoTab?handler=Pay
         public async Task<IActionResult> OnPostPayAsync([FromBody] PayRequest req)
         {
             var client = _clientFactory.CreateClient("Api");
-            var response = await client.PostAsJsonAsync(
-                $"/api/ChiTietHoaDonNo/{req.Id}/pay",
-                new PayDebtRequest { Type = req.Type });
 
+            // Gửi kèm Amount/Note xuống API để cho phép thu thiếu / thu đủ
+            var payload = new PayDebtRequest
+            {
+                Type = req.Type,
+                Amount = req.Amount,   // null => server tự lấy SoTienConLai (thu đủ)
+                Note = req.Note
+            };
+
+            var response = await client.PostAsJsonAsync($"/api/ChiTietHoaDonNo/{req.Id}/pay", payload);
             var result = await response.Content.ReadFromJsonAsync<Result<ChiTietHoaDonThanhToanDto>>();
 
             return new JsonResult(new

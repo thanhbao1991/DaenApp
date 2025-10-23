@@ -16,7 +16,37 @@ public class CongViecNoiBoService : ICongViecNoiBoService
     {
         _context = context;
     }
+    public async Task<Result<CongViecNoiBoDto>> ToggleAsync(Guid id)
+    {
+        var entity = await _context.CongViecNoiBos
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
+        if (entity == null)
+            return Result<CongViecNoiBoDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
+
+        // Đảo trạng thái hoàn thành
+        entity.DaHoanThanh = !entity.DaHoanThanh;
+        entity.NgayGio = DateTime.Now;
+
+        if (entity.DaHoanThanh)
+        {
+            // Nếu có cấu hình cảnh báo sau X ngày thì set lại
+            if (entity.XNgayCanhBao != null && entity.XNgayCanhBao != 0)
+                entity.NgayCanhBao = entity.NgayGio.Value.AddDays(entity.XNgayCanhBao ?? 0);
+        }
+        else
+        {
+            entity.NgayCanhBao = null;
+        }
+
+        entity.LastModified = DateTime.Now;
+        await _context.SaveChangesAsync();
+
+        var dto = ToDto(entity);
+        return Result<CongViecNoiBoDto>.Success(dto, $"{(dto.DaHoanThanh ? "Đã hoàn thành" : "Chuyển về đang làm")}.")
+            .WithId(dto.Id)
+            .WithAfter(dto);
+    }
     private CongViecNoiBoDto ToDto(CongViecNoiBo entity)
     {
         return new CongViecNoiBoDto

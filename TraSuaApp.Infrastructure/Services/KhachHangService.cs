@@ -68,6 +68,7 @@ public class KhachHangService : IKhachHangService
         {
             Id = entity.Id,
             Ten = entity.Ten,
+            FavoriteMon = entity.FavoriteMon,
             IsDeleted = entity.IsDeleted,
             LastModified = entity.LastModified,
             CreatedAt = entity.CreatedAt,
@@ -171,6 +172,7 @@ public class KhachHangService : IKhachHangService
         {
             Id = Guid.NewGuid(),
             Ten = dto.Ten,
+            FavoriteMon = dto.FavoriteMon,
             OldId = dto.OldId,
             IsDeleted = false,
             LastModified = DateTime.Now,
@@ -231,6 +233,8 @@ public class KhachHangService : IKhachHangService
         var before = ToDto(entity);
 
         entity.Ten = dto.Ten;
+        entity.FavoriteMon = dto.FavoriteMon;
+
         entity.LastModified = DateTime.Now;
         entity.DuocNhanVoucher = dto.DuocNhanVoucher;
 
@@ -349,6 +353,7 @@ public class KhachHangService : IKhachHangService
             {
                 Id = entity.Id,
                 Ten = entity.Ten,
+                FavoriteMon = entity.FavoriteMon,
                 IsDeleted = entity.IsDeleted,
                 LastModified = entity.LastModified,
                 CreatedAt = entity.CreatedAt,
@@ -385,6 +390,7 @@ public class KhachHangService : IKhachHangService
             {
                 Id = entity.Id,
                 Ten = entity.Ten,
+                FavoriteMon = entity.FavoriteMon,
                 IsDeleted = entity.IsDeleted,
                 LastModified = entity.LastModified,
                 CreatedAt = entity.CreatedAt,
@@ -422,6 +428,7 @@ public class KhachHangService : IKhachHangService
             {
                 Id = entity.Id,
                 Ten = entity.Ten,
+                FavoriteMon = entity.FavoriteMon,
                 IsDeleted = entity.IsDeleted,
                 LastModified = entity.LastModified,
                 CreatedAt = entity.CreatedAt,

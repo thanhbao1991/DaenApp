@@ -1,0 +1,140 @@
+﻿@page
+@model TraSuaAppWeb.Pages.CongViecNoiBoTabModel
+@{
+    ViewData["Title"] = "Công Việc Nội Bộ";
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">
+            <i class="fa fa-clipboard-list text-primary"></i>
+            Công Việc Nội Bộ
+        </h4>
+        <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">
+            <i class="fa fa-sync"></i> Tải lại
+        </button>
+    </div>
+
+    <!-- 🟟 Thanh tìm kiếm -->
+    <div class="input-group mb-3">
+        <span class="input-group-text"><i class="fa fa-search"></i></span>
+        <input type="text"
+               id="searchBox"
+               class="form-control"
+               placeholder="Tìm việc, ghi chú..."
+               onkeyup="filterTable(this.value)">
+        <button class="btn btn-success" onclick="openAdd()">➕ Thêm việc</button>
+    </div>
+
+    <!-- 🟟 Bảng công việc -->
+    <div class="table-responsive">
+        <table id="taskTable" class="table table-striped table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>STT</th>
+                    <th>Ngày</th>
+                    <th>Giờ</th>
+                    <th>Tên việc</th>
+                    <th>Ngày cảnh báo</th>
+                    <th>Sau X ngày</th>
+                    <th class="text-center">Trạng thái</th>
+                    <th class="text-center">Xoá</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int stt = 1;
+                    foreach (var item in Model.Items)
+                    {
+                        var rowClass = item.DaHoanThanh ? "table-secondary" : "table-light";
+                        <tr class="@rowClass" ondblclick="toggleDone('@item.Id')">
+                            <td>@(stt++)</td>
+                            <td>@item.NgayGio?.ToString("dd/MM")</td>
+                            <td>@item.NgayGio?.ToString("HH:mm")</td>
+                            <td>@item.Ten</td>
+                            <td>@(item.NgayCanhBao?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                            <td class="text-center">@item.XNgayCanhBao</td>
+                            <td class="text-center">
+                                @if (item.DaHoanThanh)
+                                {
+                                    <span class="badge bg-secondary">✓ Hoàn thành</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary">Đang làm</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-danger" onclick="deleteTask('@item.Id')">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 🟟 Lọc không dấu
+        function normalizeText(str) {
+            return str
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/[^a-z0-9]/g, '');
+        }
+
+        function filterTable(keyword) {
+            const key = normalizeText(keyword);
+            document.querySelectorAll("#taskTable tbody tr").forEach(row => {
+                const text = normalizeText(row.innerText);
+                row.style.display = text.includes(key) ? "" : "none";
+            });
+        }
+
+        // ➕ Thêm công việc
+        async function openAdd() {
+            const ten = prompt("Nhập tên công việc mới:");
+            if (!ten) return;
+
+            const res = await fetch('/CongViecNoiBoTab?handler=Add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ten })
+            });
+            const result = await res.json();
+            alert(result.message);
+            if (result.success) location.reload();
+        }
+
+        // ✅ Toggle hoàn thành
+        async function toggleDone(id) {
+            const res = await fetch('/CongViecNoiBoTab?handler=Toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            const result = await res.json();
+            if (result.success) location.reload();
+            else alert(result.message);
+        }
+
+        // ❌ Xoá công việc
+        async function deleteTask(id) {
+            if (!confirm("Xác nhận xoá công việc này?")) return;
+            const res = await fetch('/CongViecNoiBoTab?handler=Delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            const result = await res.json();
+            alert(result.message);
+            if (result.success) location.reload();
+        }
+    </script>
+}

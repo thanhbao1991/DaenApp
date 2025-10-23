@@ -115,7 +115,6 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
             .WithAfter(after);
     }
 
-
     public async Task<Result<ChiTietHoaDonThanhToanDto>> PayDebtAsync(Guid id, PayDebtRequest req)
     {
         var no = await _context.ChiTietHoaDonNos
@@ -130,32 +129,43 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
 
         var now = DateTime.Now;
 
+        // ✅ Lấy số còn lại & xác định số tiền sẽ thu
+        var soConLai = no.SoTienConLai;
+        var soThu = req.Amount ?? soConLai;        // null => thu đủ
+        if (soThu <= 0)
+            return Result<ChiTietHoaDonThanhToanDto>.Failure("Số tiền không hợp lệ.");
+        if (soThu > soConLai)
+            return Result<ChiTietHoaDonThanhToanDto>.Failure($"Số tiền vượt quá số còn lại ({soConLai:N0}).");
+
         // GUID phương thức — giống WPF
         var tienMatId = Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C");
         var chuyenKhoanId = Guid.Parse("2cf9a88f-3bc0-4d4b-940d-f8ffa4affa02");
-
         var isTienMat = string.Equals(req.Type, "TienMat", StringComparison.OrdinalIgnoreCase);
+
+        // ✅ Ghi chú: ưu tiên Note gửi lên; nếu trống thì tự sinh
+        var note = string.IsNullOrWhiteSpace(req.Note)
+            ? (soThu < soConLai ? "Thanh toán thiếu" : "Thanh toán đủ")
+            : req.Note;
 
         var dto = new ChiTietHoaDonThanhToanDto
         {
             ChiTietHoaDonNoId = no.Id,
             HoaDonId = no.HoaDonId,
             KhachHangId = no.KhachHangId,
-            SoTien = no.SoTienConLai,             // auto full debt
+            SoTien = soThu,                              // ✅ dùng số tiền đã tính
             Ngay = now.Date,
             NgayGio = now,
             LoaiThanhToan = (no.Ngay == now.Date) ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
             TenPhuongThucThanhToan = isTienMat ? "Tiền mặt" : "Chuyển khoản",
             PhuongThucThanhToanId = isTienMat ? tienMatId : chuyenKhoanId,
-            GhiChu = no.GhiChu
+            GhiChu = note                                // ✅ dùng ghi chú mới
         };
 
-        // Tận dụng service hiện có để bảo toàn toàn bộ nghiệp vụ (trừ nợ, recalc, discord…)
-        var result = await new ChiTietHoaDonThanhToanService(_context)
-            .CreateAsync(dto);
-
+        // Tận dụng service hiện có để giữ toàn bộ nghiệp vụ (recalc, discord…)
+        var result = await new ChiTietHoaDonThanhToanService(_context).CreateAsync(dto);
         return result;
     }
+
     public async Task<Result<ChiTietHoaDonNoDto>> RestoreAsync(Guid id)
     {
         var entity = await _context.ChiTietHoaDonNos
@@ -189,7 +199,9 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         return await _context.ChiTietHoaDonNos
             .AsNoTracking()
             .Where(x => !x.IsDeleted)
-            .Where(x => x.SoTienConLai > 0 || x.Ngay >= fromDate)
+            .Where(x => x.SoTienConLai > 0
+            //  || x.Ngay >= fromDate
+            )
             .OrderByDescending(x => x.LastModified)
             .Select(x => new ChiTietHoaDonNoDto
             {
@@ -201,6 +213,7 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
                 Ten = x.KhachHang != null
                         ? x.KhachHang.Ten
                         : (x.HoaDon != null ? x.HoaDon.TenBan : "(không tên)"),
+
                 SoTienNo = x.SoTienNo,
                 SoTienConLai = x.SoTienConLai,
                 GhiChu = x.GhiChu,

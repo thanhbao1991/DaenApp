@@ -2,7 +2,8 @@
 {
     public class PayDebtRequest
     {
-        // "TienMat" | "ChuyenKhoan"
-        public string Type { get; set; } = "TienMat";
+        public string Type { get; set; } = "";
+        public decimal? Amount { get; set; }   // null => thu đủ
+        public string? Note { get; set; }
     }
 }

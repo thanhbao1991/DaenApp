@@ -23,7 +23,14 @@ public class CongViecNoiBoController : BaseApiController
         _service = service;
         _hub = hub;
     }
-
+    [HttpPost("{id}/toggle")]
+    public async Task<ActionResult<Result<CongViecNoiBoDto>>> Toggle(Guid id)
+    {
+        var result = await _service.ToggleAsync(id);
+        if (result.IsSuccess)
+            await NotifyClients("updated", id);
+        return result;
+    }
     private async Task NotifyClients(string action, Guid id)
     {
         if (!string.IsNullOrEmpty(ConnectionId))

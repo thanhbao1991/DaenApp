@@ -10,7 +10,10 @@ public class CongViecNoiBoApi : BaseApi, ICongViecNoiBoApi
     private const string BASE_URL = "/api/CongViecNoiBo";
 
     public CongViecNoiBoApi() : base(TuDien._tableFriendlyNames["CongViecNoiBo"]) { }
-
+    public async Task<Result<CongViecNoiBoDto>> ToggleAsync(Guid id)
+    {
+        return await PostAsync<CongViecNoiBoDto>($"{BASE_URL}/{id}/toggle", null!);
+    }
     public async Task<Result<List<CongViecNoiBoDto>>> GetAllAsync()
     {
         return await GetAsync<List<CongViecNoiBoDto>>(BASE_URL);

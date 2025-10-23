@@ -25,6 +25,8 @@ public class KhachHangDto : DtoBase
     $"{StringHelper.GetShortName(DiaChi ?? "")} " +
     $"{StringHelper.MyNormalizeText(DienThoai ?? "")}";
 
+    public string? FavoriteMon { get; set; }
+
     // 🟟 Danh sách địa chỉ
 
 

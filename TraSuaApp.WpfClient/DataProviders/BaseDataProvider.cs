@@ -73,22 +73,22 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                                 if (note.StartsWith("chuyển khoản"))
                                 {
                                     AudioHelper.Play("chuyen-khoan.mp3");
-                                    NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                    //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
                                 }
                                 else if (note.StartsWith("ghi nợ"))
                                 {
                                     AudioHelper.Play("ghi-no.mp3");
-                                    NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                    //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
                                 }
                                 else if (note.StartsWith("tí nữa chuyển khoản"))
                                 {
                                     AudioHelper.Play("chuyen-khoan-sau.mp3");
-                                    NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                    //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
                                 }
                                 else if (note.Contains("trả nợ"))
                                 {
                                     AudioHelper.Play("tra-no.mp3");
-                                    NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                                    //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
                                 }
                             }
                         }
@@ -99,14 +99,14 @@ public class BaseDataProvider<T> where T : DtoBase, new()
             // Khi mất kết nối SignalR → bật fallback timer (giữ nguyên)
             _signalR.OnDisconnected(() =>
             {
-                NotiHelper.ShowError("⚠️ Mất kết nối, Vui lòng chờ...");
+                //NotiHelper.ShowError("⚠️ Mất kết nối, Vui lòng chờ...");
                 StartFallbackTimer();
             });
 
             // Khi kết nối lại → tắt fallback timer
             _signalR.OnReconnected(() =>
             {
-                NotiHelper.Show("✅ Đã kết nối lại");
+                //NotiHelper.Show("✅ Đã kết nối lại");
                 StopFallbackTimer();
             });
         }

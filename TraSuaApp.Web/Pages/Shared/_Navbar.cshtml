@@ -1,0 +1,165 @@
+﻿@{
+    var displayName = Context.Request.Cookies["display_name"];
+}
+<nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom mb-3">
+    <div class="container-fluid">
+        <!-- Toggle -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <a class="navbar-brand fw-bold" asp-page="/Index">Đenn</a>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <!-- Doanh thu / Thống kê -->
+                <li class="nav-item">
+                    <a class="nav-link" asp-page="/DoanhThuNgay">
+                        <i class="fa-solid fa-coins text-success me-2"></i>
+                        Doanh Thu Ngày
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" asp-page="/DoanhThuThang">
+                        <i class="fa-solid fa-chart-line text-primary me-2"></i>
+                        Doanh Thu Tháng
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" asp-page="/ThongKe">
+                        <i class="fa-solid fa-chart-pie text-info me-2"></i>
+                        Thống kê
+                    </a>
+                </li>
+
+                <!-- Vận hành -->
+                <li class="nav-item">
+                    <a class="nav-link" asp-page="/ChiTietHoaDonThanhToanTab">
+                        <i class="fa-solid fa-credit-card text-success me-2"></i>
+                        Thanh Toán
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" asp-page="/ChiTietHoaDonNoTab">
+                        <i class="fa-solid fa-file-invoice-dollar text-warning me-2"></i>
+                        Công Nợ
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" asp-page="/ChiTieuHangNgayTab">
+                        <i class="fa-solid fa-wallet text-danger me-2"></i>
+                        Chi Tiêu
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" asp-page="/CongViecNoiBoTab">
+                        <i class="fa-solid fa-tasks text-primary me-2"></i>
+                        Công Việc
+                    </a>
+                </li>
+
+                <!-- Tạo nhanh -->
+                <li class="nav-item">
+                    <a class="nav-link" asp-page="/TaoHoaDon">
+                        <i class="fa-solid fa-plus-circle text-secondary me-2"></i>
+                        Tạo Hóa Đơn
+                    </a>
+                </li>
+
+                <!-- Báo cáo & Xếp hạng -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="reportDropdown" role="button"
+                       data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        <i class="fa-solid fa-chart-bar text-secondary me-2"></i>
+                        Báo cáo & Xếp hạng
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="reportDropdown">
+                        <li>
+                            <a class="dropdown-item" asp-page="/ChiTieuTab">
+                                <i class="fa-solid fa-hand-holding-usd text-warning me-2"></i>
+                                Ứng Nhã
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" asp-page="/VoucherTab">
+                                <i class="fa-solid fa-ticket text-info me-2"></i>
+                                Voucher
+                            </a>
+                        </li>
+
+                        <li><hr class="dropdown-divider" /></li>
+
+                        <li>
+                            <a class="dropdown-item" asp-page="/XepHangSanPham">
+                                <i class="fa-solid fa-box-open text-success me-2"></i>
+                                TOP Sản phẩm
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" asp-page="/XepHangKhachHang">
+                                <i class="fa-solid fa-users text-purple me-2"></i>
+                                TOP Khách hàng
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+
+            <!-- Auth -->
+            <div class="d-flex align-items-center">
+                @if (!string.IsNullOrWhiteSpace(displayName))
+                {
+                    <span class="me-3 text-muted">Xin chào, <b>@displayName</b></span>
+                    <form asp-page="/Login" asp-page-handler="Logout" method="post" class="d-inline">
+                        <button class="btn btn-outline-secondary btn-sm" type="submit">Đăng xuất</button>
+                    </form>
+                }
+                else
+                {
+                    <a class="btn btn-outline-primary btn-sm" asp-page="/Login">Đăng nhập</a>
+                }
+            </div>
+        </div>
+    </div>
+</nav>
+
+<script>
+    // Tự đóng navbar khi bấm link (trừ dropdown toggle)
+    document.addEventListener('DOMContentLoaded', function () {
+        const navbar = document.getElementById('mainNavbar');
+
+        // Đóng khi click nav-link thường
+        document.querySelectorAll('#mainNavbar .nav-link:not(.dropdown-toggle)')
+            .forEach(link => {
+                link.addEventListener('click', () => {
+                    const collapse = bootstrap.Collapse.getInstance(navbar);
+                    if (collapse) collapse.hide();
+                });
+            });
+
+        // Đóng khi chọn item trong dropdown
+        document.querySelectorAll('#mainNavbar .dropdown-menu .dropdown-item')
+            .forEach(item => {
+                item.addEventListener('click', () => {
+                    const collapse = bootstrap.Collapse.getInstance(navbar);
+                    if (collapse) collapse.hide();
+                });
+            });
+
+        // Hover mở/đóng dropdown trên desktop
+        if (window.matchMedia('(min-width: 992px)').matches) {
+            document.querySelectorAll('#mainNavbar .nav-item.dropdown').forEach(drop => {
+                const toggle = drop.querySelector('.dropdown-toggle');
+                const dd = bootstrap.Dropdown.getOrCreateInstance(toggle);
+                drop.addEventListener('mouseenter', () => dd.show());
+                drop.addEventListener('mouseleave', () => dd.hide());
+            });
+        }
+    });
+</script>

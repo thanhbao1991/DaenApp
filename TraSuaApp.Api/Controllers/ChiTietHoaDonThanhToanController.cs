@@ -18,25 +18,42 @@ public class ChiTietHoaDonThanhToanController : BaseApiController
     private readonly IHubContext<SignalRHub> _hub;
     string _friendlyName = TuDien._tableFriendlyNames["ChiTietHoaDonThanhToan"];
 
-    public ChiTietHoaDonThanhToanController(IChiTietHoaDonThanhToanService service, IHubContext<SignalRHub> hub)
+    public ChiTietHoaDonThanhToanController(
+        IChiTietHoaDonThanhToanService service,
+        IHubContext<SignalRHub> hub)
     {
         _service = service;
         _hub = hub;
     }
 
-    private async Task NotifyClients(string action, Guid id)
+    // ==============================
+    // 🟟 Helper phát tín hiệu chung
+    // ==============================
+    private async Task Notify(string entity, string action, Guid id)
     {
         if (!string.IsNullOrEmpty(ConnectionId))
         {
-            await _hub.Clients
-                .AllExcept(ConnectionId)
-                .SendAsync("EntityChanged", "ChiTietHoaDonThanhToan", action, id.ToString(), ConnectionId ?? "");
+            await _hub.Clients.AllExcept(ConnectionId)
+                .SendAsync("EntityChanged", entity, action, id.ToString(), ConnectionId);
         }
         else
         {
-            await _hub.Clients.All.SendAsync("EntityChanged", "ChiTietHoaDonThanhToan", action, id.ToString(), ConnectionId ?? "");
+            await _hub.Clients.All
+                .SendAsync("EntityChanged", entity, action, id.ToString(), ConnectionId ?? "");
         }
     }
+
+    // ✅ Helper an toàn cho Guid? (tránh .Value khi null)
+    private Task NotifyNullable(string entity, string action, Guid? id)
+    {
+        if (id.HasValue && id.Value != Guid.Empty)
+            return Notify(entity, action, id.Value);
+        return Task.CompletedTask;
+    }
+
+    // ==============================
+    // 🟟 CRUD
+    // ==============================
 
     [HttpGet]
     public async Task<ActionResult<Result<List<ChiTietHoaDonThanhToanDto>>>> GetAll()
@@ -59,8 +76,18 @@ public class ChiTietHoaDonThanhToanController : BaseApiController
     public async Task<ActionResult<Result<ChiTietHoaDonThanhToanDto>>> Create(ChiTietHoaDonThanhToanDto dto)
     {
         var result = await _service.CreateAsync(dto);
+
         if (result.IsSuccess && result.Data != null)
-            await NotifyClients("created", result.Data.Id);
+        {
+            var data = result.Data;
+            await Notify("ChiTietHoaDonThanhToan", "created", data.Id);
+
+            // ✅ an toàn với null
+            await NotifyNullable("ChiTietHoaDonNo", "updated", data.ChiTietHoaDonNoId);
+
+            if (data.HoaDonId != Guid.Empty)
+                await Notify("HoaDon", "updated", data.HoaDonId);
+        }
 
         return result;
     }
@@ -69,8 +96,19 @@ public class ChiTietHoaDonThanhToanController : BaseApiController
     public async Task<ActionResult<Result<ChiTietHoaDonThanhToanDto>>> Update(Guid id, ChiTietHoaDonThanhToanDto dto)
     {
         var result = await _service.UpdateAsync(id, dto);
+
         if (result.IsSuccess)
-            await NotifyClients("updated", id);
+        {
+            await Notify("ChiTietHoaDonThanhToan", "updated", id);
+
+            if (result.Data != null)
+            {
+                await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
+
+                if (result.Data.HoaDonId != Guid.Empty)
+                    await Notify("HoaDon", "updated", result.Data.HoaDonId);
+            }
+        }
 
         return result;
     }
@@ -79,8 +117,19 @@ public class ChiTietHoaDonThanhToanController : BaseApiController
     public async Task<ActionResult<Result<ChiTietHoaDonThanhToanDto>>> Delete(Guid id)
     {
         var result = await _service.DeleteAsync(id);
+
         if (result.IsSuccess)
-            await NotifyClients("deleted", id);
+        {
+            await Notify("ChiTietHoaDonThanhToan", "deleted", id);
+
+            if (result.Data != null)
+            {
+                await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
+
+                if (result.Data.HoaDonId != Guid.Empty)
+                    await Notify("HoaDon", "updated", result.Data.HoaDonId);
+            }
+        }
 
         return result;
     }
@@ -89,8 +138,19 @@ public class ChiTietHoaDonThanhToanController : BaseApiController
     public async Task<ActionResult<Result<ChiTietHoaDonThanhToanDto>>> Restore(Guid id)
     {
         var result = await _service.RestoreAsync(id);
+
         if (result.IsSuccess)
-            await NotifyClients("restored", id);
+        {
+            await Notify("ChiTietHoaDonThanhToan", "restored", id);
+
+            if (result.Data != null)
+            {
+                await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
+
+                if (result.Data.HoaDonId != Guid.Empty)
+                    await Notify("HoaDon", "updated", result.Data.HoaDonId);
+            }
+        }
 
         return result;
     }

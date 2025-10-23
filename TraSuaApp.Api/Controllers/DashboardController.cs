@@ -129,73 +129,6 @@ namespace TraSuaApp.Api.Controllers
                 ? await LoyaltyService.DaNhanVoucherTrongThangAsync(_db, khachHangId, DateTime.Now)
                 : false;
 
-            // ===== 🟟 FAVORITE: chỉ đơn 1 món & số lượng = 1, trong năm nay =====
-            var year = DateTime.Now.Year;
-
-            // Lấy danh sách Id hoá đơn hợp lệ (1 loại món duy nhất & tổng số lượng = 1)
-            var validOrderIds = await (
-                from hd in _db.HoaDons.AsNoTracking()
-                where hd.KhachHangId == khachHangId
-                      && !hd.IsDeleted
-                      && hd.NgayGio.Year == year
-                join ct in _db.ChiTietHoaDons.AsNoTracking() on hd.Id equals ct.HoaDonId
-                group ct by ct.HoaDonId into g
-                where g.Select(x => x.SanPhamId).Distinct().Count() == 1
-                      && g.Sum(x => x.SoLuong) == 1
-                select g.Key
-            ).ToListAsync();
-
-            Guid? favSanPhamId = null;
-            Guid? favBienTheId = null;
-            string? favSanPhamTen = null;
-            string? favBienTheTen = null;
-            int soLanFav = 0;
-
-            if (validOrderIds.Count > 0)
-            {
-                // Lấy dòng CT của các hoá đơn hợp lệ (dòng có SoLuong > 0)
-                var singles = from ct in _db.ChiTietHoaDons.AsNoTracking()
-                              where validOrderIds.Contains(ct.HoaDonId) && ct.SoLuong > 0
-                              select new { ct.SanPhamId, ct.SanPhamBienTheId };
-
-                // 1) Chọn sản phẩm được gọi (đơn 1-ly) nhiều nhất
-                var favProd = await singles
-                    .GroupBy(x => x.SanPhamId)
-                    .Select(g => new { SanPhamId = g.Key, SoLan = g.Count() })
-                    .OrderByDescending(x => x.SoLan)
-                    .FirstOrDefaultAsync();
-
-                if (favProd != null)
-                {
-                    favSanPhamId = favProd.SanPhamId;
-                    soLanFav = favProd.SoLan;
-
-                    // 2) Chọn biến thể phổ biến nhất trong các đơn hợp lệ của sản phẩm đó
-                    var favVar = await singles
-                        .Where(x => x.SanPhamId == favProd.SanPhamId)
-                        .GroupBy(x => x.SanPhamBienTheId)
-                        .Select(g => new { SanPhamBienTheId = g.Key, SoLan = g.Count() })
-                        .OrderByDescending(x => x.SoLan)
-                        .FirstOrDefaultAsync();
-
-                    if (favVar != null)
-                        favBienTheId = favVar.SanPhamBienTheId;
-
-                    // 3) Lấy tên sản phẩm & biến thể
-                    favSanPhamTen = await _db.SanPhams.AsNoTracking()
-                        .Where(s => s.Id == favSanPhamId)
-                        .Select(s => s.Ten)
-                        .FirstOrDefaultAsync();
-
-                    if (favBienTheId != null)
-                    {
-                        favBienTheTen = await _db.SanPhamBienThes.AsNoTracking()
-                            .Where(b => b.Id == favBienTheId)
-                            .Select(b => b.TenBienThe)
-                            .FirstOrDefaultAsync();
-                    }
-                }
-            }
 
             // ===== Kết quả =====
             return new KhachHangFavoriteDto
@@ -209,7 +142,7 @@ namespace TraSuaApp.Api.Controllers
                 TongNo = tongNo,
 
                 // 🟟 Favorite trả về theo Id + tên
-                MonYeuThich = favSanPhamTen
+                MonYeuThich = kh.FavoriteMon
             };
         }
 

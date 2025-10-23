@@ -13,6 +13,9 @@ namespace TraSuaApp.WpfClient.Views
 {
     public partial class ChiTietHoaDonNoTab : UserControl
     {
+        // ====== Constants / Fields ======
+        private static readonly Guid PT_TienMat = Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C");
+        private static readonly Guid PT_ChuyenKhoan = Guid.Parse("2cf9a88f-3bc0-4d4b-940d-f8ffa4affa02");
 
         private readonly DebounceManager _debouncer = new();
         private readonly WpfErrorHandler _errorHandler = new();
@@ -23,20 +26,21 @@ namespace TraSuaApp.WpfClient.Views
         public ChiTietHoaDonNoTab()
         {
             InitializeComponent();
+
             Loaded += async (_, __) =>
             {
-                // đợi provider sẵn sàng (tránh null lúc mở window)
+                // Đợi provider sẵn sàng (tránh null lúc mở window)
                 var sw = Stopwatch.StartNew();
                 while (AppProviders.ChiTietHoaDonNos?.Items == null && sw.ElapsedMilliseconds < 5000)
                     await Task.Delay(100);
 
                 await ReloadUI();
             };
-            _Api = new ChiTietHoaDonNoApi();
 
+            _Api = new ChiTietHoaDonNoApi();
         }
 
-        // Expose SelectedItem để Dashboard dùng phím tắt F1/F4/F5 như cũ
+        // Expose SelectedItem (nếu Dashboard còn dùng hotkey)
         public ChiTietHoaDonNoDto? SelectedNo
             => ChiTietHoaDonNoDataGrid.SelectedItem as ChiTietHoaDonNoDto;
 
@@ -171,146 +175,124 @@ namespace TraSuaApp.WpfClient.Views
                     SearchChiTietHoaDonNoTextBox.Text = DateTime.Today.AddDays(-1).ToString("dd-MM-yyyy");
             }
         }
-        private async void F1aButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected) { NotiHelper.Show("Vui lòng chọn công nợ!"); return; }
-            if (selected.SoTienConLai == 0) { NotiHelper.Show("Công nợ đã thu đủ!"); return; }
 
-            Mouse.OverrideCursor = Cursors.Wait;
+        // ========= NÚT TRÊN MỖI DÒNG: THU TIỀN MẶT / CHUYỂN KHOẢN =========
+        private async void TienMatRowButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button bt && bt.DataContext is ChiTietHoaDonNoDto item)
+            {
+                // CÁCH A đảo logic: Ctrl => thu ngay, bình thường => mở form
+                bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+                await PayItemAsync(item, "TienMat", thuNgay, bt); // truyền btn để BusyUI gắn spinner
+            }
+        }
+
+        private async void ChuyenKhoanRowButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button bt && bt.DataContext is ChiTietHoaDonNoDto item)
+            {
+                bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+                await PayItemAsync(item, "ChuyenKhoan", thuNgay, bt); // truyền btn để BusyUI gắn spinner
+            }
+        }
+
+        private async Task PayItemAsync(ChiTietHoaDonNoDto item, string method, bool thuNgay = false, Button? btn = null)
+        {
+            if (item.SoTienConLai == 0)
+            {
+                NotiHelper.Show("Công nợ đã thu đủ!");
+                return;
+            }
+
+            IDisposable? busy = null;
             try
             {
-                var result = await _Api.PayAsync(selected.Id, "TienMat");
-                if (result.IsSuccess) await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadNo: true, reloadThanhToan: true);
-                else NotiHelper.Show(result.Message ?? "Không thể thanh toán.");
+                if (thuNgay)
+                {
+                    // Ctrl => thu ngay: giữ spinner suốt quá trình gọi API
+                    busy = BusyUI.Scope(this, btn, "Đang thu tiền...");
+                    var result = await _Api.PayAsync(item.Id, method);
+
+                    if (result.IsSuccess)
+                        await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadNo: true, reloadThanhToan: true);
+                    else
+                        NotiHelper.Show(result.Message ?? "Không thể thanh toán.");
+
+                    return;
+                }
+
+                // Bấm bình thường => mở form: hiển thị spinner ngắn trước khi mở
+                busy = BusyUI.Scope(this, btn, "Đang mở form...");
+                var owner = Window.GetWindow(this);
+                var now = DateTime.Now;
+
+                var dto = new ChiTietHoaDonThanhToanDto
+                {
+                    ChiTietHoaDonNoId = item.Id,
+                    Ngay = now.Date,
+                    NgayGio = now,
+                    HoaDonId = item.HoaDonId,
+                    KhachHangId = item.KhachHangId,
+                    Ten = item.Ten,
+                    PhuongThucThanhToanId = method == "TienMat" ? PT_TienMat : PT_ChuyenKhoan,
+                    LoaiThanhToan = item.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
+                    GhiChu = item.GhiChu,
+                    SoTien = item.SoTienConLai,
+                };
+
+                // Ẩn spinner trước khi ShowDialog (tránh spinner nằm đè trong lúc form mở)
+                busy.Dispose();
+                busy = null;
+
+                var win = new ChiTietHoaDonThanhToanEdit(dto)
+                {
+                    Owner = owner,
+                    Width = owner?.ActualWidth ?? 1200,
+                    Height = owner?.ActualHeight ?? 800
+                };
+                // Nếu muốn khoá phương thức trong form:
+                // win.PhuongThucThanhToanComboBox.IsEnabled = false;
+
+                if (win.ShowDialog() == true)
+                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadNo: true, reloadThanhToan: true);
             }
-            finally { Mouse.OverrideCursor = null; }
+            catch (Exception ex)
+            {
+                NotiHelper.Show($"Lỗi: {ex.Message}");
+            }
+            finally
+            {
+                busy?.Dispose();
+            }
+        }
+
+        // ===== Hotkeys cũ (F1/F4) – dùng SelectedNo, không ép sender là Button =====
+        private async void F1aButton_Click(object sender, RoutedEventArgs e)
+        {
+            var item = SelectedNo;
+            if (item == null) { NotiHelper.Show("Vui lòng chọn công nợ!"); return; }
+
+            bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+            await PayItemAsync(item, "TienMat", thuNgay, null); // không có nút hàng để gắn spinner
         }
 
         private async void F4aButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected) { NotiHelper.Show("Vui lòng chọn công nợ!"); return; }
-            if (selected.SoTienConLai == 0) { NotiHelper.Show("Công nợ đã thu đủ!"); return; }
+            var item = SelectedNo;
+            if (item == null) { NotiHelper.Show("Vui lòng chọn công nợ!"); return; }
 
-            Mouse.OverrideCursor = Cursors.Wait;
-            try
-            {
-                var result = await _Api.PayAsync(selected.Id, "ChuyenKhoan");
-                if (result.IsSuccess) await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadNo: true, reloadThanhToan: true);
-                else NotiHelper.Show(result.Message ?? "Không thể thanh toán.");
-            }
-            finally { Mouse.OverrideCursor = null; }
+            bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+            await PayItemAsync(item, "ChuyenKhoan", thuNgay, null); // không có nút hàng để gắn spinner
         }
 
-
-
-        //private async void F5aButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    return; // ❗Bỏ dòng này nếu muốn bật F5a
-
-        //    if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected)
-        //    {
-        //        NotiHelper.Show("Vui lòng chọn công nợ!");
-        //        return;
-        //    }
-        //    if (selected.SoTienConLai == 0)
-        //    {
-        //        NotiHelper.Show("Công nợ đã thu đủ!");
-        //        return;
-        //    }
-
-        //    var owner = Window.GetWindow(this);
-        //    var dto = CreateDtoTraNo(selected, Guid.Parse("3d75dd9f-a5d3-491d-a316-6d5c9ff7e66c"));
-        //    var window = new ChiTietHoaDonThanhToanEdit(dto)
-        //    {
-        //        Owner = owner,                                 // ✅
-        //        Width = owner?.ActualWidth ?? ActualWidth,
-        //        Height = owner?.ActualHeight ?? ActualHeight
-        //    };
-        //    window.PhuongThucThanhToanComboBox.IsEnabled = false;
-
-        //    if (window.ShowDialog() == true)
-        //        await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
-        //}
-        //private async void F4aButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected)
-        //    {
-        //        NotiHelper.Show("Vui lòng chọn công nợ!");
-        //        return;
-        //    }
-        //    if (selected.SoTienConLai == 0)
-        //    {
-        //        NotiHelper.Show("Công nợ đã thu đủ!");
-        //        return;
-        //    }
-
-        //    var owner = Window.GetWindow(this);
-        //    var dto = CreateDtoTraNo(selected, Guid.Parse("2cf9a88f-3bc0-4d4b-940d-f8ffa4affa02"));
-        //    var window = new ChiTietHoaDonThanhToanEdit(dto)
-        //    {
-        //        Owner = owner,                                 // ✅
-        //        Width = owner?.ActualWidth ?? ActualWidth,
-        //        Height = owner?.ActualHeight ?? ActualHeight
-        //    };
-        //    window.PhuongThucThanhToanComboBox.IsEnabled = false;
-
-        //    if (window.ShowDialog() == true)
-        //        await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
-        //}
-        //private async void F1aButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected)
-        //    {
-        //        NotiHelper.Show("Vui lòng chọn công nợ!");
-        //        return;
-        //    }
-        //    if (selected.SoTienConLai == 0)
-        //    {
-        //        NotiHelper.Show("Công nợ đã thu đủ!");
-        //        return;
-        //    }
-
-        //    var owner = Window.GetWindow(this);
-        //    var dto = CreateDtoTraNo(selected, Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C"));
-        //    var window = new ChiTietHoaDonThanhToanEdit(dto)
-        //    {
-        //        Owner = owner,                                 // ✅ Owner là Window
-        //        Width = owner?.ActualWidth ?? ActualWidth,     // kích thước hợp lý
-        //        Height = owner?.ActualHeight ?? ActualHeight
-        //    };
-        //    window.PhuongThucThanhToanComboBox.IsEnabled = false;
-
-        //    if (window.ShowDialog() == true)
-        //        await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
-        //}
-
-        private ChiTietHoaDonThanhToanDto CreateDtoTraNo(ChiTietHoaDonNoDto selected, Guid phuongThucId)
-        {
-            var now = DateTime.Now;
-            return new ChiTietHoaDonThanhToanDto
-            {
-                ChiTietHoaDonNoId = selected.Id,
-                Ngay = now.Date,
-                NgayGio = now,
-                HoaDonId = selected.HoaDonId,
-                KhachHangId = selected.KhachHangId,
-                Ten = $"{selected.Ten}",
-                PhuongThucThanhToanId = phuongThucId,
-                LoaiThanhToan = selected.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
-                GhiChu = selected.GhiChu,
-                SoTien = selected.SoTienConLai,
-            };
-        }
         public void HandleHotkey(Key key)
         {
             switch (key)
             {
                 case Key.F1: F1aButton_Click(this, new RoutedEventArgs()); break;
                 case Key.F4: F4aButton_Click(this, new RoutedEventArgs()); break;
-                    //    case Key.F5: F5aButton_Click(this, new RoutedEventArgs()); break;
+                    // case Key.F5: ...
             }
         }
-
-
     }
 }

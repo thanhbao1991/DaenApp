@@ -31,7 +31,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             _ptttApi = new PhuongThucThanhToanApi();
 
 
-            _phuongThucThanhToanList = AppProviders.PhuongThucThanhToans.Items.ToList();
+            _phuongThucThanhToanList = AppProviders.PhuongThucThanhToans.Items.Where(x => x.DangSuDung).ToList();
             PhuongThucThanhToanComboBox.ItemsSource = _phuongThucThanhToanList;
 
 
@@ -157,15 +157,21 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         }
         private void PhuongThucThanhToanComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (PhuongThucThanhToanComboBox.SelectedIndex == 1)
+
+            if (PhuongThucThanhToanComboBox.SelectedIndex != 1)
+            {
+                Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["WarningBrush"], 0.8);
+                SaveButton.Content = "Chuyển khoản";
+                SaveButton.Foreground = Brushes.Black;
+
+            }
+            else
+            {
                 Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["SuccessBrush"], 0.8);
-            else
-            if (PhuongThucThanhToanComboBox.SelectedIndex == 0)
-                Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["WarningBrush"], 0.8);
-            else
-                Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["WarningBrush"], 0.8);
-
-
+                SaveButton.Content = "Tiền mặt";
+                SaveButton.Foreground = Brushes.White;
+            }
+            SaveButton.Background = this.Background;
 
         }
     }

@@ -64,14 +64,14 @@ public class DoanhThuThangItemDto
     public decimal ThuongKhanh { get; set; }
 }
 
-// 🟟 DTO mới: tổng số đơn theo giờ (dùng cho biểu đồ tháng theo giờ)
+// THEO GIỜ trong THÁNG
 public class DoanhThuHourBucketDto
 {
-    public int Hour { get; set; }     // 0..23
-    public int SoDon { get; set; }
+    public int Hour { get; set; }      // 0..23
+    public int SoDon { get; set; }     // giữ để tương thích
+    public decimal DoanhThu { get; set; } // mới: tổng ThanhTien theo giờ
 }
 
-// 🟟 DTO mới (đã có trong yêu cầu, giữ nguyên)
 public class DoanhThuChiTietHoaDonDto
 {
     public Guid Id { get; set; }

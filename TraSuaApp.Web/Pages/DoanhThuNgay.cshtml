@@ -44,7 +44,7 @@
 
 <div id="modalContent" class="container mt-3">
     <div class="card mt-3">
-        <div class="card-header bg-light fw-bold">Số đơn theo giờ (hôm nay)</div>
+        <div class="card-header bg-light fw-bold">Doanh thu theo giờ (hôm nay)</div>
         <div class="card-body">
             <canvas id="ordersByHourChart" height="120"></canvas>
         </div>
@@ -73,7 +73,7 @@
         </div>
     </div>
 
-    <!-- Bảng này bây giờ nằm trong #modalContent luôn -->
+    <!-- Bảng chỉ số -->
     <table class="table table-sm table-bordered text-nowrap align-middle text-end mt-3">
         <tr>
             <td class="bg-light fw-bold text-start">Chi Tiêu</td>
@@ -117,7 +117,7 @@
             </td>
         </tr>
     </table>
-</div> <!-- ✅ Đóng modalContent ở cuối cùng -->
+</div>
 @* === BẢNG ĐƠN HÀNG CHÍNH === *@
 <table class="table table-sm table-bordered">
     <thead class="table-light">
@@ -182,13 +182,12 @@
         }
     </tbody>
 </table>
-</div>
-
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script>
+        // Doughnut giữ nguyên
         const ctx = document.getElementById('doughnutChart').getContext('2d');
         const data = {
             labels: ['Tại chỗ', 'Mua về', 'Ship', 'App'],
@@ -229,67 +228,61 @@
         };
         new Chart(ctx, config);
 
+        // === BIỂU ĐỒ 1: Doanh thu theo giờ (Ngày) ===
+        const HOUR_START = 6;
+        const HOUR_END = 22; // inclusive
 
-    
-    
-const HOUR_START = 6;
-    const HOUR_END = 22; // 10 tối (inclusive)
-            // ✅ Sửa lỗi: coalesce trước rồi mới Select để không lệch kiểu
-            const orders = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                            (Model.Data?.HoaDons ?? new List<TraSuaApp.Shared.Dtos.DoanhThuHoaDonDto>())
-                                    .Select(h => new { hour = h.NgayHoaDon.Hour })
-                    ));
-
+        const orders = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                    (Model.Data?.HoaDons ?? new List<TraSuaApp.Shared.Dtos.DoanhThuHoaDonDto>())
+                            .Select(h => new { hour = h.NgayHoaDon.Hour, amount = h.TongTien })
+            ));
 
     const bucketCount = HOUR_END - HOUR_START + 1;
-    const counts = Array(bucketCount).fill(0);
-
+    const amounts = Array(bucketCount).fill(0);
     orders.forEach(o => {
         if (o.hour >= HOUR_START && o.hour <= HOUR_END) {
-            counts[o.hour - HOUR_START]++;
+            amounts[o.hour - HOUR_START] += Number(o.amount || 0);
         }
     });
 
-    const labels = Array.from({ length: bucketCount }, (_, i) => (HOUR_START + i) + "h");
+        const labels = Array.from({ length: bucketCount }, (_, i) => (HOUR_START + i) + "h");
 
-    // Tô màu nổi bật cột "đông khách" nhất
-    const maxVal = counts.length ? Math.max(...counts) : 0;
-    const bg = counts.map(c => c === maxVal && maxVal > 0
-        ? 'rgba(255, 99, 132, 0.85)'
-        : 'rgba(54, 162, 235, 0.6)');
-    const border = counts.map(c => c === maxVal && maxVal > 0
-        ? 'rgba(255, 99, 132, 1)'
-        : 'rgba(54, 162, 235, 1)');
+        const maxVal = amounts.length ? Math.max(...amounts) : 0;
+        const bg = amounts.map(v => v === maxVal && maxVal > 0 ? 'rgba(255, 99, 132, 0.85)' : 'rgba(54, 162, 235, 0.6)');
+        const border = amounts.map(v => v === maxVal && maxVal > 0 ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)');
 
-    const ctxOrders = document.getElementById('ordersByHourChart').getContext('2d');
-    new Chart(ctxOrders, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Số đơn',
-                data: counts,
-                backgroundColor: bg,
-                borderColor: border,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                x: { title: { display: false, text: 'Giờ trong ngày (6h → 22h)' } },
-                y: { beginAtZero: true, title: { display: false, text: 'Số đơn' }, ticks: { precision: 0 } }
+        const ctxOrders = document.getElementById('ordersByHourChart').getContext('2d');
+        new Chart(ctxOrders, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Doanh thu',
+                    data: amounts,
+                    backgroundColor: bg,
+                    borderColor: border,
+                    borderWidth: 1
+                }]
             },
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: ctx => `${ctx.parsed.y} đơn` } }
+            options: {
+                scales: {
+                    x: { title: { display: false } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => v.toLocaleString('vi-VN') }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: { label: ctx => ctx.parsed.y.toLocaleString('vi-VN') + ' đ' }
+                    }
+                }
             }
-        }
-    });
-
+        });
     </script>
-
-
 }
+
 @functions {
     public class TienHienThi
     {
@@ -298,26 +291,25 @@ const HOUR_START = 6;
         public string Tooltip { get; set; } = string.Empty;
     }
 
-    // Hiển thị hoàn toàn theo ConLai (đã đồng bộ backend)
     public TienHienThi GetThongTinTien(TraSuaApp.Shared.Dtos.DoanhThuHoaDonDto item)
     {
         var r = new TienHienThi();
         var tong = Math.Max(0, item.TongTien);
         var conLai = Math.Max(0, item.ConLai);
 
-        if (conLai >= tong) // chưa thu đồng nào
+        if (conLai >= tong)
         {
             r.MauNen = "white";
             r.SoTien = tong.ToString("N0");
             r.Tooltip = "Chưa thu";
         }
-        else if (conLai > 0) // đã thu một phần (còn nợ)
+        else if (conLai > 0)
         {
             r.MauNen = "#ffcccc";
             r.SoTien = conLai.ToString("N0");
             r.Tooltip = "Khách còn nợ";
         }
-        else // conLai == 0: đã thu đủ
+        else
         {
             r.MauNen = "#ccffcc";
             r.SoTien = "0";

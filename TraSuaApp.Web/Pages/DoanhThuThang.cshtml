@@ -41,9 +41,9 @@
 
 <div id="imagePreview" style="margin-top: 10px;"></div>
 
-<!-- 🟟 Biểu đồ số đơn theo giờ (trong tháng) -->
+<!-- 🟟 Biểu đồ DOANH THU theo giờ (trong tháng) -->
 <div class="card mt-3">
-    <div class="card-header bg-light fw-bold">Số đơn theo giờ (trong tháng)</div>
+    <div class="card-header bg-light fw-bold">Doanh thu theo giờ (trong tháng)</div>
     <div class="card-body">
         <canvas id="ordersByHourChart" height="120"></canvas>
         <div id="loadingHours" class="text-center text-muted mt-2">Đang tải dữ liệu...</div>
@@ -51,9 +51,9 @@
 </div>
 <br />
 
-<!-- 🟟 Biểu đồ số đơn theo thứ (trong tháng) -->
+<!-- 🟟 Biểu đồ DOANH THU theo thứ (trong tháng) — đã đổi từ Số đơn -->
 <div class="card mt-3">
-    <div class="card-header bg-light fw-bold">Số đơn theo thứ (trong tháng)</div>
+    <div class="card-header bg-light fw-bold">Doanh thu theo thứ (trong tháng)</div>
     <div class="card-body">
         <canvas id="ordersByDayOfWeekChart" height="120"></canvas>
     </div>
@@ -168,7 +168,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
     <script>
-        // === BIỂU ĐỒ SỐ ĐƠN THEO GIỜ (TRONG THÁNG) ===
+        // === BIỂU ĐỒ 1: DOANH THU THEO GIỜ (TRONG THÁNG) ===
         const HOUR_START = 6;
         const HOUR_END = 22;
         const bucketCount = HOUR_END - HOUR_START + 1;
@@ -176,8 +176,8 @@
         async function loadHours() {
             const url = `?handler=ThangByHour&thang=@thang&nam=@nam&startHour=${HOUR_START}&endHour=${HOUR_END}`;
             const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+            const el = document.getElementById('loadingHours');
             if (!res.ok) {
-                const el = document.getElementById('loadingHours');
                 if (el) el.innerText = `⚠️ Lỗi tải dữ liệu (${res.status})`;
                 return;
             }
@@ -185,27 +185,24 @@
             try {
                 json = await res.json(); // Result<List<DoanhThuHourBucketDto>>
             } catch {
-                const el = document.getElementById('loadingHours');
                 if (el) el.innerText = '⚠️ Không đọc được JSON từ server';
                 return;
             }
 
             const data = (json && json.data) ? json.data : [];
-
-            // Chuẩn hoá mảng counts đủ 6..22
-            const counts = Array(bucketCount).fill(0);
+            const amounts = Array(bucketCount).fill(0);
             data.forEach(x => {
                 if (x.hour >= HOUR_START && x.hour <= HOUR_END) {
-                    counts[x.hour - HOUR_START] = x.soDon;
+                    amounts[x.hour - HOUR_START] = Number(x.doanhThu || 0);
                 }
             });
 
             const labels = Array.from({ length: bucketCount }, (_, i) => (HOUR_START + i) + "h");
-            const maxVal = counts.length ? Math.max(...counts) : 0;
-            const bg = counts.map(c => c === maxVal && maxVal > 0
+            const maxVal = amounts.length ? Math.max(...amounts) : 0;
+            const bg = amounts.map(v => v === maxVal && maxVal > 0
                 ? 'rgba(255, 99, 132, 0.85)'
                 : 'rgba(54, 162, 235, 0.6)');
-            const border = counts.map(c => c === maxVal && maxVal > 0
+            const border = amounts.map(v => v === maxVal && maxVal > 0
                 ? 'rgba(255, 99, 132, 1)'
                 : 'rgba(54, 162, 235, 1)');
 
@@ -215,8 +212,8 @@
                 data: {
                     labels,
                     datasets: [{
-                        label: 'Số đơn',
-                        data: counts,
+                        label: 'Doanh thu',
+                        data: amounts,
                         backgroundColor: bg,
                         borderColor: border,
                         borderWidth: 1
@@ -225,56 +222,75 @@
                 options: {
                     scales: {
                         x: { title: { display: false } },
-                        y: { beginAtZero: true, title: { display: false }, ticks: { precision: 0 } }
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: v => v.toLocaleString('vi-VN') }
+                        }
                     },
                     plugins: {
                         legend: { display: false },
-                        tooltip: { callbacks: { label: ctx => `${ctx.parsed.y} đơn` } }
+                        tooltip: { callbacks: { label: ctx => ctx.parsed.y.toLocaleString('vi-VN') + ' đ' } }
                     }
                 }
             });
 
-            const loadingEl = document.getElementById('loadingHours');
-            if (loadingEl) loadingEl.remove();
+            if (el) el.remove();
         }
         loadHours();
 
-        // === BIỂU ĐỒ SỐ ĐƠN THEO THỨ (TRONG THÁNG) ===
+        // === BIỂU ĐỒ 2: DOANH THU THEO THỨ (đã đổi từ Số đơn) ===
         const dayOfWeekLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
         const dataDays = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
             Model.DoanhThuTheoNgay.Select(d => new {
                 dayOfWeek = (int)d.Ngay.DayOfWeek,
-                soDon = d.SoDon
+                tongTien = d.TongTien
             })
         ));
-        const dayTotals = Array(7).fill(0);
-        dataDays.forEach(d => { dayTotals[d.dayOfWeek] += d.soDon; });
-        const maxVal = Math.max(...dayTotals);
-        const bg = dayTotals.map(v => v === maxVal ? 'rgba(255,99,132,0.85)' : 'rgba(54,162,235,0.6)');
-        const border = dayTotals.map(v => v === maxVal ? 'rgba(255,99,132,1)' : 'rgba(54,162,235,1)');
+        const revenueTotals = Array(7).fill(0);
+        dataDays.forEach(d => { revenueTotals[d.dayOfWeek] += Number(d.tongTien || 0); });
+
+        const maxValDay = Math.max(...revenueTotals);
+        const bgDay = revenueTotals.map(v => v === maxValDay && maxValDay > 0
+            ? 'rgba(255,99,132,0.85)'
+            : 'rgba(54,162,235,0.6)');
+        const borderDay = revenueTotals.map(v => v === maxValDay && maxValDay > 0
+            ? 'rgba(255,99,132,1)'
+            : 'rgba(54,162,235,1)');
+
         const ctxDay = document.getElementById('ordersByDayOfWeekChart').getContext('2d');
         new Chart(ctxDay, {
             type: 'bar',
             data: {
                 labels: dayOfWeekLabels,
-                datasets: [{ data: dayTotals, backgroundColor: bg, borderColor: border, borderWidth: 1 }]
+                datasets: [{
+                    label: 'Doanh thu',
+                    data: revenueTotals,
+                    backgroundColor: bgDay,
+                    borderColor: borderDay,
+                    borderWidth: 1
+                }]
             },
             options: {
                 scales: {
                     x: { title: { display: false } },
-                    y: { beginAtZero: true, title: { display: false }, ticks: { precision: 0 } }
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => v.toLocaleString('vi-VN') }
+                    }
                 },
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => `${ctx.parsed.y} đơn` } }
+                    tooltip: {
+                        callbacks: { label: ctx => ctx.parsed.y.toLocaleString('vi-VN') + ' đ' }
+                    }
                 }
             }
         });
 
-        // === BIỂU ĐỒ DOANH THU THEO NGÀY ===
-        const labels = [@Html.Raw(string.Join(",", Model.DoanhThuTheoNgay.Select(d => $"'{d.Ngay:dd/MM}'")))];
+        // === BIỂU ĐỒ 3: Doanh thu theo ngày (giữ nguyên) ===
+        const labels3 = [@Html.Raw(string.Join(",", Model.DoanhThuTheoNgay.Select(d => $"'{d.Ngay:dd/MM}'")))];
         const doanhThuData = [@string.Join(",", Model.DoanhThuTheoNgay.Select(d => d.TongTien))];
-        const ctx = document.getElementById('chartDoanhThu').getContext('2d');
+        const ctx3 = document.getElementById('chartDoanhThu').getContext('2d');
         const maxValDoanhThu = doanhThuData.length ? Math.max(...doanhThuData) : 0;
         const bgDoanhThu = doanhThuData.map(v =>
             v === maxValDoanhThu && maxValDoanhThu > 0
@@ -287,10 +303,10 @@
                 : 'rgba(54, 162, 235, 1)'
         );
 
-        new Chart(ctx, {
+        new Chart(ctx3, {
             type: 'bar',
             data: {
-                labels,
+                labels: labels3,
                 datasets: [{
                     label: 'Doanh Thu',
                     data: doanhThuData,

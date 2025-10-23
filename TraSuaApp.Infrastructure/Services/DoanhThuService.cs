@@ -210,7 +210,7 @@ public class DoanhThuService : IDoanhThuService
         return result;
     }
 
-    // 🟟 mới: tổng số đơn theo giờ trong tháng (NHANH — 1 query, fill missing hours)
+    // THEO GIỜ trong THÁNG: trả cả SoDon và DoanhThu (để backward-compatible)
     public async Task<List<DoanhThuHourBucketDto>> GetSoDonTheoGioTrongThangAsync(int thang, int nam, int startHour = 6, int endHour = 22)
     {
         if (startHour < 0) startHour = 0;
@@ -220,24 +220,39 @@ public class DoanhThuService : IDoanhThuService
         var monthStart = new DateTime(nam, thang, 1);
         var monthEnd = monthStart.AddMonths(1);
 
-        // Group ở DB theo giờ (dùng NgayGio vì có time)
         var grouped = await _context.HoaDons
             .AsNoTracking()
             .Where(h => !h.IsDeleted && h.Ngay >= monthStart && h.Ngay < monthEnd)
             .GroupBy(h => h.NgayGio.Hour)
-            .Select(g => new { Hour = g.Key, SoDon = g.Count() })
+            .Select(g => new
+            {
+                Hour = g.Key,
+                SoDon = g.Count(),
+                DoanhThu = g.Sum(x => x.ThanhTien)
+            })
             .ToListAsync();
 
-        // Fill thiếu giờ bằng 0
-        var dict = Enumerable.Range(startHour, endHour - startHour + 1).ToDictionary(h => h, _ => 0);
+        // Fill đủ range giờ
+        var dict = Enumerable.Range(startHour, endHour - startHour + 1)
+            .ToDictionary(
+                h => h,
+                h => new DoanhThuHourBucketDto
+                {
+                    Hour = h,
+                    SoDon = 0,
+                    DoanhThu = 0m
+                }
+            );
+
         foreach (var g in grouped)
         {
             if (g.Hour >= startHour && g.Hour <= endHour)
-                dict[g.Hour] = g.SoDon;
+            {
+                dict[g.Hour].SoDon = g.SoDon;
+                dict[g.Hour].DoanhThu = g.DoanhThu;
+            }
         }
 
-        return dict.Select(kv => new DoanhThuHourBucketDto { Hour = kv.Key, SoDon = kv.Value })
-                   .OrderBy(x => x.Hour)
-                   .ToList();
+        return dict.Values.OrderBy(x => x.Hour).ToList();
     }
 }

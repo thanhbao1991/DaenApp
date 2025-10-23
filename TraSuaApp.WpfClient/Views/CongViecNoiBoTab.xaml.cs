@@ -156,7 +156,7 @@ namespace TraSuaApp.WpfClient.Views
             }
 
             var api = new CongViecNoiBoApi();
-            var result = await api.UpdateAsync(selected.Id, selected);
+            var result = await api.ToggleAsync(selected.Id);
 
             if (!result.IsSuccess)
             {

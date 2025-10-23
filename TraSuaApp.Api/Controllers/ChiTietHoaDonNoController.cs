@@ -25,27 +25,64 @@ public class ChiTietHoaDonNoController : BaseApiController
         _hub = hub;
     }
 
-    private async Task NotifyClients(string action, Guid id)
+    // ==============================
+    // 🟟 Helpers phát tín hiệu
+    // ==============================
+
+    // Generic notifier cho Guid (non-nullable)
+    private Task Notify(string entity, string action, Guid id)
     {
+        if (id == Guid.Empty) return Task.CompletedTask;
+
         if (!string.IsNullOrEmpty(ConnectionId))
         {
-            await _hub.Clients
+            return _hub.Clients
                 .AllExcept(ConnectionId)
-                .SendAsync("EntityChanged", "ChiTietHoaDonNo", action, id.ToString(), ConnectionId ?? "");
+                .SendAsync("EntityChanged", entity, action, id.ToString(), ConnectionId);
         }
-        else
-        {
-            await _hub.Clients.All.SendAsync("EntityChanged", "ChiTietHoaDonNo", action, id.ToString(), ConnectionId ?? "");
-        }
+
+        return _hub.Clients.All
+            .SendAsync("EntityChanged", entity, action, id.ToString(), ConnectionId ?? "");
     }
+
+    // Generic notifier an toàn cho Guid? (nullable)
+    private Task NotifyNullable(string entity, string action, Guid? id)
+    {
+        if (!id.HasValue || id.Value == Guid.Empty) return Task.CompletedTask;
+        return Notify(entity, action, id.Value);
+    }
+
+    // Back-compat: notifier chuyên cho ChiTietHoaDonNo
+    private Task NotifyClients(string action, Guid id) => Notify("ChiTietHoaDonNo", action, id);
+
+    // ==============================
+    // 🟟 Actions
+    // ==============================
 
     [HttpPost("{id}/pay")]
     public async Task<ActionResult<Result<ChiTietHoaDonThanhToanDto>>> Pay(Guid id, PayDebtRequest req)
     {
         var result = await _service.PayDebtAsync(id, req);
-        if (result.IsSuccess) await NotifyClients("updated", id);
+
+        if (result.IsSuccess)
+        {
+            // 1️⃣ Cập nhật công nợ
+            await NotifyClients("updated", id);
+
+            // 2️⃣ Tạo thanh toán mới + cập nhật hóa đơn liên quan
+            if (result.Data != null)
+            {
+                var thanhToanId = result.Data.Id;        // Guid (non-null)
+                var hoaDonId = result.Data.HoaDonId;  // Guid hoặc Guid?
+
+                await Notify("ChiTietHoaDonThanhToan", "created", thanhToanId);
+                await NotifyNullable("HoaDon", "updated", hoaDonId);
+            }
+        }
+
         return result;
     }
+
     [HttpGet]
     public async Task<ActionResult<Result<List<ChiTietHoaDonNoDto>>>> GetAll()
     {

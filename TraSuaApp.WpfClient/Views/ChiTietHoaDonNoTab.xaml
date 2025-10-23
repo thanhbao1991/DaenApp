@@ -10,7 +10,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!--  Thanh tìm kiếm + tổng tiền (giữ nguyên tên control để code-behind cũ không phải đổi)  -->
+        <!--  Thanh tìm kiếm + quick filter (ĐÃ XOÁ 2 NÚT F1/F4 CŨ)  -->
         <DockPanel Margin="4">
             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
                 <TextBlock
@@ -36,35 +36,7 @@
                     Foreground="White"
                     Style="{StaticResource ThemButtonStyle}"
                     Tag="hôm qua" />
-
-                <Button
-                    x:Name="F1Button"
-                    Click="F1aButton_Click"
-                    Style="{StaticResource EditButtonStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <fa:IconImage
-                            Width="16"
-                            Height="16"
-                            Foreground="{StaticResource LightBrush}"
-                            Icon="MoneyBill" />
-                        <TextBlock Margin="5,0,0,0" Text=" F1 - Tiền mặt" />
-                    </StackPanel>
-                </Button>
-                <Button
-                    Name="F4Button"
-                    Click="F4aButton_Click"
-                    Style="{StaticResource EditButtonStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <fa:IconImage
-                            Width="16"
-                            Height="16"
-                            Foreground="{StaticResource LightBrush}"
-                            Icon="CreditCard" />
-                        <TextBlock Margin="5,0,0,0" Text=" F4 - Chuyển khoản" />
-                    </StackPanel>
-                </Button>
             </StackPanel>
-
         </DockPanel>
 
         <DataGrid
@@ -108,13 +80,60 @@
                     Binding="{Binding SoTienConLai, StringFormat={}{0:N0} đ}"
                     ElementStyle="{StaticResource RightTextCellStyle}"
                     Header="Còn lại" />
+
+                <!--  ⬇️ HAI NÚT THU TIỀN NGAY SAU CỘT "Còn lại"  -->
+                <DataGridTemplateColumn Width="auto" Header="(Thu nhanh nhấn giữ Ctrl)">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button
+                                    Padding="6,3"
+                                    HorizontalAlignment="Center"
+                                    Click="TienMatRowButton_Click"
+                                    Style="{StaticResource EditButtonStyle}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:IconImage
+                                            Width="16"
+                                            Height="16"
+                                            Foreground="{StaticResource LightBrush}"
+                                            Icon="MoneyBill" />
+                                        <TextBlock Margin="6,0,0,0" Text="Tiền mặt" />
+                                    </StackPanel>
+                                </Button>
+                                <Button
+                                    Margin="8,0,0,0"
+                                    Padding="6,3"
+                                    HorizontalAlignment="Center"
+                                    Background="{StaticResource WarningBrush}"
+                                    Click="ChuyenKhoanRowButton_Click"
+                                    Style="{StaticResource EditButtonStyle}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:IconImage
+                                            Width="16"
+                                            Height="16"
+                                            Foreground="{StaticResource WarningForeground}"
+                                            Icon="CreditCard" />
+                                        <TextBlock
+                                            Margin="6,0,0,0"
+                                            Foreground="{StaticResource WarningForeground}"
+                                            Text="Chuyển khoản" />
+                                    </StackPanel>
+                                </Button>
+
+                            </StackPanel>
+
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+
                 <DataGridTextColumn
                     Width="2*"
                     Binding="{Binding GhiChu}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Ghi chú" />
 
-                <!--  Cột nút Xoá (để ẩn như tab Công Việc)  -->
+                <!--  Cột nút Xoá  -->
                 <DataGridTemplateColumn Width="80">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>

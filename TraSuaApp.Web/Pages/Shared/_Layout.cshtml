@@ -1,320 +1,68 @@
 ﻿@inject IConfiguration Configuration
 @{
-    // đọc tên hiển thị nếu có (được set sau khi login)
     var displayName = Context.Request.Cookies["display_name"];
-    // tuyệt đối KHÔNG render access_token / api keys ra UI
 }
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>@ViewData["Title"] - Denn</title>
+    <title>@ViewData["Title"] - ĐENN</title>
 
+    <!-- CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
+    <!-- JS nền tảng -->
+    <script>window.apiBaseUrl = "@Configuration["ApiSettings:BaseUrl"]";</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- JS app (dùng chung toàn site) -->
+    <script src="~/js/denn.modals.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-
-    <script>
-        // Không chứa secret – chỉ tham khảo, các call AJAX sẽ đi qua proxy của Razor Page (same-origin)
-        window.apiBaseUrl = "@Configuration["ApiSettings:BaseUrl"]";
-
-        // ================ Helpers chung ================
-        function getPageBase() {
-            // Xác định base của trang hiện tại để gọi handler đúng (Ngày/Tháng dùng chung JS)
-            const p = window.location.pathname.toLowerCase();
-            if (p.includes('/doanhthuthang')) return '/DoanhThuThang';
-            return '/DoanhThuNgay';
-        }
-
-        function getModal(id) {
-            const el = document.getElementById(id);
-            return bootstrap.Modal.getOrCreateInstance(el);
-        }
-
-        function okFlag(json) {
-            return json && (json.isSuccess === true || json.IsSuccess === true);
-        }
-
-        function getData(json) {
-            // Hỗ trợ cả data và Data
-            return Array.isArray(json?.data) ? json.data : (Array.isArray(json?.Data) ? json.Data : []);
-        }
-
-        function redirectToLogin() {
-            const returnUrl = window.location.pathname + window.location.search;
-            window.location.href = `/Login?returnUrl=${encodeURIComponent(returnUrl)}`;
-        }
-
-        // ================================
-        // 🟟 Danh sách hoá đơn theo khách (CALL QUA PROXY ↔ same-origin)
-        // ================================
-        function xemHoaDonKhachHang(khachHangId) {
-            if (!khachHangId) return;
-
-            const container = document.getElementById('hoaDonContent');
-            container.innerHTML = "<p>Đang tải danh sách...</p>";
-            getModal('hoaDonModal').show();
-
-            const url = `${getPageBase()}?handler=DanhSach&khachHangId=${encodeURIComponent(khachHangId)}`;
-
-            fetch(url, { credentials: 'same-origin' })
-                .then(async res => {
-                    if (res.status === 401) { redirectToLogin(); return; }
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
-                })
-                .then(json => {
-                    if (!json) return;
-                    if (!okFlag(json)) {
-                        container.innerHTML = "<p class='text-danger'>Không tải được danh sách hóa đơn</p>";
-                        return;
-                    }
-
-                    const rows = getData(json)
-                        .sort((a, b) => new Date(b.ngayHoaDon ?? b.NgayHoaDon) - new Date(a.ngayHoaDon ?? a.NgayHoaDon));
-
-                    let html = `
-                        <table class="table table-sm table-bordered">
-                          <thead class="table-light">
-                            <tr>
-                              <th>Ngày giờ</th>
-                              <th>Khách hàng</th>
-                              <th class="text-end">Còn lại</th>
-                            </tr>
-                          </thead>
-                          <tbody>`;
-
-                    rows.forEach(item => {
-                        const ngay = item.ngayHoaDon ?? item.NgayHoaDon;
-                        const tenKh = item.tenKhachHangText ?? item.TenKhachHangText;
-                        const thongTin = item.thongTinHoaDon ?? item.ThongTinHoaDon;
-
-                        const ngayGio = new Date(ngay).toLocaleString('vi-VN', {
-                            day: '2-digit', month: '2-digit', year: 'numeric',
-                            hour: '2-digit', minute: '2-digit'
-                        });
-
-                        const tong  = Number(item.tongTien ?? item.TongTien ?? 0);
-                        const daThu = Number(item.daThu   ?? item.DaThu   ?? 0);
-                        const conLai= Number(item.conLai  ?? item.ConLai  ?? (tong - daThu));
-                        const id    = item.id ?? item.Id;
-
-                        html += `
-                            <tr>
-                                <td>${ngayGio}</td>
-                                <td>${[tenKh, thongTin].filter(Boolean).join(" - ")}</td>
-                                <td class="text-end">
-                                    <a href="javascript:void(0)" onclick="xemChiTiet('${id}')">
-                                        ${conLai.toLocaleString('vi-VN')} đ
-                                    </a>
-                                </td>
-                            </tr>`;
-                    });
-
-                    html += "</tbody></table>";
-                    container.innerHTML = html;
-                })
-                .catch(err => {
-                    console.error(err);
-                    container.innerHTML = `<p class='text-danger'>Lỗi tải dữ liệu</p>`;
-                });
-        }
-
-        // ================================
-        // 🟟 Xem chi tiết hoá đơn (CALL QUA PROXY ↔ same-origin)
-        // ================================
-        function xemChiTiet(id) {
-            if (!id) return;
-
-            const container = document.getElementById('chiTietContent');
-            container.innerHTML = "<p>Đang tải dữ liệu...</p>";
-            getModal('chiTietModal').show();
-
-            const url = `${getPageBase()}?handler=ChiTiet&hoaDonId=${encodeURIComponent(id)}`;
-
-            fetch(url, { credentials: 'same-origin' })
-                .then(async res => {
-                    if (res.status === 401) { redirectToLogin(); return; }
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
-                })
-                .then(json => {
-                    if (!json) return;
-                    if (!okFlag(json)) {
-                        container.innerHTML = "<p class='text-danger'>Không tải được chi tiết hóa đơn</p>";
-                        return;
-                    }
-
-                    const list = getData(json);
-                    const icons = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣"];
-                    const getIcon = (num) => {
-                        if (num === 10) return "🟟";
-                        if (num < 10) return icons[num] ?? num;
-                        return String(num).split("").map(c => icons[parseInt(c)] ?? c).join("");
-                    };
-
-                    let html = "";
-                    list.forEach(item => {
-                        const soLuong = item.soLuong ?? item.SoLuong ?? 0;
-                        const ten     = item.tenSanPham ?? item.TenSanPham ?? "";
-                        const ghiChu  = item.ghiChu ?? item.GhiChu;
-                        const tt      = Number(item.thanhTien ?? item.ThanhTien ?? 0);
-                        const iconSo  = getIcon(soLuong);
-
-                        html += `
-                          <div class="mx-3 d-flex justify-content-between align-items-center item-row py-2 ${tt == 0 ? "opacity-25" : ""}">
-                              <div>
-                                  <span class="item-text">${iconSo} ${ten}</span>
-                                  ${ghiChu ? `<div class="item-note">${ghiChu}</div>` : ""}
-                              </div>
-                              <span class="fw-bold text-danger">${tt.toLocaleString('vi-VN')}</span>
-                          </div>
-                        `;
-                    });
-
-                    const tong = list.reduce((s, x) => s + Number(x.thanhTien ?? x.ThanhTien ?? 0), 0);
-                    html += `
-                      <div class="border-top mt-4 pt-2 d-flex justify-content-between fw-bold text-danger">
-                          <span>Tổng</span>
-                          <span>${tong.toLocaleString('vi-VN')} đ</span>
-                      </div>
-                    `;
-
-                    container.innerHTML = html;
-                })
-                .catch(err => {
-                    console.error(err);
-                    container.innerHTML = `<p class='text-danger'>Lỗi tải dữ liệu</p>`;
-                });
-        }
-    </script>
 </head>
 
 <body>
-    <header>
-        @if (ViewData["HideMenu"] as bool? != true)
-        {
-            <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom mb-3">
-                <div class="container-fluid">
-                    <button class="navbar-toggler" type="button" id="menuToggleButton" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
+<header>
+@if (ViewData["HideMenu"] as bool? != true)
+{
+    @await Html.PartialAsync("_Navbar")
+}
+</header>
 
-                    <a class="navbar-brand fw-bold" asp-page="/Index">Đenn</a>
+<div class="container">
+    <main role="main" class="pb-3">
+        @RenderBody()
+    </main>
+</div>
 
-                    <div class="collapse navbar-collapse" id="mainNavbar">
-                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-page="/DoanhThuNgay">
-                                    <span class="ico me-2">&#x2B55;</span> <!-- ⭕ -->
-                                    Doanh Thu Ngày
-                                </a>
-                            </li>
+@if (ViewData["HideMenu"] as bool? != true)
+{
+    <footer class="border-top footer text-muted"></footer>
+}
 
-                            <li class="nav-item">
-                                <a class="nav-link" asp-page="/DoanhThuThang">
-                                    <span class="ico me-2">&#x1F4CA;</span>
-                                    Doanh Thu Tháng
-                                </a>
-                            </li>
+@await RenderSectionAsync("Scripts", required: false)
 
-                            <li class="nav-item">
-                                <a class="nav-link" asp-page="/ThongKe">
-                                    <span class="ico me-2">&#x1F4C8;</span>
-                                    Thống kê
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-page="/ChiTietHoaDonNoTab">
-                                    <i class="fa fa-money-bill-wave"></i> Công Nợ
-                                </a>
-                            </li>
+<script>
+    // Đóng/mở menu trên mobile (nếu dùng nút custom trong partial)
+    window.addEventListener('load', function () {
+        const menuButton = document.getElementById('menuToggleButton');
+        const navbar = document.getElementById('mainNavbar');
+        if (!menuButton || !navbar) return;
 
-                            <li class="nav-item">
-                                <a class="nav-link" asp-page="/ChiTieuTab">
-                                    <span class="ico me-2">&#x1F4B8;</span>
-                                    Ứng Nhã
-                                </a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link" asp-page="/VoucherTab">
-                                    <span class="ico me-2">&#x1F39F;</span>
-                                    Voucher 
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-page="/XepHangSanPham">
-                                    <span class="ico me-2">&#x1F4E6;</span> <!-- 🟟 -->
-                                    TOP Sản phẩm
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-page="/XepHangKhachHang">
-                                    <span class="ico me-2">&#x1F465;</span> <!-- 🟟 -->
-                                    TOP Khách hàng
-                                </a>
-                            </li>
-                        </ul>
-
-                        <div class="d-flex align-items-center">
-                            @if (!string.IsNullOrWhiteSpace(displayName))
-                            {
-                                <span class="me-3 text-muted">Xin chào, <b>@displayName</b></span>
-                                <form asp-page="/Login" asp-page-handler="Logout" method="post" class="d-inline">
-                                    <button class="btn btn-outline-secondary btn-sm" type="submit">Đăng xuất</button>
-                                </form>
-                            }
-                            else
-                            {
-                                <a class="btn btn-outline-primary btn-sm" asp-page="/Login">Đăng nhập</a>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </nav>
-        }
-    </header>
-
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-    @if (ViewData["HideMenu"] as bool? != true)
-    {
-        <footer class="border-top footer text-muted"></footer>
-    }
-
-    @await RenderSectionAsync("Scripts", required: false)
-
-    <script>
-        // Đóng/mở menu trên mobile
-        window.addEventListener('load', function () {
-            const menuButton = document.getElementById('menuToggleButton');
-            const navbar = document.getElementById('mainNavbar');
-            let isMenuOpen = false;
-            menuButton.addEventListener('click', function () {
-                navbar.classList.toggle('show');
-                isMenuOpen = !isMenuOpen;
-            });
-            document.querySelectorAll('#mainNavbar .nav-link').forEach(link => {
-                link.addEventListener('click', function () {
-                    setTimeout(() => { navbar.classList.remove('show'); isMenuOpen = false; }, 200);
-                });
-            });
+        menuButton.addEventListener('click', () => {
+            navbar.classList.toggle('show');
         });
-    </script>
+
+        document.querySelectorAll('#mainNavbar .nav-link').forEach(link => {
+            link.addEventListener('click', () => setTimeout(() => navbar.classList.remove('show'), 200));
+        });
+    });
+</script>
 </body>
 </html>

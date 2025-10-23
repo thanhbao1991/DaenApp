@@ -39,7 +39,7 @@ public class DoanhThuController : ControllerBase
         return Result<List<DoanhThuThangItemDto>>.Success(dto);
     }
 
-    // 🟟 mới: danh sách hóa đơn của 1 khách trong ngày
+    // Danh sách hóa đơn của 1 khách
     [HttpGet("danhsach")]
     public async Task<ActionResult<Result<List<DoanhThuHoaDonDto>>>> GetDanhSachHoaDon(Guid khachHangId)
     {
@@ -47,7 +47,7 @@ public class DoanhThuController : ControllerBase
         return Result<List<DoanhThuHoaDonDto>>.Success(dto);
     }
 
-    // 🟟 mới: tổng số đơn theo giờ trong tháng (1 call duy nhất)
+    // Tổng hợp THEO GIỜ trong THÁNG (giữ route cũ, trả thêm DoanhThu)
     // GET /api/DoanhThu/thang-by-hour?thang=10&nam=2025&startHour=6&endHour=22
     [HttpGet("thang-by-hour")]
     public async Task<ActionResult<Result<List<DoanhThuHourBucketDto>>>> GetThangByHour(

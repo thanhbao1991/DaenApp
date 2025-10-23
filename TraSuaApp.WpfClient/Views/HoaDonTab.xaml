@@ -102,11 +102,18 @@
                 Grid.Row="1"
                 Grid.Column="1"
                 AutoGenerateColumns="False"
+                EnableColumnVirtualization="True"
+                EnableRowVirtualization="True"
                 FontWeight="Bold"
                 IsReadOnly="True"
+                IsSynchronizedWithCurrentItem="True"
                 MouseDoubleClick="HoaDonDataGrid_MouseDoubleClick"
                 SelectionChanged="HoaDonDataGrid_SelectionChangedAsync"
-                VirtualizingPanel.VirtualizationMode="Standard"
+                SelectionMode="Single"
+                SelectionUnit="FullRow"
+                VirtualizingPanel.IsVirtualizing="True"
+                VirtualizingPanel.ScrollUnit="Pixel"
+                VirtualizingPanel.VirtualizationMode="Recycling"
                 Visibility="Visible">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow">
@@ -607,6 +614,23 @@
                         </Grid>
                     </StackPanel>
                 </ScrollViewer>
+                <Border
+                    x:Name="RightBusyOverlay"
+                    Background="#40FFFFFF"
+                    Visibility="Collapsed">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <ProgressBar
+                            Width="160"
+                            Height="6"
+                            IsIndeterminate="True" />
+                        <TextBlock
+                            Margin="0,8,0,0"
+                            HorizontalAlignment="Center"
+                            FontWeight="SemiBold"
+                            Opacity="0.8"
+                            Text="Đang tải chi tiết hoá đơn..." />
+                    </StackPanel>
+                </Border>
             </Grid>
         </Grid>
     </Grid>
