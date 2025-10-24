@@ -42,7 +42,19 @@ namespace TraSuaApp.WpfClient.HoaDonViews
     "Sân 1", "Sân 2"
 };
 
+        // 🟟 Đếm ngược 5 phút cố định (chỉ áp dụng khi thêm mới)
+        private readonly System.Windows.Threading.DispatcherTimer _fixedTimer = new();
+        private int _secondsLeft = 300; // 5 phút
+        private bool _autoInvoked = false;
+        private bool IsNewInvoice => Model?.Id == Guid.Empty;
 
+        // 🟟 Hiển thị mm:ss
+        private void UpdateCountdownText()
+        {
+            var m = _secondsLeft / 60;
+            var s = _secondsLeft % 60;
+            AutoSaveCountdownText.Text = $"Tự lưu sau: {m:00}:{s:00}";
+        }
         public HoaDonEdit(HoaDonDto? dto = null)
         {
             InitializeComponent();
@@ -374,9 +386,59 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             // ✅ Tính lại tổng tiền khi mở form
             CapNhatTongTien();
 
+            // 🟟 Đếm ngược cố định 5 phút, không reset theo thao tác
+            _fixedTimer.Interval = TimeSpan.FromSeconds(1);
+            _fixedTimer.Tick += FixedTimer_Tick;
+
+            this.ContentRendered += (_, __) =>
+            {
+                if (IsNewInvoice)
+                {
+                    _secondsLeft = 300;
+                    _autoInvoked = false;
+                    AutoSaveCountdownText.Visibility = Visibility.Visible;
+                    UpdateCountdownText();
+                    _fixedTimer.Start();
+                }
+                else
+                {
+                    AutoSaveCountdownText.Visibility = Visibility.Collapsed;
+                }
+            };
 
         }
+        // 🟟 Không reset theo thao tác. Hết 5p -> gọi Save
+        private void FixedTimer_Tick(object? sender, EventArgs e)
+        {
+            if (!IsNewInvoice)
+            {
+                _fixedTimer.Stop();
+                AutoSaveCountdownText.Visibility = Visibility.Collapsed;
+                return;
+            }
 
+            if (_isSaving) return; // đang lưu tay thì thôi cứ hiện số cũ
+
+            if (_secondsLeft > 0)
+            {
+                _secondsLeft--;
+                UpdateCountdownText();
+            }
+
+            if (_secondsLeft <= 0 && !_autoInvoked)
+            {
+                _autoInvoked = true;
+                _fixedTimer.Stop();
+                AutoSaveCountdownText.Text = "Đang tự lưu...";
+                // Gọi Save như bấm nút (giữ nguyên validation của bạn)
+                SaveButton_Click(SaveButton, new RoutedEventArgs());
+            }
+        }
+        protected override void OnClosed(EventArgs e)
+        {
+            try { _fixedTimer.Stop(); } catch { }
+            base.OnClosed(e);
+        }
         /// <summary>
         /// Đưa "món yêu thích" vào ô tìm kiếm sản phẩm và mở popup để user chọn.
         /// - Không hiển thị MessageBox.

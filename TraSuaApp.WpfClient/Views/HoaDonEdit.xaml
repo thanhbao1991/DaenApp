@@ -711,11 +711,23 @@
             <!--  Nút và lỗi  -->
             <StackPanel Grid.Row="2">
                 <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
-                <Button
-                    x:Name="SaveButton"
-                    Click="SaveButton_Click"
-                    Content="Save (Enter)"
-                    Style="{StaticResource EditButtonStyle}" />
+                <Grid>
+
+                    <Button
+                        x:Name="SaveButton"
+                        Click="SaveButton_Click"
+                        Content="Save (Enter)"
+                        Style="{StaticResource EditButtonStyle}" />
+                    <TextBlock
+                        x:Name="AutoSaveCountdownText"
+                        Margin="8"
+                        HorizontalAlignment="Right"
+                        FontStyle="Italic"
+                        Foreground="{StaticResource DangerForeground}"
+                        Text="Tự lưu sau: 05:00"
+                        Visibility="Collapsed" />
+                </Grid>
+
             </StackPanel>
         </Grid>
     </Border>

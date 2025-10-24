@@ -637,17 +637,24 @@ namespace TraSuaApp.WpfClient.Views
             };
         }
 
+
+        // ==================== F1 – Tiền mặt (PIN ID + ScrollToTop) ====================
         private async void F1Button_Click(object sender, RoutedEventArgs e)
         {
             await SafeButtonHandlerAsync(F1Button, async _ =>
             {
-                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected) return;
+                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selectedAtClick) return;
 
-                if (selected.ConLai == 0) { NotiHelper.Show("Hoá đơn đã thu đủ!"); return; }
-                if (selected.TrangThai?.ToLower().Contains("nợ") == true) { NotiHelper.Show("Vui lòng thanh toán tại tab Công nợ!"); return; }
+                if (selectedAtClick.ConLai == 0) { NotiHelper.Show("Hoá đơn đã thu đủ!"); return; }
+                if (selectedAtClick.TrangThai?.ToLower().Contains("nợ") == true)
+                {
+                    NotiHelper.Show("Vui lòng thanh toán tại tab Công nợ!");
+                    return;
+                }
 
-                // Tiền mặt
-                var dto = TaoDtoThanhToan(selected, Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C"));
+                var idAtClick = selectedAtClick.Id; // 🟟 GHIM ID
+
+                var dto = TaoDtoThanhToan(selectedAtClick, Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C"));
                 var owner = Window.GetWindow(this);
                 var window = new ChiTietHoaDonThanhToanEdit(dto)
                 {
@@ -658,9 +665,257 @@ namespace TraSuaApp.WpfClient.Views
                 window.PhuongThucThanhToanComboBox.IsEnabled = false;
 
                 if (window.ShowDialog() == true)
+                {
                     await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true);
+                    await SelectHoaDonByIdAsync(idAtClick);
+                    ScrollToTop(); // 🟟 cuộn lên đầu
+                }
             }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
         }
+        // ==================== F4 – Chuyển khoản (PIN ID + ScrollToTop) ====================
+        private async void F4Button_Click(object sender, RoutedEventArgs e)
+        {
+            await SafeButtonHandlerAsync(F4Button, async _ =>
+            {
+                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selectedAtClick) return;
+
+                if (selectedAtClick.ConLai == 0) { NotiHelper.Show("Hoá đơn đã thu đủ!"); return; }
+                if (selectedAtClick.TrangThai?.ToLower().Contains("nợ") == true)
+                {
+                    NotiHelper.Show("Vui lòng thanh toán tại tab Công nợ!");
+                    return;
+                }
+
+                var idAtClick = selectedAtClick.Id; // 🟟 GHIM ID
+
+                var dto = TaoDtoThanhToan(selectedAtClick, Guid.Parse("2cf9a88f-3bc0-4d4b-940d-f8ffa4affa02"));
+                var owner = Window.GetWindow(this);
+                var window = new ChiTietHoaDonThanhToanEdit(dto)
+                {
+                    Owner = owner,
+                    Width = owner?.ActualWidth ?? 1200,
+                    Height = owner?.ActualHeight ?? 800
+                };
+                window.PhuongThucThanhToanComboBox.IsEnabled = false;
+
+                if (window.ShowDialog() == true)
+                {
+                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true);
+                    await SelectHoaDonByIdAsync(idAtClick);
+                    ScrollToTop(); // 🟟 cuộn lên đầu
+                }
+            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
+        }
+        // ==================== F12 – Ghi nợ (PIN ID + ScrollToTop) ====================
+        private async void F12Button_Click(object sender, RoutedEventArgs e)
+        {
+            await SafeButtonHandlerAsync(F12Button, async _ =>
+            {
+                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selectedAtClick) return;
+
+                if (selectedAtClick.ConLai == 0) { NotiHelper.Show("Hoá đơn đã thu đủ!"); return; }
+                if (selectedAtClick.TrangThai?.ToLower().Contains("nợ") == true) { NotiHelper.Show("Hoá đơn đã ghi nợ!"); return; }
+                if (selectedAtClick.KhachHangId == null) { NotiHelper.Show("Hoá đơn chưa có thông tin khách hàng!"); return; }
+
+                var idAtClick = selectedAtClick.Id; // 🟟 GHIM ID
+
+                var now = DateTime.Now;
+                var trongngay = now.Date == selectedAtClick.Ngay;
+
+                var dto = new ChiTietHoaDonNoDto
+                {
+                    Ngay = trongngay ? now.Date : selectedAtClick.Ngay,
+                    NgayGio = trongngay ? now : selectedAtClick.Ngay.AddDays(1).AddMinutes(-1),
+                    HoaDonId = selectedAtClick.Id,
+                    KhachHangId = selectedAtClick.KhachHangId,
+                    Ten = $"{selectedAtClick.Ten}",
+                    SoTienNo = selectedAtClick.ConLai,
+                    MaHoaDon = selectedAtClick.MaHoaDon,
+                    GhiChu = selectedAtClick.GhiChu,
+                };
+
+                var owner = Window.GetWindow(this);
+                var window = new ChiTietHoaDonNoEdit(dto)
+                {
+                    Owner = owner,
+                    Width = owner?.ActualWidth ?? 1200,
+                    Height = owner?.ActualHeight ?? 800,
+                    Background = MakeBrush((Brush)Application.Current.Resources["DangerBrush"], 0.8)
+                };
+                window.SoTienTextBox.IsReadOnly = true;
+
+                if (window.ShowDialog() == true)
+                {
+                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadNo: true);
+                    await SelectHoaDonByIdAsync(idAtClick);
+                    ScrollToTop(); // 🟟 cuộn lên đầu
+                }
+            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
+        }
+        // ==================== F7 – Báo đơn (PIN ID + ScrollToTop) ====================
+        private async void F7Button_Click(object sender, RoutedEventArgs e)
+        {
+            await SafeButtonHandlerAsync(F7Button, async _ =>
+            {
+                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selectedAtClick) return;
+
+                var idAtClick = selectedAtClick.Id; // 🟟 GHIM ID
+
+                selectedAtClick.BaoDon = !selectedAtClick.BaoDon;
+                var api = new HoaDonApi();
+                var result = await api.UpdateSingleAsync(selectedAtClick.Id, selectedAtClick);
+
+                if (!result.IsSuccess)
+                {
+                    NotiHelper.ShowError($"Lỗi: {result.Message}");
+                    return;
+                }
+
+                await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true);
+                await SelectHoaDonByIdAsync(idAtClick);
+                ScrollToTop(); // 🟟 cuộn lên đầu
+            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
+        }
+        // ==================== F8 – Ưu tiên (PIN ID + ScrollToTop) ====================
+        private async void F8Button_Click(object sender, RoutedEventArgs e)
+        {
+            await SafeButtonHandlerAsync(F8Button, async _ =>
+            {
+                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selectedAtClick) return;
+
+                var idAtClick = selectedAtClick.Id; // 🟟 GHIM ID
+
+                selectedAtClick.UuTien = !selectedAtClick.UuTien;
+                var api = new HoaDonApi();
+                var result = await api.UpdateSingleAsync(selectedAtClick.Id, selectedAtClick);
+
+                if (!result.IsSuccess)
+                {
+                    NotiHelper.ShowError($"Lỗi: {result.Message}");
+                    return;
+                }
+
+                await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true);
+                await SelectHoaDonByIdAsync(idAtClick);
+                ScrollToTop(); // 🟟 cuộn lên đầu
+            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
+        }
+        // ==================== Esc – Gán ship + auto in (PIN ID + ScrollToTop) ====================
+        private async void EscButton_Click(object sender, RoutedEventArgs e)
+        {
+            await SafeButtonHandlerAsync(EscButton, async _ =>
+            {
+                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selectedAtClick) return;
+
+                var idAtClick = selectedAtClick.Id; // 🟟 GHIM ID
+
+                var confirm = MessageBox.Show(
+                    $"Nếu shipper là Khánh chọn YES\nNếu không phải chọn NO\nHuỷ bỏ chọn CANCEL",
+                    "QUAN TRỌNG:",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Question
+                );
+                if (confirm == MessageBoxResult.Cancel) return;
+
+                selectedAtClick.NguoiShip = (confirm == MessageBoxResult.Yes) ? "Khánh" : null;
+                selectedAtClick.NgayShip = DateTime.Now;
+
+                var api = new HoaDonApi();
+                var update = await api.UpdateSingleAsync(idAtClick, selectedAtClick);
+
+                if (!update.IsSuccess)
+                {
+                    NotiHelper.ShowError($"Lỗi: {update.Message}");
+                    return;
+                }
+
+                await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true);
+                await SelectHoaDonByIdAsync(idAtClick);
+                ScrollToTop(); // 🟟 cuộn lên đầu
+
+                // Auto in nếu chưa in — dùng đúng ID đã pin
+                if (selectedAtClick.NgayRa == null)
+                {
+                    var r2 = await api.GetByIdAsync(idAtClick);
+                    if (r2.IsSuccess && r2.Data != null)
+                    {
+                        HoaDonPrinter.Print(r2.Data);
+                        selectedAtClick.NgayRa = DateTime.Now;
+                        await api.UpdateSingleAsync(idAtClick, selectedAtClick);
+                    }
+                }
+            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
+        }
+        // ==================== Del – Xoá (giữ vị trí lân cận + ScrollToTop) ====================
+        // ==================== Del – Xoá (giữ vị trí lân cận + ScrollToTop) ====================
+        private async void DelButton_Click(object sender, RoutedEventArgs e)
+        {
+            await SafeButtonHandlerAsync(DelButton, async _ =>
+            {
+                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selectedAtClick) return;
+
+                int oldIndex = HoaDonDataGrid.SelectedIndex; // 🟟 giữ chỉ số
+
+                var confirm = MessageBox.Show(
+                    $"Bạn có chắc chắn muốn xoá '{selectedAtClick.Ten}'?",
+                    "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (confirm != MessageBoxResult.Yes) return;
+
+                var response = await ApiClient.DeleteAsync($"/api/HoaDon/{selectedAtClick.Id}");
+                var result = await response.Content.ReadFromJsonAsync<Result<HoaDonDto>>();
+
+                if (result?.IsSuccess == true)
+                {
+                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
+
+                    var ok = await WaitUntilAsync(() => HoaDonDataGrid.Items.Count >= 0);
+                    if (!ok || HoaDonDataGrid.Items.Count == 0)
+                    {
+                        ScrollToTop(); // danh sách rỗng thì thôi
+                        return;
+                    }
+
+                    int newIndex = Math.Min(oldIndex, HoaDonDataGrid.Items.Count - 1);
+                    if (newIndex < 0) newIndex = 0;
+
+                    HoaDonDataGrid.SelectedIndex = newIndex;
+                    var item = HoaDonDataGrid.Items[newIndex];
+                    HoaDonDataGrid.ScrollIntoView(item);
+                    HoaDonDataGrid.UpdateLayout();
+
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        var row = (DataGridRow)HoaDonDataGrid.ItemContainerGenerator.ContainerFromIndex(newIndex);
+                        row?.Focus();
+                    }, System.Windows.Threading.DispatcherPriority.Background);
+
+                    ScrollToTop(); // 🟟 cuộn lên đầu sau khi đã chọn lân cận
+                }
+                else
+                {
+                    NotiHelper.ShowError(result?.Message ?? "Không thể xoá.");
+                }
+            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
+        }
+
+
+        // ==================== Del – Xoá (giữ vị trí lân cận + ScrollToTop) ====================
+        // ==================== Helper: Cuộn DataGrid lên đầu ====================
+        private void ScrollToTop()
+        {
+            try
+            {
+                if (HoaDonDataGrid?.Items?.Count > 0)
+                {
+                    var first = HoaDonDataGrid.Items[0];
+                    HoaDonDataGrid.ScrollIntoView(first);
+                    HoaDonDataGrid.UpdateLayout();
+                }
+            }
+            catch { /* ignore */ }
+        }
+
 
         private async void F2Button_Click(object sender, RoutedEventArgs e)
         {
@@ -707,30 +962,6 @@ namespace TraSuaApp.WpfClient.Views
             }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
         }
 
-        private async void F4Button_Click(object sender, RoutedEventArgs e)
-        {
-            await SafeButtonHandlerAsync(F4Button, async _ =>
-            {
-                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected) return;
-
-                if (selected.ConLai == 0) { NotiHelper.Show("Hoá đơn đã thu đủ!"); return; }
-                if (selected.TrangThai?.ToLower().Contains("nợ") == true) { NotiHelper.Show("Vui lòng thanh toán tại tab Công nợ!"); return; }
-
-                // Chuyển khoản
-                var dto = TaoDtoThanhToan(selected, Guid.Parse("2cf9a88f-3bc0-4d4b-940d-f8ffa4affa02"));
-                var owner = Window.GetWindow(this);
-                var window = new ChiTietHoaDonThanhToanEdit(dto)
-                {
-                    Owner = owner,
-                    Width = owner?.ActualWidth ?? 1200,
-                    Height = owner?.ActualHeight ?? 800
-                };
-                window.PhuongThucThanhToanComboBox.IsEnabled = false;
-
-                if (window.ShowDialog() == true)
-                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true);
-            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
-        }
 
         private async void F5Button_Click(object sender, RoutedEventArgs e)
         {
@@ -757,80 +988,6 @@ namespace TraSuaApp.WpfClient.Views
         }
 
         // ==================== ESC / F7 / F8 / F9 / F10 / HẸN GIỜ / LỊCH SỬ / XOÁ / GHI NỢ ====================
-        private async void EscButton_Click(object sender, RoutedEventArgs e)
-        {
-            await SafeButtonHandlerAsync(EscButton, async _ =>
-            {
-                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected) return;
-
-                var confirm = MessageBox.Show(
-                    $"Nếu shipper là Khánh chọn YES\nNếu không phải chọn NO\nHuỷ bỏ chọn CANCEL",
-                    "QUAN TRỌNG:",
-                    MessageBoxButton.YesNoCancel,
-                    MessageBoxImage.Question
-                );
-                if (confirm == MessageBoxResult.Cancel) return;
-
-                selected.NguoiShip = (confirm == MessageBoxResult.Yes) ? "Khánh" : null;
-                selected.NgayShip = DateTime.Now;
-
-                var api = new HoaDonApi();
-                var update = await api.UpdateSingleAsync(selected.Id, selected);
-
-                if (!update.IsSuccess)
-                {
-                    NotiHelper.ShowError($"Lỗi: {update.Message}");
-                    return;
-                }
-
-                await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true);
-
-                // Auto in nếu chưa in — dùng đúng ID của 'selected' lúc bấm ESC
-                if (selected.NgayRa == null)
-                {
-                    var r2 = await api.GetByIdAsync(selected.Id);
-                    if (r2.IsSuccess && r2.Data != null)
-                    {
-                        HoaDonPrinter.Print(r2.Data);
-                        selected.NgayRa = DateTime.Now;
-                        await api.UpdateSingleAsync(selected.Id, selected);
-                    }
-                }
-            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
-        }
-        private async void F7Button_Click(object sender, RoutedEventArgs e)
-        {
-            await SafeButtonHandlerAsync(F7Button, async _ =>
-            {
-                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected) return;
-
-                selected.BaoDon = !selected.BaoDon;
-                var api = new HoaDonApi();
-                var result = await api.UpdateSingleAsync(selected.Id, selected);
-
-                if (!result.IsSuccess)
-                    NotiHelper.ShowError($"Lỗi: {result.Message}");
-                else
-                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true);
-            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
-        }
-
-        private async void F8Button_Click(object sender, RoutedEventArgs e)
-        {
-            await SafeButtonHandlerAsync(F8Button, async _ =>
-            {
-                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected) return;
-
-                selected.UuTien = !selected.UuTien;
-                var api = new HoaDonApi();
-                var result = await api.UpdateSingleAsync(selected.Id, selected);
-
-                if (!result.IsSuccess)
-                    NotiHelper.ShowError($"Lỗi: {result.Message}");
-                else
-                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true);
-            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
-        }
 
         private async void F9Button_Click(object sender, RoutedEventArgs e)
         {
@@ -941,67 +1098,6 @@ namespace TraSuaApp.WpfClient.Views
             }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
         }
 
-        private async void DelButton_Click(object sender, RoutedEventArgs e)
-        {
-            await SafeButtonHandlerAsync(DelButton, async _ =>
-            {
-                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected) return;
-
-                var confirm = MessageBox.Show(
-                    $"Bạn có chắc chắn muốn xoá '{selected.Ten}'?",
-                    "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-                if (confirm != MessageBoxResult.Yes) return;
-
-                var response = await ApiClient.DeleteAsync($"/api/HoaDon/{selected.Id}");
-                var result = await response.Content.ReadFromJsonAsync<Result<HoaDonDto>>();
-
-                if (result?.IsSuccess == true)
-                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadThanhToan: true, reloadNo: true);
-                else
-                    NotiHelper.ShowError(result?.Message ?? "Không thể xoá.");
-            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
-        }
-
-        private async void F12Button_Click(object sender, RoutedEventArgs e)
-        {
-            await SafeButtonHandlerAsync(F12Button, async _ =>
-            {
-                if (HoaDonDataGrid.SelectedItem is not HoaDonDto selected) return;
-
-                if (selected.ConLai == 0) { NotiHelper.Show("Hoá đơn đã thu đủ!"); return; }
-                if (selected.TrangThai?.ToLower().Contains("nợ") == true) { NotiHelper.Show("Hoá đơn đã ghi nợ!"); return; }
-                if (selected.KhachHangId == null) { NotiHelper.Show("Hoá đơn chưa có thông tin khách hàng!"); return; }
-
-                var now = DateTime.Now;
-                var trongngay = now.Date == selected.Ngay;
-
-                var dto = new ChiTietHoaDonNoDto
-                {
-                    Ngay = trongngay ? now.Date : selected.Ngay,
-                    NgayGio = trongngay ? now : selected.Ngay.AddDays(1).AddMinutes(-1),
-                    HoaDonId = selected.Id,
-                    KhachHangId = selected.KhachHangId,
-                    Ten = $"{selected.Ten}",
-                    SoTienNo = selected.ConLai,
-                    MaHoaDon = selected.MaHoaDon,
-                    GhiChu = selected.GhiChu,
-                };
-
-                var owner = Window.GetWindow(this);
-                var window = new ChiTietHoaDonNoEdit(dto)
-                {
-                    Owner = owner,
-                    Width = owner?.ActualWidth ?? 1200,
-                    Height = owner?.ActualHeight ?? 800,
-                    Background = MakeBrush((Brush)Application.Current.Resources["DangerBrush"], 0.8)
-                };
-                window.SoTienTextBox.IsReadOnly = true;
-
-                if (window.ShowDialog() == true)
-                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadNo: true);
-            }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
-        }
 
         // ==================== UI STYLE TT THANH TOÁN & FOOTER ====================
         private void UpdateThongTinThanhToanStyle(HoaDonDto hd)
