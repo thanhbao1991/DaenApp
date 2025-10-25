@@ -437,7 +437,7 @@ namespace TraSuaApp.WpfClient.Views
                 UpdateThongTinThanhToanStyle(hd);
                 ThongTinThanhToanPanel.DataContext = hd;
                 RenderFooterPanel(ThongTinThanhToanPanel, hd, includeLine: false);
-                TenHoaDonTextBlock.Text = $"{hd.Ten} - {hd.DiaChiText}";
+                TenHoaDonTextBlock.Text = $"{hd.TenHienThi} - {hd.DiaChiText}";
 
                 // Tổng số sp (exclude các nhóm)
                 try

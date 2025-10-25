@@ -67,21 +67,48 @@ YÊU CẦU:
       - “An Nhi” → mặc định **trà sữa socola**.
     (So khớp tên KH không phân biệt hoa/thường/dấu.)
 12) Nếu khách ghi “nước ép X” hoặc “ép X” mà không nói mix/phối → hiểu là **ép X nguyên chất**.
-13) Nếu khách ghi “cà phê” chung chung → hiểu là **cà phê sữa đá**,
+13) Nếu khách ghi “cà phê” chung chung → hiểu là **cà phê sữa đá s/mv**,
     TRỪ KHI tên khách là:
       - “Oanh Trần” → mặc định **cà phê đen pha máy**.
       - “Dung Trương” → mặc định **cà phê kem**.
-      - “Phạm Hương” → mặc định **cà phê sữa đá ( s )**.
+      - “Lê Thị Kim Huệ” → mặc định **cà phê muối**.
+      - “Phạm Hương”, “Trịnh Đức” → mặc định **cà phê sữa đá ( s )**.
       - “Nguyễn Thị Vân Kiều” → mặc định **cà phê sữa đá ( s )**.
     (So khớp tên KH không phân biệt hoa/thường/dấu.)
-14) Nếu khách ghi rõ “cà phê đen” → hiểu là **cà phê đen đá s/mv**.
-    Tương tự cà phê sữa → hiểu là **cà phê sữa đá s/mv**.
+14) Nếu khách ghi rõ “cà phê đen”/“cà phê đen đá”  → hiểu là **cà phê đen đá s/mv**.
+    Tương tự “cà phê sữa”/“cà phê sữa đá”  → hiểu là **cà phê sữa đá s/mv**.
 15) Luôn chọn đúng Id trong MENU tương ứng với tên sản phẩm sau khi áp các mặc định/ngoại lệ trên.
 16) **Phải hiểu và chấp nhận lỗi chính tả, sai dấu, thiếu dấu hoặc chữ gần giống**.
     - Ví dụ: 'đắc' có thể là 'đác', 'sưa' là 'sữa', 'chanh da' là 'chanh đá', 'tra sua' là 'trà sữa'.
     - Hiểu cả cách viết không dấu hoặc sai dấu của người dùng.
     - Khi gặp lỗi chính tả, hãy chọn sản phẩm hợp lý nhất trong MENU, không bỏ qua món đó.
-
+17) Nếu khách ghi “sữa tươi trân châu” nhưng KHÔNG có từ “trắng/white/white pearl”
+    → chọn sản phẩm ""Sữa Tươi Trân Châu Đường Đen (TCĐĐ)"".
+    Đồng nghĩa TCĐĐ: ""tcdd"", ""tcđđ"", ""duong den"", ""brown sugar"", ""boba duong den"".
+    Nếu có “trắng/white/white pearl” → chọn ""Sữa Tươi Trân Châu Trắng"".
+18) Quy tắc “Trứng nướng”:
+    - Các cụm: ""trứng nướng"", ""kem trứng nướng"", ""brulee"", ""brule"" đều hiểu là **trứng nướng**.
+    - Nếu line có ""trà sữa"" + ""trứng nướng"" mà KHÔNG nêu mùi khác (khoai môn, matcha, socola, …)
+      → chọn món **Trà Sữa TCĐĐ Trứng Nướng**.
+    - Nếu line có ""khoai môn"" + ""trứng nướng"" → chọn **Trà Sữa Khoai Môn Trứng Nướng**.
+    - MỖI DÒNG là một order độc lập. **Không gộp/loại bỏ** dòng chỉ vì giống dòng khác.
+19) Quy tắc ""trân châu"" (áp dụng CHUNG cho mọi đồ uống: cacao, sữa tươi, trà sữa, matcha, v.v.):
+    - Nếu line có ""trân châu"" mà KHÔNG có ""trắng/white/white pearl""
+      → chọn biến thể **... Trân Châu Đường Đen (TCĐĐ)** tương ứng trong MENU (nếu có).
+    - Nếu có ""trắng/white/white pearl"" → chọn **... Trân Châu Trắng**.
+    - Đồng nghĩa TCĐĐ: ""tcdd"", ""tcđđ"", ""duong den"", ""brown sugar"", ""black sugar"", ""boba duong den"".
+20) ""Đá xay"" chỉ là cách pha:
+    - Các cụm: ""đá xay"", ""xay đá"", ""xay"", ""blend"", ""blended"", ""frappe"" → đưa vào **NoteText**.
+    - KHÔNG tự ý đổi sang SKU ""… đá xay"" khác nếu line có ""trân châu"". Chỉ đổi SKU khi line nói rõ đúng tên món ""… đá xay"" theo MENU.
+21) Trà kèm theo (free):
+    - Cụm như: ""kèm/xin/cho/thêm/giúp em 1 ly trà nóng/tra nong"" hoặc ""… trà đá/tra da""
+      → KHÔNG tạo item. Ghi vào NoteText của món gần nhất: ""kèm 1 ly trà nóng"" / ""kèm 1 ly trà đá"".
+    - Áp dụng cho mọi đồ uống trước đó (cacao, cà phê, trà sữa, matcha…).
+    - Nếu câu ""trà nóng/đá"" là dòng riêng mà không có từ mùi (chanh, gừng, sả, tắc, đào, cam, mật ong…)
+      → coi là trà kèm, không phải món.
+22) Không suy diễn hương vị:
+    - Tuyệt đối không tự đổi ""trà nóng/tra nong"" thành ""trà chanh nóng"", ""trà gừng nóng""… nếu line không nêu rõ.
+    - Chỉ khi line chứa từ mùi (chanh/gừng/sả/tắc/đào/cam/mật ong/...) mới chọn đúng món hương vị.
 Trả về DUY NHẤT một MẢNG JSON hợp lệ:
 [
   { ""Id"": ""GUID sản phẩm"", ""SoLuong"": int>=1, ""NoteText"": ""ghi chú..."", ""Line"": số dòng, ""Gia"": số tiền hoặc null }

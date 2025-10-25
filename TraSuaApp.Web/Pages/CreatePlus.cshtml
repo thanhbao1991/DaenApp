@@ -6,26 +6,116 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
 <style>
-    .busy-mask { position: fixed; inset: 0; background: rgba(255,255,255,.6); display: none; z-index: 4000 }
-    .busy-mask .spinner-wrap { position: absolute; top: 45%; left: 50%; transform: translate(-50%,-50%) }
+    .busy-mask {
+        position: fixed;
+        inset: 0;
+        background: rgba(255,255,255,.6);
+        display: none;
+        z-index: 4000
+    }
 
-    .blink { animation: blink 1s linear infinite }
-    @@keyframes blink { 50% { opacity: .2 } }
+        .busy-mask .spinner-wrap {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%,-50%)
+        }
+
+    .blink {
+        animation: blink .4s linear 1
+    }
+    @@keyframes blink {
+        50%
+
+    {
+        opacity: .2
+    }
+
+    }
 
     /* iOS-safe portal dropdown */
-    .portal-list { position: fixed; left: 0; top: 0; width: 280px; max-height: 40vh; overflow: auto; -webkit-overflow-scrolling: touch; z-index: 5000; display: none; background: #fff; border: 1px solid rgba(0,0,0,.12); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.18) }
-    .portal-list.show { display: block }
-    .portal-item { padding: .5rem .75rem; border-bottom: 1px solid rgba(0,0,0,.06) }
-    .portal-item:last-child { border-bottom: 0 }
-    .portal-item small { color: #6c757d }
+    .portal-list {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 280px;
+        max-height: 40vh;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        z-index: 5000;
+        display: none;
+        background: #fff;
+        border: 1px solid rgba(0,0,0,.12);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.18)
+    }
 
-    .text-clip-1{ display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; white-space: normal; }
+        .portal-list.show {
+            display: block
+        }
 
-    #FormError:not(:empty){ font-weight:600; }
+    .portal-item {
+        padding: .5rem .75rem;
+        border-bottom: 1px solid rgba(0,0,0,.06);
+        cursor: pointer;
+    }
 
-    /* Popup SP: cột giá bên phải */
-    .portal-item .pick-price { min-width: 72px; text-align: right; cursor: pointer; }
-    .portal-item .pick-name  { cursor: pointer; }
+        .portal-item:last-child {
+            border-bottom: 0
+        }
+
+        .portal-item small {
+            color: #6c757d
+        }
+
+        .portal-item .pick-price {
+            min-width: 72px;
+            text-align: right;
+        }
+
+    .text-clip-1 {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        white-space: normal;
+    }
+
+    #FormError:not(:empty) {
+        font-weight: 600;
+    }
+
+    /* Modal notes + topping */
+    .note-chip {
+        border: 1px solid rgba(0,0,0,.15);
+        border-radius: 999px;
+        padding: .25rem .6rem;
+        cursor: pointer;
+        user-select: none;
+    }
+
+        .note-chip.active {
+            background: #0d6efd;
+            color: #fff;
+            border-color: #0d6efd;
+        }
+
+    .topping-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .5rem;
+        padding: .35rem 0;
+        border-bottom: 1px dashed rgba(0,0,0,.06);
+    }
+
+        .topping-row:last-child {
+            border-bottom: 0;
+        }
+
+    .topping-qty button {
+        width: 28px;
+    }
 </style>
 
 <div class="busy-mask" id="BusyMask">
@@ -41,7 +131,7 @@
         <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()"><i class="fa fa-rotate"></i></button>
     </div>
 
-    <!-- Loại đơn + Bàn (mặc định Ship; chỉ Tại chỗ mới hiển thị Bàn) -->
+    <!-- Loại đơn + Bàn -->
     <div class="card mb-2">
         <div class="card-body d-flex flex-wrap gap-2 align-items-end">
             <div class="btn-group me-2" role="group">
@@ -62,9 +152,18 @@
                 <label class="form-label mb-0 small">Bàn</label>
                 <select id="TenBan" class="form-select form-select-sm">
                     <option value="">--</option>
-                    <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
-                    <option>7</option><option>8</option><option>9</option><option>10</option><option>13</option>
-                    <option>Sân 1</option><option>Sân 2</option>
+                    <option>2</option>
+                    <option>3</option>
+                    <option>4</option>
+                    <option>5</option>
+                    <option>6</option>
+                    <option>7</option>
+                    <option>8</option>
+                    <option>9</option>
+                    <option>10</option>
+                    <option>13</option>
+                    <option>Sân 1</option>
+                    <option>Sân 2</option>
                 </select>
             </div>
         </div>
@@ -100,8 +199,9 @@
                 <div class="col-12 col-md-4"><div class="border rounded p-2"><div class="small text-muted">Tổng nợ</div><div id="TongNo" class="fw-bold text-danger">0</div></div></div>
             </div>
 
+            <!-- Gợi ý theo khách: chỉ nút, không hiển thị số lượng -->
             <div id="FavoriteWrap" class="small mt-2 text-muted d-none">
-                Gợi ý món yêu thích: <span id="FavoriteMon" class="fw-semibold"></span>
+                Món gợi ý: <span id="FavoriteMon" class="fw-semibold"></span>
             </div>
         </div>
     </div>
@@ -132,6 +232,25 @@
     <div class="card mb-3">
         <div class="card-body">
             <div class="row g-2">
+
+                <!-- (NEW) Điểm & áp dụng voucher (nằm trên combobox) -->
+                <div class="mb-2">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="small text-muted">Điểm tháng này</div>
+                        <div id="DiemOnVoucherNow" class="fw-semibold">0 ⭐</div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between mt-1">
+                        <div class="small text-muted">Điểm tháng trước</div>
+                        <div id="DiemOnVoucherPrev" class="fw-semibold">0 ⭐</div>
+                    </div>
+                    <div class="mt-2">
+                        <!-- Chỉ hiện khi đủ điều kiện -->
+                        <button id="ApplyVoucherBtn" type="button" class="btn btn-sm btn-outline-success d-none">
+                            Áp dụng voucher theo điểm
+                        </button>
+                    </div>
+                </div>
+
                 <div class="col-12 col-md-6">
                     <label class="form-label mb-1">Voucher</label>
                     <select id="VoucherId" class="form-select"><option value="">-- Không áp dụng --</option></select>
@@ -152,6 +271,11 @@
                         <tr><th style="width:35%">Tạm tính</th><td class="text-end"><span id="TongTien">0</span> đ</td></tr>
                         <tr><th>Giảm giá</th><td class="text-end"><span id="GiamGia">0</span> đ</td></tr>
                         <tr class="table-secondary"><th class="fw-bold">Thành tiền</th><td class="text-end fw-bold"><span id="ThanhTien">0</span> đ</td></tr>
+
+                        <!-- ĐÃ XOÁ 2 HÀNG: Điểm tháng này / Điểm tháng trước -->
+
+                        <tr><th>Công nợ hiện tại</th><td class="text-end"><span id="CongNoDisplay">0</span> đ</td></tr>
+                        <tr class="table-warning"><th class="fw-bold">Tổng phải thu</th><td class="text-end fw-bold"><span id="TongPhaiThu">0</span> đ</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -163,8 +287,6 @@
         <button id="SaveBtn" class="btn btn-primary btn-lg" onclick="saveInvoice()">
             <i class="fa fa-floppy-disk"></i> Lưu hoá đơn
         </button>
-
-        <!-- THÔNG BÁO DƯỚI NÚT -->
         <div class="text-center small">
             <div id="CountdownText" class="text-muted">Tự lưu sau: 05:00</div>
             <div id="FormError" class="text-danger mt-1"></div>
@@ -177,17 +299,46 @@
 <div class="modal fade" id="lineModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header py-2"><h6 class="modal-title"><i class="fa fa-sliders"></i> Tuỳ chỉnh món</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <div class="mb-2"><label class="form-label mb-1">Biến thể</label><select id="ModalBienThe" class="form-select"></select></div>
-                <div><label class="form-label mb-1">Ghi chú</label><textarea id="ModalNote" class="form-control" rows="2"></textarea></div>
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="fa fa-sliders"></i> Tuỳ chỉnh món</h6>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-footer py-2"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button><button class="btn btn-primary" onclick="applyModal()">Áp dụng</button></div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label class="form-label mb-1">Biến thể</label>
+                    <select id="ModalBienThe" class="form-select"></select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label mb-1">Ghi chú thường dùng</label>
+                    <div id="ModalNotes" class="d-flex flex-wrap gap-1"></div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label mb-1">Ghi chú tự do</label>
+                    <textarea id="ModalNote" class="form-control" rows="2" placeholder="Ví dụ: ít đá, ít ngọt..."></textarea>
+                </div>
+
+                <div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label mb-1">Topping</label>
+                        <small class="text-muted">Cộng vào dòng</small>
+                    </div>
+                    <div id="ModalToppings"></div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <div class="me-auto small text-muted">
+                    <span>Tổng topping: </span><strong id="ModalTopTotal">0</strong> đ
+                </div>
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button class="btn btn-primary" onclick="applyModal()">Áp dụng</button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- SEED dữ liệu -->
+<!-- SEED -->
 <script>
     window.__KH_INIT = @Html.Raw(Model.KHJson);
     window.__SP_INIT = @Html.Raw(Model.SPJson);
@@ -196,668 +347,624 @@
 </script>
 
 @section Scripts {
-    <!-- Bootstrap bundle cho modal ⚙ -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-
     <script>
-/* ========================== CONFIG & HELPERS ========================== */
-const fmt = n => (n||0).toLocaleString('vi-VN');
-const parseMoney = s => { const x=(s||'').toString().replace(/[^\d]/g,''); return x?parseInt(x):0; }
-const el = id => document.getElementById(id);
-const showBusy = on => el('BusyMask').style.display = on? 'block':'none';
-const noAccent = (s='') => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase();
-function debounce(fn, ms=220){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
-
-const normalize = (s='') => noAccent((s||'').trim()).replace(/\s+/g,' ');
-const tokenize  = (s='') => normalize(s).split(' ').filter(Boolean);
-
-function makeSearchKeys(raw=''){
-  const nx = normalize(raw);
-  const tokens = nx.split(' ').filter(Boolean);
-  const initials = tokens.map(t => t[0]).join('');
-  const compact  = nx.replace(/\s+/g,'');
-  return { tokens, initials, compact };
-}
-
-function scoreByTokens(tokens, haystackTokens, minHit=100){
-  if (!tokens.length || !haystackTokens?.length) return 0;
-  let score = 0;
-  for (const q of tokens){
-    let hit = 0;
-    for (const t of haystackTokens){
-      if (t === q){ hit = Math.max(hit, 500); if (hit===500) break; }
-      else if (t.startsWith(q)) hit = Math.max(hit, 300);
-      else if (t.includes(q))  hit = Math.max(hit, 100);
-    }
-    if (hit < minHit) return 0;
-    score += hit;
-  }
-  return score;
-}
-
-/* ========================== STATE ========================== */
-let khId = null;
-let khProfile = {addresses:[], phones:[]};
-const lines = [];
-let modalIdx = -1;
-let secondsLeft=300, autosaveTimer=null, unsaved=true;
-let KH_CACHE=null, SP_CACHE=null, GB_CACHE=null, VOUCHER_CACHE=null;
-
-let congNoCurrent = 0; // công nợ hiện tại của KH (view only)
-
-/* ========================== AUTOSAVE 5' (hiển thị dưới nút) ========================== */
-function startAutosave(){
-  clearInterval(autosaveTimer); secondsLeft=300;
-  autosaveTimer=setInterval(()=>{
-    secondsLeft--;
-    const m=String(Math.floor(secondsLeft/60)).padStart(2,'0'), s=String(secondsLeft%60).padStart(2,'0');
-    el('CountdownText').innerText=`Tự lưu sau: ${m}:${s}`;
-    if(secondsLeft<=0){ clearInterval(autosaveTimer); if(unsaved) saveInvoice(true); }
-  },1000);
-}
-function touchChanged(){ unsaved=true; startAutosave(); }
-window.addEventListener('beforeunload',e=>{ if(unsaved && lines.length>0){ e.preventDefault(); e.returnValue=''; } });
-
-/* ========================== CACHE (TTL 10') ========================== */
-const TTL_MIN=10, nowSec=()=>Math.floor(Date.now()/1000);
-function cacheGet(k){ try{const j=JSON.parse(localStorage.getItem(k)||'{}'); if(!j.data||!j.exp||j.exp<nowSec())return null; return j.data;}catch{return null;} }
-function cacheSet(k,d){ localStorage.setItem(k, JSON.stringify({data:d,exp:nowSec()+TTL_MIN*60})); }
-
-/* ========================== PRELOAD SEED ========================== */
-async function preloadKH(){ if (KH_CACHE) return KH_CACHE; if (Array.isArray(window.__KH_INIT)) { KH_CACHE = window.__KH_INIT; cacheSet('KH_CACHE', KH_CACHE); return KH_CACHE; } KH_CACHE = cacheGet('KH_CACHE') || []; return KH_CACHE; }
-async function preloadSP(){ if (SP_CACHE) return SP_CACHE; if (Array.isArray(window.__SP_INIT)) { SP_CACHE = window.__SP_INIT; cacheSet('SP_CACHE', SP_CACHE); return SP_CACHE; } SP_CACHE = cacheGet('SP_CACHE') || []; return SP_CACHE; }
-async function preloadGB(){ if (GB_CACHE) return GB_CACHE; if (Array.isArray(window.__GB_INIT)) { GB_CACHE = window.__GB_INIT; cacheSet('GB_CACHE', GB_CACHE); return GB_CACHE; } GB_CACHE = cacheGet('GB_CACHE') || []; return GB_CACHE; }
-async function preloadVoucher(){ if (VOUCHER_CACHE) return VOUCHER_CACHE; if (Array.isArray(window.__VOUCHER_INIT)) { VOUCHER_CACHE = window.__VOUCHER_INIT; cacheSet('VOUCHER_CACHE', VOUCHER_CACHE); return VOUCHER_CACHE; } VOUCHER_CACHE = cacheGet('VOUCHER_CACHE') || []; return VOUCHER_CACHE; }
-
-/* ========================== INDEXERS ========================== */
-function buildKHIndex(list){
-  for (const k of list){
-    const ten = k.ten ?? k.Ten ?? '';
-    const sdt = (k.Phones?.[0]?.SoDienThoai || k.phones?.[0]?.soDienThoai || k.soDienThoai || k.SoDienThoai || '')+'';
-    const keys = makeSearchKeys(ten);
-    k._nxTen   = normalize(ten);
-    k._nxSdt   = (sdt||'').toLowerCase();
-    k._tokens  = keys.tokens;
-    k._initials= keys.initials;
-    k._compact = keys.compact;
-    k._order   = typeof k.ThuTu === 'number' ? k.ThuTu : 0;
-  }
-  return list;
-}
-function buildSPIndex(list){
-  for (const sp of list){
-    const ten = sp.ten ?? sp.Ten ?? '';
-    const keys = makeSearchKeys(ten);
-    sp._nxTen  = normalize(ten);
-
-    const btTokens = (sp.BienThe || sp.bienThe || [])
-      .map(bt => bt.tenBienThe || bt.TenBienThe || '')
-      .flatMap(t => tokenize(t));
-
-    sp._tokens   = [...new Set([...keys.tokens, ...btTokens])];
-    sp._initials = keys.initials;
-    sp._compact  = keys.compact;
-
-    sp._sold   = typeof sp.DaBan === 'number' ? sp.DaBan : 0;
-    sp._bts = (sp.BienThe || sp.bienThe || [])
-      .map(bt => ({ Id: bt.Id ?? bt.id, TenBienThe: bt.TenBienThe ?? bt.tenBienThe ?? 'Size Chuẩn', GiaBan: bt.GiaBan ?? bt.giaBan ?? 0 }))
-      .sort((a,b)=>a.GiaBan-b.GiaBan);
-    sp._firstBt = sp._bts[0] || { Id: sp.id||sp.Id, TenBienThe:'Size Chuẩn', GiaBan: sp.giaBan||0 };
-    sp._id   = sp.id ?? sp.Id;
-    sp._ten  = ten;
-  }
-  return list;
-}
-let GB_INDEX=null;
-function buildGBIndex(list){
-  const byKh={};
-  for (const r of list){
-    const kh = r.KhachHangId || r.khachHangId;
-    if (!kh) continue;
-    if (!byKh[kh]) byKh[kh] = { byBt:{}, bySp:{} };
-    const btId = r.SanPhamBienTheId || r.sanPhamBienTheId || null;
-    const spId = r.SanPhamId || r.sanPhamId || null;
-    const gia  = r.GiaBan || r.giaBan || 0;
-    if (btId) byKh[kh].byBt[btId] = gia;
-    else if (spId) byKh[kh].bySp[spId] = gia;
-  }
-  GB_INDEX = byKh; return GB_INDEX;
-}
-
-/* ========================== WPF-like COUNT ========================== */
-const WPF_EXCLUDED_GROUPS = new Set(["thuoc la","nuoc lon","an vat"]);
-function getSpByIdStrict(id){ return (SP_CACHE || []).find(x => (x.Id||x.id) === id) || null; }
-function getGroupNameForSp(sp){
-  return (sp?.TenNhomSanPham ?? sp?.tenNhomSanPham
-       ?? sp?.NhomSanPham?.Ten ?? sp?.Nhom?.Ten ?? sp?.Category?.Name ?? "").toString();
-}
-function isExcludedLineWpf(ln){
-  const sp = getSpByIdStrict(ln.idSanPham);
-  if (!sp) return false;
-  const g = getGroupNameForSp(sp);
-  const gNorm = noAccent(g).trim();
-  return WPF_EXCLUDED_GROUPS.has(gNorm);
-}
-function updateMonCountBadgeWpf(){
-  let count = 0;
-  for (const ln of lines){
-    if (isExcludedLineWpf(ln)) continue;
-    count += (ln.soLuong || 0);
-  }
-  el('TongSo').innerText = `${count} món`;
-}
-
-/* ========================== SEARCHES (WPF-like) ========================== */
-async function searchKHOffline(q){
-  if(!q || q.length<1) return [];
-  const list = (KH_CACHE || await preloadKH()) || [];
-  if (!list._indexed){ buildKHIndex(list); list._indexed = true; }
-
-  const isSingle = q.length===1;
-  const minHit   = isSingle ? 300 : 100;
-  const qTokens  = tokenize(q);
-  const qLower   = normalize(q);
-  const qNoSpace = qLower.replace(/\s+/g,'');
-
-  const items = [];
-  for (const k of list){
-    const phone = k._nxSdt || '';
-    const phoneHit = /\d/.test(q) ? (isSingle ? phone.startsWith(qLower) : phone.includes(qLower)) : false;
-
-    const nameScore = scoreByTokens(qTokens, k._tokens, minHit);
-    const initialsHit = (k._initials||'').startsWith(qNoSpace) ? 280 + Math.min(40, qNoSpace.length*10) : 0;
-    const compact = k._compact||'';
-    const compactPrefixHit = compact.startsWith(qNoSpace) ? 260 + Math.min(40, qNoSpace.length*8) : 0;
-    const compactContainHit = (!compactPrefixHit && compact.includes(qNoSpace)) ? 140 : 0;
-
-    const score = Math.max(nameScore, initialsHit, compactPrefixHit, compactContainHit, phoneHit ? 350 : 0);
-    if (score>0) items.push({ k, score });
-  }
-
-  items.sort((a,b)=> b.score - a.score || (b.k._order - a.k._order) || a.k._nxTen.localeCompare(b.k._nxTen));
-  return items.slice(0,30).map(x => x.k);
-}
-async function searchSPOffline(q){
-  if(!q || q.length<1) return [];
-  const list = (SP_CACHE || await preloadSP()) || [];
-  if (!list._indexed){ buildSPIndex(list); list._indexed = true; }
-
-  const isSingle = q.length===1;
-  const minHit   = isSingle ? 300 : 100;
-  const qTokens  = tokenize(q);
-  const qLower   = normalize(q);
-  const qNoSpace = qLower.replace(/\s+/g,'');
-
-  const items=[];
-  for (const sp of list){
-    const tokenScore = scoreByTokens(qTokens, sp._tokens, minHit);
-    const initialsHit = (sp._initials||'').startsWith(qNoSpace) ? 280 + Math.min(40, qNoSpace.length*10) : 0;
-    const compact = sp._compact||'';
-    const compactPrefixHit = compact.startsWith(qNoSpace) ? 260 + Math.min(40, qNoSpace.length*8) : 0;
-    const compactContainHit = (!compactPrefixHit && compact.includes(qNoSpace)) ? 140 : 0;
-
-    const score = Math.max(tokenScore, initialsHit, compactPrefixHit, compactContainHit);
-    if (score>0) items.push({ sp, score });
-  }
-
-  items.sort((a,b)=> b.score - a.score || b.sp._sold - a.sp._sold || (a.sp._nxTen||'').localeCompare(b.sp._nxTen||''));
-  return items.slice(0,30).map(({sp})=>({
-    id: sp._id, Id: sp._id, ten: sp._ten, Ten: sp._ten, bienThe: sp._bts, BienThe: sp._bts
-  }));
-}
-
-/* ========================== PORTAL DROPDOWN ========================== */
-const _portal=document.createElement('div'); _portal.className='portal-list list-group small'; document.body.appendChild(_portal);
-let _portalOwner=null;
-function portalHide(){ _portal.classList.remove('show'); _portalOwner=null; _portal.innerHTML=''; }
-function portalShowFor(input, items, renderItem, onPick){
-  _portalOwner=input; _portal.innerHTML='';
-  if(!items?.length){
-    const d=document.createElement('div'); d.className='portal-item text-muted'; d.textContent='Không có dữ liệu phù hợp'; _portal.appendChild(d);
-  }else{
-    items.forEach(it=>{
-      const a=document.createElement('div'); a.className='portal-item list-group-item-action'; a.innerHTML=renderItem(it);
-      const pick=e=>{ e.preventDefault(); e.stopPropagation(); onPick(it); portalHide(); };
-      a.addEventListener('mousedown',pick); a.addEventListener('touchstart',pick,{passive:false});
-      _portal.appendChild(a);
-    });
-  }
-  const rc=input.getBoundingClientRect(), vw=innerWidth, vh=innerHeight;
-  _portal.style.width=rc.width+'px';
-  let top=rc.bottom+6, left=Math.max(8, Math.min(rc.left, vw-rc.width-8));
-  const approx=Math.min(_portal.scrollHeight||240, Math.round(vh*0.4));
-  if(top+approx>vh-8) top=Math.max(8, rc.top-approx-6);
-  _portal.style.top=`${top}px`; _portal.style.left=`${left}px`; _portal.classList.add('show');
-}
-['scroll','resize','orientationchange'].forEach(ev=>window.addEventListener(ev,()=>{ if(_portalOwner) portalHide(); },{passive:true}));
-document.addEventListener('click',e=>{ if(_portalOwner && !e.target.closest('.portal-list')) portalHide(); });
-
-/* ========================== Helpers biến thể ========================== */
-function getBts(sp){
-  if (sp?._bts && Array.isArray(sp._bts)) return sp._bts;
-  const bts = (sp?.BienThe || sp?.bienThe || [])
-    .map(bt => ({ Id: bt.Id ?? bt.id, TenBienThe: bt.TenBienThe ?? bt.tenBienThe ?? 'Size Chuẩn', GiaBan: bt.GiaBan ?? bt.giaBan ?? 0 }))
-    .sort((a,b)=> a.GiaBan - b.GiaBan);
-  return bts;
-}
-function getDefaultBt(sp){
-  const bts = getBts(sp);
-  return bts[0] || { Id: sp.Id || sp.id, TenBienThe:'Size Chuẩn', GiaBan: sp.giaBan||0 };
-}
-function getSecondBt(sp){
-  const bts = getBts(sp);
-  return bts.length > 1 ? bts[1] : null;
-}
-function addLineFromSanPhamVariant(sp, bt){
-  const useBt = bt || getDefaultBt(sp);
-  lines.push({
-    idSanPham:  sp.Id || sp.id,
-    idBienThe:  useBt.Id,
-    tenSanPham: sp.Ten || sp.ten,
-    tenBienThe: useBt.TenBienThe || '',
-    soLuong:    1,
-    donGia:     getGiaBanThucTe(sp, useBt),
-    note:       ''
-  });
-  renderLines(); recalc(); updateMonCountBadgeWpf(); touchChanged();
-}
-
-/* ========================== KHÁCH HÀNG UI ========================== */
-function getPhone(k){
-  return (k.Phones?.[0]?.SoDienThoai
-       || k.phones?.[0]?.soDienThoai
-       || k.soDienThoai || k.SoDienThoai || '').toString();
-}
-function getAddress(k){
-  return (k.Addresses?.[0]?.DiaChi
-       || k.addresses?.[0]?.diaChi
-       || k.diaChi || k.DiaChi || '') + '';
-}
-
-const khInput = el('KhachHangText');
-khInput.setAttribute('autocomplete','off'); khInput.setAttribute('autocapitalize','off'); khInput.setAttribute('spellcheck','false');
-
-async function loadCustomerInfo(khGuid){
-  if(!khGuid) return;
-  try{
-    const r = await fetch(`/api/Dashboard/thongtin-khachhang/${khGuid}`, { credentials: 'include' });
-    if(!r.ok) return;
-    const info = await r.json();
-    // cố gắng đọc các field phổ biến
-    const tongNo = info?.TongNo ?? info?.tongNo ?? 0;
-    const diemNay = info?.DiemThangNay ?? info?.diemThangNay ?? 0;
-    const diemTruoc = info?.DiemThangTruoc ?? info?.diemThangTruoc ?? 0;
-    const daNhanVoucher = info?.DaNhanVoucher ?? info?.daNhanVoucher ?? false;
-    const duocNhanVoucher = info?.DuocNhanVoucher ?? info?.duocNhanVoucher ?? false;
-
-    el('LoyaltyPanel').classList.remove('d-none');
-    el('TongNo').innerText = fmt(tongNo);
-    el('DiemThangNay').innerText = `${diemNay} ⭐`;
-    el('DiemThangTruoc').innerText = `${diemTruoc} ⭐`;
-    el('VoucherBlink').classList.toggle('d-none', !(duocNhanVoucher && !daNhanVoucher));
-
-    congNoCurrent = Number(tongNo||0);
-    el('CongNoView').innerText = fmt(congNoCurrent);
-  }catch{}
-}
-
-khInput.addEventListener('input', debounce(async ()=>{
-  const q=khInput.value.trim(); if(q.length<1){ portalHide(); return; }
-  const list=await searchKHOffline(q);
-  portalShowFor(khInput, list, k => {
-      const name = k.ten || k.Ten || '';
-      const phone = getPhone(k);
-      const addr = getAddress(k);
-      return `
-        <div class="d-flex flex-column">
-          <div class="d-flex justify-content-between align-items-center">
-            <strong class="me-2">${name}</strong>
-            <small>${phone || '<span class="text-muted">—</span>'}</small>
-          </div>
-          <div class="small text-muted text-clip-1">${addr || '—'}</div>
-        </div>`;
-    }, async k=>{
-      khId = k.id||k.Id||null;
-      khInput.value=k.ten||k.Ten||'';
-
-      // profile đa giá trị
-      khProfile.addresses = (k.Addresses || k.addresses || []).map(a => a.DiaChi || a.diaChi || '').filter(Boolean);
-      khProfile.phones    = (k.Phones    || k.phones    || []).map(p => p.SoDienThoai || p.soDienThoai || '').filter(Boolean);
-
-      // đổ mặc định
-      el('DienThoai').value = khProfile.phones?.[0] || getPhone(k) || '';
-      el('DiaChi').value    = khProfile.addresses?.[0] || getAddress(k) || '';
-
-      refreshPickButtons();
-
-      // gợi ý yêu thích (IDs + tên; khử trùng lặp)
-      const fav = getFavoriteItemsFromKH(k);
-      let spList = [];
-      if (fav.ids && fav.ids.length) spList = spList.concat(mapFavByIds(fav.ids));
-      if (fav.names && fav.names.length) spList = spList.concat(mapFavByNames(fav.names));
-      { const seen = new Set(); spList = spList.filter(sp => { const key = sp.Id || sp.id; if(seen.has(key)) return false; seen.add(key); return true; }); }
-      renderFavoriteChips(spList);
-
-      // reprice theo giá riêng
-      repriceAllLinesForCurrentCustomer();
-
-      // load công nợ + loyalty
-      loadCustomerInfo(khId);
-
-      touchChanged();
-    });
-}, 220));
-
-/* phone/address pickers */
-function getPhonesFromProfile(){ return (khProfile?.phones||[]).map(p=>(p||'').toString().trim()).filter((v,i,a)=>v && a.indexOf(v)===i); }
-function getAddressesFromProfile(){ return (khProfile?.addresses||[]).map(a=>(a||'').toString().trim()).filter((v,i,a)=>v && a.indexOf(v)===i); }
-function refreshPickButtons(){
-  const p=getPhonesFromProfile(), a=getAddressesFromProfile();
-  const phoneBtn=el('PickPhoneBtn'), addrBtn=el('PickAddrBtn');
-  if(phoneBtn){ phoneBtn.style.display= p.length>0 ? '' : 'none'; phoneBtn.disabled = p.length<=1 && ((el('DienThoai').value||'')===(p[0]||'')); }
-  if(addrBtn){  addrBtn.style.display = a.length>0 ? '' : 'none'; addrBtn.disabled  = a.length<=1 && ((el('DiaChi').value||'')===(a[0]||'')); }
-}
-function openPickerForInput(inputEl, items){
-  portalShowFor(inputEl, items?.length? items:[], v => `<div class="d-flex justify-content-between"><span>${v}</span><small class="text-muted">chọn</small></div>`, v=>{ inputEl.value=v; touchChanged(); });
-}
-document.addEventListener('click', (e) => {
-  if (e.target.closest('#PickPhoneBtn')) openPickerForInput(el('DienThoai'), getPhonesFromProfile());
-  if (e.target.closest('#PickAddrBtn'))  openPickerForInput(el('DiaChi'), getAddressesFromProfile());
-});
-
-/* ========================== SẢN PHẨM UI ========================== */
-const spInput = el('SearchSanPham');
-function portalShowForSanPham(input, spList){
-  _portalOwner=input; _portal.innerHTML='';
-  if(!spList?.length){
-    const d=document.createElement('div');
-    d.className='portal-item text-muted';
-    d.textContent='Không có dữ liệu phù hợp';
-    _portal.appendChild(d);
-  } else {
-    spList.forEach(sp=>{
-      const row=document.createElement('div');
-      row.className='portal-item list-group-item-action';
-
-      const defaultBt = getDefaultBt(sp);
-      const secondBt  = getSecondBt(sp);
-
-      const top = document.createElement('div');
-      top.className = 'd-flex align-items-center justify-content-between';
-      const leftBtn = document.createElement('div');
-      leftBtn.className = 'pick-name fw-semibold';
-      leftBtn.textContent = sp.Ten || sp.ten || '';
-
-      const rightBtn = document.createElement('div');
-      rightBtn.className = 'pick-price text-muted';
-      if (secondBt){
-        rightBtn.textContent = fmt(secondBt.GiaBan);
-        rightBtn.title = `${secondBt.TenBienThe}`;
-      } else {
-        rightBtn.textContent = '';
-      }
-      top.appendChild(leftBtn);
-      top.appendChild(rightBtn);
-
-      const bot = document.createElement('div');
-      bot.className = 'small text-muted';
-      const bts = getBts(sp);
-      bot.textContent = bts.length ? bts.map(b=>`${b.TenBienThe} (${fmt(b.GiaBan)}đ)`).join(' • ') : '';
-
-      row.appendChild(top);
-      row.appendChild(bot);
-      _portal.appendChild(row);
-
-      const attachPick = (el, fn) => {
-        el.addEventListener('mousedown', (e)=>{ e.preventDefault(); e.stopPropagation(); fn(); portalHide(); });
-        el.addEventListener('touchstart', (e)=>{ e.preventDefault(); e.stopPropagation(); fn(); portalHide(); }, {passive:false});
-      };
-      attachPick(leftBtn,  ()=> addLineFromSanPhamVariant(sp, defaultBt));
-      if (secondBt) attachPick(rightBtn, ()=> addLineFromSanPhamVariant(sp, secondBt));
-    });
-  }
-  const rc=input.getBoundingClientRect(), vw=innerWidth, vh=innerHeight;
-  _portal.style.width=rc.width+'px';
-  let top=rc.bottom+6, left=Math.max(8, Math.min(rc.left, vw-rc.width-8));
-  const approx=Math.min(_portal.scrollHeight||240, Math.round(vh*0.4));
-  if(top+approx>vh-8) top=Math.max(8, rc.top-approx-6);
-  _portal.style.top=`${top}px`; _portal.style.left=`${left}px`; _portal.classList.add('show');
-}
-spInput.addEventListener('input', debounce(async ()=>{
-  const q=spInput.value.trim(); if(q.length<1){ portalHide(); return; }
-  const list=await searchSPOffline(q);
-  portalShowForSanPham(spInput, list);
-}, 220));
-
-/* ========================== FAVORITE (IDs + tên, nhiều mục) ========================== */
-function getFavoriteItemsFromKH(k){
-  const ids = k.FavoriteSanPhamIds || k.favoriteSanPhamIds || null;
-  const namesRaw = k.FavoriteMon || k.favoriteMon || '';
-  const names = namesRaw ? namesRaw.split(/[;,]/).map(s=>s.trim()).filter(Boolean) : [];
-  return { ids, names };
-}
-function mapFavByIds(ids){
-  const list=[]; if(!Array.isArray(ids) || !SP_CACHE) return list;
-  const seen=new Set();
-  for (const id of ids){
-    const sp = SP_CACHE.find(x => (x.Id||x.id)===id);
-    if (sp){ const key = sp.Id || sp.id; if(!seen.has(key)){ seen.add(key); list.push(sp); } }
-  }
-  return list;
-}
-function mapFavByNames(names){
-  const list=[]; if(!Array.isArray(names) || !SP_CACHE) return list;
-  const idx = (SP_CACHE._nameIdx ||= (()=>{ const m=new Map(); for(const sp of SP_CACHE){ m.set(noAccent((sp.Ten||sp.ten||'').trim()), sp); } return m; })());
-  const seen=new Set();
-  for (const raw of names){
-    const q=noAccent(raw);
-    let sp = idx.get(q) || SP_CACHE.find(sp => noAccent(sp.Ten||sp.ten||'').startsWith(q)) || SP_CACHE.find(sp => noAccent(sp.Ten||sp.ten||'').includes(q));
-    if(sp){ const key = sp.Id || sp.id; if(!seen.has(key)){ seen.add(key); list.push(sp); } }
-  }
-  return list;
-}
-function renderFavoriteChips(spList){
-  const wrap=el('FavoriteWrap'), span=el('FavoriteMon');
-  if(!spList?.length){ wrap.classList.add('d-none'); span.innerHTML=''; return; }
-
-  spList.sort((a,b)=> (b.DaBan||0)-(a.DaBan||0) || noAccent(a.Ten||a.ten||'').localeCompare(noAccent(b.Ten||b.ten||'')));
-
-  span.innerHTML='';
-  spList.forEach(sp=>{
-    const name=sp.Ten||sp.ten||'';
-    const btn=document.createElement('button');
-    btn.type='button'; btn.className='btn btn-sm btn-outline-primary me-1 mb-1';
-    btn.textContent=name; btn.onclick=()=>{ addLineFromSanPhamVariant(sp, getDefaultBt(sp)); };
-    span.appendChild(btn);
-  });
-
-  const countBadge=document.createElement('span');
-  countBadge.className='badge bg-secondary ms-2';
-  countBadge.textContent=`${spList.length} món`;
-  span.appendChild(countBadge);
-
-  wrap.classList.remove('d-none');
-}
-
-/* ========================== DÒNG HÓA ĐƠN ========================== */
-function updateLineTotal(i){
-  const ln = lines[i];
-  const elTotal = document.getElementById(`LineTotal_${i}`);
-  if (elTotal) elTotal.innerText = fmt((ln.soLuong||0)*(ln.donGia||0));
-}
-function renderLines(){
-  const wrap=el('Lines'); wrap.innerHTML='';
-  lines.forEach((ln,i)=>{
-    const row=document.createElement('div'); row.className='list-group-item';
-    row.innerHTML=`<div class="d-flex align-items-center gap-2 flex-wrap">
-      <div class="flex-fill">
-        <div><strong>${ln.tenSanPham}</strong> <span class="text-danger">${ln.tenBienThe||''}</span></div>
-        <div class="small text-muted">${ln.note||''}</div>
-      </div>
-      <input type="number" min="0" class="form-control form-control-sm" style="width:80px" value="${ln.soLuong}"
-        oninput="lines[${i}].soLuong=parseInt(this.value||0); updateLineTotal(${i}); recalc(); updateMonCountBadgeWpf(); touchChanged();"/>
-      <input inputmode="numeric" class="form-control form-control-sm text-end" style="width:100px" value="${fmt(ln.donGia)}"
-        oninput="lines[${i}].donGia=parseMoney(this.value); updateLineTotal(${i}); recalc();"
-        onblur="lines[${i}].donGia=parseMoney(this.value); this.value=fmt(lines[${i}].donGia); updateLineTotal(${i}); recalc(); touchChanged();"/>
-      <div class="text-end" style="width:110px"><strong id="LineTotal_${i}">${fmt((ln.soLuong||0)*(ln.donGia||0))}</strong></div>
-      <div class="btn-group">
-        <button class="btn btn-outline-secondary btn-sm" onclick="openLineModal(${i})"><i class="fa fa-sliders"></i></button>
-        <button class="btn btn-outline-danger btn-sm" onclick="lines.splice(${i},1); renderLines(); recalc(); updateMonCountBadgeWpf(); touchChanged();"><i class="fa fa-xmark"></i></button>
-      </div>
-    </div>`;
-    wrap.appendChild(row);
-  });
-  updateMonCountBadgeWpf();
-}
-function getGiaBanThucTe(sp, bt){
-  const fallback = (bt?.GiaBan || bt?.giaBan || 0);
-  if (!khId || !GB_INDEX) return fallback;
-  const khMap = GB_INDEX[khId]; if(!khMap) return fallback;
-  const btId = bt?.Id || bt?.id, spId = sp?.Id || sp?.id;
-  if (btId && khMap.byBt[btId] != null) return khMap.byBt[btId];
-  if (spId && khMap.bySp[spId] != null) return khMap.bySp[spId];
-  return fallback;
-}
-function addLineFromSanPham(sp){ addLineFromSanPhamVariant(sp, getDefaultBt(sp)); }
-function openLineModal(i){
-  modalIdx=i; const ln=lines[i];
-  const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===(ln.idSanPham));
-  const sel=el('ModalBienThe'); sel.innerHTML='';
-  (getBts(sp) || []).forEach(bt=>{
-    const o=document.createElement('option'); o.value=bt.Id; o.text=`${bt.TenBienThe} (${fmt(bt.GiaBan)}đ)`;
-    if(bt.Id===ln.idBienThe) o.selected=true; sel.appendChild(o);
-  });
-  el('ModalNote').value = ln.note || '';
-
-  const modalEl = el('lineModal');
-  if (window.bootstrap && bootstrap.Modal){
-    const instance = bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: 'static', keyboard: true });
-    instance.show();
-  } else {
-    modalEl.style.display = 'block'; modalEl.removeAttribute('aria-hidden'); modalEl.classList.add('show');
-    let backdrop = document.getElementById('LineModalBackdrop');
-    if (!backdrop){
-      backdrop = document.createElement('div');
-      backdrop.id = 'LineModalBackdrop';
-      backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1040;';
-      document.body.appendChild(backdrop);
-    }
-  }
-}
-function applyModal(){
-  if(modalIdx<0) return; const ln=lines[modalIdx];
-  const opt=el('ModalBienThe').selectedOptions[0];
-  ln.idBienThe=opt.value;
-  ln.tenBienThe=opt.text.split(' (')[0];
-  const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===ln.idSanPham);
-  const bt=(getBts(sp) || []).find(b=>b.Id===ln.idBienThe) || { Id: ln.idBienThe, GiaBan: ln.donGia, TenBienThe: ln.tenBienThe };
-  ln.donGia=getGiaBanThucTe(sp, bt);
-  ln.note=el('ModalNote').value||'';
-
-  const modalEl = el('lineModal');
-  if (window.bootstrap && bootstrap.Modal){
-    bootstrap.Modal.getInstance(modalEl)?.hide();
-  } else {
-    modalEl.classList.remove('show'); modalEl.setAttribute('aria-hidden','true'); modalEl.style.display = 'none';
-    const backdrop = document.getElementById('LineModalBackdrop'); if (backdrop) backdrop.remove();
-  }
-
-  renderLines(); recalc(); updateMonCountBadgeWpf(); touchChanged();
-}
-
-/* ========================== TÍNH TIỀN ========================== */
-function recalc(){
-  let tamTinh=0; lines.forEach(l=> tamTinh += (l.soLuong||0)*(l.donGia||0));
-  const ggFix=parseMoney(el('GiamGiaFix').value); const thanh=Math.max(0, tamTinh-ggFix);
-  el('TongTien').innerText=fmt(tamTinh); el('GiamGia').innerText=fmt(ggFix); el('ThanhTien').innerText=fmt(thanh);
-}
-['GiamGiaFix','KhachHangText','DienThoai','DiaChi'].forEach(id=> el(id).addEventListener('input',()=>{recalc();touchChanged();}));
-
-/* ========================== SAVE ========================== */
-function currentLoaiDon(){ if(el('ld_taicho').checked) return 'TaiCho'; if(el('ld_muave').checked) return 'MuaVe'; if(el('ld_ship').checked) return 'Ship'; return 'App'; }
-['ld_taicho','ld_muave','ld_ship','ld_app'].forEach(id=> el(id).addEventListener('change',()=>{ el('banWrap').style.display=el('ld_taicho').checked?'':'none'; touchChanged(); }));
-el('banWrap').style.display='none'; // mặc định Ship -> ẩn bàn
-
-function validateForm(){
-  el('FormError').innerText='';
-  if(currentLoaiDon()==='TaiCho' && !el('TenBan').value.trim()){ el('FormError').innerText='Tên bàn không được để trống.'; return false; }
-  if(currentLoaiDon()==='Ship'){
-    if(!el('DiaChi').value.trim()){ el('FormError').innerText='Địa chỉ không được để trống.'; return false; }
-    if(!el('DienThoai').value.trim()){ el('FormError').innerText='SĐT không được để trống.'; return false; }
-  }
-  if(lines.length===0 || !lines.some(x=>(x.soLuong||0)>0)){ el('FormError').innerText='Chưa có sản phẩm nào.'; return false; }
-  return true;
-}
-
-async function saveInvoice(isAuto=false){
-  if(!validateForm()) return;
-  const payload={
-    LoaiDon: currentLoaiDon(),
-    TenBan: el('ld_taicho').checked ? (el('TenBan').value||null) : null,
-    KhachHangId: khId,
-    KhachHangText: el('KhachHangText').value||null,
-    DienThoaiText: el('DienThoai').value||null,
-    DiaChiText: el('DiaChi').value||null,
-    VoucherId: (el('VoucherId').value||'') || null,
-    GiamGiaFix: parseMoney(el('GiamGiaFix').value)||0,
-    CongNo: Number(congNoCurrent)||0,
-    ChiTietHoaDons: lines.filter(l=>(l.soLuong||0)>0).map(l=>({
-      SanPhamId:l.idSanPham, SanPhamIdBienThe:l.idBienThe,
-      TenSanPham:l.tenSanPham, TenBienThe:l.tenBienThe,
-      SoLuong:l.soLuong, DonGia:l.donGia, NoteText:l.note||null, ToppingDtos:[]
-    }))
-  };
-  const btn=el('SaveBtn'), old=btn.innerHTML; btn.disabled=true;
-  btn.innerHTML=`<span class="spinner-border spinner-border-sm me-1"></span> ${isAuto?'Đang tự lưu...':'Đang lưu...'}`;
-  showBusy(true);
-  try{
-    const r=await fetch('/api/HoaDon',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
-    const j=await r.json();
-    if(j?.isSuccess || j?.IsSuccess || j?.success){ unsaved=false; el('SaveHint').innerText=isAuto?'✅ Đã tự lưu.':'✅ Đã lưu.'; el('FormError').innerText=''; }
-    else{ el('SaveHint').innerText=''; alert(j?.message || j?.Message || 'Không thể lưu hoá đơn.'); }
-  }catch(e){ el('SaveHint').innerText=''; alert('Lỗi: '+(e?.message||e)); }
-  finally{ btn.disabled=false; btn.innerHTML=old; showBusy(false); startAutosave(); }
-}
-
-/* ========================== REPRICE WHEN CHANGE CUSTOMER ========================== */
-function repriceAllLinesForCurrentCustomer(){
-  if (!lines.length) return;
-  for (const ln of lines){
-    const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===ln.idSanPham);
-    const bt=(sp?.BienThe||sp?.bienThe||[]).find(b=>(b.Id||b.id)===ln.idBienThe) || { Id: ln.idBienThe, GiaBan: ln.donGia, TenBienThe: ln.tenBienThe };
-    ln.donGia=getGiaBanThucTe(sp, bt);
-  }
-  renderLines(); recalc(); touchChanged();
-}
-
-/* ========================== INIT ========================== */
-function fillVoucherOptions(){
-  const sel = el('VoucherId');
-  const list = VOUCHER_CACHE || [];
-  // reset giữ option "Không áp dụng"
-  sel.innerHTML = '<option value="">-- Không áp dụng --</option>';
-  list.forEach(v=>{
-    const id = v.Id || v.id;
-    const ten = v.Ten || v.ten || '';
-    const opt = document.createElement('option');
-    opt.value = id || '';
-    opt.textContent = ten || '(voucher)';
-    sel.appendChild(opt);
-  });
-}
-
-(function init(){
-  if (Array.isArray(window.__KH_INIT)) localStorage.setItem('KH_CACHE', JSON.stringify({data:window.__KH_INIT,exp:nowSec()+600}));
-  if (Array.isArray(window.__SP_INIT)) localStorage.setItem('SP_CACHE', JSON.stringify({data:window.__SP_INIT,exp:nowSec()+600}));
-  if (Array.isArray(window.__GB_INIT)) localStorage.setItem('GB_CACHE', JSON.stringify({data:window.__GB_INIT,exp:nowSec()+600}));
-  if (Array.isArray(window.__VOUCHER_INIT)) localStorage.setItem('VOUCHER_CACHE', JSON.stringify({data:window.__VOUCHER_INIT,exp:nowSec()+600}));
-
-  preloadKH().then(r=>{ KH_CACHE=r; buildKHIndex(KH_CACHE); KH_CACHE._indexed=true; refreshPickButtons(); });
-  preloadSP().then(r=>{ SP_CACHE=r; buildSPIndex(SP_CACHE); SP_CACHE._indexed=true; });
-  preloadGB().then(r=>{ GB_CACHE=r; buildGBIndex(GB_CACHE); });
-  preloadVoucher().then(r=>{ VOUCHER_CACHE=r; fillVoucherOptions(); });
-
-  startAutosave(); recalc();
-})();
+        /* ========================== HELPERS ========================== */
+        const fmt = n => (n||0).toLocaleString('vi-VN');
+        const parseMoney = s => { const x=(s||'').toString().replace(/[^\d]/g,''); return x?parseInt(x):0; }
+        const el = id => document.getElementById(id);
+        const showBusy = on => el('BusyMask').style.display = on? 'block':'none';
+        const noAccent = (s='') => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase();
+        const debounce=(fn,ms=220)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
+        const normalize=(s='')=>noAccent((s||'').trim()).replace(/\s+/g,' ');
+        const tokenize =(s='')=>normalize(s).split(' ').filter(Boolean);
+        const makeSearchKeys=raw=>{const nx=normalize(raw);const tokens=nx.split(' ').filter(Boolean);return{tokens,initials:tokens.map(t=>t[0]).join(''),compact:nx.replace(/\s+/g,'')}};
+        function scoreByTokens(tokens, hay, minHit=100){ if(!tokens.length||!hay?.length) return 0; let score=0; for(const q of tokens){let hit=0; for(const t of hay){ if(t===q){hit=500;break;} else if(t.startsWith(q)) hit=Math.max(hit,300); else if(t.includes(q)) hit=Math.max(hit,100);} if(hit<minHit) return 0; score+=hit;} return score;}
+        const round1000=(x,mode='nearest')=>{ if(!x) return 0; if(mode==='down') return Math.floor(x/1000)*1000; if(mode==='up') return Math.ceil(x/1000)*1000; return Math.round(x/1000)*1000; };
+
+        /* ========================== STATE ========================== */
+        let khId=null, khProfile={addresses:[], phones:[]};
+        const lines=[]; // {idSanPham,idBienThe,tenSanPham,tenBienThe,soLuong,donGia,note,toppings:[],topTotal:0}
+        let modalIdx=-1;
+        let secondsLeft=300, autosaveTimer=null, unsaved=true;
+        let KH_CACHE=null, SP_CACHE=null, GB_CACHE=null, VOUCHER_CACHE=null;
+        let GB_INDEX=null;
+        let congNoCurrent=0;
+        let loyaltyState = { duocNhan:false, daNhan:false, diemNay:0, diemTruoc:0 };
+
+        const COMMON_NOTES=["Ít đá","Không đá","Ít ngọt","Không đường","Thêm đường","Ít trân châu","Nhiều kem cheese"];
+
+        /* ========================== AUTOSAVE ========================== */
+        function startAutosave(){ clearInterval(autosaveTimer); secondsLeft=300;
+          autosaveTimer=setInterval(()=>{ secondsLeft--; el('CountdownText').innerText=`Tự lưu sau: ${String(Math.floor(secondsLeft/60)).padStart(2,'0')}:${String(secondsLeft%60).padStart(2,'0')}`; if(secondsLeft<=0){ clearInterval(autosaveTimer); if(unsaved) saveInvoice(true);} },1000);
+        }
+        function touchChanged(){ unsaved=true; startAutosave(); }
+        window.addEventListener('beforeunload',e=>{ if(unsaved && lines.length>0){ e.preventDefault(); e.returnValue=''; } });
+
+        /* ========================== CACHE ========================== */
+        const TTL_MIN=10, nowSec=()=>Math.floor(Date.now()/1000);
+        function cacheGet(k){ try{const j=JSON.parse(localStorage.getItem(k)||'{}'); if(!j.data||!j.exp||j.exp<nowSec())return null; return j.data;}catch{return null;} }
+        function cacheSet(k,d){ localStorage.setItem(k, JSON.stringify({data:d,exp:nowSec()+TTL_MIN*60})); }
+
+        /* ========================== PRELOAD ========================== */
+        async function preloadKH(){ if(KH_CACHE) return KH_CACHE; if(Array.isArray(window.__KH_INIT)){ KH_CACHE=window.__KH_INIT; cacheSet('KH_CACHE',KH_CACHE); return KH_CACHE;} KH_CACHE=cacheGet('KH_CACHE')||[]; return KH_CACHE; }
+        async function preloadSP(){ if(SP_CACHE) return SP_CACHE; if(Array.isArray(window.__SP_INIT)){ SP_CACHE=window.__SP_INIT; cacheSet('SP_CACHE',SP_CACHE); return SP_CACHE;} SP_CACHE=cacheGet('SP_CACHE')||[]; return SP_CACHE; }
+        async function preloadGB(){ if(GB_CACHE) return GB_CACHE; if(Array.isArray(window.__GB_INIT)){ GB_CACHE=window.__GB_INIT; cacheSet('GB_CACHE',GB_CACHE); return GB_CACHE;} GB_CACHE=cacheGet('GB_CACHE')||[]; return GB_CACHE; }
+        async function preloadVoucher(){ if(VOUCHER_CACHE) return VOUCHER_CACHE; if(Array.isArray(window.__VOUCHER_INIT)){ VOUCHER_CACHE=window.__VOUCHER_INIT; cacheSet('VOUCHER_CACHE',VOUCHER_CACHE); return VOUCHER_CACHE;} VOUCHER_CACHE=cacheGet('VOUCHER_CACHE')||[]; return VOUCHER_CACHE; }
+
+        /* ========================== INDEXERS ========================== */
+        function buildKHIndex(list){ for(const k of list){ const ten=k.ten??k.Ten??''; const sdt=(k.Phones?.[0]?.SoDienThoai || k.phones?.[0]?.soDienThoai || k.soDienThoai || k.SoDienThoai || '')+''; const keys=makeSearchKeys(ten);
+          k._nxTen=normalize(ten); k._nxSdt=(sdt||'').toLowerCase(); k._tokens=keys.tokens; k._initials=keys.initials; k._compact=keys.compact; k._order=typeof k.ThuTu==='number'?k.ThuTu:0; } return list; }
+        function buildSPIndex(list){ for(const sp of list){ const ten=sp.ten??sp.Ten??''; const keys=makeSearchKeys(ten); sp._nxTen=normalize(ten);
+          const btTokens=(sp.BienThe||sp.bienThe||[]).map(bt=>bt.tenBienThe||bt.TenBienThe||'').flatMap(tokenize);
+          sp._tokens=[...new Set([...keys.tokens, ...btTokens])]; sp._initials=keys.initials; sp._compact=keys.compact;
+          sp._sold=typeof sp.DaBan==='number'?sp.DaBan:0;
+          sp._bts=(sp.BienThe||sp.bienThe||[]).map(bt=>({Id:bt.Id??bt.id,TenBienThe:bt.TenBienThe??bt.tenBienThe??'Size Chuẩn',GiaBan:bt.GiaBan??bt.giaBan??0})).sort((a,b)=>a.GiaBan-b.GiaBan);
+          sp._firstBt=sp._bts[0]||{Id:sp.id||sp.Id, TenBienThe:'Size Chuẩn', GiaBan:sp.giaBan||0};
+          sp._id=sp.id??sp.Id; sp._ten=ten; } return list; }
+        function buildGBIndex(list){ const byKh={}; for(const r of list){ const kh=r.KhachHangId||r.khachHangId; if(!kh) continue; if(!byKh[kh]) byKh[kh]={byBt:{},bySp:{}}; const btId=r.SanPhamBienTheId||r.sanPhamBienTheId||null; const spId=r.SanPhamId||r.sanPhamId||null; const gia=r.GiaBan||r.giaBan||0; if(btId) byKh[kh].byBt[btId]=gia; else if(spId) byKh[kh].bySp[spId]=gia; } GB_INDEX=byKh; return GB_INDEX; }
+
+        /* ========================== COUNT WPF ========================== */
+        const WPF_EXCLUDED_GROUPS=new Set(["thuoc la","nuoc lon","an vat"]);
+        function getSpByIdStrict(id){ return (SP_CACHE||[]).find(x=>(x.Id||x.id)===id)||null; }
+        function getGroupNameForSp(sp){ return (sp?.TenNhomSanPham ?? sp?.tenNhomSanPham ?? sp?.NhomSanPham?.Ten ?? sp?.Nhom?.Ten ?? sp?.Category?.Name ?? "").toString(); }
+        function isExcludedLineWpf(ln){ const sp=getSpByIdStrict(ln.idSanPham); if(!sp) return false; const g=getGroupNameForSp(sp); const gNorm=noAccent(g).trim(); return WPF_EXCLUDED_GROUPS.has(gNorm); }
+        function updateMonCountBadgeWpf(){ let count=0; for(const ln of lines){ if(isExcludedLineWpf(ln)) continue; count+=(ln.soLuong||0);} el('TongSo').innerText=`${count} món`; }
+
+        /* ========================== PORTAL ========================== */
+        const _portal=document.createElement('div'); _portal.className='portal-list list-group small'; document.body.appendChild(_portal);
+        let _portalOwner=null;
+        function portalHide(){ _portal.classList.remove('show'); _portalOwner=null; _portal.innerHTML=''; }
+        function portalShowFor(input,items,renderItem,onPick){
+          _portalOwner=input; _portal.innerHTML='';
+          if(!items?.length){ const d=document.createElement('div'); d.className='portal-item text-muted'; d.textContent='Không có dữ liệu phù hợp'; _portal.appendChild(d); }
+          else{ items.forEach(it=>{ const a=document.createElement('div'); a.className='portal-item list-group-item-action'; a.innerHTML=renderItem(it);
+            const pick=e=>{ e.preventDefault(); e.stopPropagation(); onPick(it); portalHide(); };
+            a.addEventListener('mousedown',pick); a.addEventListener('touchstart',pick,{passive:false}); _portal.appendChild(a); });
+          }
+          const rc=input.getBoundingClientRect(), vw=innerWidth, vh=innerHeight;
+          _portal.style.width=rc.width+'px'; let top=rc.bottom+6, left=Math.max(8, Math.min(rc.left, vw-rc.width-8));
+          const approx=Math.min(_portal.scrollHeight||240, Math.round(vh*0.4)); if(top+approx>vh-8) top=Math.max(8, rc.top-approx-6);
+          _portal.style.top=`${top}px`; _portal.style.left=`${left}px`; _portal.classList.add('show');
+        }
+        ['scroll','resize','orientationchange'].forEach(ev=>window.addEventListener(ev,()=>{ if(_portalOwner) portalHide(); },{passive:true}));
+        document.addEventListener('click',e=>{ if(_portalOwner && !e.target.closest('.portal-list')) portalHide(); });
+
+        /* ========================== BIẾN THỂ & GIÁ ========================== */
+        function getBts(sp){ if(sp?._bts && Array.isArray(sp._bts)) return sp._bts;
+          const b=(sp?.BienThe||sp?.bienThe||[]).map(bt=>({Id:bt.Id??bt.id,TenBienThe:bt.TenBienThe??bt.tenBienThe??'Size Chuẩn',GiaBan:bt.GiaBan??bt.giaBan??0})).sort((a,b)=>a.GiaBan-b.GiaBan);
+          return b;
+        }
+        function getDefaultBt(sp){ const b=getBts(sp); return b[0]||{Id:sp.Id||sp.id, TenBienThe:'Size Chuẩn', GiaBan:sp.giaBan||0}; }
+        function getSecondBt(sp){ const b=getBts(sp); return b.length>1? b[1]:null; }
+        function getGiaBanThucTe(sp, bt){
+          const fallback=(bt?.GiaBan||0); if(!khId||!GB_INDEX) return fallback;
+          const map=GB_INDEX[khId]; if(!map) return fallback; const btId=bt?.Id||bt?.id, spId=sp?.Id||sp?.id;
+          if(btId && map.byBt[btId]!=null) return map.byBt[btId]; if(spId && map.bySp[spId]!=null) return map.bySp[spId]; return fallback;
+        }
+
+        /* ========================== THÊM DÒNG ========================== */
+        function addLineFromSanPhamVariant(sp, bt){
+          const useBt=bt||getDefaultBt(sp);
+          lines.push({
+            idSanPham: sp.Id||sp.id,
+            idBienThe: useBt.Id,
+            tenSanPham: sp.Ten||sp.ten,
+            tenBienThe: useBt.TenBienThe||'',
+            soLuong: 1,
+            donGia: getGiaBanThucTe(sp, useBt),
+            note: '',
+            toppings: [],
+            topTotal: 0
+          });
+          renderLines(); recalc(); updateMonCountBadgeWpf(); touchChanged();
+        }
+        function addLineFromSanPham(sp){ addLineFromSanPhamVariant(sp, getDefaultBt(sp)); }
+
+        /* ========================== KHÁCH HÀNG ========================== */
+        function getPhone(k){ return (k.Phones?.[0]?.SoDienThoai || k.phones?.[0]?.soDienThoai || k.soDienThoai || k.SoDienThoai || '')+''; }
+        function getAddress(k){ return (k.Addresses?.[0]?.DiaChi || k.addresses?.[0]?.diaChi || k.diaChi || k.DiaChi || '')+''; }
+
+        const khInput=el('KhachHangText'); khInput.setAttribute('autocomplete','off'); khInput.setAttribute('autocapitalize','off'); khInput.setAttribute('spellcheck','false');
+
+        async function loadCustomerInfo(khGuid){
+          if(!khGuid) return;
+          try{
+            const r=await fetch(`/api/Dashboard/thongtin-khachhang/${khGuid}`,{credentials:'include'});
+            if(!r.ok) return; const info=await r.json();
+
+            const tongNo=info?.TongNo ?? info?.tongNo ?? 0;
+            const diemNay=info?.DiemThangNay ?? info?.diemThangNay ?? 0;
+            const diemTruoc=info?.DiemThangTruoc ?? info?.diemThangTruoc ?? 0;
+            const daNhanVoucher=info?.DaNhanVoucher ?? info?.daNhanVoucher ?? false;
+            const duocNhanVoucher=info?.DuocNhanVoucher ?? info?.duocNhanVoucher ?? false;
+
+            // Panel loyalty
+            el('LoyaltyPanel').classList.remove('d-none');
+            el('TongNo').innerText=fmt(tongNo);
+            el('DiemThangNay').innerText=`${diemNay} ⭐`;
+            el('DiemThangTruoc').innerText=`${diemTruoc} ⭐`;
+            el('VoucherBlink').classList.toggle('d-none', !(duocNhanVoucher && !daNhanVoucher));
+
+            // Tổng hợp để hiển thị phía trên combobox voucher
+            congNoCurrent=Number(tongNo||0);
+            el('CongNoView').innerText=fmt(congNoCurrent);
+            el('CongNoDisplay').innerText=fmt(congNoCurrent);
+
+            const dNowTop=el('DiemOnVoucherNow'), dPrevTop=el('DiemOnVoucherPrev');
+            if(dNowTop)  dNowTop.innerText=`${diemNay} ⭐`;
+            if(dPrevTop) dPrevTop.innerText=`${diemTruoc} ⭐`;
+
+            // Hiện/ẩn nút áp dụng voucher
+            const btnApply=el('ApplyVoucherBtn');
+            const eligible = !!(duocNhanVoucher && !daNhanVoucher);
+            if(btnApply) btnApply.classList.toggle('d-none', !eligible);
+
+            // Lưu state
+            loyaltyState = { duocNhan: eligible, daNhan: !!daNhanVoucher, diemNay:Number(diemNay||0), diemTruoc:Number(diemTruoc||0) };
+
+            recalc();
+          }catch{}
+        }
+
+        /* Gợi ý theo KH */
+        function getFavoriteItemsFromKH(k){
+          const ids=k.FavoriteSanPhamIds||k.favoriteSanPhamIds||null;
+          const namesRaw=k.FavoriteMon||k.favoriteMon||'';
+          const names=namesRaw? namesRaw.split(/[;,]/).map(s=>s.trim()).filter(Boolean):[];
+          return { ids, names };
+        }
+        function mapFavByIds(ids){
+          const list=[]; if(!Array.isArray(ids) || !SP_CACHE) return list;
+          const seen=new Set();
+          for(const id of ids){
+            const sp=SP_CACHE.find(x=>(x.Id||x.id)===id);
+            if(sp){ const key=sp.Id||sp.id; if(!seen.has(key)){ seen.add(key); list.push(sp); } }
+          }
+          return list;
+        }
+        function mapFavByNames(names){
+          const list=[]; if(!Array.isArray(names) || !SP_CACHE) return list;
+          const idx=(SP_CACHE._nameIdx ||= (()=>{const m=new Map(); for(const sp of SP_CACHE){ m.set(noAccent((sp.Ten||sp.ten||'').trim()), sp);} return m; })());
+          const seen=new Set();
+          for(const raw of names){
+            const q=noAccent(raw);
+            let sp = idx.get(q) || SP_CACHE.find(sp=>noAccent(sp.Ten||sp.ten||'').startsWith(q)) || SP_CACHE.find(sp=>noAccent(sp.Ten||sp.ten||'').includes(q));
+            if(sp){ const key=sp.Id||sp.id; if(!seen.has(key)){ seen.add(key); list.push(sp); } }
+          }
+          return list;
+        }
+        function renderFavoriteChips(spList){
+          const wrap=el('FavoriteWrap'), span=el('FavoriteMon');
+          if(!spList?.length){ wrap.classList.add('d-none'); span.innerHTML=''; return; }
+          span.innerHTML='';
+          spList.forEach(sp=>{
+            const name=sp.Ten||sp.ten||'';
+            const btn=document.createElement('button');
+            btn.type='button'; btn.className='btn btn-sm btn-outline-primary me-1 mb-1';
+            btn.textContent=name; btn.onclick=()=>{ addLineFromSanPhamVariant(sp, getDefaultBt(sp)); };
+            span.appendChild(btn);
+          });
+          wrap.classList.remove('d-none');
+        }
+
+        khInput.addEventListener('input', debounce(async ()=>{
+          const q=khInput.value.trim(); if(q.length<1){ portalHide(); return; }
+          const list=await searchKHOffline(q);
+          portalShowFor(khInput,list,k=>{
+            const name=k.ten||k.Ten||''; const phone=getPhone(k); const addr=getAddress(k);
+            return `<div class="d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-center">
+                <strong class="me-2">${name}</strong><small>${phone||'<span class="text-muted">—</span>'}</small>
+              </div>
+              <div class="small text-muted text-clip-1">${addr||'—'}</div></div>`;
+          }, async k=>{
+            khId=k.id||k.Id||null;
+            khInput.value=k.ten||k.Ten||'';
+            khProfile.addresses=(k.Addresses||k.addresses||[]).map(a=>a.DiaChi||a.diaChi||'').filter(Boolean);
+            khProfile.phones=(k.Phones||k.phones||[]).map(p=>p.SoDienThoai||p.soDienThoai||'').filter(Boolean);
+            el('DienThoai').value=khProfile.phones?.[0]||getPhone(k)||'';
+            el('DiaChi').value=khProfile.addresses?.[0]||getAddress(k)||'';
+            refreshPickButtons();
+
+            // gợi ý theo KH
+            const fav=getFavoriteItemsFromKH(k);
+            let spList=[];
+            if(fav.ids && fav.ids.length) spList=spList.concat(mapFavByIds(fav.ids));
+            if(fav.names && fav.names.length) spList=spList.concat(mapFavByNames(fav.names));
+            { const seen=new Set(); spList=spList.filter(sp=>{const key=sp.Id||sp.id; if(seen.has(key)) return false; seen.add(key); return true;}); }
+            renderFavoriteChips(spList);
+
+            repriceAllLinesForCurrentCustomer();
+            await loadCustomerInfo(khId);
+            touchChanged();
+          });
+        },220));
+
+        function getPhonesFromProfile(){ return (khProfile?.phones||[]).map(p=>(p||'').toString().trim()).filter((v,i,a)=>v&&a.indexOf(v)===i); }
+        function getAddressesFromProfile(){ return (khProfile?.addresses||[]).map(a=>(a||'').toString().trim()).filter((v,i,a)=>v&&a.indexOf(v)===i); }
+        function refreshPickButtons(){
+          const p=getPhonesFromProfile(), a=getAddressesFromProfile();
+          const phoneBtn=el('PickPhoneBtn'), addrBtn=el('PickAddrBtn');
+          if(phoneBtn){ phoneBtn.style.display=p.length>0?'':'none'; phoneBtn.disabled=p.length<=1 && ((el('DienThoai').value||'')===(p[0]||'')); }
+          if(addrBtn){ addrBtn.style.display=a.length>0?'':'none'; addrBtn.disabled=a.length<=1 && ((el('DiaChi').value||'')===(a[0]||'')); }
+        }
+        function openPickerForInput(inputEl, items){
+          portalShowFor(inputEl,items||[],v=>`<div class="d-flex justify-content-between"><span>${v}</span><small class="text-muted">chọn</small></div>`,v=>{ inputEl.value=v; touchChanged(); });
+        }
+        document.addEventListener('click',e=>{
+          if(e.target.closest('#PickPhoneBtn')) openPickerForInput(el('DienThoai'), getPhonesFromProfile());
+          if(e.target.closest('#PickAddrBtn'))  openPickerForInput(el('DiaChi'), getAddressesFromProfile());
+        });
+
+        /* ========================== SEARCH (KH & SP) ========================== */
+        async function searchKHOffline(q){
+          if(!q||q.length<1) return []; const list=(KH_CACHE||await preloadKH())||[];
+          if(!list._indexed){ buildKHIndex(list); list._indexed=true; }
+          const isSingle=q.length===1, minHit=isSingle?300:100, qTokens=tokenize(q), qLower=normalize(q), qNoSpace=qLower.replace(/\s+/g,'');
+          const items=[];
+          for(const k of list){
+            const phone=k._nxSdt||''; const phoneHit=/\d/.test(q)?(isSingle?phone.startsWith(qLower):phone.includes(qLower)):false;
+            const nameScore=scoreByTokens(qTokens,k._tokens,minHit);
+            const initialsHit=(k._initials||'').startsWith(qNoSpace)?280+Math.min(40,qNoSpace.length*10):0;
+            const compact=k._compact||''; const compactPrefix=compact.startsWith(qNoSpace)?260+Math.min(40,qNoSpace.length*8):0;
+            const compactContain=(!compactPrefix&&compact.includes(qNoSpace))?140:0;
+            const score=Math.max(nameScore,initialsHit,compactPrefix,compactContain, phoneHit?350:0);
+            if(score>0) items.push({k,score});
+          }
+          items.sort((a,b)=> b.score-a.score || (b.k._order-a.k._order) || a.k._nxTen.localeCompare(b.k._nxTen));
+          return items.slice(0,30).map(x=>x.k);
+        }
+        async function searchSPOffline(q){
+          if(!q||q.length<1) return []; const list=(SP_CACHE||await preloadSP())||[];
+          if(!list._indexed){ buildSPIndex(list); list._indexed=true; }
+          const isSingle=q.length===1, minHit=isSingle?300:100, qTokens=tokenize(q), qLower=normalize(q), qNoSpace=qLower.replace(/\s+/g,'');
+          const items=[];
+          for (const sp of list){
+            const tokenScore=scoreByTokens(qTokens,sp._tokens,minHit);
+            const initialsHit=(sp._initials||'').startsWith(qNoSpace)?280+Math.min(40,qNoSpace.length*10):0;
+            const compact=sp._compact||''; const compactPrefix=compact.startsWith(qNoSpace)?260+Math.min(40,qNoSpace.length*8):0;
+            const compactContain=(!compactPrefix&&compact.includes(qNoSpace))?140:0;
+            const score=Math.max(tokenScore,initialsHit,compactPrefix,compactContain);
+            if(score>0) items.push({sp,score});
+          }
+          items.sort((a,b)=> b.score-a.score || (b.sp._sold-a.sp._sold) || (a.sp._nxTen||'').localeCompare(b.sp._nxTen||''));
+          return items.slice(0,30).map(({sp})=>({ id:sp._id, Id:sp._id, ten:sp._ten, Ten:sp._ten, bienThe:sp._bts, BienThe:sp._bts }));
+        }
+
+        const spInput=el('SearchSanPham');
+        function portalShowForSanPham(input, spList){
+          _portalOwner=input; _portal.innerHTML='';
+          if(!spList?.length){ const d=document.createElement('div'); d.className='portal-item text-muted'; d.textContent='Không có dữ liệu phù hợp'; _portal.appendChild(d); }
+          else{
+            spList.forEach(sp=>{
+              const row=document.createElement('div'); row.className='portal-item list-group-item-action';
+              const defaultBt=getDefaultBt(sp); const secondBt=getSecondBt(sp);
+              const top=document.createElement('div'); top.className='d-flex align-items-center justify-content-between';
+              const leftBtn=document.createElement('div'); leftBtn.className='pick-name fw-semibold'; leftBtn.textContent=sp.Ten||sp.ten||'';
+              const rightBtn=document.createElement('div'); rightBtn.className='pick-price text-muted'; if(secondBt){ rightBtn.textContent=fmt(secondBt.GiaBan); rightBtn.title=`${secondBt.TenBienThe}`; } else { rightBtn.textContent=''; }
+              top.appendChild(leftBtn); top.appendChild(rightBtn);
+              const bot=document.createElement('div'); bot.className='small text-muted';
+              const bts=getBts(sp); bot.textContent=bts.length? bts.map(b=>`${b.TenBienThe} (${fmt(b.GiaBan)}đ)`).join(' • '): '';
+              row.appendChild(top); row.appendChild(bot); _portal.appendChild(row);
+              const attach=(el,fn)=>{ el.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();fn();portalHide();});
+                                       el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();fn();portalHide();},{passive:false}); };
+              attach(leftBtn, ()=>addLineFromSanPhamVariant(sp, defaultBt));
+              if(secondBt) attach(rightBtn, ()=>addLineFromSanPhamVariant(sp, secondBt));
+            });
+          }
+          const rc=input.getBoundingClientRect(), vw=innerWidth, vh=innerHeight;
+          _portal.style.width=rc.width+'px'; let top=rc.bottom+6, left=Math.max(8, Math.min(rc.left, vw-rc.width-8));
+          const approx=Math.min(_portal.scrollHeight||240, Math.round(vh*0.4)); if(top+approx>vh-8) top=Math.max(8, rc.top-approx-6);
+          _portal.style.top=`${top}px`; _portal.style.left=`${left}px`; _portal.classList.add('show');
+        }
+        spInput.addEventListener('input', debounce(async ()=>{ const q=spInput.value.trim(); if(q.length<1){ portalHide(); return; } const list=await searchSPOffline(q); portalShowForSanPham(spInput,list); },220));
+
+        /* ========================== MODAL ⚙ (ghi chú + topping) ========================== */
+        function getToppings(sp){
+          const list = sp?.Toppings || sp?.toppings || [];
+          return (Array.isArray(list)? list: []).map(t=>({
+            Id: t.Id??t.id??t.ToppingId??t.toppingId,
+            Ten: t.Ten??t.ten??t.TenTopping??t.tenTopping??'Topping',
+            Gia: t.Gia??t.gia??t.GiaBan??t.giaBan??0
+          }));
+        }
+        function renderModalNotes(ln){
+          const wrap=el('ModalNotes'); wrap.innerHTML='';
+          COMMON_NOTES.forEach(n=>{
+            const b=document.createElement('span'); b.className='note-chip'; b.textContent=n;
+            if((ln.note||'').includes(n)) b.classList.add('active');
+            b.onclick=()=>{ b.classList.toggle('active'); };
+            wrap.appendChild(b);
+          });
+        }
+        function renderModalToppings(ln, sp){
+          const wrap=el('ModalToppings'); wrap.innerHTML='';
+          const src=getToppings(sp);
+          if(!src.length){ wrap.innerHTML='<div class="text-muted small">Không có topping</div>'; el('ModalTopTotal').innerText='0'; return; }
+          const cur = new Map((ln.toppings||[]).map(t=>[t.Id,{...t}]));
+          const recalcTop=()=>{
+            let sum=0; src.forEach(t=>{ const q=(cur.get(t.Id)?.Qty)||0; sum += q * (t.Gia||0); });
+            el('ModalTopTotal').innerText = fmt(sum);
+          };
+          src.forEach(tp=>{
+            const row=document.createElement('div'); row.className='topping-row';
+            const name=document.createElement('div'); name.className='flex-fill'; name.innerHTML=`${tp.Ten} <span class="text-muted">(${fmt(tp.Gia)}đ)</span>`;
+            const qty=document.createElement('div'); qty.className='topping-qty btn-group';
+            const minus=document.createElement('button'); minus.type='button'; minus.className='btn btn-outline-secondary btn-sm'; minus.innerHTML='<i class="fa fa-minus"></i>';
+            const input=document.createElement('input'); input.type='number'; input.min='0'; input.className='form-control form-control-sm text-center'; input.style.width='56px'; input.value=cur.get(tp.Id)?.Qty||0;
+            const plus=document.createElement('button'); plus.type='button'; plus.className='btn btn-outline-secondary btn-sm'; plus.innerHTML='<i class="fa fa-plus"></i>';
+            qty.appendChild(minus); qty.appendChild(input); qty.appendChild(plus);
+            row.appendChild(name); row.appendChild(qty); wrap.appendChild(row);
+            const setQ = (v)=>{ const q=Math.max(0, parseInt(v||0)); if(q===0) cur.delete(tp.Id); else cur.set(tp.Id,{Id:tp.Id,Ten:tp.Ten,Gia:tp.Gia,Qty:q}); input.value=q; recalcTop(); };
+            minus.onclick=()=>setQ((parseInt(input.value||0)-1));
+            plus.onclick =()=>setQ((parseInt(input.value||0)+1));
+            input.oninput=()=>setQ(input.value);
+          });
+          recalcTop();
+        }
+
+        function openLineModal(i){
+          modalIdx=i; const ln=lines[i];
+          const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===(ln.idSanPham));
+          const sel=el('ModalBienThe'); sel.innerHTML='';
+          (getBts(sp)||[]).forEach(bt=>{ const o=document.createElement('option'); o.value=bt.Id; o.text=`${bt.TenBienThe} (${fmt(bt.GiaBan)}đ)`; if(bt.Id===ln.idBienThe) o.selected=true; sel.appendChild(o); });
+          renderModalNotes(ln);
+          el('ModalNote').value = ln.note || '';
+          renderModalToppings(ln, sp);
+
+          const modalEl=el('lineModal');
+          const instance=bootstrap.Modal.getOrCreateInstance(modalEl,{backdrop:'static',keyboard:true});
+          instance.show();
+        }
+        function applyModal(){
+          if(modalIdx<0) return; const ln=lines[modalIdx];
+          const opt=el('ModalBienThe').selectedOptions[0];
+          ln.idBienThe=opt.value; ln.tenBienThe=opt.text.split(' (')[0];
+          const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===ln.idSanPham);
+          const bt=(getBts(sp)||[]).find(b=>b.Id===ln.idBienThe) || {Id:ln.idBienThe, GiaBan:ln.donGia, TenBienThe:ln.tenBienThe};
+          ln.donGia=getGiaBanThucTe(sp, bt);
+
+          // notes
+          const chips=[...el('ModalNotes').querySelectorAll('.note-chip.active')].map(x=>x.textContent.trim());
+          const free=el('ModalNote').value?.trim()||'';
+          ln.note=[...chips, free].filter(Boolean).join('; ');
+
+          // toppings
+          const rows=el('ModalToppings').querySelectorAll('.topping-row');
+          const picked=[];
+          rows.forEach(r=>{
+            const nameTxt=r.querySelector('.flex-fill').childNodes[0].nodeValue.trim();
+            const priceText=r.querySelector('.flex-fill .text-muted')?.textContent||'(0)';
+            const price=parseMoney(priceText);
+            const qty=parseInt(r.querySelector('input')?.value||0);
+            const id = nameTxt + ':' + price; // fallback id
+            if(qty>0) picked.push({Id:id, Ten:nameTxt, Gia:price, Qty:qty});
+          });
+          ln.toppings=picked;
+          ln.topTotal=(picked||[]).reduce((s,t)=>s+(t.Gia||0)*(t.Qty||0),0);
+
+          bootstrap.Modal.getInstance(el('lineModal'))?.hide();
+          renderLines(); recalc(); updateMonCountBadgeWpf(); touchChanged();
+        }
+
+        /* ========================== DÒNG & HÀNH ĐỘNG ========================== */
+        function lineAmount(ln){ return (ln.soLuong||0)*(ln.donGia||0) + (ln.topTotal||0); }
+
+        function autoMatchVariantByPrice(i){
+          const ln=lines[i]; const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===ln.idSanPham); if(!sp) return;
+          const candidates=getBts(sp);
+          for(const bt of candidates){
+            const eff=getGiaBanThucTe(sp, bt);
+            if(eff === ln.donGia){
+              ln.idBienThe=bt.Id;
+              ln.tenBienThe=bt.TenBienThe||'';
+              // cập nhật UI ngay
+              const vEl=document.getElementById(`LineVariant_${i}`); if(vEl) vEl.textContent = ln.tenBienThe || '';
+              const row=document.getElementById(`LineName_${i}`); if(row){ row.classList.add('blink'); setTimeout(()=>row.classList.remove('blink'),300); }
+              break;
+            }
+          }
+        }
+        function incrementQty(i, delta){
+          const ln=lines[i]; ln.soLuong=Math.max(0,(ln.soLuong||0)+delta);
+          const input=el(`Qty_${i}`); if(input) input.value=ln.soLuong;
+          updateLineTotal(i); recalc(); updateMonCountBadgeWpf(); touchChanged();
+        }
+        function adjustPrice(i, delta){
+          const ln=lines[i]; ln.donGia=Math.max(0,(ln.donGia||0)+delta);
+          const input=el(`Price_${i}`); if(input){ input.value=fmt(ln.donGia); }
+          autoMatchVariantByPrice(i);
+          updateLineTotal(i); recalc(); touchChanged();
+        }
+        function updateLineTotal(i){
+          const ln=lines[i]; const elTotal=el(`LineTotal_${i}`); if(elTotal) elTotal.innerText=fmt(lineAmount(ln));
+        }
+
+        function renderLines(){
+          const wrap=el('Lines'); wrap.innerHTML='';
+          lines.forEach((ln,i)=>{
+            const row=document.createElement('div'); row.className='list-group-item';
+            const lineTotal=fmt(lineAmount(ln));
+            row.innerHTML = `
+              <div class="d-flex flex-column gap-1">
+                <!-- Hàng 1: tên + biến thể ... thành tiền (phải) -->
+                <div class="d-flex align-items-center">
+                  <div class="flex-fill" id="LineName_${i}">
+                    <strong>${ln.tenSanPham}</strong>
+                    <span id="LineVariant_${i}" class="text-danger">${ln.tenBienThe||''}</span>
+                    <div class="small text-muted">${ln.note||''}</div>
+                  </div>
+                  <div class="text-end" style="min-width:120px"><strong id="LineTotal_${i}">${lineTotal}</strong></div>
+                </div>
+                <!-- Hàng 2: số lượng ± | giá bán ±5000 | ⚙ xoá -->
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <!-- Số lượng -->
+                  <div class="btn-group" role="group" aria-label="qty">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="incrementQty(${i},-1)"><i class="fa fa-minus"></i></button>
+                    <input id="Qty_${i}" type="number" min="0" class="form-control form-control-sm text-center" style="width:56px" value="${ln.soLuong}"
+                           oninput="lines[${i}].soLuong=parseInt(this.value||0); updateLineTotal(${i}); recalc(); updateMonCountBadgeWpf(); touchChanged();" />
+                    <button class="btn btn-outline-secondary btn-sm" onclick="incrementQty(${i},+1)"><i class="fa fa-plus"></i></button>
+                  </div>
+
+                  <!-- Giá bán -->
+                  <div class="input-group input-group-sm" style="width:140px">
+                    <button class="btn btn-outline-secondary" title="-5.000" onclick="adjustPrice(${i},-5000)"><i class="fa fa-caret-down"></i></button>
+                    <input id="Price_${i}" inputmode="numeric" class="form-control text-end" value="${fmt(ln.donGia)}"
+                           oninput="lines[${i}].donGia=parseMoney(this.value); updateLineTotal(${i});"
+                           onblur="lines[${i}].donGia=parseMoney(this.value); this.value=fmt(lines[${i}].donGia); autoMatchVariantByPrice(${i}); updateLineTotal(${i}); recalc(); touchChanged();" />
+                    <button class="btn btn-outline-secondary" title="+5.000" onclick="adjustPrice(${i},+5000)"><i class="fa fa-caret-up"></i></button>
+                  </div>
+
+                  <!-- Nút -->
+                  <div class="btn-group ms-auto">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="openLineModal(${i})" title="Tuỳ chỉnh"><i class="fa fa-sliders"></i></button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="lines.splice(${i},1); renderLines(); recalc(); updateMonCountBadgeWpf(); touchChanged();" title="Xoá"><i class="fa fa-xmark"></i></button>
+                  </div>
+                </div>
+              </div>`;
+            wrap.appendChild(row);
+          });
+          updateMonCountBadgeWpf();
+        }
+
+        /* ========================== REPRICE WHEN CHANGE CUSTOMER ========================== */
+        function repriceAllLinesForCurrentCustomer(){
+          if (!lines.length) return;
+          for (let i=0;i<lines.length;i++){
+            const ln=lines[i];
+            const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===ln.idSanPham);
+            const bt=(sp?.BienThe||sp?.bienThe||[]).find(b=>(b.Id||b.id)===ln.idBienThe) || { Id: ln.idBienThe, GiaBan: ln.donGia, TenBienThe: ln.tenBienThe };
+            ln.donGia = getGiaBanThucTe(sp, bt);  // cập nhật đơn giá theo giá riêng
+            autoMatchVariantByPrice(i);           // tự match biến thể nếu trùng giá
+          }
+          renderLines(); recalc(); touchChanged();
+        }
+
+        /* ========================== VOUCHER + TÍNH TIỀN + CÔNG NỢ ========================== */
+        function findEligibleVoucherForPoint(){
+          const list = VOUCHER_CACHE || [];
+          if (!Array.isArray(list) || list.length===0) return null;
+          const prefer = list.find(v=>{
+            const ten = (v.Ten || v.ten || '').toLowerCase();
+            const loai= (v.Loai || v.loai || '').toLowerCase();
+            return ten.includes('điểm') || ten.includes('diem') || ten.includes('loyalty') || ten.includes('tặng') || ten.includes('tang') || loai.includes('loyalty');
+          });
+          return prefer || list[0] || null;
+        }
+        function applyVoucherByEligibility(){
+          if (!loyaltyState.duocNhan || loyaltyState.daNhan){
+            alert('Khách hiện KHÔNG đủ điều kiện nhận voucher theo điểm.');
+            return;
+          }
+          const pick = findEligibleVoucherForPoint();
+          if(!pick){ alert('Không tìm thấy voucher phù hợp để áp dụng.'); return; }
+          const sel=el('VoucherId'); if(sel){ sel.value=(pick.Id||pick.id||'').toString(); sel.dispatchEvent(new Event('change')); }
+          el('SaveHint').innerText='✅ Đã áp dụng voucher theo điểm.';
+        }
+        function calcVoucherDiscount(tamTinh){
+          const id = el('VoucherId').value || '';
+          if(!id){ const ggFix = parseMoney(el('GiamGiaFix').value); return Math.min(tamTinh, ggFix); }
+          const v = (VOUCHER_CACHE||[]).find(x => (x.Id||x.id||'') == id); if(!v) return 0;
+          const kind = (v.KieuGiam ?? v.kieuGiam ?? v.Kieu ?? v.kieu ?? '').toString().toLowerCase();
+          const raw  = Number(v.GiaTri ?? v.giaTri ?? v.Value ?? v.value ?? 0) || 0;
+          let disc=0;
+          if(kind.includes('%') || kind.includes('percent') || kind==='phantram') disc = tamTinh * raw / 100;
+          else disc = raw;
+          disc = Math.min(tamTinh, round1000(disc, 'nearest'));
+          return disc;
+        }
+        function recalc(){
+          let tamTinh=0; lines.forEach(l=> tamTinh += (l.soLuong||0)*(l.donGia||0) + (l.topTotal||0));
+          const giamGia = calcVoucherDiscount(tamTinh);
+          const thanh   = Math.max(0, tamTinh - giamGia);
+
+          el('TongTien').innerText=fmt(tamTinh);
+          el('GiamGia').innerText=fmt(giamGia);
+          el('ThanhTien').innerText=fmt(thanh);
+
+          el('CongNoDisplay') && (el('CongNoDisplay').innerText=fmt(congNoCurrent));
+          el('TongPhaiThu') && (el('TongPhaiThu').innerText=fmt(thanh + (congNoCurrent||0)));
+
+          const hasVoucher = !!(el('VoucherId').value||'');
+          el('GiamGiaFix').disabled = hasVoucher;
+        }
+        ['GiamGiaFix'].forEach(id=> el(id).addEventListener('input',()=>{recalc();touchChanged();}));
+        el('VoucherId').addEventListener('change',()=>{ recalc(); touchChanged(); });
+
+        /* ========================== SAVE ========================== */
+        function currentLoaiDon(){ if(el('ld_taicho').checked) return 'TaiCho'; if(el('ld_muave').checked) return 'MuaVe'; if(el('ld_ship').checked) return 'Ship'; return 'App'; }
+        ['ld_taicho','ld_muave','ld_ship','ld_app'].forEach(id=> el(id).addEventListener('change',()=>{ el('banWrap').style.display=el('ld_taicho').checked?'':'none'; touchChanged(); }));
+        el('banWrap').style.display='none';
+
+        function validateForm(){
+          el('FormError').innerText='';
+          if(currentLoaiDon()==='TaiCho' && !el('TenBan').value.trim()){ el('FormError').innerText='Tên bàn không được để trống.'; return false; }
+          if(currentLoaiDon()==='Ship'){
+            if(!el('DiaChi').value.trim()){ el('FormError').innerText='Địa chỉ không được để trống.'; return false; }
+            if(!el('DienThoai').value.trim()){ el('FormError').innerText='SĐT không được để trống.'; return false; }
+          }
+          if(lines.length===0 || !lines.some(x=>(x.soLuong||0)>0)){ el('FormError').innerText='Chưa có sản phẩm nào.'; return false; }
+          return true;
+        }
+        async function saveInvoice(isAuto=false){
+          if(!validateForm()) return;
+          const payload={
+            LoaiDon: currentLoaiDon(),
+            TenBan: el('ld_taicho').checked ? (el('TenBan').value||null) : null,
+            KhachHangId: khId,
+            KhachHangText: el('KhachHangText').value||null,
+            DienThoaiText: el('DienThoai').value||null,
+            DiaChiText: el('DiaChi').value||null,
+            VoucherId: (el('VoucherId').value||'') || null,
+            GiamGiaFix: parseMoney(el('GiamGiaFix').value)||0,
+            CongNo: Number(congNoCurrent)||0,
+            ChiTietHoaDons: lines.filter(l=>(l.soLuong||0)>0).map(l=>({
+              SanPhamId: l.idSanPham,
+              SanPhamIdBienThe: l.idBienThe,
+              TenSanPham: l.tenSanPham,
+              TenBienThe: l.tenBienThe,
+              SoLuong: l.soLuong,
+              DonGia: l.donGia,
+              NoteText: l.note||null,
+              ToppingDtos: (l.toppings||[]).map(t=>({ToppingId:t.Id, Ten:t.Ten, DonGia:t.Gia, SoLuong:t.Qty})),
+              ToppingTotal: l.topTotal||0
+            }))
+          };
+          const btn=el('SaveBtn'), old=btn.innerHTML; btn.disabled=true;
+          btn.innerHTML=`<span class="spinner-border spinner-border-sm me-1"></span> ${isAuto?'Đang tự lưu...':'Đang lưu...'}`;
+          showBusy(true);
+          try{
+            const r=await fetch('/api/HoaDon',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
+            const j=await r.json();
+            if(j?.isSuccess || j?.IsSuccess || j?.success){ unsaved=false; el('SaveHint').innerText=isAuto?'✅ Đã tự lưu.':'✅ Đã lưu.'; el('FormError').innerText=''; }
+            else{ el('SaveHint').innerText=''; alert(j?.message || j?.Message || 'Không thể lưu hoá đơn.'); }
+          }catch(e){ el('SaveHint').innerText=''; alert('Lỗi: '+(e?.message||e)); }
+          finally{ btn.disabled=false; btn.innerHTML=old; showBusy(false); startAutosave(); }
+        }
+
+        /* ========================== INIT ========================== */
+        function fillVoucherOptions(){
+          const sel=el('VoucherId'); const list=VOUCHER_CACHE||[];
+          sel.innerHTML='<option value="">-- Không áp dụng --</option>';
+          list.forEach(v=>{ const id=v.Id||v.id; const ten=v.Ten||v.ten||''; const opt=document.createElement('option'); opt.value=id||''; opt.textContent=ten||'(voucher)'; sel.appendChild(opt); });
+        }
+        (function init(){
+          if(Array.isArray(window.__KH_INIT)) cacheSet('KH_CACHE', window.__KH_INIT);
+          if(Array.isArray(window.__SP_INIT)) cacheSet('SP_CACHE', window.__SP_INIT);
+          if(Array.isArray(window.__GB_INIT)) cacheSet('GB_CACHE', window.__GB_INIT);
+          if(Array.isArray(window.__VOUCHER_INIT)) cacheSet('VOUCHER_CACHE', window.__VOUCHER_INIT);
+
+          preloadKH().then(r=>{ KH_CACHE=r; buildKHIndex(KH_CACHE); KH_CACHE._indexed=true; refreshPickButtons(); });
+          preloadSP().then(r=>{ SP_CACHE=r; buildSPIndex(SP_CACHE); SP_CACHE._indexed=true; });
+          preloadGB().then(r=>{ GB_CACHE=r; buildGBIndex(GB_CACHE); });
+          preloadVoucher().then(r=>{ VOUCHER_CACHE=r; fillVoucherOptions(); });
+
+          // Nút áp dụng voucher theo điểm
+          const btnApply=document.getElementById('ApplyVoucherBtn');
+          if(btnApply) btnApply.addEventListener('click', applyVoucherByEligibility);
+
+          startAutosave(); recalc();
+        })();
     </script>
 }

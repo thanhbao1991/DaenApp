@@ -151,7 +151,7 @@
                     </DataGridTemplateColumn>
                     <DataGridTextColumn
                         Width="*"
-                        Binding="{Binding Ten}"
+                        Binding="{Binding TenHienThi}"
                         Header="Tên bàn/khách">
                         <DataGridTextColumn.ElementStyle>
                             <Style BasedOn="{StaticResource LeftTextCellStyle}" TargetType="TextBlock">

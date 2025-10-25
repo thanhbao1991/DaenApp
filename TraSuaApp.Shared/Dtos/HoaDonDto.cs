@@ -162,6 +162,31 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
         StringHelper.GetShortName(Ten ?? "");
 
 
+    public string TenHienThi
+    {
+        get
+        {
+            // 1) Có tên khách -> ưu tiên
+            if (!string.IsNullOrWhiteSpace(TenKhachHangText))
+                return TenKhachHangText;
+
+            // 2) Không có KH -> nếu có bàn (Tại chỗ hay không) thì dùng tên bàn
+            if (!string.IsNullOrWhiteSpace(TenBan))
+                return TenBan;
+
+            // 3) Fallback theo ngữ cảnh giao/ship
+            if (!string.IsNullOrWhiteSpace(DiaChiText))
+                return DiaChiText;
+
+            // 4) Cuối cùng rơi về Ten (nếu nơi khác đã gán) hoặc mã HD
+            if (!string.IsNullOrWhiteSpace(Ten))
+                return Ten;
+
+            return $"HD #{Id}";
+        }
+    }
+
+
     // 🟟 Hàm đồng bộ dữ liệu khi nhận update từ SignalR
     public void CopyFrom(HoaDonDto other)
     {

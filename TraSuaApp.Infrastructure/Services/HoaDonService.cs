@@ -499,94 +499,116 @@ public class HoaDonService : IHoaDonService
 
     private async Task<KhachHang?> GetOrCreateKhachHangAsync(HoaDonDto dto, DateTime now)
     {
-        KhachHang? khachHang = null;
+        // Chuẩn hóa input để so sánh
+        var phone = (dto.SoDienThoaiText ?? "").Trim();
+        var addr = (dto.DiaChiText ?? "").Trim();
+        var name = string.IsNullOrWhiteSpace(dto.TenKhachHangText) ? "Khách lẻ" : dto.TenKhachHangText.Trim();
 
+        KhachHang? kh = null;
+
+        // 1) Nếu đã có KhachHangId → lấy tối thiểu (không Include)
         if (dto.KhachHangId != null)
         {
-            khachHang = await _context.KhachHangs
-                .Include(kh => kh.KhachHangAddresses)
-                .Include(kh => kh.KhachHangPhones)
-                .FirstOrDefaultAsync(kh => kh.Id == dto.KhachHangId);
+            kh = await _context.KhachHangs
+                .FirstOrDefaultAsync(x => x.Id == dto.KhachHangId.Value);
         }
-        else if (!string.IsNullOrWhiteSpace(dto.SoDienThoaiText))
+        // 2) Nếu có phone → tra cứu qua bảng con có index để lấy KhachHangId rồi mới get KhachHang
+        else if (!string.IsNullOrWhiteSpace(phone))
         {
-            khachHang = await _context.KhachHangs
-                .Include(kh => kh.KhachHangAddresses)
-                .Include(kh => kh.KhachHangPhones)
-                .FirstOrDefaultAsync(kh => kh.KhachHangPhones.Any(d => d.SoDienThoai == dto.SoDienThoaiText));
+            var khId = await _context.KhachHangPhones
+                .AsNoTracking()
+                .Where(p => !p.IsDeleted && p.SoDienThoai == phone)
+                .Select(p => (Guid?)p.KhachHangId)
+                .FirstOrDefaultAsync();
+
+            if (khId != null)
+            {
+                kh = await _context.KhachHangs
+                    .FirstOrDefaultAsync(x => x.Id == khId.Value);
+            }
         }
 
-        if (khachHang == null &&
-            (!string.IsNullOrWhiteSpace(dto.TenKhachHangText) || !string.IsNullOrWhiteSpace(dto.SoDienThoaiText)))
+        // 3) Nếu chưa có → tạo mới
+        if (kh == null && (!string.IsNullOrWhiteSpace(name) || !string.IsNullOrWhiteSpace(phone)))
         {
-            khachHang = new KhachHang
+            kh = new KhachHang
             {
                 Id = Guid.NewGuid(),
-                Ten = dto.TenKhachHangText?.Trim() ?? "Khách lẻ",
+                Ten = name,
                 DuocNhanVoucher = true,
                 CreatedAt = now,
                 LastModified = now
             };
-            StringHelper.NormalizeAllStrings(khachHang);
+            StringHelper.NormalizeAllStrings(kh);
+            _context.KhachHangs.Add(kh);
 
-            if (!string.IsNullOrWhiteSpace(dto.SoDienThoaiText))
+            if (!string.IsNullOrWhiteSpace(phone))
             {
-                khachHang.KhachHangPhones = new List<KhachHangPhone>
-                    {
-                        new KhachHangPhone
-                        {
-                            Id = Guid.NewGuid(),
-                            SoDienThoai = dto.SoDienThoaiText.Trim(),
-                            IsDefault = true
-                        }
-                    };
+                _context.KhachHangPhones.Add(new KhachHangPhone
+                {
+                    Id = Guid.NewGuid(),
+                    KhachHangId = kh.Id,
+                    SoDienThoai = phone,
+                    IsDefault = true,
+                    IsDeleted = false
+                });
             }
 
-            if (!string.IsNullOrWhiteSpace(dto.DiaChiText))
+            if (!string.IsNullOrWhiteSpace(addr))
             {
-                khachHang.KhachHangAddresses = new List<KhachHangAddress>
-                    {
-                        new KhachHangAddress
-                        {
-                            Id = Guid.NewGuid(),
-                            DiaChi = StringHelper.CapitalizeEachWord(dto.DiaChiText.Trim()),
-                            IsDefault = true
-                        }
-                    };
+                _context.KhachHangAddresses.Add(new KhachHangAddress
+                {
+                    Id = Guid.NewGuid(),
+                    KhachHangId = kh.Id,
+                    DiaChi = StringHelper.CapitalizeEachWord(addr),
+                    IsDefault = true,
+                    IsDeleted = false
+                });
             }
-
-            _context.KhachHangs.Add(khachHang);
+            return kh;
         }
-        else if (khachHang != null)
+
+        // 4) Đã có KH: bổ sung phone/address nếu thiếu mà KHÔNG cần Include collection
+        if (kh != null)
         {
-            if (!string.IsNullOrWhiteSpace(dto.SoDienThoaiText) &&
-                !khachHang.KhachHangPhones.Any(d => d.SoDienThoai == dto.SoDienThoaiText.Trim()))
+            if (!string.IsNullOrWhiteSpace(phone))
             {
-                khachHang.KhachHangPhones.Add(new KhachHangPhone
+                var hasPhone = await _context.KhachHangPhones
+                    .AnyAsync(p => !p.IsDeleted && p.KhachHangId == kh.Id && p.SoDienThoai == phone);
+                if (!hasPhone)
                 {
-                    Id = Guid.NewGuid(),
-                    KhachHangId = khachHang.Id,
-                    SoDienThoai = dto.SoDienThoaiText.Trim(),
-                    IsDefault = false
-                });
+                    _context.KhachHangPhones.Add(new KhachHangPhone
+                    {
+                        Id = Guid.NewGuid(),
+                        KhachHangId = kh.Id,
+                        SoDienThoai = phone,
+                        IsDefault = false,
+                        IsDeleted = false
+                    });
+                }
             }
 
-            if (!string.IsNullOrWhiteSpace(dto.DiaChiText) &&
-                !khachHang.KhachHangAddresses.Any(d => d.DiaChi.ToLower() == dto.DiaChiText.Trim().ToLower()))
+            if (!string.IsNullOrWhiteSpace(addr))
             {
-                khachHang.KhachHangAddresses.Add(new KhachHangAddress
+                var addrLower = addr.ToLower();
+                var hasAddr = await _context.KhachHangAddresses
+                    .AnyAsync(a => !a.IsDeleted && a.KhachHangId == kh.Id && a.DiaChi.ToLower() == addrLower);
+                if (!hasAddr)
                 {
-                    Id = Guid.NewGuid(),
-                    KhachHangId = khachHang.Id,
-                    DiaChi = dto.DiaChiText.Trim(),
-                    IsDefault = false
-                });
+                    _context.KhachHangAddresses.Add(new KhachHangAddress
+                    {
+                        Id = Guid.NewGuid(),
+                        KhachHangId = kh.Id,
+                        DiaChi = addr,
+                        IsDefault = false,
+                        IsDeleted = false
+                    });
+                }
             }
         }
 
-        return khachHang;
+        return kh;
     }
-
     private async Task<(decimal tongTien, decimal giamGia, decimal thanhTien)> AddChiTietAsync(Guid hoaDonId, HoaDonDto dto, DateTime now)
     {
         decimal tongTien = 0;
