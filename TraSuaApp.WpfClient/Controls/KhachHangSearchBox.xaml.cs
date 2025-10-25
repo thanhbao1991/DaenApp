@@ -22,7 +22,6 @@ namespace TraSuaApp.WpfClient.Controls
 
         // 🟟 Tuỳ chọn hành vi
         public bool ShowAllWhenEmpty { get; set; } = false;
-        public bool IncludeKhachMoiItem { get; set; } = false;
         public bool SuppressPopup { get; set; } = false;
         public double? FixedPopupHeight
         {
@@ -125,15 +124,7 @@ namespace TraSuaApp.WpfClient.Controls
                     .ToList();
             }
 
-            // 🟟 Thêm dòng “Khách mới” ở đầu
-            if (IncludeKhachMoiItem)
-            {
-                results.Add(new KhachHangDto
-                {
-                    Id = Guid.Empty,
-                    Ten = "\n\tKHÁCH MỚI"
-                });
-            }
+
 
             ListBoxResults.ItemsSource = results;
             Popup.IsOpen = !SuppressPopup && results.Any();
