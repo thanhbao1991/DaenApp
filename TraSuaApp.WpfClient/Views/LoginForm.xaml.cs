@@ -170,7 +170,7 @@ namespace TraSuaApp.WpfClient.Views
 
                         // Gọi init thật — giữ nguyên code cũ, không làm mất logic
                         SetLoadingStatus("Đang tải dữ liệu hệ thống...", 30);
-                        await AppProviders.InitializeAsync();
+                        await AppProviders.EnsureCreatedAsync();
 
                         // 🟟 Đăng ký sự kiện cập nhật công việc → đá TTS mỗi lần đổi
                         //if (AppProviders.CongViecNoiBos != null)

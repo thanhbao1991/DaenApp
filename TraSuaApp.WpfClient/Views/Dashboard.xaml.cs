@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
+using TraSuaApp.Shared.Services;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
@@ -45,6 +46,8 @@ namespace TraSuaApp.WpfClient.Views
             set { _today = value; OnPropertyChanged(nameof(Today)); }
         }
 
+
+
         public Dashboard()
         {
             InitializeComponent();
@@ -52,20 +55,17 @@ namespace TraSuaApp.WpfClient.Views
             DataContext = this;
             Loaded += Dashboard_Loaded;
 
-            // Fit tối đa màn hình hiện tại
             MaxHeight = SystemParameters.MaximizedPrimaryScreenHeight;
             MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
 
-            // Build menus động
             GenerateMenu("Admin", AdminMenu);
             GenerateMenu("HoaDon", HoaDonMenu);
             GenerateMenu("Settings", SettingsMenu);
         }
 
-        // ====== Badge Công việc ======
         private void UpdateCongViecBadge()
         {
-            var items = AppProviders.CongViecNoiBos.Items;
+            var items = AppProviders.CongViecNoiBos?.Items;
             if (items == null) return;
 
             int count = items.Count(x => !x.DaHoanThanh && !x.IsDeleted);
@@ -75,32 +75,102 @@ namespace TraSuaApp.WpfClient.Views
                 CvBadge.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
             });
         }
-
-        // ====== Loaded ======
         private async void Dashboard_Loaded(object? sender, RoutedEventArgs e)
         {
             try
             {
-                // Khởi giá trị Today
                 Today = DateTime.Today;
-
-                // Badge lần đầu
                 UpdateCongViecBadge();
 
-                // Khi danh sách công việc đổi -> cập nhật badge
                 AppProviders.CongViecNoiBos.ItemsChanged += (_, __) => UpdateCongViecBadge();
 
-                // Đăng ký sự kiện thay đổi tất cả các provider liên quan Tab
                 await BindAllProviders();
 
-                // Load dữ liệu lần đầu
                 await AppProviders.ReloadAllAsync();
+
+                // 🟟 DELAY INIT: APP SHIPPING 60s sau khi vào Dashboard
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(60));
+                    try
+                    {
+                        // ⚠️ Đặt tài khoản thật của bạn tại đây
+                        await AppShippingHelperFactory.CreateAsync("12122431577", "baothanh1991");
+                        await DiscordService.SendAsync(DiscordEventType.Admin, "🟟 AppShippingHelperText INIT after 60s");
+                    }
+                    catch (Exception ex)
+                    {
+                        await DiscordService.SendAsync(DiscordEventType.Admin,
+                            "⚠️ Lỗi init Shipping Helper:\n```" + ex + "```");
+                    }
+                });
             }
             catch (Exception ex)
             {
-                NotiHelper.Show("Lỗi tải dashboard: " + ex.Message);
+                NotiHelper.Show("Lỗi tải Dashboard: " + ex.Message);
             }
         }
+        private async Task BindAllProviders()
+        {
+            RegisterProvider("HoaDons",
+                () => AppProviders.HoaDons.OnChanged += _providerHandlers["HoaDons"],
+                () => HoaDonTabControl?.ReloadHoaDonUI());
+
+            RegisterProvider("CongViecNoiBos",
+                () => AppProviders.CongViecNoiBos.OnChanged += _providerHandlers["CongViecNoiBos"],
+                UpdateCongViecBadge);
+
+            RegisterProvider("ChiTietHoaDonNos",
+                () => AppProviders.ChiTietHoaDonNos.OnChanged += _providerHandlers["ChiTietHoaDonNos"],
+                () => ChiTietHoaDonNoTabControl?.ReloadUI());
+
+            RegisterProvider("ChiTietHoaDonThanhToans",
+                () => AppProviders.ChiTietHoaDonThanhToans.OnChanged += _providerHandlers["ChiTietHoaDonThanhToans"],
+                () =>
+                {
+                    ChiTietHoaDonThanhToanTabControl.Today = Today;
+                    ChiTietHoaDonThanhToanTabControl.ReloadUI();
+                });
+
+            RegisterProvider("ChiTieuHangNgays",
+                () => AppProviders.ChiTieuHangNgays.OnChanged += _providerHandlers["ChiTieuHangNgays"],
+                () =>
+                {
+                    ChiTieuHangNgayTabControl.Today = Today;
+                    ChiTieuHangNgayTabControl.ReloadUI();
+                });
+
+            await Task.CompletedTask;
+        }
+
+        private void RegisterProvider(string key, Action subscribeAction, Action uiUpdate)
+        {
+            Action handler = () =>
+            {
+                try
+                {
+                    Dispatcher.Invoke(uiUpdate);
+                }
+                catch { }
+            };
+
+            _providerHandlers[key] = handler;
+            subscribeAction();
+        }
+
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            foreach (var kv in _providerHandlers)
+            {
+                var name = kv.Key;
+                var handler = kv.Value;
+                var p = typeof(AppProviders).GetProperty(name)?.GetValue(null);
+                var evt = p?.GetType().GetEvent("OnChanged");
+                evt?.RemoveEventHandler(p, handler);
+            }
+        }
+
+        // ====== Badge Công việc ======
 
         // ====== Busy indicator helper ======
         private async Task WithBusy(Func<Task> body)
@@ -167,120 +237,6 @@ namespace TraSuaApp.WpfClient.Views
         }
 
         // ====== Subscribe tất cả providers 1 lần gọn gàng (đảm bảo UI thread) ======
-        private async Task BindAllProviders()
-        {
-            // Map provider -> handler UI
-            void Register(string providerKey, Action subscribeAction, Action onChangedUi)
-            {
-                // Tạo handler dùng chung
-                Action handler = () =>
-                {
-                    try
-                    {
-                        if (!Dispatcher.CheckAccess())
-                            Dispatcher.Invoke(onChangedUi);
-                        else
-                            onChangedUi();
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"OnChanged '{providerKey}' error: {ex.Message}");
-                    }
-                };
-
-                // Lưu để hủy về sau
-                _providerHandlers[providerKey] = handler;
-
-                // subscribe: đảm bảo -= trước rồi += sau
-                subscribeAction.Invoke();
-            }
-
-            // HoaDons
-            Register(
-                PROV_HOADONS,
-                subscribeAction: () =>
-                {
-                    if (AppProviders.HoaDons != null)
-                    {
-                        if (_providerHandlers.TryGetValue(PROV_HOADONS, out var h)) AppProviders.HoaDons.OnChanged -= h;
-                        AppProviders.HoaDons.OnChanged += _providerHandlers[PROV_HOADONS];
-                    }
-                },
-                onChangedUi: () => HoaDonTabControl?.ReloadHoaDonUI()
-            );
-
-            // Công việc nội bộ (badge)
-            Register(
-                PROV_CONG_VIEC,
-                subscribeAction: () =>
-                {
-                    if (AppProviders.CongViecNoiBos != null)
-                    {
-                        if (_providerHandlers.TryGetValue(PROV_CONG_VIEC, out var h)) AppProviders.CongViecNoiBos.OnChanged -= h;
-                        AppProviders.CongViecNoiBos.OnChanged += _providerHandlers[PROV_CONG_VIEC];
-                    }
-                },
-                onChangedUi: UpdateCongViecBadge
-            );
-
-            // Chi tiết HĐ nợ
-            Register(
-                PROV_CTHD_NO,
-                subscribeAction: () =>
-                {
-                    if (AppProviders.ChiTietHoaDonNos != null)
-                    {
-                        if (_providerHandlers.TryGetValue(PROV_CTHD_NO, out var h)) AppProviders.ChiTietHoaDonNos.OnChanged -= h;
-                        AppProviders.ChiTietHoaDonNos.OnChanged += _providerHandlers[PROV_CTHD_NO];
-                    }
-                },
-                onChangedUi: () => ChiTietHoaDonNoTabControl?.ReloadUI()
-            );
-
-            // Chi tiết HĐ thanh toán
-            Register(
-                PROV_CTHD_TT,
-                subscribeAction: () =>
-                {
-                    if (AppProviders.ChiTietHoaDonThanhToans != null)
-                    {
-                        if (_providerHandlers.TryGetValue(PROV_CTHD_TT, out var h)) AppProviders.ChiTietHoaDonThanhToans.OnChanged -= h;
-                        AppProviders.ChiTietHoaDonThanhToans.OnChanged += _providerHandlers[PROV_CTHD_TT];
-                    }
-                },
-                onChangedUi: () =>
-                {
-                    if (ChiTietHoaDonThanhToanTabControl != null)
-                    {
-                        ChiTietHoaDonThanhToanTabControl.Today = Today;
-                        ChiTietHoaDonThanhToanTabControl.ReloadUI();
-                    }
-                }
-            );
-
-            // Chi tiêu hằng ngày
-            Register(
-                PROV_CHITIEU,
-                subscribeAction: () =>
-                {
-                    if (AppProviders.ChiTieuHangNgays != null)
-                    {
-                        if (_providerHandlers.TryGetValue(PROV_CHITIEU, out var h)) AppProviders.ChiTieuHangNgays.OnChanged -= h;
-                        AppProviders.ChiTieuHangNgays.OnChanged += _providerHandlers[PROV_CHITIEU];
-                    }
-                },
-                onChangedUi: () =>
-                {
-                    if (ChiTieuHangNgayTabControl != null)
-                    {
-                        ChiTieuHangNgayTabControl.Today = Today;
-                        ChiTieuHangNgayTabControl.ReloadUI();
-                    }
-                }
-            );
-
-            await Task.CompletedTask;
-        }
 
         // ====== Menu động (Admin/Hóa đơn/Settings) ======
         private void GenerateMenu(string loai, MenuItem m)
@@ -537,27 +493,6 @@ namespace TraSuaApp.WpfClient.Views
         }
 
         // ====== Đóng cửa sổ: dọn dẹp ======
-        private void Window_Closing(object sender, CancelEventArgs e)
-        {
-            try
-            {
-                // Hủy subscribe sự kiện providers
-                if (AppProviders.HoaDons != null && _providerHandlers.TryGetValue(PROV_HOADONS, out var h1))
-                    AppProviders.HoaDons.OnChanged -= h1;
-                if (AppProviders.CongViecNoiBos != null && _providerHandlers.TryGetValue(PROV_CONG_VIEC, out var h2))
-                    AppProviders.CongViecNoiBos.OnChanged -= h2;
-                if (AppProviders.ChiTietHoaDonNos != null && _providerHandlers.TryGetValue(PROV_CTHD_NO, out var h3))
-                    AppProviders.ChiTietHoaDonNos.OnChanged -= h3;
-                if (AppProviders.ChiTietHoaDonThanhToans != null && _providerHandlers.TryGetValue(PROV_CTHD_TT, out var h4))
-                    AppProviders.ChiTietHoaDonThanhToans.OnChanged -= h4;
-                if (AppProviders.ChiTieuHangNgays != null && _providerHandlers.TryGetValue(PROV_CHITIEU, out var h5))
-                    AppProviders.ChiTieuHangNgays.OnChanged -= h5;
-            }
-            catch { /* ignore */ }
-
-            // Theo code gốc
-            AppShippingHelperText.DisposeDriver();
-        }
 
         // ====== Reports Launcher ======
         private readonly Dictionary<string, Func<UserControl>> _reportFactories = new()

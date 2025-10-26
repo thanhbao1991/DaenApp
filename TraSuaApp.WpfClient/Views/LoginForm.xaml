@@ -112,12 +112,11 @@
                     Visibility="Collapsed" />
                 <TextBlock
                     x:Name="ErrorTextBlock"
-                    FontWeight="SemiBold"
+                    FontSize="8"
                     Foreground="{StaticResource DangerBrush}"
                     Style="{StaticResource ErrorTextBlock}"
                     TextWrapping="Wrap"
                     Visibility="{Binding Text, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-
             </StackPanel>
         </Grid>
     </Border>

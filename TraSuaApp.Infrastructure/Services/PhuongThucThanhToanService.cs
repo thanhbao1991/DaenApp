@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Infrastructure;
@@ -10,35 +11,46 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
 {
     private readonly AppDbContext _context;
     private readonly string _friendlyName = TuDien._tableFriendlyNames["PhuongThucThanhToan"];
+    private readonly IMemoryCache _cache;
+    private const string CACHE_KEY_ALL = "PTTT_ALL_V1";
 
-    public PhuongThucThanhToanService(AppDbContext context)
+    public PhuongThucThanhToanService(AppDbContext context, IMemoryCache cache)
     {
         _context = context;
+        _cache = cache;
     }
 
-    private static PhuongThucThanhToanDto ToDto(PhuongThucThanhToan entity)
+    private static PhuongThucThanhToanDto ToDto(PhuongThucThanhToan e) => new()
     {
-        return new PhuongThucThanhToanDto
-        {
-            Id = entity.Id,
-            Ten = entity.Ten,
-            DangSuDung = entity.DangSuDung,
-
-            CreatedAt = entity.CreatedAt,
-            LastModified = entity.LastModified,
-            DeletedAt = entity.DeletedAt,
-            IsDeleted = entity.IsDeleted,
-        };
-    }
+        Id = e.Id,
+        Ten = e.Ten,
+        DangSuDung = e.DangSuDung,
+        CreatedAt = e.CreatedAt,
+        LastModified = e.LastModified,
+        DeletedAt = e.DeletedAt,
+        IsDeleted = e.IsDeleted
+    };
 
     public async Task<List<PhuongThucThanhToanDto>> GetAllAsync()
     {
-        return await _context.PhuongThucThanhToans.AsNoTracking()
-            .Where(x => !x.IsDeleted)
-            .OrderByDescending(x => x.LastModified)
-            .Select(x => ToDto(x))
-            .ToListAsync();
+        var data = await _cache.GetOrCreateAsync(CACHE_KEY_ALL, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60);
+            entry.SlidingExpiration = TimeSpan.FromSeconds(30);
+
+            var list = await _context.PhuongThucThanhToans.AsNoTracking()
+                .Where(x => !x.IsDeleted)
+                .OrderByDescending(x => x.LastModified)
+                .Select(x => ToDto(x))
+                .ToListAsync();
+
+            return list;
+        });
+
+        return data ?? new List<PhuongThucThanhToanDto>();
     }
+
+    private void BustCache() => _cache.Remove(CACHE_KEY_ALL);
 
     public async Task<PhuongThucThanhToanDto?> GetByIdAsync(Guid id)
     {
@@ -63,7 +75,6 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
             Id = Guid.NewGuid(),
             Ten = dto.Ten.Trim(),
             DangSuDung = dto.DangSuDung,
-
             CreatedAt = now,
             LastModified = now,
             IsDeleted = false,
@@ -71,6 +82,7 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
 
         _context.PhuongThucThanhToans.Add(entity);
         await _context.SaveChangesAsync();
+        BustCache(); // ✅ Clear cache sau khi ghi
 
         var after = ToDto(entity);
         return Result<PhuongThucThanhToanDto>.Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
@@ -104,6 +116,7 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
         entity.LastModified = DateTime.Now;
 
         await _context.SaveChangesAsync();
+        BustCache(); // ✅ Clear cache sau khi cập nhật
 
         var after = ToDto(entity);
         return Result<PhuongThucThanhToanDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
@@ -127,6 +140,7 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
         entity.LastModified = now;
 
         await _context.SaveChangesAsync();
+        BustCache(); // ✅ Clear cache sau khi xoá
 
         return Result<PhuongThucThanhToanDto>.Success(before, $"Xoá {_friendlyName.ToLower()} thành công.")
             .WithId(before.Id)
@@ -148,6 +162,7 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
         entity.LastModified = DateTime.Now;
 
         await _context.SaveChangesAsync();
+        BustCache(); // ✅ Clear cache sau khi khôi phục
 
         var after = ToDto(entity);
         return Result<PhuongThucThanhToanDto>.Success(after, $"Khôi phục {_friendlyName.ToLower()} thành công.")

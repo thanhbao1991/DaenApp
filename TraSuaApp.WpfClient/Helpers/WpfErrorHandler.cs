@@ -1,48 +1,80 @@
 ﻿using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using TraSuaApp.Shared.Services;
 
 namespace TraSuaApp.WpfClient.Helpers
 {
     public class WpfErrorHandler
     {
-
-
         private readonly TextBlock? _errorTextBlock;
 
         public WpfErrorHandler(TextBlock? errorTextBlock = null)
         {
             _errorTextBlock = errorTextBlock;
         }
+
         public void Clear()
         {
             if (_errorTextBlock != null)
                 _errorTextBlock.Text = string.Empty;
         }
+
         public void Handle(Exception ex, string context = "")
         {
-            string message;
-            if (ex.Message.TrimStart().StartsWith("{"))
+            string message = ExtractMessage(ex);
+
+            void Show()
             {
-                using var doc = JsonDocument.Parse(ex.Message);
-                message = doc.RootElement.GetProperty("message").GetString() ?? string.Empty;
-            }
-            else
-            {
-                message = ex.Message;
+                if (_errorTextBlock != null)
+                {
+                    _errorTextBlock.Text = message;
+                    _errorTextBlock.Foreground = Brushes.OrangeRed;
+                }
+                else
+                {
+                    MessageBox.Show(message,
+                        string.IsNullOrWhiteSpace(context) ? "Lỗi" : context,
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
 
+            // Bảo đảm chạy trên UI thread
+            if (Application.Current?.Dispatcher?.CheckAccess() == true) Show();
+            else Application.Current?.Dispatcher?.Invoke(Show);
 
-            if (_errorTextBlock != null)
-            {
-                _errorTextBlock.Text = message;
-            }
-            else
-            {
-                MessageBox.Show(message, context, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            // Log lên Discord (không block UI)
+            _ = DiscordService.SendAsync(Shared.Enums.DiscordEventType.Admin, ex.ToString());
+        }
 
-            Clipboard.SetText(message);
+        private static string ExtractMessage(Exception ex)
+        {
+            try
+            {
+                var raw = ex.Message?.Trim() ?? "";
+                if (string.IsNullOrEmpty(raw)) return "Đã xảy ra lỗi không xác định.";
+
+                if (raw.StartsWith("{"))
+                {
+                    using var doc = JsonDocument.Parse(raw);
+                    var root = doc.RootElement;
+
+                    // ưu tiên "message", sau đó "error", sau đó toàn bộ JSON
+                    if (root.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String)
+                        return m.GetString() ?? "Đã xảy ra lỗi.";
+                    if (root.TryGetProperty("error", out var e) && e.ValueKind == JsonValueKind.String)
+                        return e.GetString() ?? "Đã xảy ra lỗi.";
+
+                    return root.ToString();
+                }
+
+                return raw;
+            }
+            catch
+            {
+                return ex.Message ?? "Đã xảy ra lỗi.";
+            }
         }
     }
 }

@@ -112,40 +112,35 @@ namespace TraSuaApp.Api.Controllers
         [HttpGet("thongtin-khachhang/{khachHangId}")]
         public async Task<ActionResult<KhachHangFavoriteDto>> GetThongTinKhachHang(Guid khachHangId)
         {
-            if (khachHangId == Guid.Empty)
-                return BadRequest("KhachHangId không hợp lệ.");
+            if (khachHangId == Guid.Empty) return BadRequest("KhachHangId không hợp lệ.");
 
             var kh = await _db.KhachHangs.AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == khachHangId);
-
+                .FirstOrDefaultAsync(x => x.Id == khachHangId, HttpContext.RequestAborted);
             if (kh == null) return NotFound("Không tìm thấy khách hàng.");
 
-            (int diemThangNay, int diemThangTruoc) =
-                await LoyaltyService.TinhDiemThangAsync(_db, khachHangId, DateTime.Now, kh.DuocNhanVoucher);
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
+            cts.CancelAfter(TimeSpan.FromSeconds(8)); // ✅ giới hạn tối đa phần loyalty
 
-            var tongNo = await LoyaltyService.TinhTongNoKhachHangAsync(_db, khachHangId);
+            var (diemThangNay, diemThangTruoc) =
+                await LoyaltyService.TinhDiemThangAsync(_db, khachHangId, DateTime.Now, kh.DuocNhanVoucher, cts.Token);
+
+            var tongNo = await LoyaltyService.TinhTongNoKhachHangAsync(_db, khachHangId, null, cts.Token);
 
             bool daNhanVoucher = kh.DuocNhanVoucher
-                ? await LoyaltyService.DaNhanVoucherTrongThangAsync(_db, khachHangId, DateTime.Now)
+                ? await LoyaltyService.DaNhanVoucherTrongThangAsync(_db, khachHangId, DateTime.Now, cts.Token)
                 : false;
 
-
-            // ===== Kết quả =====
             return new KhachHangFavoriteDto
             {
                 KhachHangId = kh.Id,
-
                 DuocNhanVoucher = kh.DuocNhanVoucher,
                 DaNhanVoucher = daNhanVoucher,
                 DiemThangNay = diemThangNay,
                 DiemThangTruoc = diemThangTruoc,
                 TongNo = tongNo,
-
-                // 🟟 Favorite trả về theo Id + tên
                 MonYeuThich = kh.FavoriteMon
             };
         }
-
         // ===== 🟟 CHI TIÊU THEO NGUYÊN LIỆU =====
         [HttpGet("chitieubynguyenlieuid")]
         public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> GetChiTieuByNguyenLieuId(

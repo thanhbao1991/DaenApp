@@ -10,15 +10,15 @@ using TraSuaApp.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ⚡ Cấu hình logging: chỉ log Warning trở lên cho EF Core
+// ⚡ Logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 
-// 🟟 Đọc cấu hình Api BaseUrl từ appsettings
+// 🟟 Đọc Api BaseUrl
 var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"];
 
-// 🟟 Add Controllers + JSON config
+// 🟟 Controllers + JSON
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -31,17 +31,23 @@ builder.Services.AddControllers(options =>
     options.Filters.Add<TraSuaApp.Api.Filters.ApiExceptionFilter>();
 });
 
-// 🟟 Add DbContext
+// 🟟 DbContext (không pooling; nếu muốn pooling, đổi sang AddDbContextPool)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
-// 🟟 Add AutoMapper & Services
+// 🟟 Memory Cache cho IMemoryCache (bắt buộc cho service của bạn)
+builder.Services.AddMemoryCache();
+
+// 🟟 Đăng ký DI cho services (nếu chưa được AddInfrastructureServices thêm sẵn)
 builder.Services.AddInfrastructureServices();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
-// 🟟 Đăng ký HttpClient (nếu cần gọi ra ngoài)
+// Nếu IPhuongThucThanhToanService chưa được đăng ký trong AddInfrastructureServices, mở dòng dưới:
+// builder.Services.AddScoped<IPhuongThucThanhToanService, PhuongThucThanhToanService>();
+
+// 🟟 HttpClient gọi ra ngoài (nếu cần)
 if (!string.IsNullOrEmpty(apiBaseUrl))
 {
     builder.Services.AddHttpClient("Api", client =>
@@ -51,7 +57,7 @@ if (!string.IsNullOrEmpty(apiBaseUrl))
     });
 }
 
-// 🟟 JWT Authentication
+// 🟟 JWT Auth
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? "");
 builder.Services.AddAuthentication(opt =>
 {
@@ -60,7 +66,7 @@ builder.Services.AddAuthentication(opt =>
 })
 .AddJwtBearer(opt =>
 {
-    opt.RequireHttpsMetadata = false;   // 🟟 tắt bắt buộc HTTPS
+    opt.RequireHttpsMetadata = false;
     opt.SaveToken = true;
     opt.TokenValidationParameters = new TokenValidationParameters
     {
@@ -73,7 +79,7 @@ builder.Services.AddAuthentication(opt =>
 });
 builder.Services.AddAuthorization();
 
-// 🟟 CORS (cho phép web chạy thật + localhost)
+// 🟟 CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -95,7 +101,6 @@ var app = builder.Build();
 
 // ---------------------- Pipeline ----------------------
 
-// 🟟 Dùng middleware custom
 app.UseMiddleware<LogMiddleware>();
 
 if (!app.Environment.IsDevelopment())
@@ -105,9 +110,7 @@ if (!app.Environment.IsDevelopment())
 
 // ❌ Không dùng HTTPS redirection khi chỉ chạy HTTP
 
-// 🟟 CORS cho client
 app.UseCors("AllowFrontend");
-
 app.UseRouting();
 
 app.UseAuthentication();
@@ -116,8 +119,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<SignalRHub>("/hub/entity");
 
-
-
 app.MapGet("/", () => Results.Ok(new { status = "Backend API running" }))
    .WithMetadata(new HttpMethodMetadata(new[] { "GET", "HEAD" }));
+
 app.Run();

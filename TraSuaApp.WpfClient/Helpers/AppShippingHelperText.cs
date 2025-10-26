@@ -39,14 +39,17 @@ public class AppShippingHelperText
     private readonly string XemChiTietRow1XPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[3]/div[3]/table/tbody/tr[1]/td[5]/div/div[1]/a/span";
     private readonly string ChiTietPopupXPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[6]/div";
 
-    public AppShippingHelperText(string username, string password)
+    // ⚠️ Constructor mới: truyền sẵn data đã load để tránh NRE nếu providers chưa init
+    public AppShippingHelperText(string username, string password,
+                                 List<SanPhamDto> sanPhamList,
+                                 List<ToppingDto> toppingList)
     {
         _username = username;
         _password = password;
 
-        _sanPhamList = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
+        _sanPhamList = sanPhamList ?? new List<SanPhamDto>();
         _bienTheList = _sanPhamList.SelectMany(x => x.BienThe).ToList();
-        _toppingList = AppProviders.Toppings.Items.ToList();
+        _toppingList = toppingList ?? new List<ToppingDto>();
 
         EnsureDriver();
     }
@@ -59,6 +62,8 @@ public class AppShippingHelperText
         options.AddArgument("--headless");
         options.AddArgument("--disable-gpu");
         options.AddArgument("--window-size=1920,1080");
+        options.AddArgument("--no-sandbox");
+        options.AddArgument("--disable-dev-shm-usage");
 
         var service = ChromeDriverService.CreateDefaultService();
         service.HideCommandPromptWindow = true;
@@ -80,17 +85,24 @@ public class AppShippingHelperText
         // load cookie
         if (File.Exists(_cookieFile))
         {
-            var json = File.ReadAllText(_cookieFile);
-            var cookies = JsonSerializer.Deserialize<List<CookieData>>(json);
-            foreach (var c in cookies)
+            try
             {
-                if (!string.IsNullOrEmpty(c.Name) && !string.IsNullOrEmpty(c.Value))
+                var json = File.ReadAllText(_cookieFile);
+                var cookies = JsonSerializer.Deserialize<List<CookieData>>(json);
+                foreach (var c in cookies ?? new List<CookieData>())
                 {
-                    driver.Manage().Cookies.AddCookie(new Cookie(c.Name, c.Value, c.Domain, c.Path, c.Expiry));
+                    if (!string.IsNullOrEmpty(c.Name) && !string.IsNullOrEmpty(c.Value))
+                    {
+                        driver.Manage().Cookies.AddCookie(new Cookie(c.Name, c.Value, c.Domain, c.Path, c.Expiry));
+                    }
                 }
+                driver.Navigate().Refresh();
+                wait.Until(d => d.FindElements(By.XPath(avatarXPath)).Count > 0);
             }
-            driver.Navigate().Refresh();
-            wait.Until(d => d.FindElements(By.XPath(avatarXPath)).Count > 0);
+            catch
+            {
+                // ignore cookie errors
+            }
         }
 
         if (!IsLoggedIn(driver))
@@ -312,4 +324,56 @@ public class CookieData
     [JsonPropertyName("secure")] public bool Secure { get; set; }
     [JsonPropertyName("httpOnly")] public bool HttpOnly { get; set; }
     [JsonPropertyName("sameSite")] public string SameSite { get; set; }
+}
+
+// ==============================
+//   FACTORY / HOST ĐƠN GIẢN
+// ==============================
+internal static class AppShippingHelperFactory
+{
+    private static Task<AppShippingHelperText>? _instanceTask;
+    private static readonly object _lock = new();
+
+    // Tạo nếu chưa có, thread-safe
+    public static Task<AppShippingHelperText> CreateAsync(string username, string password)
+    {
+        lock (_lock)
+        {
+            _instanceTask ??= InitializeAsync(username, password);
+            return _instanceTask;
+        }
+    }
+
+    // Lấy instance (nếu chắc chắn đã gọi CreateAsync trước đó)
+    public static Task<AppShippingHelperText> GetAsync()
+    {
+        if (_instanceTask == null) throw new Exception("App Shopping chưa sẵn sàng.");
+        return _instanceTask;
+    }
+
+    // Huỷ instance + driver
+    public static void Reset()
+    {
+        _instanceTask = null;
+        AppShippingHelperText.DisposeDriver();
+    }
+
+    // Khởi tạo tối thiểu: chỉ load SanPhams + Toppings
+    private static async Task<AppShippingHelperText> InitializeAsync(string username, string password)
+    {
+        await AppProviders.EnsureCreatedAsync();
+
+        if (AppProviders.SanPhams == null || AppProviders.Toppings == null)
+            throw new Exception("Providers chưa sẵn sàng.");
+
+        await Task.WhenAll(
+            AppProviders.SanPhams.InitializeAsync(),
+            AppProviders.Toppings.InitializeAsync()
+        );
+
+        var sanPhams = AppProviders.SanPhams.Items.Where(x => !x.NgungBan).ToList();
+        var toppings = AppProviders.Toppings.Items.ToList();
+
+        return new AppShippingHelperText(username, password, sanPhams, toppings);
+    }
 }

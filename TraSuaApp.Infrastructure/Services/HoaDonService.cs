@@ -499,36 +499,28 @@ public class HoaDonService : IHoaDonService
 
     private async Task<KhachHang?> GetOrCreateKhachHangAsync(HoaDonDto dto, DateTime now)
     {
-        // Chuẩn hóa input để so sánh
         var phone = (dto.SoDienThoaiText ?? "").Trim();
         var addr = (dto.DiaChiText ?? "").Trim();
         var name = string.IsNullOrWhiteSpace(dto.TenKhachHangText) ? "Khách lẻ" : dto.TenKhachHangText.Trim();
 
         KhachHang? kh = null;
 
-        // 1) Nếu đã có KhachHangId → lấy tối thiểu (không Include)
         if (dto.KhachHangId != null)
         {
-            kh = await _context.KhachHangs
-                .FirstOrDefaultAsync(x => x.Id == dto.KhachHangId.Value);
+            kh = await _context.KhachHangs.FirstOrDefaultAsync(x => x.Id == dto.KhachHangId.Value);
         }
-        // 2) Nếu có phone → tra cứu qua bảng con có index để lấy KhachHangId rồi mới get KhachHang
         else if (!string.IsNullOrWhiteSpace(phone))
         {
             var khId = await _context.KhachHangPhones
                 .AsNoTracking()
-                .Where(p => !p.IsDeleted && p.SoDienThoai == phone)
+                .Where(p => p.SoDienThoai == phone)
                 .Select(p => (Guid?)p.KhachHangId)
                 .FirstOrDefaultAsync();
 
             if (khId != null)
-            {
-                kh = await _context.KhachHangs
-                    .FirstOrDefaultAsync(x => x.Id == khId.Value);
-            }
+                kh = await _context.KhachHangs.FirstOrDefaultAsync(x => x.Id == khId.Value);
         }
 
-        // 3) Nếu chưa có → tạo mới
         if (kh == null && (!string.IsNullOrWhiteSpace(name) || !string.IsNullOrWhiteSpace(phone)))
         {
             kh = new KhachHang
@@ -549,8 +541,7 @@ public class HoaDonService : IHoaDonService
                     Id = Guid.NewGuid(),
                     KhachHangId = kh.Id,
                     SoDienThoai = phone,
-                    IsDefault = true,
-                    IsDeleted = false
+                    IsDefault = true
                 });
             }
 
@@ -561,20 +552,18 @@ public class HoaDonService : IHoaDonService
                     Id = Guid.NewGuid(),
                     KhachHangId = kh.Id,
                     DiaChi = StringHelper.CapitalizeEachWord(addr),
-                    IsDefault = true,
-                    IsDeleted = false
+                    IsDefault = true
                 });
             }
             return kh;
         }
 
-        // 4) Đã có KH: bổ sung phone/address nếu thiếu mà KHÔNG cần Include collection
         if (kh != null)
         {
             if (!string.IsNullOrWhiteSpace(phone))
             {
                 var hasPhone = await _context.KhachHangPhones
-                    .AnyAsync(p => !p.IsDeleted && p.KhachHangId == kh.Id && p.SoDienThoai == phone);
+                    .AnyAsync(p => p.KhachHangId == kh.Id && p.SoDienThoai == phone);
                 if (!hasPhone)
                 {
                     _context.KhachHangPhones.Add(new KhachHangPhone
@@ -582,8 +571,7 @@ public class HoaDonService : IHoaDonService
                         Id = Guid.NewGuid(),
                         KhachHangId = kh.Id,
                         SoDienThoai = phone,
-                        IsDefault = false,
-                        IsDeleted = false
+                        IsDefault = false
                     });
                 }
             }
@@ -592,7 +580,7 @@ public class HoaDonService : IHoaDonService
             {
                 var addrLower = addr.ToLower();
                 var hasAddr = await _context.KhachHangAddresses
-                    .AnyAsync(a => !a.IsDeleted && a.KhachHangId == kh.Id && a.DiaChi.ToLower() == addrLower);
+                    .AnyAsync(a => a.KhachHangId == kh.Id && a.DiaChi.ToLower() == addrLower);
                 if (!hasAddr)
                 {
                     _context.KhachHangAddresses.Add(new KhachHangAddress
@@ -600,8 +588,7 @@ public class HoaDonService : IHoaDonService
                         Id = Guid.NewGuid(),
                         KhachHangId = kh.Id,
                         DiaChi = addr,
-                        IsDefault = false,
-                        IsDeleted = false
+                        IsDefault = false
                     });
                 }
             }
@@ -609,6 +596,7 @@ public class HoaDonService : IHoaDonService
 
         return kh;
     }
+
     private async Task<(decimal tongTien, decimal giamGia, decimal thanhTien)> AddChiTietAsync(Guid hoaDonId, HoaDonDto dto, DateTime now)
     {
         decimal tongTien = 0;

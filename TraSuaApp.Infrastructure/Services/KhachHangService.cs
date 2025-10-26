@@ -346,42 +346,89 @@ public class KhachHangService : IKhachHangService
 
     public async Task<List<KhachHangDto>> GetAllAsync()
     {
-        return await _context.KhachHangs.AsNoTracking()
+        var baseItems = await _context.KhachHangs
+            .AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.LastModified)
-            .Select(entity => new KhachHangDto
+            .Select(x => new KhachHangDto
             {
-                Id = entity.Id,
-                Ten = entity.Ten,
-                FavoriteMon = entity.FavoriteMon,
-                IsDeleted = entity.IsDeleted,
-                LastModified = entity.LastModified,
-                CreatedAt = entity.CreatedAt,
-                DeletedAt = entity.DeletedAt,
-                ThuTu = entity.ThuTu,
-                DuocNhanVoucher = entity.DuocNhanVoucher,
-                Phones = entity.KhachHangPhones
-                    .Select(p => new KhachHangPhoneDto
-                    {
-                        Id = p.Id,
-                        SoDienThoai = p.SoDienThoai,
-                        IsDefault = p.IsDefault
-                    })
-                    .OrderByDescending(p => p.IsDefault)
-                    .ToList(),
-                Addresses = entity.KhachHangAddresses
-                    .Select(a => new KhachHangAddressDto
-                    {
-                        Id = a.Id,
-                        DiaChi = a.DiaChi,
-                        IsDefault = a.IsDefault
-                    })
-                    .OrderByDescending(a => a.IsDefault)
-                    .ToList()
+                Id = x.Id,
+                Ten = x.Ten,
+                FavoriteMon = x.FavoriteMon,
+                IsDeleted = x.IsDeleted,
+                LastModified = x.LastModified,
+                CreatedAt = x.CreatedAt,
+                DeletedAt = x.DeletedAt,
+                ThuTu = x.ThuTu,
+                DuocNhanVoucher = x.DuocNhanVoucher,
+                Phones = new List<KhachHangPhoneDto>(),
+                Addresses = new List<KhachHangAddressDto>()
             })
             .ToListAsync();
-    }
 
+        if (baseItems.Count == 0) return baseItems;
+
+        var ids = baseItems.Select(x => x.Id).ToList();
+        static IEnumerable<List<T>> Chunk<T>(IReadOnlyList<T> src, int size)
+        {
+            for (int i = 0; i < src.Count; i += size)
+                yield return src.Skip(i).Take(Math.Min(size, src.Count - i)).ToList();
+        }
+
+        var phoneDict = new Dictionary<Guid, List<KhachHangPhoneDto>>(ids.Count);
+        foreach (var part in Chunk(ids, 2000))
+        {
+            var phones = await _context.KhachHangPhones
+                .AsNoTracking()
+                .Where(p => part.Contains(p.KhachHangId))
+                .Select(p => new { p.KhachHangId, p.Id, p.SoDienThoai, p.IsDefault })
+                .ToListAsync();
+
+            foreach (var g in phones.GroupBy(x => x.KhachHangId))
+            {
+                phoneDict[g.Key] = g
+                    .OrderByDescending(x => x.IsDefault)
+                    .Select(x => new KhachHangPhoneDto
+                    {
+                        Id = x.Id,
+                        SoDienThoai = x.SoDienThoai,
+                        IsDefault = x.IsDefault
+                    })
+                    .ToList();
+            }
+        }
+
+        var addrDict = new Dictionary<Guid, List<KhachHangAddressDto>>(ids.Count);
+        foreach (var part in Chunk(ids, 2000))
+        {
+            var addrs = await _context.KhachHangAddresses
+                .AsNoTracking()
+                .Where(a => part.Contains(a.KhachHangId))
+                .Select(a => new { a.KhachHangId, a.Id, a.DiaChi, a.IsDefault })
+                .ToListAsync();
+
+            foreach (var g in addrs.GroupBy(x => x.KhachHangId))
+            {
+                addrDict[g.Key] = g
+                    .OrderByDescending(x => x.IsDefault)
+                    .Select(x => new KhachHangAddressDto
+                    {
+                        Id = x.Id,
+                        DiaChi = x.DiaChi,
+                        IsDefault = x.IsDefault
+                    })
+                    .ToList();
+            }
+        }
+
+        foreach (var kh in baseItems)
+        {
+            if (phoneDict.TryGetValue(kh.Id, out var ph)) kh.Phones = ph;
+            if (addrDict.TryGetValue(kh.Id, out var ad)) kh.Addresses = ad;
+        }
+
+        return baseItems;
+    }
     public async Task<KhachHangDto?> GetByIdAsync(Guid id)
     {
         return await _context.KhachHangs.AsNoTracking()
