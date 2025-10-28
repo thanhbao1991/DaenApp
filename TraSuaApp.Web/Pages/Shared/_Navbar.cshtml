@@ -1,165 +1,172 @@
 ﻿@{
     var displayName = Context.Request.Cookies["display_name"];
 }
-<nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom mb-3">
+
+@functions {
+    string Active(string page) =>
+        (ViewContext.RouteData.Values["page"] as string)?.Equals(page, StringComparison.OrdinalIgnoreCase) == true
+        ? "active"
+        : "";
+}
+
+<style>
+    .icon-bar {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        flex-wrap: wrap;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+        .icon-bar .nav-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: .5rem;
+            transition: background-color .15s ease, border-color .15s ease;
+        }
+
+            .icon-bar .nav-link:hover {
+                background: rgba(0,0,0,.06);
+            }
+            /* Hiển thị active */
+            .icon-bar .nav-link.active {
+                background: #e9ecef !important;
+                border: 1px solid #cbd3da;
+            }
+            /* Ẩn text nếu có */
+            .icon-bar .nav-link span {
+                display: none !important;
+            }
+</style>
+
+<nav class="navbar navbar-light bg-white border-bottom mb-3">
     <div class="container-fluid">
-        <!-- Toggle -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
-                aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
 
-        <a class="navbar-brand fw-bold" asp-page="/Index">Đenn</a>
+        <ul class="icon-bar">
 
-        <div class="collapse navbar-collapse" id="mainNavbar">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <!-- Doanh thu / Thống kê -->
-                <li class="nav-item">
-                    <a class="nav-link" asp-page="/DoanhThuNgay">
-                        <i class="fa-solid fa-coins text-success me-2"></i>
-                        Doanh Thu Ngày
-                    </a>
-                </li>
+            <!-- (1) Tạo Hóa Đơn -->
+            <li class="nav-item">
+                <a class="nav-link @Active("/CreatePlus")"
+                   asp-page="/CreatePlus" title="Tạo Hóa Đơn">
+                    <i class="fa-solid fa-plus-circle text-secondary"></i>
+                </a>
+            </li>
 
-                <li class="nav-item">
-                    <a class="nav-link" asp-page="/DoanhThuThang">
-                        <i class="fa-solid fa-chart-line text-primary me-2"></i>
-                        Doanh Thu Tháng
-                    </a>
-                </li>
+            <!-- (2) Thống kê -->
+            <li class="nav-item">
+                <a class="nav-link @Active("/ThongKe")"
+                   asp-page="/ThongKe" title="Thống kê">
+                    <i class="fa-solid fa-chart-pie text-info"></i>
+                </a>
+            </li>
 
-                <li class="nav-item">
-                    <a class="nav-link" asp-page="/ThongKe">
-                        <i class="fa-solid fa-chart-pie text-info me-2"></i>
-                        Thống kê
-                    </a>
-                </li>
+            <!-- (3) Doanh thu ngày -->
+            <li class="nav-item">
+                <a class="nav-link @Active("/DoanhThuNgay")"
+                   asp-page="/DoanhThuNgay" title="Doanh Thu Ngày">
+                    <i class="fa-solid fa-coins text-success"></i>
+                </a>
+            </li>
 
-                <!-- Vận hành -->
-                <li class="nav-item">
-                    <a class="nav-link" asp-page="/ChiTietHoaDonThanhToanTab">
-                        <i class="fa-solid fa-credit-card text-success me-2"></i>
-                        Thanh Toán
-                    </a>
-                </li>
+            <!-- (4) Thanh toán -->
+            <li class="nav-item">
+                <a class="nav-link @Active("/ChiTietHoaDonThanhToanTab")"
+                   asp-page="/ChiTietHoaDonThanhToanTab" title="Thanh Toán">
+                    <i class="fa-solid fa-credit-card text-success"></i>
+                </a>
+            </li>
 
-                <li class="nav-item">
-                    <a class="nav-link" asp-page="/ChiTietHoaDonNoTab">
-                        <i class="fa-solid fa-file-invoice-dollar text-warning me-2"></i>
-                        Công Nợ
-                    </a>
-                </li>
+            <!-- (5) Công nợ -->
+            <li class="nav-item">
+                <a class="nav-link @Active("/ChiTietHoaDonNoTab")"
+                   asp-page="/ChiTietHoaDonNoTab" title="Công Nợ">
+                    <i class="fa-solid fa-file-invoice-dollar text-warning"></i>
+                </a>
+            </li>
 
-                <li class="nav-item">
-                    <a class="nav-link" asp-page="/ChiTieuHangNgayTab">
-                        <i class="fa-solid fa-wallet text-danger me-2"></i>
-                        Chi Tiêu
-                    </a>
-                </li>
+            <!-- (6) Chi tiêu -->
+            <li class="nav-item">
+                <a class="nav-link @Active("/ChiTieuHangNgayTab")"
+                   asp-page="/ChiTieuHangNgayTab" title="Chi Tiêu">
+                    <i class="fa-solid fa-wallet text-danger"></i>
+                </a>
+            </li>
 
-                <li class="nav-item">
-                    <a class="nav-link" asp-page="/CongViecNoiBoTab">
-                        <i class="fa-solid fa-tasks text-primary me-2"></i>
-                        Công Việc
-                    </a>
-                </li>
+            <!-- (7) Công việc -->
+            <li class="nav-item">
+                <a class="nav-link @Active("/CongViecNoiBoTab")"
+                   asp-page="/CongViecNoiBoTab" title="Công Việc">
+                    <i class="fa-solid fa-tasks text-primary"></i>
+                </a>
+            </li>
 
-                <!-- Tạo nhanh -->
-                <li class="nav-item">
-                    <a class="nav-link" asp-page="/CreatePlus">
-                        <i class="fa-solid fa-plus-circle text-secondary me-2"></i>
-                        Tạo Hóa Đơn
-                    </a>
-                </li>
 
-                <!-- Báo cáo & Xếp hạng -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="reportDropdown" role="button"
-                       data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                        <i class="fa-solid fa-chart-bar text-secondary me-2"></i>
-                        Báo cáo & Xếp hạng
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="reportDropdown">
+            <!-- (8) Nhóm 2 -->
+            <li class="nav-item dropdown">
+                <a class="nav-link" href="#" id="moreDropdown" role="button"
+                   data-bs-toggle="dropdown" title="Mở rộng">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreDropdown">
+
+                    <li class="dropdown-header">Doanh thu</li>
+                    <li><a class="dropdown-item" asp-page="/DoanhThuThang">Doanh Thu Tháng</a></li>
+
+                    <li><hr class="dropdown-divider" /></li>
+
+                    <li class="dropdown-header">Xếp hạng</li>
+                    <li><a class="dropdown-item" asp-page="/XepHangSanPham">TOP Sản phẩm</a></li>
+                    <li><a class="dropdown-item" asp-page="/XepHangKhachHang">TOP Khách hàng</a></li>
+
+                    <li><hr class="dropdown-divider" /></li>
+
+                    <li class="dropdown-header">Mở rộng</li>
+                    <li><a class="dropdown-item" asp-page="/VoucherTab">Voucher</a></li>
+                    <li><a class="dropdown-item" asp-page="/ChiTieuTab">Ứng Nhã</a></li>
+
+                    <li><hr class="dropdown-divider" /></li>
+
+                    <!-- Logout cuối -->
+                    @if (!string.IsNullOrWhiteSpace(displayName))
+                    {
                         <li>
-                            <a class="dropdown-item" asp-page="/ChiTieuTab">
-                                <i class="fa-solid fa-hand-holding-usd text-warning me-2"></i>
-                                Ứng Nhã
+                            <form asp-page="/Login" asp-page-handler="Logout" method="post" class="dropdown-item p-0">
+                                <button type="submit" class="btn btn-link dropdown-item text-danger text-start">
+                                    <i class="fa-solid fa-right-from-bracket me-2"></i>
+                                    Đăng xuất @displayName
+                                </button>
+                            </form>
+                        </li>
+                    }
+                    else
+                    {
+                        <li>
+                            <a class="dropdown-item" asp-page="/Login">
+                                <i class="fa-solid fa-right-to-bracket me-2"></i>
+                                Đăng nhập
                             </a>
                         </li>
-                        <li>
-                            <a class="dropdown-item" asp-page="/VoucherTab">
-                                <i class="fa-solid fa-ticket text-info me-2"></i>
-                                Voucher
-                            </a>
-                        </li>
+                    }
+                </ul>
+            </li>
 
-                        <li><hr class="dropdown-divider" /></li>
-
-                        <li>
-                            <a class="dropdown-item" asp-page="/XepHangSanPham">
-                                <i class="fa-solid fa-box-open text-success me-2"></i>
-                                TOP Sản phẩm
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" asp-page="/XepHangKhachHang">
-                                <i class="fa-solid fa-users text-purple me-2"></i>
-                                TOP Khách hàng
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-            </ul>
-
-            <!-- Auth -->
-            <div class="d-flex align-items-center">
-                @if (!string.IsNullOrWhiteSpace(displayName))
-                {
-                    <span class="me-3 text-muted">Xin chào, <b>@displayName</b></span>
-                    <form asp-page="/Login" asp-page-handler="Logout" method="post" class="d-inline">
-                        <button class="btn btn-outline-secondary btn-sm" type="submit">Đăng xuất</button>
-                    </form>
-                }
-                else
-                {
-                    <a class="btn btn-outline-primary btn-sm" asp-page="/Login">Đăng nhập</a>
-                }
-            </div>
-        </div>
+        </ul>
     </div>
 </nav>
 
 <script>
-    // Tự đóng navbar khi bấm link (trừ dropdown toggle)
     document.addEventListener('DOMContentLoaded', function () {
-        const navbar = document.getElementById('mainNavbar');
-
-        // Đóng khi click nav-link thường
-        document.querySelectorAll('#mainNavbar .nav-link:not(.dropdown-toggle)')
-            .forEach(link => {
-                link.addEventListener('click', () => {
-                    const collapse = bootstrap.Collapse.getInstance(navbar);
-                    if (collapse) collapse.hide();
-                });
-            });
-
-        // Đóng khi chọn item trong dropdown
-        document.querySelectorAll('#mainNavbar .dropdown-menu .dropdown-item')
+        document.querySelectorAll('.dropdown-menu .dropdown-item')
             .forEach(item => {
                 item.addEventListener('click', () => {
-                    const collapse = bootstrap.Collapse.getInstance(navbar);
-                    if (collapse) collapse.hide();
+                    const dd = bootstrap.Dropdown.getInstance(document.getElementById('moreDropdown'));
+                    if (dd) dd.hide();
                 });
             });
-
-        // Hover mở/đóng dropdown trên desktop
-        if (window.matchMedia('(min-width: 992px)').matches) {
-            document.querySelectorAll('#mainNavbar .nav-item.dropdown').forEach(drop => {
-                const toggle = drop.querySelector('.dropdown-toggle');
-                const dd = bootstrap.Dropdown.getOrCreateInstance(toggle);
-                drop.addEventListener('mouseenter', () => dd.show());
-                drop.addEventListener('mouseleave', () => dd.hide());
-            });
-        }
     });
 </script>

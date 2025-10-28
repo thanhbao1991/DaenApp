@@ -105,7 +105,7 @@ namespace TraSuaApp.WpfClient.Controls
                     return new { sp, score };
                 })
                 .Where(x => x.score > 0)
-                .OrderByDescending(x => x.sp.DaBan)
+                .OrderByDescending(x => x.sp.ThuTu)
 
                 .Select(x => new SanPhamSearchResult
                 {
@@ -308,9 +308,9 @@ namespace TraSuaApp.WpfClient.Controls
                     if (sp == null || spNeighbor == null) return;
 
                     // Hoán đổi DaBan
-                    int temp = sp.DaBan;
-                    sp.DaBan = spNeighbor.DaBan;
-                    spNeighbor.DaBan = temp;
+                    int temp = sp.ThuTu;
+                    sp.ThuTu = spNeighbor.ThuTu;
+                    spNeighbor.ThuTu = temp;
 
                     sp.LastModified = DateTime.Now;
                     spNeighbor.LastModified = DateTime.Now;

@@ -40,7 +40,17 @@ body {
   font-family: system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
+#KhachHangClear {
+    border: none;
+    z-index: 5;
+    background: transparent !important;
+    opacity: .6;
+    transition: opacity .15s;
+}
 
+#KhachHangClear:hover {
+        opacity: 1;
+}
 td.center-middle {
   vertical-align: middle;
   text-align: center;

@@ -18,6 +18,55 @@ public class KhachHangService : IKhachHangService
     {
         _context = context;
     }
+
+
+    public async Task<List<KhachHangDto>> SearchAsync(string q, int take = 30)
+    {
+        q = (q ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(q)) return new();
+
+        take = Math.Clamp(take, 1, 50);
+        string nx = StringHelper.MyNormalizeText(q); // giống WPF
+
+        var list = await _context.KhachHangs
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted &&
+                        EF.Functions.Like(x.TimKiem, $"%{nx}%"))  // giống Contains
+            .OrderByDescending(x => x.ThuTu)                     // chỉ ThuTu
+            .Take(take)
+            .Select(x => new
+            {
+                Ent = x,
+                Phones = x.KhachHangPhones
+                            .OrderByDescending(p => p.IsDefault)
+                            .ThenBy(p => p.CreatedAt)
+                            .Select(p => p.SoDienThoai)
+                            .Take(3)
+                            .ToList(),
+                Addrs = x.KhachHangAddresses
+                            .OrderByDescending(a => a.IsDefault)
+                            .ThenBy(a => a.CreatedAt)
+                            .Select(a => a.DiaChi)
+                            .Take(3)
+                            .ToList()
+            })
+            .ToListAsync();
+
+        return list.Select(r => new KhachHangDto
+        {
+            Id = r.Ent.Id,
+            Ten = r.Ent.Ten,
+            FavoriteMon = r.Ent.FavoriteMon,
+            CreatedAt = r.Ent.CreatedAt,
+            LastModified = r.Ent.LastModified,
+            ThuTu = r.Ent.ThuTu,
+            DuocNhanVoucher = r.Ent.DuocNhanVoucher,
+            Phones = r.Phones.Select(p => new KhachHangPhoneDto { SoDienThoai = p }).ToList(),
+            Addresses = r.Addrs.Select(a => new KhachHangAddressDto { DiaChi = a }).ToList()
+        }).ToList();
+    }
+
+
     public async Task<Result<KhachHangDto>> UpdateSingleAsync(Guid id, KhachHangDto dto)
     {
         var entity = await _context.KhachHangs
@@ -45,6 +94,8 @@ public class KhachHangService : IKhachHangService
                         .WithAfter(after);
     }
 
+    private static string BuildTimKiem(KhachHangDto dto)
+        => KhachHangSearchHelper.BuildTimKiem(dto);
 
     private string NormalizePhone(string input)
     {
@@ -147,6 +198,8 @@ public class KhachHangService : IKhachHangService
         );                            // "LTK"
         return house + initials;      // "02LTK"
     }
+
+
     public async Task<Result<KhachHangDto>> CreateAsync(KhachHangDto dto)
     {
         var validation = ValidateAndNormalize(dto);
@@ -164,9 +217,12 @@ public class KhachHangService : IKhachHangService
 
         bool trung = await _context.KhachHangPhones
             .AnyAsync(p => dto.Phones.Select(x => x.SoDienThoai).Contains(p.SoDienThoai));
-
         if (trung)
             return Result<KhachHangDto>.Failure($"Số điện thoại đã tồn tại ở {_friendlyName} khác.");
+
+        var now = DateTime.Now;
+        // ➜ TÍNH TimKiem TRƯỚC
+        var tim = BuildTimKiem(dto);
 
         var entity = new KhachHang
         {
@@ -175,10 +231,11 @@ public class KhachHangService : IKhachHangService
             FavoriteMon = dto.FavoriteMon,
             OldId = dto.OldId,
             IsDeleted = false,
-            LastModified = DateTime.Now,
-            CreatedAt = DateTime.Now,
+            LastModified = now,
+            CreatedAt = now,
             ThuTu = 0,
             DuocNhanVoucher = dto.DuocNhanVoucher,
+            // TimKiem sẽ gán SAU khi normalize để không bị strip
             KhachHangPhones = dto.Phones.Select(p => new KhachHangPhone
             {
                 Id = Guid.NewGuid(),
@@ -192,11 +249,18 @@ public class KhachHangService : IKhachHangService
                 IsDefault = a.IsDefault
             }).ToList()
         };
+
+        // Dọn chuỗi trước
         StringHelper.NormalizeAllStrings(entity);
+
+        // Gán FK
         foreach (var p in entity.KhachHangPhones)
             p.KhachHangId = entity.Id;
         foreach (var a in entity.KhachHangAddresses)
             a.KhachHangId = entity.Id;
+
+        // ➜ GÁN LẠI TimKiem SAU CÙNG (giữ dấu ';')
+        entity.TimKiem = tim;
 
         _context.KhachHangs.Add(entity);
         await _context.SaveChangesAsync();
@@ -206,7 +270,6 @@ public class KhachHangService : IKhachHangService
             .WithId(after.Id)
             .WithAfter(after);
     }
-
     public async Task<Result<KhachHangDto>> UpdateAsync(Guid id, KhachHangDto dto)
     {
         var entity = await _context.KhachHangs
@@ -226,19 +289,22 @@ public class KhachHangService : IKhachHangService
 
         bool trung = await _context.KhachHangPhones
             .AnyAsync(p => dto.Phones.Select(x => x.SoDienThoai).Contains(p.SoDienThoai) && p.KhachHangId != id);
-
         if (trung)
             return Result<KhachHangDto>.Failure($"Số điện thoại đã tồn tại ở {_friendlyName} khác.");
 
         var before = ToDto(entity);
+        var now = DateTime.Now;
 
+        // ➜ TÍNH TimKiem TRƯỚC
+        var tim = BuildTimKiem(dto);
+
+        // Cập nhật các trường
         entity.Ten = dto.Ten;
         entity.FavoriteMon = dto.FavoriteMon;
-
-        entity.LastModified = DateTime.Now;
+        entity.LastModified = now;
         entity.DuocNhanVoucher = dto.DuocNhanVoucher;
 
-        // Xoá cũ
+        // Xoá các phone/address không còn
         var phonesToRemove = entity.KhachHangPhones
             .Where(p => !dto.Phones.Any(dtoP => dtoP.Id == p.Id)).ToList();
         var addressesToRemove = entity.KhachHangAddresses
@@ -246,7 +312,7 @@ public class KhachHangService : IKhachHangService
         phonesToRemove.ForEach(p => entity.KhachHangPhones.Remove(p));
         addressesToRemove.ForEach(a => entity.KhachHangAddresses.Remove(a));
 
-        // Cập nhật hoặc thêm mới
+        // Cập nhật/Thêm mới phone
         foreach (var phoneDto in dto.Phones)
         {
             var phone = entity.KhachHangPhones.FirstOrDefault(p => p.Id == phoneDto.Id);
@@ -267,6 +333,7 @@ public class KhachHangService : IKhachHangService
             }
         }
 
+        // Cập nhật/Thêm mới address
         foreach (var addrDto in dto.Addresses)
         {
             var addr = entity.KhachHangAddresses.FirstOrDefault(a => a.Id == addrDto.Id);
@@ -287,7 +354,12 @@ public class KhachHangService : IKhachHangService
             }
         }
 
+        // Dọn chuỗi trước
         StringHelper.NormalizeAllStrings(entity);
+
+        // ➜ GÁN LẠI TimKiem SAU CÙNG (giữ dấu ';')
+        entity.TimKiem = tim;
+
         await _context.SaveChangesAsync();
 
         var after = await GetByIdAsync(id);
@@ -296,6 +368,7 @@ public class KhachHangService : IKhachHangService
             .WithBefore(before)
             .WithAfter(after);
     }
+
 
     public async Task<Result<KhachHangDto>> DeleteAsync(Guid id)
     {

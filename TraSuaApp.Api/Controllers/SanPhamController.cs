@@ -16,13 +16,21 @@ public class SanPhamController : BaseApiController
 {
     private readonly ISanPhamService _service;
     private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["SanPham"];
+    private readonly string _friendlyName = TuDien._tableFriendlyNames["SanPham"];
 
     public SanPhamController(ISanPhamService service, IHubContext<SignalRHub> hub)
     {
         _service = service;
         _hub = hub;
     }
+
+    [HttpGet("search")]
+    public async Task<ActionResult> Search(string? q, int take = 30)
+    {
+        var data = await _service.SearchAsync(q ?? string.Empty, take);
+        return Ok(new { data });
+    }
+
     private async Task NotifyClients(string action, Guid id)
     {
         if (!string.IsNullOrEmpty(ConnectionId))
@@ -40,6 +48,7 @@ public class SanPhamController : BaseApiController
     [HttpGet]
     public async Task<ActionResult<Result<List<SanPhamDto>>>> GetAll()
         => Result<List<SanPhamDto>>.Success(data: await _service.GetAllAsync());
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Result<SanPhamDto?>>> GetById(Guid id)
     {
@@ -49,6 +58,7 @@ public class SanPhamController : BaseApiController
             : Result<SanPhamDto?>.Success(data: result);
     }
 
+    // Cập nhật nhanh 1 trường (ví dụ: ThuTu) cho 1 sản phẩm
     [HttpPut("{id}/single")]
     public async Task<ActionResult<Result<SanPhamDto>>> UpdateSingle(Guid id, SanPhamDto dto)
     {
@@ -65,6 +75,7 @@ public class SanPhamController : BaseApiController
         var result = await _service.CreateAsync(dto);
         if (result.IsSuccess && result.Data != null)
             await NotifyClients("created", result.Data.Id);
+
         return result;
     }
 
@@ -74,6 +85,7 @@ public class SanPhamController : BaseApiController
         var result = await _service.UpdateAsync(id, dto);
         if (result.IsSuccess && result.Data != null)
             await NotifyClients("updated", result.Data.Id);
+
         return result;
     }
 
@@ -83,6 +95,7 @@ public class SanPhamController : BaseApiController
         var result = await _service.DeleteAsync(id);
         if (result.IsSuccess && result.Data != null)
             await NotifyClients("deleted", result.Data.Id);
+
         return result;
     }
 
@@ -92,9 +105,11 @@ public class SanPhamController : BaseApiController
         var result = await _service.RestoreAsync(id);
         if (result.IsSuccess && result.Data != null)
             await NotifyClients("restored", result.Data.Id);
+
         return result;
     }
 
+    // API đồng bộ theo mốc thời gian
     [HttpGet("sync")]
     public async Task<ActionResult<Result<List<SanPhamDto>>>> Sync(DateTime lastSync)
     {

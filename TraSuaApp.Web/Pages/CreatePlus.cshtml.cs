@@ -20,13 +20,14 @@ namespace TraSuaAppWeb.Pages.HoaDon
         {
             var api = _http.CreateClient("Api");
 
-            try { using var khRes = await api.GetAsync("/api/KhachHang"); KHJson = await ExtractDataArrayAsync(khRes); } catch { KHJson = "[]"; }
+            // ✅ KHJson = [] — dừng load toàn bộ khách hàng về browser
+            KHJson = "[]";
+
             try { using var spRes = await api.GetAsync("/api/SanPham"); SPJson = await ExtractDataArrayAsync(spRes); } catch { SPJson = "[]"; }
             try { using var gbRes = await api.GetAsync("/api/KhachHangGiaBan"); GBJson = await ExtractDataArrayAsync(gbRes); } catch { GBJson = "[]"; }
             try { using var vcRes = await api.GetAsync("/api/Voucher"); VouchersJson = await ExtractDataArrayAsync(vcRes); } catch { VouchersJson = "[]"; }
         }
 
-        // ========= NHẬN PAYLOAD TỪ JS & FORWARD VỀ API =========
         public class SaveLine
         {
             public Guid SanPhamId { get; set; }
@@ -38,6 +39,7 @@ namespace TraSuaAppWeb.Pages.HoaDon
             public string? NoteText { get; set; }
             public List<object>? ToppingDtos { get; set; } = new();
         }
+
         public class SaveRequest
         {
             public string LoaiDon { get; set; } = "";
@@ -57,21 +59,42 @@ namespace TraSuaAppWeb.Pages.HoaDon
         {
             var api = _http.CreateClient("Api");
 
-            // Điều chỉnh đường dẫn theo API của bạn
-            var forwardPath = "/api/HoaDon";               // A
-            // var forwardPath = "/api/HoaDon/Create";     // B
-
-            var response = await api.PostAsJsonAsync(forwardPath, req);
+            var response = await api.PostAsJsonAsync("/api/HoaDon", req);
             var text = await response.Content.ReadAsStringAsync();
 
             return new JsonResult(new
             {
                 success = response.IsSuccessStatusCode,
-                status = (int)response.StatusCode,
                 raw = TryParseJson(text)
             });
         }
+        // GET: /HoaDon/CreatePlus?handler=SearchSP&q=...&take=30
+        public async Task<IActionResult> OnGetSearchSpAsync(string q, int take = 30)
+        {
+            var api = _http.CreateClient("Api");
+            var url = $"/api/SanPham/search?q={Uri.EscapeDataString(q ?? "")}&take={take}";
+            var res = await api.GetAsync(url);
+            var raw = await res.Content.ReadAsStringAsync();
+            return Content(raw, "application/json");
+        }
+        // ✅ Đồng bộ cách gọi như nơi khác — Web forward đến Api
+        public async Task<IActionResult> OnGetSearchKHAsync(string q, int take = 30)
+        {
+            var api = _http.CreateClient("Api");
+            var url = $"/api/KhachHang/search?q={Uri.EscapeDataString(q ?? "")}&take={take}";
+            var res = await api.GetAsync(url);
 
+            var raw = await res.Content.ReadAsStringAsync();
+            return Content(raw, "application/json");
+        }
+        // GET: /HoaDon/CreatePlus?handler=KhInfo&id=...
+        public async Task<IActionResult> OnGetKhInfoAsync(Guid id)
+        {
+            var api = _http.CreateClient("Api");
+            var res = await api.GetAsync($"/api/Dashboard/thongtin-khachhang/{id}");
+            var raw = await res.Content.ReadAsStringAsync();
+            return Content(raw, "application/json");
+        }
         private static object? TryParseJson(string s)
         {
             try { return JsonSerializer.Deserialize<JsonElement>(s); }

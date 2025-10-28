@@ -227,11 +227,10 @@ namespace TraSuaApp.WpfClient.Views
             var window = new HoaDonEdit(dto)
             {
                 Owner = owner,
-                Width = this.ActualWidth,
-                Height = this.ActualHeight,
+                Width = owner?.ActualWidth ?? 1200,
+                Height = owner?.ActualHeight ?? 800,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
-
             var ok = window.ShowDialog() == true;
             if (!ok) return null;
 

@@ -13,6 +13,9 @@ public interface IKhachHangService
     Task<Result<KhachHangDto>> UpdateSingleAsync(Guid id, KhachHangDto dto);
     Task<Result<KhachHangDto>> DeleteAsync(Guid id);
 
-    // 🟟 API đồng bộ
+    // Đồng bộ ngoại tuyến
     Task<List<KhachHangDto>> GetUpdatedSince(DateTime lastSync);
+
+    // ✅ MỚI — Search theo tên/SDT/địa chỉ (accent-insensitive), giới hạn trả về
+    Task<List<KhachHangDto>> SearchAsync(string q, int take = 30);
 }

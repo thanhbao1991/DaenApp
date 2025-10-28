@@ -120,7 +120,7 @@ namespace TraSuaApp.WpfClient.Controls
                 results = KhachHangList
                     .Where(x => x.TimKiem.Contains(keyword))
                     .OrderByDescending(x => x.ThuTu)
-                    .Take(30)
+                    .Take(15)
                     .ToList();
             }
 

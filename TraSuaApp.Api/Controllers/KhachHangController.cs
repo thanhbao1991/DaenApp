@@ -23,6 +23,7 @@ public class KhachHangController : BaseApiController
         _service = service;
         _hub = hub;
     }
+
     private async Task NotifyClients(string action, Guid id)
     {
         if (!string.IsNullOrEmpty(ConnectionId))
@@ -40,14 +41,16 @@ public class KhachHangController : BaseApiController
     [HttpGet]
     public async Task<ActionResult<Result<List<KhachHangDto>>>> GetAll()
         => Result<List<KhachHangDto>>.Success(data: await _service.GetAllAsync());
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Result<KhachHangDto?>>> GetById(Guid id)
     {
         var result = await _service.GetByIdAsync(id);
         return result == null
-            ? Result<KhachHangDto?>.Failure($"KhÃ´ng tÃ¬m tháº¥y {_friendlyName}.")
+            ? Result<KhachHangDto?>.Failure($"Không tìm thấy {_friendlyName}.")
             : Result<KhachHangDto?>.Success(data: result);
     }
+
     [HttpPost]
     public async Task<ActionResult<Result<KhachHangDto>>> Create(KhachHangDto dto)
     {
@@ -56,13 +59,13 @@ public class KhachHangController : BaseApiController
             await NotifyClients("created", result.Data.Id);
         return result;
     }
+
     [HttpPut("{id}/single")]
     public async Task<ActionResult<Result<KhachHangDto>>> UpdateSingle(Guid id, KhachHangDto dto)
     {
         var result = await _service.UpdateSingleAsync(id, dto);
         if (result.IsSuccess)
             await NotifyClients("updated", id);
-
         return result;
     }
 
@@ -98,5 +101,13 @@ public class KhachHangController : BaseApiController
     {
         var data = await _service.GetUpdatedSince(lastSync);
         return Result<List<KhachHangDto>>.Success(data);
+    }
+
+    // ✅ MỚI — search backend (không load all)
+    [HttpGet("search")]
+    public async Task<ActionResult<Result<List<KhachHangDto>>>> Search([FromQuery] string q, [FromQuery] int take = 30)
+    {
+        var list = await _service.SearchAsync(q ?? string.Empty, take);
+        return Result<List<KhachHangDto>>.Success(list);
     }
 }

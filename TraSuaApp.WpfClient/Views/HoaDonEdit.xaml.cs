@@ -274,8 +274,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                         }
 
                         // Gợi ý món yêu thích
-                        SuggestFavoriteIntoSearchBoxByName(info.MonYeuThich);
-
+                        // SuggestFavoriteIntoSearchBoxByName(info.MonYeuThich);
+                        RenderFavoriteChipsFromText(info?.MonYeuThich);
                         UpdateTotals();
                     }
                 }
@@ -297,6 +297,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 CongNoTextBlock.Text = null;
                 DiemThangNayTextBlock.Text = null;
                 DiemThangTruocTextBlock.Text = null;
+                GoiYWrap.Children.Clear();
             };
 
             VoucherComboBox.ItemsSource = _voucherList;
@@ -828,7 +829,131 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     VoucherComboBox.SelectedIndex = VoucherComboBox.Items.Count - 1;
             }
         }
+        // ====== FAVORITE QUICK CHIPS ======
+        private void RenderFavoriteChipsFromText(string? raw)
+        {
+            try
+            {
+                GoiYWrap.Children.Clear();
 
+                // Không có text => ẩn khối
+                if (string.IsNullOrWhiteSpace(raw))
+                {
+                    return;
+                }
+
+                // Tách theo ; , / | xuống dòng
+                var parts = raw
+                    .Split(new[] { ';', ',', '/', '|', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (parts.Count == 0)
+                {
+                    return;
+                }
+
+                // Tạo button cho từng cụm chữ
+                foreach (var name in parts)
+                {
+                    var sp = FindSanPhamByNameLoose(name);
+                    if (sp == null) continue; // không map được thì bỏ
+
+                    var btn = new Button
+                    {
+                        Style = Application.Current.FindResource("AddButtonStyle") as Style,
+                        Margin = new Thickness(4),
+                        Content = name,
+                        Opacity = 1,
+                        Tag = sp.Id
+                    };
+                    btn.Click += FavoriteChip_Click;
+                    GoiYWrap.Children.Add(btn);
+                }
+
+            }
+            catch { }
+        }
+
+        // Tìm sản phẩm theo tên "lỏng tay": ưu tiên trùng tuyệt đối, rồi startsWith, rồi contains (không phân biệt hoa thường)
+        private SanPhamDto? FindSanPhamByNameLoose(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+            var q = name.Trim();
+
+            // 1) exact (case-insensitive)
+            var exact = _sanPhamList.FirstOrDefault(x =>
+                string.Equals(x.Ten?.Trim(), q, StringComparison.OrdinalIgnoreCase));
+            if (exact != null) return exact;
+
+            // 2) startsWith
+            var starts = _sanPhamList.FirstOrDefault(x =>
+                (x.Ten ?? "").Trim().StartsWith(q, StringComparison.OrdinalIgnoreCase));
+            if (starts != null) return starts;
+
+            // 3) contains
+            var contains = _sanPhamList.FirstOrDefault(x =>
+                (x.Ten ?? "").IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0);
+            return contains;
+        }
+
+        // Click 1 nút gợi ý -> thêm 1 dòng (biến thể rẻ nhất), áp giá riêng nếu có
+        private void FavoriteChip_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.Tag is not Guid spId) return;
+            var sp = _sanPhamList.FirstOrDefault(x => x.Id == spId);
+            if (sp == null) return;
+
+            var bt = sp.BienThe?.OrderBy(x => x.GiaBan).FirstOrDefault();
+            if (bt == null) return;
+
+            var ct = new ChiTietHoaDonDto
+            {
+                Id = Guid.NewGuid(),
+                CreatedAt = DateTime.Now,
+                LastModified = DateTime.Now,
+                SanPhamIdBienThe = bt.Id,
+                TenSanPham = sp.Ten,
+                TenBienThe = bt.TenBienThe,
+                SoLuong = 1,
+                Stt = 0,
+                BienTheList = _bienTheList.Where(x => x.SanPhamId == sp.Id).ToList(),
+                ToppingDtos = new List<ToppingDto>()
+            };
+
+            decimal donGia = bt.GiaBan;
+            if (Model.KhachHangId != null)
+            {
+                var customGia = AppProviders.KhachHangGiaBans.Items
+                    .FirstOrDefault(x => x.KhachHangId == Model.KhachHangId.Value
+                                      && x.SanPhamBienTheId == bt.Id
+                                      && !x.IsDeleted);
+                if (customGia != null) donGia = customGia.GiaBan;
+            }
+            ct.DonGia = donGia;
+
+            ct.PropertyChanged += (s2, e2) =>
+            {
+                if (e2.PropertyName is nameof(ChiTietHoaDonDto.SoLuong)
+                    or nameof(ChiTietHoaDonDto.DonGia)
+                    or nameof(ChiTietHoaDonDto.ThanhTien)
+                    or nameof(ChiTietHoaDonDto.ToppingDtos))
+                {
+                    UpdateTotals();
+                }
+            };
+
+            Model.ChiTietHoaDons.Add(ct);
+            ChiTietListBox.SelectedItem = ct;
+            ChiTietListBox.ScrollIntoView(ct);
+            UpdateTotals();
+
+            // UX: quay lại ô search để nhập tiếp
+            SanPhamSearchBox.SearchTextBox.Focus();
+            SanPhamSearchBox.SearchTextBox.SelectAll();
+        }
         private void HuyVoucher_Click(object sender, RoutedEventArgs e)
         {
             VoucherComboBox.SelectedIndex = -1;

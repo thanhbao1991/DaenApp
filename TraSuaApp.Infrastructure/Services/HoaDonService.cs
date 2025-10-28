@@ -18,7 +18,163 @@ public class HoaDonService : IHoaDonService
     {
         _context = context;
     }
+    private async Task<KhachHang?> GetOrCreateKhachHangAsync(HoaDonDto dto, DateTime now)
+    {
+        // Lấy dữ liệu thô từ DTO (UI đã gán trước khi lưu)
+        var phoneRaw = dto.SoDienThoaiText ?? string.Empty;
+        var addrRaw = dto.DiaChiText ?? string.Empty;
+        var nameRaw = dto.TenKhachHangText ?? string.Empty;
 
+        var phone = phoneRaw.Trim();
+        var addr = addrRaw.Trim();
+        var name = nameRaw.Trim();
+
+        // 1) CASE ẨN DANH: không chọn KH, không có SĐT, tên trống hoặc "Khách lẻ" => KHÔNG tạo khách
+        if (dto.KhachHangId == null &&
+            string.IsNullOrWhiteSpace(phone) &&
+            (string.IsNullOrWhiteSpace(name) ||
+             name.Equals("Khách lẻ", StringComparison.OrdinalIgnoreCase)))
+        {
+            return null;
+        }
+
+        // 2) CÓ KH THEO ID
+        KhachHang? kh = null;
+        if (dto.KhachHangId != null)
+        {
+            kh = await _context.KhachHangs
+                .FirstOrDefaultAsync(x => x.Id == dto.KhachHangId.Value && !x.IsDeleted);
+        }
+
+        // 3) CHƯA CÓ KH: tìm theo SĐT nếu có
+        if (kh == null && !string.IsNullOrWhiteSpace(phone))
+        {
+            var khId = await _context.KhachHangPhones.AsNoTracking()
+                        .Where(p => p.SoDienThoai == phone)
+                        .Select(p => (Guid?)p.KhachHangId)
+                        .FirstOrDefaultAsync();
+
+            if (khId != null)
+            {
+                kh = await _context.KhachHangs
+                     .FirstOrDefaultAsync(x => x.Id == khId.Value && !x.IsDeleted);
+            }
+        }
+
+        // Chuẩn hoá tên: nếu rỗng → null (không tự ép = "Khách lẻ" ở đây)
+        var cleanedName = string.IsNullOrWhiteSpace(name) ? null : name;
+
+        // 4) KHÔNG TÌM THẤY & đủ dữ kiện để TẠO MỚI (có SĐT hoặc có tên thật)
+        if (kh == null && (!string.IsNullOrWhiteSpace(phone) || !string.IsNullOrWhiteSpace(cleanedName)))
+        {
+            kh = new KhachHang
+            {
+                Id = Guid.NewGuid(),
+                Ten = string.IsNullOrWhiteSpace(cleanedName) ? "Khách lẻ" : cleanedName,
+                DuocNhanVoucher = true,
+                CreatedAt = now,
+                LastModified = now,
+                IsDeleted = false
+            };
+            StringHelper.NormalizeAllStrings(kh);
+            _context.KhachHangs.Add(kh);
+
+            // Gom dữ liệu tạm để build TimKiem
+            var phonesDto = new List<KhachHangPhoneDto>();
+            var addrsDto = new List<KhachHangAddressDto>();
+
+            if (!string.IsNullOrWhiteSpace(phone))
+            {
+                _context.KhachHangPhones.Add(new KhachHangPhone
+                {
+                    Id = Guid.NewGuid(),
+                    KhachHangId = kh.Id,
+                    SoDienThoai = phone,
+                    IsDefault = true
+                });
+                phonesDto.Add(new KhachHangPhoneDto { SoDienThoai = phone, IsDefault = true });
+            }
+
+            if (!string.IsNullOrWhiteSpace(addr))
+            {
+                var capAddr = StringHelper.CapitalizeEachWord(addr);
+                _context.KhachHangAddresses.Add(new KhachHangAddress
+                {
+                    Id = Guid.NewGuid(),
+                    KhachHangId = kh.Id,
+                    DiaChi = capAddr,
+                    IsDefault = true
+                });
+                addrsDto.Add(new KhachHangAddressDto { DiaChi = capAddr, IsDefault = true });
+            }
+
+            // ⬇️ Build TimKiem ngay khi tạo
+            var dtoTmp = new KhachHangDto { Ten = kh.Ten, Phones = phonesDto, Addresses = addrsDto };
+            kh.TimKiem = KhachHangSearchHelper.BuildTimKiem(dtoTmp);
+
+            return kh;
+        }
+
+        // 5) ĐÃ CÓ KH: bổ sung phone/địa chỉ nếu chưa có và rebuild TimKiem nếu thay đổi
+        bool changed = false;
+
+        if (kh != null && !string.IsNullOrWhiteSpace(phone))
+        {
+            var hasPhone = await _context.KhachHangPhones
+                .AnyAsync(p => p.KhachHangId == kh.Id && p.SoDienThoai == phone && !p.IsDeleted);
+            if (!hasPhone)
+            {
+                _context.KhachHangPhones.Add(new KhachHangPhone
+                {
+                    Id = Guid.NewGuid(),
+                    KhachHangId = kh.Id,
+                    SoDienThoai = phone,
+                    IsDefault = false
+                });
+                changed = true;
+            }
+        }
+
+        if (kh != null && !string.IsNullOrWhiteSpace(addr))
+        {
+            var capAddr = StringHelper.CapitalizeEachWord(addr);
+            var hasAddr = await _context.KhachHangAddresses
+                .AnyAsync(a => a.KhachHangId == kh.Id && a.DiaChi.ToLower() == capAddr.ToLower() && !a.IsDeleted);
+            if (!hasAddr)
+            {
+                _context.KhachHangAddresses.Add(new KhachHangAddress
+                {
+                    Id = Guid.NewGuid(),
+                    KhachHangId = kh.Id,
+                    DiaChi = capAddr,
+                    IsDefault = false
+                });
+                changed = true;
+            }
+        }
+
+        // ⬇️ Nếu có bổ sung phone/địa chỉ → rebuild TimKiem cho KH hiện hữu
+        if (kh != null && changed)
+        {
+            var phonesCur = await _context.KhachHangPhones
+                             .Where(p => p.KhachHangId == kh.Id && !p.IsDeleted)
+                             .OrderByDescending(p => p.IsDefault)
+                             .Select(p => new KhachHangPhoneDto { SoDienThoai = p.SoDienThoai, IsDefault = p.IsDefault })
+                             .ToListAsync();
+
+            var addrsCur = await _context.KhachHangAddresses
+                            .Where(a => a.KhachHangId == kh.Id && !a.IsDeleted)
+                            .OrderByDescending(a => a.IsDefault)
+                            .Select(a => new KhachHangAddressDto { DiaChi = a.DiaChi, IsDefault = a.IsDefault })
+                            .ToListAsync();
+
+            var dtoTmp = new KhachHangDto { Ten = kh.Ten, Phones = phonesCur, Addresses = addrsCur };
+            kh.TimKiem = KhachHangSearchHelper.BuildTimKiem(dtoTmp);
+            kh.LastModified = now;
+        }
+
+        return kh;
+    }
     private HoaDonDto ToDto(HoaDon entity)
     {
         var pays = entity.ChiTietHoaDonThanhToans?.Where(t => !t.IsDeleted).ToList() ?? new List<ChiTietHoaDonThanhToan>();
@@ -497,105 +653,7 @@ public class HoaDonService : IHoaDonService
                         .WithAfter(after);
     }
 
-    private async Task<KhachHang?> GetOrCreateKhachHangAsync(HoaDonDto dto, DateTime now)
-    {
-        var phone = (dto.SoDienThoaiText ?? "").Trim();
-        var addr = (dto.DiaChiText ?? "").Trim();
-        var name = string.IsNullOrWhiteSpace(dto.TenKhachHangText) ? "Khách lẻ" : dto.TenKhachHangText.Trim();
 
-        KhachHang? kh = null;
-
-        if (dto.KhachHangId != null)
-        {
-            kh = await _context.KhachHangs.FirstOrDefaultAsync(x => x.Id == dto.KhachHangId.Value);
-        }
-        else if (!string.IsNullOrWhiteSpace(phone))
-        {
-            var khId = await _context.KhachHangPhones
-                .AsNoTracking()
-                .Where(p => p.SoDienThoai == phone)
-                .Select(p => (Guid?)p.KhachHangId)
-                .FirstOrDefaultAsync();
-
-            if (khId != null)
-                kh = await _context.KhachHangs.FirstOrDefaultAsync(x => x.Id == khId.Value);
-        }
-
-        if (kh == null && (!string.IsNullOrWhiteSpace(name) || !string.IsNullOrWhiteSpace(phone)))
-        {
-            kh = new KhachHang
-            {
-                Id = Guid.NewGuid(),
-                Ten = name,
-                DuocNhanVoucher = true,
-                CreatedAt = now,
-                LastModified = now
-            };
-            StringHelper.NormalizeAllStrings(kh);
-            _context.KhachHangs.Add(kh);
-
-            if (!string.IsNullOrWhiteSpace(phone))
-            {
-                _context.KhachHangPhones.Add(new KhachHangPhone
-                {
-                    Id = Guid.NewGuid(),
-                    KhachHangId = kh.Id,
-                    SoDienThoai = phone,
-                    IsDefault = true
-                });
-            }
-
-            if (!string.IsNullOrWhiteSpace(addr))
-            {
-                _context.KhachHangAddresses.Add(new KhachHangAddress
-                {
-                    Id = Guid.NewGuid(),
-                    KhachHangId = kh.Id,
-                    DiaChi = StringHelper.CapitalizeEachWord(addr),
-                    IsDefault = true
-                });
-            }
-            return kh;
-        }
-
-        if (kh != null)
-        {
-            if (!string.IsNullOrWhiteSpace(phone))
-            {
-                var hasPhone = await _context.KhachHangPhones
-                    .AnyAsync(p => p.KhachHangId == kh.Id && p.SoDienThoai == phone);
-                if (!hasPhone)
-                {
-                    _context.KhachHangPhones.Add(new KhachHangPhone
-                    {
-                        Id = Guid.NewGuid(),
-                        KhachHangId = kh.Id,
-                        SoDienThoai = phone,
-                        IsDefault = false
-                    });
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(addr))
-            {
-                var addrLower = addr.ToLower();
-                var hasAddr = await _context.KhachHangAddresses
-                    .AnyAsync(a => a.KhachHangId == kh.Id && a.DiaChi.ToLower() == addrLower);
-                if (!hasAddr)
-                {
-                    _context.KhachHangAddresses.Add(new KhachHangAddress
-                    {
-                        Id = Guid.NewGuid(),
-                        KhachHangId = kh.Id,
-                        DiaChi = addr,
-                        IsDefault = false
-                    });
-                }
-            }
-        }
-
-        return kh;
-    }
 
     private async Task<(decimal tongTien, decimal giamGia, decimal thanhTien)> AddChiTietAsync(Guid hoaDonId, HoaDonDto dto, DateTime now)
     {

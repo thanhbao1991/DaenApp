@@ -12,6 +12,56 @@ namespace TraSuaApp.Infrastructure.Services
         private readonly AppDbContext _context;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["SanPham"];
 
+
+        public async Task<List<SanPhamDto>> SearchAsync(string q, int take)
+        {
+            q = (q ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(q)) return new();
+
+            take = Math.Clamp(take, 1, 50);
+            string nx = StringHelper.MyNormalizeText(q); // "caphekem", "cpk", "ca phe kem", "[viettat]"
+
+            var baseQuery = _context.SanPhams
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted && !x.NgungBan)
+                .Where(x => EF.Functions.Like(x.TimKiem!, $"%{nx}%"));   // ⬅️ chỉ dùng TimKiem
+
+            return await baseQuery
+                .OrderByDescending(x => x.ThuTu)
+                .ThenBy(x => x.Ten)
+                .Take(take)
+                .Select(entity => new SanPhamDto
+                {
+                    Id = entity.Id,
+                    Ten = entity.Ten,
+                    DinhLuong = entity.DinhLuong,
+                    VietTat = entity.VietTat,
+                    TenKhongVietTat = entity.TenKhongVietTat,
+                    ThuTu = entity.ThuTu,
+                    NgungBan = entity.NgungBan,
+                    TichDiem = entity.TichDiem,
+                    OldId = entity.OldId,
+                    NhomSanPhamId = entity.NhomSanPhamId,
+                    TenNhomSanPham = entity.NhomSanPham != null ? entity.NhomSanPham.Ten : null,
+                    CreatedAt = entity.CreatedAt,
+                    LastModified = entity.LastModified,
+                    DeletedAt = entity.DeletedAt,
+                    IsDeleted = entity.IsDeleted,
+                    BienThe = entity.SanPhamBienThes
+                        .OrderBy(bt => bt.GiaBan)
+                        .Select(bt => new SanPhamBienTheDto
+                        {
+                            Id = bt.Id,
+                            SanPhamId = bt.SanPhamId,
+                            TenBienThe = bt.TenBienThe,
+                            GiaBan = bt.GiaBan,
+                            MacDinh = bt.MacDinh
+                        }).ToList()
+                })
+                .ToListAsync();
+        }
+
+
         public SanPhamService(AppDbContext context)
         {
             _context = context;
@@ -27,7 +77,7 @@ namespace TraSuaApp.Infrastructure.Services
                 DinhLuong = entity.DinhLuong,
                 VietTat = entity.VietTat,
                 TenKhongVietTat = entity.TenKhongVietTat,
-                DaBan = entity.DaBan,
+                ThuTu = entity.ThuTu,
                 NgungBan = entity.NgungBan,
                 TichDiem = entity.TichDiem,
                 OldId = entity.OldId,
@@ -65,7 +115,7 @@ namespace TraSuaApp.Infrastructure.Services
             var now = DateTime.Now;
             var before = ToDto(entity);
 
-            entity.DaBan = dto.DaBan;
+            entity.ThuTu = dto.ThuTu;
             entity.LastModified = dto.LastModified;
 
             await _context.SaveChangesAsync();
@@ -91,8 +141,9 @@ namespace TraSuaApp.Infrastructure.Services
             ? dto.Ten.ToLower()
             : dto.TenKhongVietTat,
 
+                TimKiem = BuildTimKiem(dto),
 
-                DaBan = dto.DaBan,
+                ThuTu = dto.ThuTu,
                 NgungBan = dto.NgungBan,
                 TichDiem = dto.TichDiem,
                 OldId = dto.OldId,
@@ -145,8 +196,9 @@ namespace TraSuaApp.Infrastructure.Services
          ? StringHelper.MyNormalizeText(dto.Ten).ToLower()
          : dto.TenKhongVietTat;
 
+            entity.TimKiem = BuildTimKiem(dto);
 
-            entity.DaBan = dto.DaBan;
+            entity.ThuTu = dto.ThuTu;
             entity.NgungBan = dto.NgungBan;
             entity.TichDiem = dto.TichDiem;
             entity.NhomSanPhamId = dto.NhomSanPhamId;
@@ -174,6 +226,35 @@ namespace TraSuaApp.Infrastructure.Services
                                      .WithBefore(before)
                                      .WithAfter(after);
         }
+
+        public static string BuildTimKiem(SanPhamDto dto)
+        {
+            var raw = dto.Ten?.Trim() ?? string.Empty;
+            var nx = StringHelper.MyNormalizeText(raw);     // "ca phe kem"
+
+            var compact = nx.Replace(" ", "");              // "caphekem"
+            var initials = string.Join("", nx
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Select(w => w[0]));                         // "cpk"
+            var spaced = nx;                               // "ca phe kem"
+
+            var vt = StringHelper.MyNormalizeText(dto.VietTat?.Trim() ?? "")
+                                 .Replace(" ", "");          // "cPk" -> "cpk"
+
+            var ordered = new List<string> { compact, initials, spaced };
+            if (!string.IsNullOrEmpty(vt)) ordered.Add(vt);
+
+            var tokens = ordered
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .Distinct()                                   // khử trùng lặp, giữ thứ tự
+                .ToList();
+
+            var joined = string.Join(';', tokens);
+            return string.IsNullOrEmpty(joined) ? string.Empty : (joined + ';');
+        }
+
+
 
         public async Task<Result<SanPhamDto>> DeleteAsync(Guid id)
         {
@@ -234,7 +315,7 @@ namespace TraSuaApp.Infrastructure.Services
                     VietTat = entity.VietTat,
                     TenKhongVietTat = entity.TenKhongVietTat,
 
-                    DaBan = entity.DaBan,
+                    ThuTu = entity.ThuTu,
                     NgungBan = entity.NgungBan,
                     TichDiem = entity.TichDiem,
                     OldId = entity.OldId,
@@ -268,7 +349,7 @@ namespace TraSuaApp.Infrastructure.Services
                     VietTat = entity.VietTat,
                     TenKhongVietTat = entity.TenKhongVietTat,
 
-                    DaBan = entity.DaBan,
+                    ThuTu = entity.ThuTu,
                     NgungBan = entity.NgungBan,
                     TichDiem = entity.TichDiem,
                     OldId = entity.OldId,
@@ -303,7 +384,7 @@ namespace TraSuaApp.Infrastructure.Services
                     VietTat = entity.VietTat,
                     TenKhongVietTat = entity.TenKhongVietTat,
 
-                    DaBan = entity.DaBan,
+                    ThuTu = entity.ThuTu,
                     NgungBan = entity.NgungBan,
                     TichDiem = entity.TichDiem,
                     OldId = entity.OldId,

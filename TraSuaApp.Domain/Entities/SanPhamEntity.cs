@@ -10,8 +10,9 @@ public partial class SanPham
 
     public string? VietTat { get; set; }
     public string? TenKhongVietTat { get; set; }
+    public string TimKiem { get; set; }
 
-    public int DaBan { get; set; }
+    public int ThuTu { get; set; }
 
     public Guid? NhomSanPhamId { get; set; }
 

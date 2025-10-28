@@ -31,4 +31,5 @@ public partial class KhachHang
 
     public virtual ICollection<KhachHangGiaBan> KhachHangGiaBans { get; set; } = new List<KhachHangGiaBan>();
     public string? FavoriteMon { get; set; }
+    public string TimKiem { get; set; }
 }

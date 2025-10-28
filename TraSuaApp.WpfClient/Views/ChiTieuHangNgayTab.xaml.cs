@@ -29,16 +29,32 @@ namespace TraSuaApp.WpfClient.Views
             // Giả lập click nút "Thêm chi tiêu"
             AddChiTieuHangNgayButton_Click(AddChiTieuHangNgayButton, new RoutedEventArgs());
         }
+        private static async Task EnsureChiTieuModuleReadyAsync()
+        {
+            // Chờ AppProviders tạo xong providers (EnsureCreatedAsync đã chạy ở login)
+            var sw = Stopwatch.StartNew();
+            while ((AppProviders.ChiTieuHangNgays == null || AppProviders.NguyenLieus == null)
+                   && sw.ElapsedMilliseconds < 5000)
+            {
+                await Task.Delay(50);
+            }
+
+            // Khởi tạo dữ liệu nếu còn rỗng
+            var tasks = new List<Task>(2);
+            if (AppProviders.ChiTieuHangNgays!.Items.Count == 0)
+                tasks.Add(AppProviders.ChiTieuHangNgays.InitializeAsync());
+            if (AppProviders.NguyenLieus!.Items.Count == 0)
+                tasks.Add(AppProviders.NguyenLieus.InitializeAsync());
+
+            if (tasks.Count > 0)
+                await Task.WhenAll(tasks);
+        }
         public ChiTieuHangNgayTab()
         {
             InitializeComponent();
             Loaded += async (_, __) =>
             {
-                // tránh null khi mở form
-                var sw = Stopwatch.StartNew();
-                while (AppProviders.ChiTieuHangNgays?.Items == null && sw.ElapsedMilliseconds < 5000)
-                    await Task.Delay(100);
-
+                await EnsureChiTieuModuleReadyAsync(); // ⟵ load ChiTieu + NguyenLieu cùng lúc
                 await ReloadUI();
             };
         }

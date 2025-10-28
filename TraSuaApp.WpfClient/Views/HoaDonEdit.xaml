@@ -282,7 +282,15 @@
                             </Grid>
                         </GroupBox>
                     </StackPanel>
+                    <WrapPanel
+                        x:Name="GoiYWrap"
+                        Grid.Column="1"
+                        Grid.ColumnSpan="2"
+                        Margin="0,-20,0,0"
+                        Panel.ZIndex="1" />
+
                     <StackPanel Grid.Column="1" Orientation="Vertical">
+
                         <GroupBox>
                             <GroupBox.Header>
                                 <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
@@ -295,6 +303,8 @@
                             </GroupBox.Header>
                             <ctrl:SanPhamSearchBox x:Name="SanPhamSearchBox" Width="175" />
                         </GroupBox>
+
+
                         <GroupBox>
                             <GroupBox.Header>
                                 <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
@@ -472,6 +482,7 @@
                             </StackPanel>
                         </GroupBox.Header>
                         <Grid>
+
                             <TextBlock
                                 x:Name="TongSoSanPhamTextBlock"
                                 Margin="0,-100,30,0"
@@ -483,6 +494,7 @@
                                 FontWeight="Bold"
                                 Foreground="{StaticResource SuccessBrush}"
                                 TextAlignment="Center" />
+
                             <ListBox
                                 x:Name="ChiTietListBox"
                                 Width="500"
@@ -715,6 +727,8 @@
 
                     <Button
                         x:Name="SaveButton"
+                        Width="480"
+                        HorizontalAlignment="Center"
                         Click="SaveButton_Click"
                         Content="Save (Enter)"
                         Style="{StaticResource EditButtonStyle}" />

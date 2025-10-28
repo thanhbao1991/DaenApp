@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TraSuaApp.Infrastructure;
 
@@ -11,9 +12,11 @@ using TraSuaApp.Infrastructure;
 namespace TraSuaApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251026183316_AddKhachHangTimKiem")]
+    partial class AddKhachHangTimKiem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1114,6 +1117,9 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("DaBan")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
@@ -1144,17 +1150,10 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<string>("TenKhongVietTat")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ThuTu")
-                        .HasColumnType("int");
-
                     b.Property<bool>("TichDiem")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
-
-                    b.Property<string>("TimKiem")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("VietTat")
                         .HasColumnType("nvarchar(max)");

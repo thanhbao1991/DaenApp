@@ -10,7 +10,7 @@ public class SanPhamDto : DtoBase
 
     public string? DinhLuong { get; set; }
     public string? VietTat { get; set; }
-    public int DaBan { get; set; }
+    public int ThuTu { get; set; }
     public bool TichDiem { get; set; }
     public bool NgungBan { get; set; }
     public Guid? NhomSanPhamId { get; set; }
