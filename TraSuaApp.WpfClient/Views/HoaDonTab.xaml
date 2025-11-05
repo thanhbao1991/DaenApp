@@ -16,9 +16,10 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="auto" />
+
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="175" />
                 <ColumnDefinition Width="2*" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
@@ -32,75 +33,85 @@
                 Margin="0,0,0,4"
                 IsIndeterminate="True"
                 Visibility="Collapsed" />
-
-            <TextBox
-                x:Name="SearchHoaDonTextBox"
-                Grid.Column="1"
-                Grid.ColumnSpan="2"
-                Padding="440,0,0,0"
-                AcceptsReturn="True"
-                LostFocus="SearchHoaDonTextBox_LostFocus"
-                TextChanged="SearchHoaDonTextBox_TextChanged" />
-            <StackPanel
-                Grid.Column="1"
-                Grid.ColumnSpan="2"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top"
-                Panel.ZIndex="1"
-                Orientation="Horizontal">
-
-                <Button
-                    HorizontalAlignment="Left"
-                    Panel.ZIndex="1"
-                    Click="AddTaiChoButton_Click"
-                    Style="{StaticResource SuaButtonStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <fa:IconBlock Margin="0,0,5,0" Icon="Chair" />
-                        <TextBlock Text="Tại chỗ" />
-                    </StackPanel>
-                </Button>
-
-                <Button
-                    Margin="8,0,0,0"
-                    HorizontalAlignment="Left"
-                    Panel.ZIndex="1"
-                    Click="AddMuaVeButton_Click"
-                    Style="{StaticResource TaiLaiButtonStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <fa:IconBlock Margin="0,0,5,0" Icon="ShoppingBag" />
-                        <TextBlock Text="Mua về" />
-                    </StackPanel>
-                </Button>
-                <Button
-                    Margin="8,0,0,0"
-                    HorizontalAlignment="Left"
-                    Panel.ZIndex="1"
-                    Click="AddShipButton_Click"
-                    Style="{StaticResource ThemButtonStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <fa:IconBlock Margin="0,0,5,0" Icon="Motorcycle" />
-                        <TextBlock Text="Ship" />
-                    </StackPanel>
-                </Button>
-
-                <Button
-                    Margin="8,0,0,0"
-                    HorizontalAlignment="Left"
-                    Panel.ZIndex="1"
-                    Click="AddAppButton_Click"
-                    Style="{StaticResource XoaButtonStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <fa:IconBlock Margin="0,0,5,0" Icon="Mobile" />
-                        <TextBlock Text="App" />
-                    </StackPanel>
-                </Button>
-
-            </StackPanel>
-
+            <DockPanel Background="White">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <Button
+                        HorizontalAlignment="Left"
+                        Panel.ZIndex="1"
+                        Click="AddTaiChoButton_Click"
+                        Style="{StaticResource SuaButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconBlock Margin="0,0,5,0" Icon="Chair" />
+                            <TextBlock Text="Tại chỗ" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Margin="8,0,0,0"
+                        HorizontalAlignment="Left"
+                        Panel.ZIndex="1"
+                        Click="AddMuaVeButton_Click"
+                        Style="{StaticResource TaiLaiButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconBlock Margin="0,0,5,0" Icon="ShoppingBag" />
+                            <TextBlock Text="Mua về" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Margin="8,0,0,0"
+                        HorizontalAlignment="Left"
+                        Panel.ZIndex="1"
+                        Click="AddShipButton_Click"
+                        Style="{StaticResource ThemButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconBlock Margin="0,0,5,0" Icon="Motorcycle" />
+                            <TextBlock Text="Ship" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Margin="8,0,0,0"
+                        HorizontalAlignment="Left"
+                        Panel.ZIndex="1"
+                        Click="AddAppButton_Click"
+                        Style="{StaticResource XoaButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconBlock Margin="0,0,5,0" Icon="Mobile" />
+                            <TextBlock Text="App" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="AppButton"
+                        Margin="8,0,0,0"
+                        Click="AppButton_Click"
+                        Style="{StaticResource ReloadButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Icon="Heart" />
+                            <TextBlock Margin="5,0,0,0" Text="App Shipping" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <TextBlock
+                        Padding="8"
+                        VerticalAlignment="Center"
+                        Foreground="Black"
+                        Text="Tìm kiếm:" />
+                    <TextBox
+                        x:Name="SearchHoaDonTextBox"
+                        Grid.Column="1"
+                        Grid.ColumnSpan="2"
+                        Width="320"
+                        AcceptsReturn="True"
+                        LostFocus="SearchHoaDonTextBox_LostFocus"
+                        TextChanged="SearchHoaDonTextBox_TextChanged" />
+                </StackPanel>
+            </DockPanel>
             <DataGrid
                 x:Name="HoaDonDataGrid"
                 Grid.Row="1"
-                Grid.Column="1"
+                Grid.Column="0"
                 AutoGenerateColumns="False"
                 EnableColumnVirtualization="True"
                 EnableRowVirtualization="True"
@@ -130,14 +141,41 @@
                         Binding="{Binding Stt}"
                         ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="STT" />-->
+
+                    <!--<DataGridTemplateColumn Width="auto" Header="">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                    -->
+                    <!--<Button
+                                        Margin="8,0,0,0"
+                                        Padding="6,3"
+                                        HorizontalAlignment="Center"
+                                        Click="RowPrint_Click"
+                                        Style="{StaticResource AddButtonStyle}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <fa:IconImage
+                                                Width="16"
+                                                Height="16"
+                                                Foreground="{StaticResource LightBrush}"
+                                                Icon="Print" />
+                                            <TextBlock Margin="6,0,0,0" Text="F2" />
+                                        </StackPanel>
+                                    </Button>-->
+                    <!--
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>-->
+
                     <DataGridTextColumn
                         Binding="{Binding GioHienThi}"
                         ElementStyle="{StaticResource CenterTextCellStyle}"
                         Header="Giờ" />
-                    <DataGridTemplateColumn Width="48" Header="">
+                    <DataGridTemplateColumn Width="Auto" Header="">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Grid Height="32">
+                                <Grid>
                                     <fa:IconBlock
                                         x:Name="StatusIcon"
                                         Width="20"
@@ -145,10 +183,57 @@
                                         Loaded="StatusIcon_Loaded"
                                         Opacity="1"
                                         Visibility="Collapsed" />
+                                    <Button
+                                        Width="0"
+                                        MinWidth="0"
+                                        HorizontalAlignment="Center"
+                                        Background="Transparent"
+                                        Style="{StaticResource AddButtonStyle}"
+                                        Visibility="Visible" />
+                                    <Button
+                                        Padding="6,3"
+                                        HorizontalAlignment="Center"
+                                        Click="RowEsc_Click">
+                                        <Button.Style>
+                                            <Style BasedOn="{StaticResource AddButtonStyle}" TargetType="Button">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding PhanLoai}" Value="Ship" />
+                                                            <Condition Binding="{Binding NgayShip}" Value="{x:Null}" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+
+                                        <StackPanel Orientation="Horizontal">
+                                            <fa:IconImage
+                                                Width="16"
+                                                Height="16"
+                                                Foreground="{StaticResource LightBrush}"
+                                                Icon="Motorcycle" />
+                                            <TextBlock
+                                                Margin="6,0,0,0"
+                                                Text="Esc"
+                                                Visibility="Collapsed" />
+                                        </StackPanel>
+                                    </Button>
+
                                 </Grid>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
+                    <!--<DataGridTextColumn
+                        Width="99"
+                        Binding="{Binding TrangThai}"
+                        ElementStyle="{StaticResource LeftTextCellStyle}"
+                        FontSize="10"
+                        FontStyle="Italic"
+                        FontWeight="Regular"
+                        Header="" />-->
                     <DataGridTextColumn
                         Width="*"
                         Binding="{Binding TenHienThi}"
@@ -166,274 +251,145 @@
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
                     <DataGridTextColumn
-                        Width="150"
+                        Width="99"
                         Binding="{Binding GhiChuShipper}"
                         ElementStyle="{StaticResource LeftTextCellStyle}"
+                        FontSize="10"
+                        FontStyle="Italic"
+                        FontWeight="Regular"
                         Header="" />
+                    <!--  ⬇️ HAI NÚT THU TIỀN NGAY SAU CỘT "Còn lại"  -->
+                    <DataGridTemplateColumn Width="auto" Header="Thanh Toán">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button
+                                        Width="0"
+                                        MinWidth="0"
+                                        HorizontalAlignment="Center"
+                                        Background="Transparent"
+                                        Style="{StaticResource AddButtonStyle}"
+                                        Visibility="Visible" />
+                                    <Button
+                                        Padding="6,3"
+                                        HorizontalAlignment="Center"
+                                        Click="RowPayTM_Click">
+                                        <Button.Style>
+                                            <Style BasedOn="{StaticResource ThemButtonStyle}" TargetType="Button">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Style.Triggers>
+                                                    <!--  Ẩn khi đã thu  -->
+                                                    <DataTrigger Binding="{Binding TrangThai}" Value="Đã thu">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <!--  Ẩn khi đã chuyển khoản  -->
+                                                    <DataTrigger Binding="{Binding TrangThai}" Value="Đã chuyển khoản">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <!--  Ẩn khi đã ghi nợ  -->
+                                                    <DataTrigger Binding="{Binding TrangThai}" Value="Ghi nợ">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+
+                                        <StackPanel Orientation="Horizontal">
+                                            <fa:IconImage
+                                                Width="16"
+                                                Height="16"
+                                                Foreground="{StaticResource SuccessBrush}"
+                                                Icon="MoneyBill" />
+                                            <TextBlock
+                                                Margin="6,0,0,0"
+                                                Foreground="{StaticResource SuccessBrush}"
+                                                Text="F1 Tiền mặt" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button
+                                        Margin="8,0,0,0"
+                                        Padding="6,3"
+                                        HorizontalAlignment="Center"
+                                        Click="RowPayCK_Click">
+                                        <Button.Style>
+                                            <Style BasedOn="{StaticResource ThemButtonStyle}" TargetType="Button">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding TrangThai}" Value="Đã thu">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding TrangThai}" Value="Đã chuyển khoản">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding TrangThai}" Value="Ghi nợ">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+
+                                        <StackPanel Orientation="Horizontal">
+                                            <fa:IconImage
+                                                Width="16"
+                                                Height="16"
+                                                Foreground="{StaticResource PrimaryBrush}"
+                                                Icon="CreditCard" />
+                                            <TextBlock
+                                                Margin="6,0,0,0"
+                                                Foreground="{StaticResource PrimaryBrush}"
+                                                Text="F4 Chuyển khoản" />
+                                        </StackPanel>
+                                    </Button>
+                                    <!--<Button
+                                        Margin="8,0,0,0"
+                                        Padding="6,3"
+                                        HorizontalAlignment="Center"
+                                        Click="RowGhiNo_Click"
+                                        Style="{StaticResource XoaButtonStyle}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <fa:IconImage
+                                                Width="16"
+                                                Height="16"
+                                                Foreground="{StaticResource DangerBrush}"
+                                                Icon="Pencil" />
+                                            <TextBlock Margin="6,0,0,0" Text="F12" />
+                                        </StackPanel>
+                                    </Button>-->
+                                    <!--<Button
+                                        Margin="8,0,0,0"
+                                        Padding="6,3"
+                                        HorizontalAlignment="Center"
+                                        Click="RowDelete_Click"
+                                        Style="{StaticResource XoaButtonStyle}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <fa:IconImage
+                                                Width="16"
+                                                Height="16"
+                                                Foreground="{StaticResource DangerBrush}"
+                                                Icon="Trash" />
+                                            <TextBlock Margin="6,0,0,0" Text="Xoá" />
+                                        </StackPanel>
+                                    </Button>-->
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+
+
                 </DataGrid.Columns>
+
             </DataGrid>
+
 
             <Grid
                 Grid.Row="0"
                 Grid.RowSpan="2"
-                Grid.Column="0"
-                Background="#f0f0f0">
-                <StackPanel x:Name="HoaDonButtonStack" Margin="8">
-                    <Button
-                        Name="EscButton"
-                        Margin="5"
-                        Background="{StaticResource PrimaryBrush}"
-                        Click="EscButton_Click"
-                        Foreground="{StaticResource LightBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Foreground="{StaticResource LightBrush}"
-                                Icon="Motorcycle" />
-                            <TextBlock Margin="5,0,0,0" Text=" Esc - KHÁNH" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        x:Name="F1Button"
-                        Margin="5"
-                        Click="F1Button_Click"
-                        Style="{StaticResource EditButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Foreground="{StaticResource LightBrush}"
-                                Icon="MoneyBill" />
-                            <TextBlock Margin="5,0,0,0" Text=" F1 - Tiền mặt" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="F2Button"
-                        Margin="5"
-                        Background="{StaticResource PrimaryBrush}"
-                        Click="F2Button_Click"
-                        Foreground="{StaticResource LightBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Foreground="{StaticResource LightBrush}"
-                                Icon="Print" />
-                            <TextBlock Margin="5,0,0,0" Text=" F2 - In bill" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="F3Button"
-                        Margin="5"
-                        Background="{StaticResource PrimaryBrush}"
-                        Click="F3Button_Click"
-                        Foreground="{StaticResource LightBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Foreground="{StaticResource LightBrush}"
-                                Icon="ShareSquare" />
-                            <TextBlock Margin="5,0,0,0" Text=" F3 - Gửi bill" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="F4Button"
-                        Margin="5"
-                        Background="{StaticResource WarningBrush}"
-                        Click="F4Button_Click"
-                        Foreground="{StaticResource DarkBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Foreground="{StaticResource DarkBrush}"
-                                Icon="CreditCard" />
-                            <TextBlock Margin="5,0,0,0" Text=" F4 - Chuyển khoản" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="F12Button"
-                        Margin="5"
-                        Background="{StaticResource DangerBrush}"
-                        Click="F12Button_Click"
-                        Foreground="{StaticResource LightBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Foreground="{StaticResource LightBrush}"
-                                Icon="PencilAlt" />
-                            <TextBlock Margin="5,0,0,0" Text=" F12 - Ghi nợ" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="DelButton"
-                        Margin="5"
-                        Click="DelButton_Click"
-                        Foreground="{StaticResource LightBrush}"
-                        Style="{StaticResource DeleteButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Foreground="{StaticResource LightBrush}"
-                                Icon="Trash" />
-                            <TextBlock Margin="5,0,0,0" Text=" Del - Xoá" />
-                        </StackPanel>
-                    </Button>
-
-                    <Button
-                        Name="F5Button"
-                        Margin="5"
-                        Background="Transparent"
-                        Click="F5Button_Click"
-                        Foreground="{StaticResource DarkBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Foreground="{StaticResource DarkBrush}"
-                                Icon="Refresh" />
-                            <TextBlock Margin="5,0,0,0" Text=" F5 - Làm mới" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="F6Button"
-                        Margin="5"
-                        Background="Transparent"
-                        Click="F6Button_Click"
-                        Foreground="{StaticResource DarkBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Icon="Qrcode" />
-                            <TextBlock Margin="5,0,0,0" Text=" F6 - Gửi Stk" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="F7Button"
-                        Margin="5"
-                        Background="Transparent"
-                        Click="F7Button_Click"
-                        Foreground="{StaticResource DarkBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Icon="Bell" />
-                            <TextBlock Margin="5,0,0,0" Text=" F7 - Báo đơn" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="F8Button"
-                        Margin="5"
-                        Background="Transparent"
-                        Click="F8Button_Click"
-                        Foreground="{StaticResource DarkBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Icon="Star" />
-                            <TextBlock Margin="5,0,0,0" Text="F8 - Ưu tiên" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="F9Button"
-                        Margin="5"
-                        Background="Transparent"
-                        Click="F9Button_Click"
-                        Foreground="{StaticResource DarkBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Icon="Book" />
-                            <TextBlock Margin="5,0,0,0" Text=" F9 - Gửi Menu" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="F10Button"
-                        Margin="5"
-                        Background="Transparent"
-                        Click="F10Button_Click"
-                        Foreground="{StaticResource DarkBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Icon="Clock" />
-                            <TextBlock Margin="5,0,0,0" Text=" F10 - Hẹn giờ" />
-                        </StackPanel>
-                    </Button>
-
-                    <StackPanel
-                        Name="HenGioStackPanel"
-                        Margin="5"
-                        Visibility="Collapsed">
-                        <StackPanel Orientation="Horizontal">
-                            <ComboBox x:Name="GioCombo" />
-                            <TextBlock VerticalAlignment="Center" Text=":" />
-                            <ComboBox x:Name="PhutCombo" />
-                            <Button
-                                x:Name="OkHenGio"
-                                Click="OkHenGioButton_Click"
-                                Content="OK"
-                                Style="{StaticResource ThemButtonStyle}" />
-                        </StackPanel>
-                    </StackPanel>
-
-                    <Button
-                        Name="HisButton"
-                        Margin="5"
-                        Background="Transparent"
-                        Click="HisButton_Click"
-                        Foreground="{StaticResource DarkBrush}"
-                        Style="{StaticResource AddButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Icon="History" />
-                            <TextBlock Margin="5,0,0,0" Text=" Lịch sử" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="AppButton"
-                        Margin="5"
-                        Click="AppButton_Click"
-                        Style="{StaticResource ReloadButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Icon="Heart" />
-                            <TextBlock Margin="5,0,0,0" Text="App Shipping" />
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </Grid>
-
-            <Grid
-                Grid.Row="1"
-                Grid.Column="2"
-                Background="{Binding ElementName=ThongTinThanhToanGroupBox, Path=Background}">
+                Grid.Column="1"
+                Background="WhiteSmoke">
                 <ScrollViewer
                     x:Name="ThongTinThanhToanGroupBox"
+                    Background="WhiteSmoke"
                     HorizontalScrollBarVisibility="Disabled"
                     PreviewMouseWheel="ThongTinThanhToanGroupBox_PreviewMouseWheel"
                     VerticalScrollBarVisibility="Auto">
@@ -632,6 +588,249 @@
                     </StackPanel>
                 </Border>
             </Grid>
+
+            <Grid
+                Grid.Row="2"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Background="#f0f0f0">
+                <StackPanel x:Name="HoaDonButtonStack" Orientation="Horizontal">
+                    <Button
+                        Name="EscButton"
+                        Margin="5"
+                        Background="{StaticResource PrimaryBrush}"
+                        Click="EscButton_Click"
+                        Foreground="{StaticResource LightBrush}"
+                        Style="{StaticResource AddButtonStyle}"
+                        Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Foreground="{StaticResource LightBrush}"
+                                Icon="Motorcycle" />
+                            <TextBlock Margin="5,0,0,0" Text=" Esc - KHÁNH" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        x:Name="F1Button"
+                        Margin="5"
+                        Click="F1Button_Click"
+                        Style="{StaticResource EditButtonStyle}"
+                        Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Foreground="{StaticResource LightBrush}"
+                                Icon="MoneyBill" />
+                            <TextBlock Margin="5,0,0,0" Text=" F1 - Tiền mặt" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="F2Button"
+                        Margin="5"
+                        Background="Transparent"
+                        Click="F2Button_Click"
+                        Foreground="{StaticResource DarkBrush}"
+                        Style="{StaticResource AddButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Foreground="{StaticResource DarkBrush}"
+                                Icon="Print" />
+                            <TextBlock Margin="5,0,0,0" Text=" F2 - In bill" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="F3Button"
+                        Margin="5"
+                        Background="Transparent"
+                        Click="F3Button_Click"
+                        Foreground="{StaticResource DarkBrush}"
+                        Style="{StaticResource AddButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Foreground="{StaticResource DarkBrush}"
+                                Icon="ShareSquare" />
+                            <TextBlock Margin="5,0,0,0" Text=" F3 - Gửi bill" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="F4Button"
+                        Margin="5"
+                        Background="{StaticResource WarningBrush}"
+                        Click="F4Button_Click"
+                        Foreground="{StaticResource DarkBrush}"
+                        Style="{StaticResource AddButtonStyle}"
+                        Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Foreground="{StaticResource DarkBrush}"
+                                Icon="CreditCard" />
+                            <TextBlock Margin="5,0,0,0" Text=" F4 - Chuyển khoản" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="F12Button"
+                        Margin="5"
+                        Click="F12Button_Click"
+                        Style="{StaticResource XoaButtonStyle}"
+                        Visibility="Visible">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Foreground="{StaticResource DangerBrush}"
+                                Icon="PencilAlt" />
+                            <TextBlock Margin="5,0,0,0" Text=" F12 - Ghi nợ" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="DelButton"
+                        Margin="5"
+                        Click="DelButton_Click"
+                        Style="{StaticResource XoaButtonStyle}"
+                        Visibility="Visible">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Foreground="{StaticResource DangerBrush}"
+                                Icon="Trash" />
+                            <TextBlock Margin="5,0,0,0" Text=" Del - Xoá" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="F5Button"
+                        Margin="5"
+                        Background="Transparent"
+                        Click="F5Button_Click"
+                        Foreground="{StaticResource DarkBrush}"
+                        Style="{StaticResource AddButtonStyle}"
+                        Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Foreground="{StaticResource DarkBrush}"
+                                Icon="Refresh" />
+                            <TextBlock Margin="5,0,0,0" Text=" F5 - Làm mới" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="F6Button"
+                        Margin="5"
+                        Background="Transparent"
+                        Click="F6Button_Click"
+                        Foreground="{StaticResource DarkBrush}"
+                        Style="{StaticResource AddButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Icon="Qrcode" />
+                            <TextBlock Margin="5,0,0,0" Text=" F6 - Gửi Stk" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="F7Button"
+                        Margin="5"
+                        Background="Transparent"
+                        Click="F7Button_Click"
+                        Foreground="{StaticResource DarkBrush}"
+                        Style="{StaticResource AddButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Icon="Bell" />
+                            <TextBlock Margin="5,0,0,0" Text=" F7 - Báo đơn" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="F8Button"
+                        Margin="5"
+                        Background="Transparent"
+                        Click="F8Button_Click"
+                        Foreground="{StaticResource DarkBrush}"
+                        Style="{StaticResource AddButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Icon="Star" />
+                            <TextBlock Margin="5,0,0,0" Text="F8 - Ưu tiên" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="F9Button"
+                        Margin="5"
+                        Background="Transparent"
+                        Click="F9Button_Click"
+                        Foreground="{StaticResource DarkBrush}"
+                        Style="{StaticResource AddButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Icon="Book" />
+                            <TextBlock Margin="5,0,0,0" Text=" F9 - Gửi Menu" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Name="F10Button"
+                        Margin="5"
+                        Background="Transparent"
+                        Click="F10Button_Click"
+                        Foreground="{StaticResource DarkBrush}"
+                        Style="{StaticResource AddButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Icon="Clock" />
+                            <TextBlock Margin="5,0,0,0" Text=" F10 - Hẹn giờ" />
+                        </StackPanel>
+                    </Button>
+                    <StackPanel
+                        Name="HenGioStackPanel"
+                        Margin="5"
+                        Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <ComboBox x:Name="GioCombo" />
+                            <TextBlock VerticalAlignment="Center" Text=":" />
+                            <ComboBox x:Name="PhutCombo" />
+                            <Button
+                                x:Name="OkHenGio"
+                                Click="OkHenGioButton_Click"
+                                Content="OK"
+                                Style="{StaticResource ThemButtonStyle}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Button
+                        Name="HisButton"
+                        Margin="5"
+                        Background="Transparent"
+                        Click="HisButton_Click"
+                        Foreground="{StaticResource DarkBrush}"
+                        Style="{StaticResource AddButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:IconImage
+                                Width="16"
+                                Height="16"
+                                Icon="History" />
+                            <TextBlock Margin="5,0,0,0" Text=" Lịch sử" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
         </Grid>
     </Grid>
 </UserControl>

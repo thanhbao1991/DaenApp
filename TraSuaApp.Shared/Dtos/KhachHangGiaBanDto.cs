@@ -10,15 +10,28 @@ public class KhachHangGiaBanDto : DtoBase
     public Guid SanPhamBienTheId { get; set; }
     public decimal GiaBan { get; set; }
 
-    // Thông tin hiển thị (optional)
+    // Thông tin hiển thị
     public string? TenKhachHang { get; set; }
     public string? TenSanPham { get; set; }
     public string? TenBienThe { get; set; }
-    public string TimKiem =>
-    $"{Ten?.ToLower() ?? ""} " +
-    StringHelper.MyNormalizeText(Ten ?? "") + " " +
-    StringHelper.MyNormalizeText((Ten ?? "").Replace(" ", "")) + " " +
-    StringHelper.GetShortName(Ten ?? "");
 
+    // Tìm kiếm theo KH/SP/Biến thể/Giá
+    public string TimKiem
+    {
+        get
+        {
+            var kh = TenKhachHang ?? "";
+            var sp = TenSanPham ?? "";
+            var bt = TenBienThe ?? "";
+            var gia = GiaBan.ToString();
+            var joined = $"{kh} {sp} {bt} {gia}";
+
+            return string.Join(' ',
+                (joined).ToLower(),
+                StringHelper.MyNormalizeText(joined),
+                StringHelper.MyNormalizeText(joined.Replace(" ", "")),
+                StringHelper.GetShortName(joined)
+            );
+        }
+    }
 }
-

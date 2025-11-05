@@ -7,6 +7,19 @@ namespace TraSuaApp.Shared.Dtos;
 
 public class HoaDonDto : DtoBase, INotifyPropertyChanged
 {
+    public string? TenBan { get; set; }
+
+    // ✅ Server tính trạng thái → không bind từ client
+    public string? TrangThai { get; set; }
+
+    // ✅ Chỉ hiển thị (follow WPF) → không bind từ client
+    public override string Ten =>
+        KhachHangId == null
+            ? (TenBan ?? "")
+            : (TenKhachHangText ?? "");
+
+
+
     public bool DaThuHoacGhiNo => ConLai == 0m || HasDebt;
 
 
@@ -130,8 +143,6 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public Guid? VoucherId { get; set; }
 
     public string? MaHoaDon { get; set; }
-    public string TenBan { get; set; } = null!;
-    public string TrangThai { get; set; } = null!;
 
     public string? DiaChiText { get; set; }
     public string? SoDienThoaiText { get; set; }
@@ -154,7 +165,6 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public virtual ICollection<ChiTietHoaDonThanhToan> ChiTietHoaDonThanhToans { get; set; } = new List<ChiTietHoaDonThanhToan>();
     public DateTime? NgayHen { get; set; }
     public bool DaNhanVoucher { get; set; }
-    public override string Ten => KhachHangId == null ? TenBan : TenKhachHangText;
     public string TimKiem =>
         $"{Ten?.ToLower() ?? ""} " +
         StringHelper.MyNormalizeText(Ten ?? "") + " " +

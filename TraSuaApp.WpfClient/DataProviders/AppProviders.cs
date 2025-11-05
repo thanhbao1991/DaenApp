@@ -15,6 +15,7 @@ public static class AppProviders
     public static TuDienTraCuuDataProvider? TuDienTraCuus { get; private set; }
     public static VoucherDataProvider? Vouchers { get; private set; }
     public static SanPhamDataProvider? SanPhams { get; private set; }
+    public static SanPhamDataProvider? SanPhamBienThes { get; private set; }
     public static TaiKhoanDataProvider? TaiKhoans { get; private set; }
     public static ToppingDataProvider? Toppings { get; private set; }
     public static KhachHangDataProvider? KhachHangs { get; private set; }
@@ -62,6 +63,7 @@ public static class AppProviders
         if (KhachHangGiaBans != null) await KhachHangGiaBans.ReloadAsync();
         if (PhuongThucThanhToans != null) await PhuongThucThanhToans.ReloadAsync();
         if (TuDienTraCuus != null) await TuDienTraCuus.ReloadAsync();
+        if (SanPhamBienThes != null) await SanPhamBienThes.ReloadAsync();
 
         if (SanPhams != null)
         {
@@ -146,6 +148,7 @@ public static class AppProviders
         Toppings = new ToppingDataProvider(_signalR);
         TaiKhoans = new TaiKhoanDataProvider(_signalR);
         SanPhams = new SanPhamDataProvider(_signalR);
+        SanPhamBienThes = new SanPhamDataProvider(_signalR);
         SanPhams.OnChanged += BuildQuickOrderMenu;
 
         Vouchers = new VoucherDataProvider(_signalR);
@@ -178,6 +181,7 @@ public static class AppProviders
            Toppings!.InitializeAsync(),
            TaiKhoans!.InitializeAsync(),
            SanPhams!.InitializeAsync(),
+           SanPhamBienThes!.InitializeAsync(),
            Vouchers!.InitializeAsync(),
            HoaDons!.InitializeAsync(),
            PhuongThucThanhToans!.InitializeAsync(),

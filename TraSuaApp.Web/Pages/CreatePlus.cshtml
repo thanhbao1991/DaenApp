@@ -7,10 +7,10 @@
 
 <style>
     /* === Borderless groups for CreatePlus (scoped) === */
-#InvoicePlus .card { border: 0; box-shadow: none; }
+/* #InvoicePlus .card { border: 0; box-shadow: none; }
 #InvoicePlus .card-header { border-bottom: 0; }
 #InvoicePlus .list-group-item { border: 0; }
-
+ */
 /* Làm mềm các “ô viền” nhỏ bên trong (loyalty/tổng nợ) thay vì khung đậm */
 #InvoicePlus .card .border { border-color: rgba(0,0,0,.08) !important; }
 
@@ -207,16 +207,16 @@
     <div class="card mb-2">
         <div class="card-body d-flex flex-wrap gap-2 align-items-end">
             <div class="btn-group me-2" role="group">
-                <input type="radio" class="btn-check" name="LoaiDon" id="ld_taicho">
+                <input type="radio" class="btn-check" name="PhanLoai" id="ld_taicho">
                 <label class="btn btn-outline-success" for="ld_taicho"><i class="fa fa-utensils"></i> Tại chỗ</label>
 
-                <input type="radio" class="btn-check" name="LoaiDon" id="ld_muave">
+                <input type="radio" class="btn-check" name="PhanLoai" id="ld_muave">
                 <label class="btn btn-outline-primary" for="ld_muave"><i class="fa fa-bag-shopping"></i> Mua về</label>
 
-                <input type="radio" class="btn-check" name="LoaiDon" id="ld_ship" checked>
+                <input type="radio" class="btn-check" name="PhanLoai" id="ld_ship" checked>
                 <label class="btn btn-outline-warning" for="ld_ship"><i class="fa fa-truck"></i> Ship</label>
 
-                <input type="radio" class="btn-check" name="LoaiDon" id="ld_app">
+                <input type="radio" class="btn-check" name="PhanLoai" id="ld_app">
                 <label class="btn btn-outline-danger" for="ld_app"><i class="fa fa-mobile-screen"></i> App</label>
             </div>
 
@@ -250,7 +250,7 @@
                     <div class="position-relative">
                         <div class="input-group">
                             <span class="input-group-text"><i class="fa fa-magnifying-glass"></i></span>
-                            <input id="KhachHangText" class="form-control" placeholder="Tìm tên / SĐT..." autocomplete="off" style="padding-right:2.2rem;" />
+                            <input id="TenKhachHangText" class="form-control" placeholder="Tìm tên / SĐT..." autocomplete="off" style="padding-right:2.2rem;" />
                         </div>
                         <button id="KhachHangClear" type="button"
                                 class="btn btn-sm btn-light position-absolute top-50 end-0 translate-middle-y me-1 d-none"
@@ -347,14 +347,6 @@
                 <div class="col-12 col-md-6">
                     <label class="form-label mb-1">Voucher</label>
                     <select id="VoucherId" class="form-select"><option value="">-- Không áp dụng --</option></select>
-                </div>
-                <div class="col-6 col-md-3">
-                    <label class="form-label mb-1">Giảm giá cố định (đ)</label>
-                    <input id="GiamGiaFix" inputmode="numeric" class="form-control" value="0" />
-                </div>
-                <div class="col-6 col-md-3">
-                    <label class="form-label mb-1">Công nợ (đ)</label>
-                    <div id="CongNoView" class="form-control-plaintext text-end">0</div>
                 </div>
             </div>
 
@@ -597,6 +589,8 @@
         
         // ['scroll','resize','orientationchange'].forEach(ev=>window.addEventListener(ev,()=>{ if(_portalOwner) portalHide(); },{passive:true}));
         // document.addEventListener('click',e=>{ if(_portalOwner && !e.target.closest('.portal-list')) portalHide(); });
+             // Khi load page → sync đúng loại đơn hiện trên UI
+  
         ['scroll','resize','orientationchange'].forEach(ev =>
             window.addEventListener(ev, ()=>{ if(_portalOwner) portalHide(); }, {passive:true})
           );
@@ -659,7 +653,7 @@
         function getPhone(k){ return (k.Phones?.[0]?.SoDienThoai || k.phones?.[0]?.soDienThoai || k.soDienThoai || k.SoDienThoai || '')+''; }
         function getAddress(k){ return (k.Addresses?.[0]?.DiaChi || k.addresses?.[0]?.diaChi || k.diaChi || k.DiaChi || '')+''; }
 
-        const khInput=el('KhachHangText'); khInput.setAttribute('autocomplete','off'); khInput.setAttribute('autocapitalize','off'); khInput.setAttribute('spellcheck','false');
+        const khInput=el('TenKhachHangText'); khInput.setAttribute('autocomplete','off'); khInput.setAttribute('autocapitalize','off'); khInput.setAttribute('spellcheck','false');
         const khClearBtn = el('KhachHangClear');
         khInput.addEventListener('input', () => { khClearBtn?.classList.toggle('d-none', !(khInput.value?.trim())); });
         khInput.addEventListener('keydown', (e) => { if (e.key === 'Escape' && khInput.value?.length) { clearKhInput(); e.preventDefault(); } });
@@ -712,7 +706,7 @@
             if (duocNhanVoucher && !daNhanVoucher) { prevEl?.classList.add('blink'); } else { prevEl?.classList.remove('blink'); }
 
             congNoCurrent=Number(tongNo||0);
-            el('CongNoView').innerText=fmt(congNoCurrent);
+            //el('CongNoView').innerText=fmt(congNoCurrent);
             el('CongNoDisplay').innerText=fmt(congNoCurrent);
 
             // Save state
@@ -1100,84 +1094,140 @@ spInput.addEventListener('input', debounce(async ()=>{
         }
         function calcVoucherDiscount(tamTinh){
           const id = el('VoucherId').value || '';
-          if(!id){ const ggFix = parseMoney(el('GiamGiaFix').value); return Math.min(tamTinh, ggFix); }
-          const v = (VOUCHER_CACHE||[]).find(x => (x.Id||x.id||'') == id); if(!v) return 0;
+          if (!id) return 0; // ❌ không còn giảm giá cố định khi không chọn voucher
+
+          const v = (VOUCHER_CACHE||[]).find(x => (x.Id||x.id||'') == id);
+          if (!v) return 0;
+
           const kind = (v.KieuGiam ?? v.kieuGiam ?? v.Kieu ?? v.kieu ?? '').toString().toLowerCase();
-          const raw  = Number(v.GiaTri ?? v.giaTri ?? v.Value ?? v.value ?? 0) || 0;
-          let disc=0;
-          if(kind.includes('%') || kind.includes('percent') || kind==='phantram') disc = tamTinh * raw / 100;
+          const raw  = Number(v.GiaTri   ?? v.giaTri   ?? v.Value ?? v.value ?? 0) || 0;
+
+          let disc = 0;
+          if (kind.includes('%') || kind.includes('percent') || kind === 'phantram') disc = tamTinh * raw / 100;
           else disc = raw;
+
           disc = Math.min(tamTinh, round1000(disc, 'nearest'));
           return disc;
         }
         function recalc(){
-          let tamTinh=0; lines.forEach(l=> tamTinh += (l.soLuong||0)*(l.donGia||0) + (l.topTotal||0));
+          let tamTinh = 0;
+          lines.forEach(l => tamTinh += (l.soLuong||0)*(l.donGia||0) + (l.topTotal||0));
+
           const giamGia = calcVoucherDiscount(tamTinh);
           const thanh   = Math.max(0, tamTinh - giamGia);
 
-          el('TongTien').innerText=fmt(tamTinh);
-          el('GiamGia').innerText=fmt(giamGia);
-          el('ThanhTien').innerText=fmt(thanh);
+          el('TongTien').innerText = fmt(tamTinh);
+          el('GiamGia').innerText  = fmt(giamGia);
+          el('ThanhTien').innerText= fmt(thanh);
 
-          el('CongNoDisplay') && (el('CongNoDisplay').innerText=fmt(congNoCurrent));
-          el('TongPhaiThu') && (el('TongPhaiThu').innerText=fmt(thanh + (congNoCurrent||0)));
-
-          const hasVoucher = !!(el('VoucherId').value||'');
-          el('GiamGiaFix').disabled = hasVoucher;
+          // công nợ hiển thị ở bảng (CongNoDisplay) & nơi khác — không còn CongNoView riêng
+          el('CongNoDisplay') && (el('CongNoDisplay').innerText = fmt(congNoCurrent));
+          el('TongPhaiThu')   && (el('TongPhaiThu').innerText   = fmt(thanh + (congNoCurrent||0)));
         }
-        ['GiamGiaFix'].forEach(id=> el(id).addEventListener('input',()=>{recalc();touchChanged();}));
         el('VoucherId').addEventListener('change',()=>{ recalc(); touchChanged(); });
 
         /* ========================== SAVE ========================== */
-        function currentLoaiDon(){ if(el('ld_taicho').checked) return 'TaiCho'; if(el('ld_muave').checked) return 'MuaVe'; if(el('ld_ship').checked) return 'Ship'; return 'App'; }
         ['ld_taicho','ld_muave','ld_ship','ld_app'].forEach(id=> el(id).addEventListener('change',()=>{ el('banWrap').style.display=el('ld_taicho').checked?'':'none'; touchChanged(); }));
         el('banWrap').style.display='none';
 
         function validateForm(){
           el('FormError').innerText='';
-          if(currentLoaiDon()==='TaiCho' && !el('TenBan').value.trim()){ el('FormError').innerText='Tên bàn không được để trống.'; return false; }
-          if(currentLoaiDon()==='Ship'){
+                  if(currentPhanLoaiKey()==='Tại chỗ' && !el('TenBan').value.trim()){ el('FormError').innerText='Tên bàn không được để trống.'; return false; }
+          if(currentPhanLoaiKey()==='Ship'){
             if(!el('DiaChi').value.trim()){ el('FormError').innerText='Địa chỉ không được để trống.'; return false; }
             if(!el('DienThoai').value.trim()){ el('FormError').innerText='SĐT không được để trống.'; return false; }
           }
           if(lines.length===0 || !lines.some(x=>(x.soLuong||0)>0)){ el('FormError').innerText='Chưa có sản phẩm nào.'; return false; }
           return true;
         }
-        async function saveInvoice(isAuto=false){
-          if(!validateForm()) return;
-          const payload={
-            LoaiDon: currentLoaiDon(),
-            TenBan: el('ld_taicho').checked ? (el('TenBan').value||null) : null,
-            KhachHangId: khId,
-            KhachHangText: el('KhachHangText').value||null,
-            DienThoaiText: el('DienThoai').value||null,
-            DiaChiText: el('DiaChi').value||null,
-            VoucherId: (el('VoucherId').value||'') || null,
-            GiamGiaFix: parseMoney(el('GiamGiaFix').value)||0,
-            CongNo: Number(congNoCurrent)||0,
-            ChiTietHoaDons: lines.filter(l=>(l.soLuong||0)>0).map(l=>({
-              SanPhamId: l.idSanPham,
-              SanPhamIdBienThe: l.idBienThe,
-              TenSanPham: l.tenSanPham,
-              TenBienThe: l.tenBienThe,
-              SoLuong: l.soLuong,
-              DonGia: l.donGia,
-              NoteText: l.note||null,
-              ToppingDtos: (l.toppings||[]).map(t=>({ToppingId:t.Id, Ten:t.Ten, DonGia:t.Gia, SoLuong:t.Qty})),
-              ToppingTotal: l.topTotal||0
-            }))
-          };
-          const btn=el('SaveBtn'), old=btn.innerHTML; btn.disabled=true;
-          btn.innerHTML=`<span class="spinner-border spinner-border-sm me-1"></span> ${isAuto?'Đang tự lưu...':'Đang lưu...'}`;
-          showBusy(true);
-          try{
-            const r=await fetch('/api/HoaDon',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});
-            const j=await r.json();
-            if(j?.isSuccess || j?.IsSuccess || j?.success){ unsaved=false; el('SaveHint').innerText=isAuto?'✅ Đã tự lưu.':'✅ Đã lưu.'; el('FormError').innerText=''; }
-            else{ el('SaveHint').innerText=''; alert(j?.message || j?.Message || 'Không thể lưu hoá đơn.'); }
-          }catch(e){ el('SaveHint').innerText=''; alert('Lỗi: '+(e?.message||e)); }
-          finally{ btn.disabled=false; btn.innerHTML=old; showBusy(false); startAutosave(); }
-        }
+
+ 
+        async function saveInvoice(isAuto = false) {
+  if (!validateForm()) return;
+
+  // ==== Build payload ====
+  const loaiKey = currentPhanLoaiKey(); // 'TaiCho' | 'Mv' | 'Ship' | 'App'
+  const payload = {
+    PhanLoai: loaiKey, // backend dùng trực tiếp giá trị key
+    TenBan: el('ld_taicho').checked ? nullIfEmpty(el('TenBan').value) : null,
+
+    KhachHangId: asGuidOrNull(khId),
+    TenKhachHangText: nullIfEmpty(el('TenKhachHangText').value),
+    SoDienThoaiText: nullIfEmpty(el('DienThoai').value),
+    DiaChiText: nullIfEmpty(el('DiaChi').value),
+
+    VoucherId: asGuidOrNull(el('VoucherId').value),
+    GiamGiaFix: 0,
+    CongNo: Number(congNoCurrent) || 0,
+
+        ChiTietHoaDonVouchers: (function(){
+      const id = asGuidOrNull(el('VoucherId').value);
+      return id ? [{ VoucherId: id }] : [];
+    })(),
+
+    ChiTietHoaDons: lines
+      .filter(l => (l.soLuong || 0) > 0 && GUID_RE.test(l.idSanPham) && GUID_RE.test(l.idBienThe))
+      .map(l => ({
+        SanPhamId: l.idSanPham,
+        SanPhamIdBienThe: l.idBienThe,
+        TenSanPham: l.tenSanPham,
+        TenBienThe: l.tenBienThe,
+        SoLuong: l.soLuong,
+        DonGia: l.donGia,
+        NoteText: nullIfEmpty(l.note),
+        // gửi topping kèm dòng (backend có thể bỏ qua nếu không dùng)
+        ToppingDtos: (l.toppings || [])
+          .filter(t => GUID_RE.test(t.Id))
+          .map(t => ({ ToppingId: t.Id, Ten: t.Ten, DonGia: t.Gia, SoLuong: t.Qty })),
+        ToppingTotal: l.topTotal || 0
+      }))
+  };
+
+  // ==== Call server ====
+  const btn = el('SaveBtn');
+  const old = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> ${isAuto ? 'Đang tự lưu...' : 'Đang lưu...'}`;
+  showBusy(true);
+
+  try {
+    const r = await fetch('?handler=Save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+
+    const text = await r.text();
+    let body = null; try { body = JSON.parse(text); } catch { body = text; }
+
+    // success flags thường gặp từ API
+    const okFlag = body?.success === true || body?.succeeded === true || body?.isSuccess === true;
+
+    if (r.ok && okFlag) {
+      unsaved = false;
+      // ✅ Lưu tay hay tự lưu đều chuyển hướng
+      window.location.href = '/DoanhThuNgay';
+      return;
+    }
+
+    // gom thông điệp lỗi dễ đọc
+    let msg = body?.message || body?.Message || body?.detail || body?.title || body?.error || '';
+    if (!msg && typeof body === 'string' && body.trim().length < 500) msg = body;
+    if (!msg) msg = `HTTP ${r.status} ${r.statusText || ''}`.trim();
+
+    console.error('Save invoice failed:', { status: r.status, body });
+    alert('Lỗi: ' + msg);
+  } catch (e) {
+    console.error('Save invoice exception:', e);
+    alert('Lỗi: ' + (e?.message || e));
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = old;
+    showBusy(false);
+    startAutosave();
+  }
+}
 
         /* ========================== INIT ========================== */
         function fillVoucherOptions(){
@@ -1304,11 +1354,34 @@ async function searchSPOnline(q){
           try{ navigator.vibrate && navigator.vibrate(15); }catch{}
           setTimeout(()=> box.classList.remove('show'), 1200);
         }
+
+                // ====== ID & string helpers (dán trước saveInvoice) ======
+        const GUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+        function nullIfEmpty(v){
+          const s = (v ?? '').toString().trim();
+          return s.length ? s : null;
+        }
+
+        function asGuidOrNull(v){
+          const s = (v ?? '').toString().trim();
+          return GUID_RE.test(s) ? s : null;   // hợp lệ → giữ string GUID, sai → null
+        }
+
+        // Nếu chưa có, bổ sung luôn:
+           function currentPhanLoaiKey() {
+            if (el('ld_ship').checked)   return 'Ship';
+            if (el('ld_muave').checked)  return 'Mv';
+            if (el('ld_taicho').checked) return 'Tại chỗ';
+            return 'App';
+        }
+
         function pulseCountBadge(){
           const b = document.getElementById('TongSo');
           if(!b) return;
           b.classList.add('pulse');
           setTimeout(()=> b.classList.remove('pulse'), 600);
         }
+
     </script>
 }

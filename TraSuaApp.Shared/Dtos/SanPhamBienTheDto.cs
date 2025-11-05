@@ -1,8 +1,9 @@
 ﻿namespace TraSuaApp.Shared.Dtos;
 
-public class SanPhamBienTheDto
+public class SanPhamBienTheDto : DtoBase
 {
-    public Guid Id { get; set; }
+    public override string ApiRoute => "SanPhamBienThe";
+
     public Guid SanPhamId { get; set; }
     public string TenBienThe { get; set; } = string.Empty;
     public decimal GiaBan { get; set; }

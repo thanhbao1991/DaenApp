@@ -1,4 +1,6 @@
 ﻿using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Domain.Entities;
@@ -216,19 +218,66 @@ public class HoaDonService : IHoaDonService
         };
     }
 
+
+    // Local helper: bỏ dấu tiếng Việt
+    private static string RemoveDiacriticsLocal(string input)
+    {
+        string normalized = input.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder(normalized.Length);
+
+        foreach (var c in normalized)
+        {
+            var uc = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (uc != UnicodeCategory.NonSpacingMark)
+                sb.Append(c);
+        }
+        return sb.ToString().Normalize(NormalizationForm.FormC);
+    }
     public async Task<Result<HoaDonDto>> CreateAsync(HoaDonDto dto)
     {
         var now = DateTime.Now;
 
+        // 0) Bổ sung/chuẩn hoá dữ liệu đến từ client (Web có thể thiếu)
+        if (dto.Id == Guid.Empty)
+            dto.Id = Guid.NewGuid();
+
+        dto.PhanLoai = (dto.PhanLoai);
+
+        // Nếu đã có KhachHangId mà thiếu TenKhachHangText / SoDienThoaiText -> bù từ DB
+        if (dto.KhachHangId != null &&
+            (string.IsNullOrWhiteSpace(dto.TenKhachHangText) || string.IsNullOrWhiteSpace(dto.SoDienThoaiText)))
+        {
+            var kh = await _context.KhachHangs.AsNoTracking()
+                       .FirstOrDefaultAsync(k => k.Id == dto.KhachHangId && !k.IsDeleted);
+
+            if (kh != null && string.IsNullOrWhiteSpace(dto.TenKhachHangText))
+                dto.TenKhachHangText = kh.Ten;
+
+            if (string.IsNullOrWhiteSpace(dto.SoDienThoaiText))
+            {
+                dto.SoDienThoaiText = await _context.KhachHangPhones.AsNoTracking()
+                    .Where(p => p.KhachHangId == dto.KhachHangId && !p.IsDeleted)
+                    .OrderByDescending(p => p.IsDefault)
+                    .Select(p => p.SoDienThoai)
+                    .FirstOrDefaultAsync();
+            }
+        }
+
+        // 1) Chỉ bắt buộc TenBan khi "Tại chỗ"
+        if (dto.PhanLoai == "Tại chỗ" && string.IsNullOrWhiteSpace(dto.TenBan))
+            return Result<HoaDonDto>.Failure("Vui lòng chọn tên bàn cho đơn Tại chỗ.");
+
+
+
+        // 2) Liên kết/khởi tạo khách hàng
         var khachHang = await GetOrCreateKhachHangAsync(dto, now);
         dto.KhachHangId = khachHang?.Id;
 
-        HoaDon entity = new HoaDon
+        // 3) Tạo entity
+        var entity = new HoaDon
         {
             Id = dto.Id,
-            MaHoaDon = string.IsNullOrWhiteSpace(dto.MaHoaDon)
-                ? MaHoaDonGenerator.Generate()
-                : dto.MaHoaDon,
+            MaHoaDon = string.IsNullOrWhiteSpace(dto.MaHoaDon) ? MaHoaDonGenerator.Generate() : dto.MaHoaDon,
             NgayRa = dto.NgayRa,
             PhanLoai = dto.PhanLoai,
             GhiChu = dto.GhiChu,
@@ -254,58 +303,61 @@ public class HoaDonService : IHoaDonService
         StringHelper.NormalizeAllStrings(entity);
         _context.HoaDons.Add(entity);
 
+        // 4) Thêm chi tiết & tính tiền
         var (tongTien, giamGia, thanhTien) = await AddChiTietAsync(entity.Id, dto, now);
         entity.TongTien = tongTien;
         entity.GiamGia = giamGia;
         entity.ThanhTien = thanhTien;
 
-        // ✅ đảm bảo trạng thái ban đầu
-        entity.ConLai = entity.ThanhTien;    // mới tạo/ghi lại chi tiết → chưa thu gì
+        // Trạng thái ban đầu
+        entity.ConLai = entity.ThanhTien;
         entity.HasDebt = false;
 
-        if (string.IsNullOrWhiteSpace(entity.GhiChu))
+        // Ghi chú tóm tắt (an toàn null)
+        var ctList = dto.ChiTietHoaDons ?? new ObservableCollection<ChiTietHoaDonDto>();
+        if (string.IsNullOrWhiteSpace(entity.GhiChu) && ctList.Count > 0)
         {
             var ghiChuTomTat = string.Join(", ",
-                dto.ChiTietHoaDons.GroupBy(x => x.TenSanPham.Trim())
-                   .Select(g => $"{g.Sum(x => x.SoLuong)} {g.Key}")
-            );
-            entity.GhiChu = ghiChuTomTat;
+                ctList.Where(x => !string.IsNullOrWhiteSpace(x.TenSanPham))
+                      .GroupBy(x => x.TenSanPham.Trim())
+                      .Select(g => $"{g.Sum(x => x.SoLuong)} {g.Key}"));
+            if (!string.IsNullOrWhiteSpace(ghiChuTomTat))
+                entity.GhiChu = ghiChuTomTat;
         }
 
-        string tenBan = dto.TenBan;
-        if (string.IsNullOrWhiteSpace(tenBan))
+        // 5) Auto-fill TenBan cho Mv/Ship/App nếu bỏ trống
+        if (string.IsNullOrWhiteSpace(entity.TenBan) && dto.PhanLoai != "Tại chỗ")
         {
             var start = now.Date; var end = start.AddDays(1);
             int stt = await _context.HoaDons
-                .CountAsync(h => !h.IsDeleted && h.PhanLoai == dto.PhanLoai
-                              && h.Ngay >= start && h.Ngay < end) + 1;
+                .CountAsync(h => !h.IsDeleted && h.PhanLoai == dto.PhanLoai && h.Ngay >= start && h.Ngay < end) + 1;
 
-            tenBan = dto.PhanLoai switch
+            entity.TenBan = dto.PhanLoai switch
             {
                 "Mv" => $"Mv {stt}",
                 "Ship" => $"Ship {stt}",
                 "App" => $"App {stt}",
-                _ => entity?.TenBan ?? ""
+                _ => entity.TenBan ?? ""
             };
+
+            // Normalize lại chuỗi vừa set
+            entity.TenBan = StringHelper.CapitalizeEachWord(entity.TenBan ?? "");
         }
 
-        entity!.TenBan = tenBan;
-
-        // 🟟 Dùng LoyaltyService thay vì công thức thủ công
+        // 6) Loyalty
         await AddTichDiemAsync(dto.KhachHangId, thanhTien, entity.Id, now);
 
         await _context.SaveChangesAsync();
 
         await DiscordService.SendAsync(
-         DiscordEventType.HoaDonNew,
-         $"{(entity.KhachHang?.Ten ?? entity.TenBan)} {entity.ThanhTien:N0} đ"
-     );
+            DiscordEventType.HoaDonNew,
+            $"{(entity.KhachHang?.Ten ?? entity.TenBan)} {entity.ThanhTien:N0} đ"
+        );
 
         var after = ToDto(entity);
         return Result<HoaDonDto>.Success(after, "Đã thêm hóa đơn thành công.")
             .WithId(after.Id).WithAfter(after);
     }
-
     public async Task<Result<HoaDonDto>> UpdateAsync(Guid id, HoaDonDto dto)
     {
         var entity = await _context.HoaDons
@@ -323,76 +375,106 @@ public class HoaDonService : IHoaDonService
         var now = DateTime.Now;
         var before = ToDto(entity);
 
+        // Chuẩn hoá PhanLoai
+        dto.PhanLoai = (dto.PhanLoai);
+
+        // Chỉ yêu cầu TenBan khi Tại chỗ
+        if (dto.PhanLoai == "Tại chỗ" && string.IsNullOrWhiteSpace(dto.TenBan))
+            return Result<HoaDonDto>.Failure("Vui lòng chọn tên bàn cho đơn Tại chỗ.");
+
+        // Bù dữ liệu KH nếu thiếu
+        if (dto.KhachHangId != null &&
+            (string.IsNullOrWhiteSpace(dto.TenKhachHangText) || string.IsNullOrWhiteSpace(dto.SoDienThoaiText)))
+        {
+            var kh = await _context.KhachHangs.AsNoTracking()
+                .FirstOrDefaultAsync(k => k.Id == dto.KhachHangId && !k.IsDeleted);
+
+            if (kh != null && string.IsNullOrWhiteSpace(dto.TenKhachHangText))
+                dto.TenKhachHangText = kh.Ten;
+
+            if (string.IsNullOrWhiteSpace(dto.SoDienThoaiText))
+            {
+                dto.SoDienThoaiText = await _context.KhachHangPhones.AsNoTracking()
+                    .Where(p => p.KhachHangId == dto.KhachHangId && !p.IsDeleted)
+                    .OrderByDescending(p => p.IsDefault)
+                    .Select(p => p.SoDienThoai)
+                    .FirstOrDefaultAsync();
+            }
+        }
+
         var khachHang = await GetOrCreateKhachHangAsync(dto, now);
         dto.KhachHangId = khachHang?.Id;
 
-        entity.TenBan = dto.TenBan;
+        // Cập nhật dữ liệu chính
         entity.PhanLoai = dto.PhanLoai;
+        entity.TenBan = dto.TenBan;
         entity.TenKhachHangText = dto.TenKhachHangText;
+        entity.DiaChiText = dto.DiaChiText;
+        entity.SoDienThoaiText = dto.SoDienThoaiText;
+        entity.GhiChu = dto.GhiChu;
+        entity.GhiChuShipper = dto.GhiChuShipper;
         entity.NgayShip = dto.NgayShip;
         entity.NguoiShip = dto.NguoiShip;
         entity.NgayHen = dto.NgayHen;
         entity.NgayRa = dto.NgayRa;
-        entity.GhiChu = dto.GhiChu;
-        entity.GhiChuShipper = dto.GhiChuShipper;
-        entity.DiaChiText = dto.DiaChiText;
-        entity.SoDienThoaiText = dto.SoDienThoaiText;
         entity.VoucherId = dto.VoucherId;
         entity.KhachHangId = dto.KhachHangId;
         entity.LastModified = now;
 
-        // Xóa cứng dữ liệu con
+        // Xoá cứng dữ liệu con cũ
         _context.ChiTietHoaDonToppings.RemoveRange(entity.ChiTietHoaDonToppings);
         _context.ChiTietHoaDonVouchers.RemoveRange(entity.ChiTietHoaDonVouchers);
         _context.ChiTietHoaDons.RemoveRange(entity.ChiTietHoaDons);
 
+        // Thêm chi tiết mới & tính tiền
         var (tongTien, giamGia, thanhTien) = await AddChiTietAsync(entity.Id, dto, now);
         entity.TongTien = tongTien;
         entity.GiamGia = giamGia;
         entity.ThanhTien = thanhTien;
 
-        if (string.IsNullOrWhiteSpace(entity.GhiChu))
+        // Ghi chú tóm tắt
+        var ctList = dto.ChiTietHoaDons ?? new ObservableCollection<ChiTietHoaDonDto>();
+        if (string.IsNullOrWhiteSpace(entity.GhiChu) && ctList.Count > 0)
         {
-            var ghiChuTomTat = string.Join(", ",
-                dto.ChiTietHoaDons.GroupBy(x => x.TenSanPham.Trim())
-                   .Select(g => $"{g.Sum(x => x.SoLuong)} {g.Key}")
-            );
-            entity.GhiChu = ghiChuTomTat;
+            var summary = string.Join(", ",
+                ctList.Where(x => !string.IsNullOrWhiteSpace(x.TenSanPham))
+                      .GroupBy(x => x.TenSanPham.Trim())
+                      .Select(g => $"{g.Sum(x => x.SoLuong)} {g.Key}"));
+            if (!string.IsNullOrWhiteSpace(summary))
+                entity.GhiChu = summary;
         }
 
-        string tenBan = dto.TenBan;
-        if (string.IsNullOrWhiteSpace(tenBan))
+        // Auto TenBan cho Mv/Ship/App
+        if (dto.PhanLoai != "Tại chỗ" && string.IsNullOrWhiteSpace(entity.TenBan))
         {
             var start = now.Date; var end = start.AddDays(1);
             int stt = await _context.HoaDons
-                .CountAsync(h => !h.IsDeleted && h.PhanLoai == dto.PhanLoai
-                              && h.Ngay >= start && h.Ngay < end) + 1;
+                .CountAsync(h => !h.IsDeleted && h.PhanLoai == dto.PhanLoai && h.Ngay >= start && h.Ngay < end) + 1;
 
-            tenBan = dto.PhanLoai switch
+            entity.TenBan = dto.PhanLoai switch
             {
                 "Mv" => $"Mv {stt}",
                 "Ship" => $"Ship {stt}",
                 "App" => $"App {stt}",
-                _ => entity?.TenBan ?? ""
+                _ => entity.TenBan ?? ""
             };
+
+            entity.TenBan = StringHelper.CapitalizeEachWord(entity.TenBan ?? "");
         }
-        entity!.TenBan = tenBan;
+
         StringHelper.NormalizeAllStrings(entity);
-        // 🟟 cập nhật điểm bằng LoyaltyService
+
+        // Loyalty & đồng bộ công nợ còn lại
         await UpdateTichDiemAsync(entity.KhachHangId, entity.Id, thanhTien, now);
 
-        // ✅ đồng bộ lại theo thực tế thanh toán/nợ (nếu đã có)
         await _context.SaveChangesAsync();
-
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
         await _context.SaveChangesAsync();
 
         var after = ToDto(entity);
-
         return Result<HoaDonDto>.Success(after, "Cập nhật hóa đơn thành công.")
             .WithId(id).WithBefore(before).WithAfter(after);
     }
-
     private Task AddTichDiemAsync(Guid? khachHangId, decimal thanhTien, Guid hoaDonId, DateTime now)
     {
         if (khachHangId == null) return Task.CompletedTask;

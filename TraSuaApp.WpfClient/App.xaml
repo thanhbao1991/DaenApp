@@ -62,6 +62,8 @@
         <SolidColorBrush x:Key="LightForeground" Color="Black" />
         <SolidColorBrush x:Key="DarkForeground" Color="White" />
 
+
+
         <!--  ================= Base styles (đặt TRƯỚC để tránh lỗi StaticResource) ================  -->
         <Style x:Key="BaseInputStyle" TargetType="Control">
             <Setter Property="Height" Value="32" />

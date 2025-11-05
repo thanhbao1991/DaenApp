@@ -59,7 +59,6 @@ namespace TraSuaApp.WpfClient.Views
             MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
 
             GenerateMenu("Admin", AdminMenu);
-            GenerateMenu("HoaDon", HoaDonMenu);
             GenerateMenu("Settings", SettingsMenu);
         }
 

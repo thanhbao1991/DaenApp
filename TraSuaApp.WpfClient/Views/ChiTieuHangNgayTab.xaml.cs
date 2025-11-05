@@ -65,7 +65,9 @@ namespace TraSuaApp.WpfClient.Views
 
             _fullChiTieuHangNgayList = await UiListHelper.BuildListAsync(
                 AppProviders.ChiTieuHangNgays.Items.Where(x => !x.IsDeleted),
-                snap => snap.Where(x => x.Ngay == todayLocal && !x.BillThang)
+                snap => snap.Where(x => x.Ngay == todayLocal
+                //&& !x.BillThang
+                )
                             .OrderByDescending(x => x.NgayGio)
                             .ToList()
             );

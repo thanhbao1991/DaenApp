@@ -250,6 +250,7 @@ namespace TraSuaApp.WpfClient.Views
                 Ngay = after.Ngay == default ? DateTime.Today : after.Ngay,
                 NgayGio = after.NgayGio == default ? DateTime.Now : after.NgayGio,
                 PhanLoai = after.PhanLoai,
+
                 TenBan = after.TenBan,
                 Ten = string.IsNullOrWhiteSpace(after.TenKhachHangText) ? after.TenBan : after.TenKhachHangText,
                 TenKhachHangText = after.TenKhachHangText,
@@ -279,14 +280,14 @@ namespace TraSuaApp.WpfClient.Views
 
                 LastModified = DateTime.Now,
                 CreatedAt = after.CreatedAt == default ? DateTime.Now : after.CreatedAt,
-
+                TrangThai = "Chưa thu"
                 // Trang thai ước lượng tạm để icon/màu chạy ngay
-                TrangThai = HoaDonHelper.ResolveTrangThai(
-                                after.ThanhTien,
-                                after.ConLai,
-                                after.HasDebt,
-                                coTienMat: false,
-                                coChuyenKhoan: false)
+                //   TrangThai = HoaDonHelper.ResolveTrangThai(
+                //after.ThanhTien,
+                //after.ConLai,
+                //after.HasDebt,
+                //coTienMat: false,
+                //coChuyenKhoan: false)
             };
 
             // 4) Chèn local + chọn ngay + render chi tiết → cảm giác “lưu phát là có”
@@ -1740,7 +1741,7 @@ namespace TraSuaApp.WpfClient.Views
         // ==================== UI STYLE TT THANH TOÁN & FOOTER ====================
         private void UpdateThongTinThanhToanStyle(HoaDonDto hd)
         {
-            ThongTinThanhToanGroupBox.Background = (Brush)Application.Current.Resources["LightBrush"];
+            ThongTinThanhToanGroupBox.Background = (Brush)Application.Current.Resources["InfoBrush"];
             ThongTinThanhToanGroupBox.Foreground = (Brush)Application.Current.Resources["DarkBrush"];
 
             if (hd.TongNoKhachHang > 0)
@@ -1951,5 +1952,50 @@ namespace TraSuaApp.WpfClient.Views
                 case Key.Delete: DelButton_Click(this, new RoutedEventArgs()); break;
             }
         }
+
+        // Bảo đảm chọn đúng dòng theo nút trong DataGrid
+        private void SelectRow(object sender)
+        {
+            if (sender is FrameworkElement fe && fe.DataContext is HoaDonDto row)
+                HoaDonDataGrid.SelectedItem = row;
+        }
+
+        // === Wrappers cho các nút trong từng dòng ===
+        private void RowPayTM_Click(object sender, RoutedEventArgs e)
+        {
+            SelectRow(sender);
+            F1Button_Click(sender, e);          // Tiền mặt
+        }
+
+        private void RowPayCK_Click(object sender, RoutedEventArgs e)
+        {
+            SelectRow(sender);
+            F4Button_Click(sender, e);          // Chuyển khoản
+        }
+
+        private void RowGhiNo_Click(object sender, RoutedEventArgs e)
+        {
+            SelectRow(sender);
+            F12Button_Click(sender, e);         // Ghi nợ
+        }
+
+        private void RowEsc_Click(object sender, RoutedEventArgs e)
+        {
+            SelectRow(sender);
+            EscButton_Click(sender, e);         // ESC - Gán ship (Khánh)
+        }
+
+        private void RowPrint_Click(object sender, RoutedEventArgs e)
+        {
+            SelectRow(sender);
+            F2Button_Click(sender, e);          // F2 - In bill
+        }
+
+        private void RowDelete_Click(object sender, RoutedEventArgs e)
+        {
+            SelectRow(sender);
+            DelButton_Click(sender, e);         // Del - Xoá
+        }
+
     }
 }

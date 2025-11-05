@@ -35,7 +35,7 @@
                     TextChanged="SearchTextBox_TextChanged" />
                 <TextBlock
                     Style="{StaticResource SearchHintTextStyle}"
-                    Text="Tìm kiếm..."
+                    Text="Tìm kiếm theo KH / SP / Biến thể / Giá..."
                     Visibility="{Binding Text.IsEmpty, ElementName=SearchTextBox, Converter={StaticResource BoolToVisibilityConverter}}" />
             </Grid>
 
@@ -48,6 +48,7 @@
                     Margin="0,0,4,0"
                     Click="AddButton_Click"
                     Content="Thêm"
+                    IsEnabled="False"
                     Style="{StaticResource AddButtonStyle}" />
                 <Button
                     Width="80"
@@ -76,18 +77,37 @@
             Margin="10"
             AutoGenerateColumns="False"
             CanUserSortColumns="False"
+            IsReadOnly="True"
             MouseDoubleClick="KhachHangGiaBanDataGrid_MouseDoubleClick">
             <DataGrid.Columns>
                 <DataGridTextColumn
                     Width="50"
-                    Binding="{Binding STT}"
+                    Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
                 <DataGridTextColumn
+                    Width="180"
+                    Binding="{Binding TenKhachHang}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Khách hàng" />
+                <DataGridTextColumn
                     Width="*"
-                    Binding="{Binding Ten}"
-                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                    Header="Tên nhóm" />
+                    Binding="{Binding TenSanPham}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Sản phẩm" />
+                <DataGridTextColumn
+                    Width="200"
+                    Binding="{Binding TenBienThe}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Biến thể" />
+                <DataGridTextColumn
+                    Width="140"
+                    ElementStyle="{StaticResource RightTextCellStyle}"
+                    Header="Giá bán">
+                    <DataGridTextColumn.Binding>
+                        <Binding Path="GiaBan" StringFormat="N0" />
+                    </DataGridTextColumn.Binding>
+                </DataGridTextColumn>
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

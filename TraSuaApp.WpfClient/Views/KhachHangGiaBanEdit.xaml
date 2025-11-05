@@ -2,7 +2,7 @@
     x:Class="TraSuaApp.WpfClient.SettingsViews.KhachHangGiaBanEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="clr-namespace:TraSuaApp.WpfClient.Converters"
+    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
     Style="{StaticResource EditWindowStyle}"
     WindowStartupLocation="CenterScreen">
 
@@ -14,6 +14,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
+            <!--  Header  -->
             <DockPanel Grid.Row="0" Style="{StaticResource EditHeaderPanelStyle}">
                 <TextBlock Name="TieuDeTextBlock" Style="{StaticResource EditTitleTextStyle}" />
                 <Button
@@ -21,20 +22,28 @@
                     Content="✖"
                     Style="{StaticResource CloseButtonStyle}" />
             </DockPanel>
+
             <!--  Nội dung  -->
-            <StackPanel Grid.Row="1">
-                <GroupBox Margin="0,0,0,5" Header="Tên nhóm sản phẩm">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBox
-                            x:Name="TenTextBox"
-                            Width="200"
-                            Margin="0,0,8,0" />
-                    </StackPanel>
+            <StackPanel Grid.Row="1" Margin="0,6,0,0">
+                <GroupBox Margin="0,6,0,0" Header="Giá bán">
+                    <ctrl:NumericTextBox
+                        x:Name="GiaBanTextBox"
+                        MinWidth="160"
+                        HorizontalAlignment="Left"
+                        PreviewTextInput="GiaBanTextBox_PreviewTextInput"
+                        TextChanged="GiaBanTextBox_TextChanged" />
                 </GroupBox>
 
+                <!--  Thông báo cấm tạo mới  -->
+                <TextBlock
+                    x:Name="CreateWarningText"
+                    Margin="0,8,0,0"
+                    Foreground="OrangeRed"
+                    Text="Form này chỉ dùng để sửa giá. Tạo mới vui lòng thực hiện ở màn khác."
+                    Visibility="Collapsed" />
             </StackPanel>
 
-            <!--  Nút và lỗi  -->
+            <!--  Nút + lỗi  -->
             <StackPanel Grid.Row="2">
                 <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
                 <Button

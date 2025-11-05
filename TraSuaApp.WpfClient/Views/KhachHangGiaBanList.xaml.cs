@@ -15,33 +15,32 @@ namespace TraSuaApp.WpfClient.SettingsViews
     {
         private readonly CollectionViewSource _viewSource = new();
         private readonly WpfErrorHandler _errorHandler = new();
-        string _friendlyName = TuDien._tableFriendlyNames["KhachHangGiaBan"];
+        private readonly string _friendlyName = TuDien._tableFriendlyNames["KhachHangGiaBan"];
+
         public KhachHangGiaBanList()
         {
             InitializeComponent();
-            this.Title = _friendlyName;
-            this.TieuDeTextBlock.Text = _friendlyName;
-            this.PreviewKeyDown += KhachHangGiaBanList_PreviewKeyDown;
+            Title = _friendlyName;
+            TieuDeTextBlock.Text = _friendlyName;
+            PreviewKeyDown += KhachHangGiaBanList_PreviewKeyDown;
 
-            while (AppProviders.KhachHangGiaBans?.Items == null)
-            {
-                Task.Delay(100); // chờ 100ms rồi kiểm tra lại
-            }
-
-
-            // 1. Gán Source ngay
+            // Gắn source ngay khi khởi tạo
             _viewSource.Source = AppProviders.KhachHangGiaBans.Items;
             _viewSource.Filter += ViewSource_Filter;
             KhachHangGiaBanDataGrid.ItemsSource = _viewSource.View;
 
-            // 2. Subscribe OnChanged (sau khi Source đã có)
-            AppProviders.KhachHangGiaBans.OnChanged += () => ApplySearch();
+            // Subscribe thay đổi
+            AppProviders.KhachHangGiaBans.OnChanged += ApplySearch;
 
-            // 3. Sau cùng mới reload async
+            // Reload khi loaded
             Loaded += async (_, __) =>
             {
                 await AppProviders.KhachHangGiaBans.ReloadAsync();
                 ApplySearch();
+
+                // (khuyến nghị) cũng load caches KH & Biến thể để Edit mở nhanh
+                if (AppProviders.KhachHangs != null) await AppProviders.KhachHangs.ReloadAsync();
+                if (AppProviders.SanPhamBienThes != null) await AppProviders.SanPhamBienThes.ReloadAsync();
             };
         }
 
@@ -50,7 +49,8 @@ namespace TraSuaApp.WpfClient.SettingsViews
             _viewSource.View.Refresh();
 
             _viewSource.View.SortDescriptions.Clear();
-            _viewSource.View.SortDescriptions.Add(new SortDescription(nameof(KhachHangGiaBanDto.LastModified), ListSortDirection.Descending));
+            _viewSource.View.SortDescriptions.Add(
+                new SortDescription(nameof(KhachHangGiaBanDto.LastModified), ListSortDirection.Descending));
 
             var view = _viewSource.View.Cast<KhachHangGiaBanDto>().ToList();
             for (int i = 0; i < view.Count; i++)
@@ -59,26 +59,27 @@ namespace TraSuaApp.WpfClient.SettingsViews
 
         private void ViewSource_Filter(object sender, FilterEventArgs e)
         {
-            if (e.Item is not KhachHangGiaBanDto item)
-            {
-                e.Accepted = false;
-                return;
-            }
+            if (e.Item is not KhachHangGiaBanDto item) { e.Accepted = false; return; }
 
-            var keyword = StringHelper.MyNormalizeText(SearchTextBox.Text.Trim());
-            e.Accepted = string.IsNullOrEmpty(keyword) || (item.TimKiem?.Contains(keyword) ?? false);
+            var keyword = StringHelper.MyNormalizeText((SearchTextBox.Text ?? "").Trim());
+            if (string.IsNullOrEmpty(keyword)) { e.Accepted = true; return; }
+
+            var haystack = item.TimKiem ?? "";
+            e.Accepted = haystack.Contains(keyword);
         }
+
         private async void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
             await AppProviders.KhachHangGiaBans.ReloadAsync();
+            ApplySearch();
         }
 
         private async void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            var window = new KhachHangGiaBanEdit()
+            var window = new KhachHangGiaBanEdit
             {
-                Width = this.ActualWidth,
-                Height = this.ActualHeight,
+                Width = ActualWidth,
+                Height = ActualHeight,
                 Owner = this
             };
             if (window.ShowDialog() == true)
@@ -89,17 +90,17 @@ namespace TraSuaApp.WpfClient.SettingsViews
         {
             if (KhachHangGiaBanDataGrid.SelectedItem is not KhachHangGiaBanDto selected)
             {
-                MessageBox.Show("Vui lòng chọn dòng cần sửa.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Vui lòng chọn dòng cần sửa.", "Thông báo",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             var window = new KhachHangGiaBanEdit(selected)
             {
-                Width = this.ActualWidth,
-                Height = this.ActualHeight,
+                Width = ActualWidth,
+                Height = ActualHeight,
                 Owner = this
             };
-
             if (window.ShowDialog() == true)
                 await AppProviders.KhachHangGiaBans.ReloadAsync();
         }
@@ -108,12 +109,14 @@ namespace TraSuaApp.WpfClient.SettingsViews
         {
             if (KhachHangGiaBanDataGrid.SelectedItem is not KhachHangGiaBanDto selected)
             {
-                MessageBox.Show("Vui lòng chọn dòng cần xoá.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Vui lòng chọn dòng cần xoá.", "Thông báo",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
+            var label = $"{selected.TenKhachHang} - {selected.TenSanPham} / {selected.TenBienThe}";
             var confirm = MessageBox.Show(
-                $"Bạn có chắc chắn muốn xoá {_friendlyName} '{selected.Ten}'?",
+                $"Bạn có chắc chắn muốn xoá {_friendlyName} của '{label}'?",
                 "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (confirm != MessageBoxResult.Yes) return;
@@ -141,7 +144,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
         private async void KhachHangGiaBanDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (KhachHangGiaBanDataGrid.SelectedItem is not KhachHangGiaBanDto selected) return;
-            var window = new KhachHangGiaBanEdit(selected);
+            var window = new KhachHangGiaBanEdit(selected) { Owner = this };
             if (window.ShowDialog() == true)
                 await AppProviders.KhachHangGiaBans.ReloadAsync();
         }
@@ -157,7 +160,5 @@ namespace TraSuaApp.WpfClient.SettingsViews
             else if (e.Key == Key.Delete) { DeleteButton_Click(null!, null!); e.Handled = true; }
             else if (e.Key == Key.F5) { ReloadButton_Click(null!, null!); e.Handled = true; }
         }
-
-
     }
 }
