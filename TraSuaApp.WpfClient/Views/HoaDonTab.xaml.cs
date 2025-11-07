@@ -433,21 +433,21 @@ namespace TraSuaApp.WpfClient.Views
                     if (hd.TrangThai == "Chưa thu")
                     {
                         icon.Icon = IconChar.MobileScreenButton;
-                        icon.Foreground = (Brush)Application.Current.Resources["DangerBrush"];
+                        icon.Foreground = (Brush)System.Windows.Application.Current.Resources["DangerBrush"];
                     }
                     break;
                 case "Tại Chỗ":
                     if (hd.TrangThai == "Chưa thu")
                     {
                         icon.Icon = IconChar.Chair;
-                        icon.Foreground = (Brush)Application.Current.Resources["SuccessBrush"];
+                        icon.Foreground = (Brush)System.Windows.Application.Current.Resources["SuccessBrush"];
                     }
                     break;
                 case "Mv":
                     if (hd.TrangThai == "Chưa thu")
                     {
                         icon.Icon = IconChar.BagShopping;
-                        icon.Foreground = (Brush)Application.Current.Resources["WarningBrush"];
+                        icon.Foreground = (Brush)System.Windows.Application.Current.Resources["WarningBrush"];
                     }
                     break;
                 case "Ship":
@@ -456,14 +456,14 @@ namespace TraSuaApp.WpfClient.Views
                         : (hd.NgayShip == null ? IconChar.HourglassHalf : IconChar.Truck);
 
                     icon.Foreground = hd.NguoiShip == "Khánh"
-                        ? (Brush)Application.Current.Resources["DangerBrush"]
+                        ? (Brush)System.Windows.Application.Current.Resources["DangerBrush"]
                         : (hd.NgayShip == null
-                            ? (Brush)Application.Current.Resources["PrimaryBrush"]
-                            : (Brush)Application.Current.Resources["DarkBrush"]);
+                            ? (Brush)System.Windows.Application.Current.Resources["PrimaryBrush"]
+                            : (Brush)System.Windows.Application.Current.Resources["DarkBrush"]);
                     break;
                 default:
                     icon.Icon = IconChar.Circle;
-                    icon.Foreground = (Brush)Application.Current.Resources["SecondaryBrush"];
+                    icon.Foreground = (Brush)System.Windows.Application.Current.Resources["SecondaryBrush"];
                     break;
             }
 
@@ -488,7 +488,6 @@ namespace TraSuaApp.WpfClient.Views
         // ==================== SELECTION -> TẢI CHI TIẾT ====================
         private async void HoaDonDataGrid_SelectionChangedAsync(object sender, SelectionChangedEventArgs e)
         {
-            //if (_suspendSelectionChanged) return;
             try
             {
                 _cts?.Cancel();
@@ -552,6 +551,11 @@ namespace TraSuaApp.WpfClient.Views
                 ChiTietHoaDonListBox.ItemsSource = hd.ChiTietHoaDons;
                 _fullChiTietHoaDonList = hd.ChiTietHoaDons?.ToList() ?? new List<ChiTietHoaDonDto>();
 
+                StartReadMonNotes(hd);
+
+
+
+
                 UpdateThongTinThanhToanStyle(hd);
                 ThongTinThanhToanPanel.DataContext = hd;
                 RenderFooterPanel(ThongTinThanhToanPanel, hd, includeLine: false);
@@ -589,7 +593,68 @@ namespace TraSuaApp.WpfClient.Views
                 SetRightBusy(false);
             }
         }
+        // 🟟 Đọc ghi chú món khi chọn hoá đơn
+        private void StartReadMonNotes(HoaDonDto hd)
+        {
+            try
+            {
+                // Hủy task đọc cũ nếu đang chạy
+                _cts?.Cancel();
 
+                var chiTietList = hd.ChiTietHoaDons ?? new ObservableCollection<ChiTietHoaDonDto>();
+
+                // Lọc ra những món có ghi chú
+                var notes = chiTietList
+                    .Where(ct => !string.IsNullOrWhiteSpace(ct.NoteText))
+                    .Select(ct =>
+                    {
+                        // Ví dụ: "Ghi chú: 2 trà sữa socola, ít đá, ít ngọt"
+                        return $"Ghi chú:  {ct.TenSanPham}. {ct.NoteText}";
+                    })
+                    .ToList();
+
+                if (notes.Count == 0)
+                    return; // không có ghi chú thì thôi
+
+                _cts = new CancellationTokenSource();
+                var token = _cts.Token;
+
+                // Đọc ghi chú ở background, có thể bị hủy khi user chọn hoá đơn khác
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        // Đợi một nhịp cho panel bên phải render xong
+                        await Task.Delay(300, token);
+
+                        foreach (var line in notes)
+                        {
+                            if (token.IsCancellationRequested)
+                                break;
+
+                            // 🟟 Nếu TTSHelper của anh dùng tên hàm khác (vd SpeakAsync)
+                            //    thì đổi lại cho khớp
+                            TTSHelper.DownloadAndPlayGoogleTTSAsync(line);
+
+                            // Thêm chút delay giữa các ghi chú cho dễ nghe
+                            await Task.Delay(400, token);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // bị hủy thì bỏ qua
+                    }
+                    catch
+                    {
+                        // tránh làm crash UI nếu TTS lỗi
+                    }
+                }, token);
+            }
+            catch
+            {
+                // an toàn, không đụng UI nếu có lỗi
+            }
+        }
         private void SetRightBusy(bool isBusy)
         {
             try
@@ -926,7 +991,7 @@ namespace TraSuaApp.WpfClient.Views
                             var r = await api.GetByIdAsync(idAtClick);
                             if (r.IsSuccess && r.Data != null)
                             {
-                                await Application.Current.Dispatcher.InvokeAsync(async () =>
+                                await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
                                 {
                                     // Cập nhật vài field hiển thị về dữ liệu thật
                                     selectedAtClick.TrangThai = r.Data.TrangThai;
@@ -939,7 +1004,7 @@ namespace TraSuaApp.WpfClient.Views
                             else
                             {
                                 await AppProviders.HoaDons.ReloadAsync();
-                                await Application.Current.Dispatcher.InvokeAsync(async () =>
+                                await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
                                 {
                                     ReloadHoaDonUI(idAtClick, restorePreviousIfNoPrefer: false);
                                     await SelectHoaDonByIdAsync(idAtClick);
@@ -954,7 +1019,7 @@ namespace TraSuaApp.WpfClient.Views
                             selectedAtClick.NgayRa = backup.NgayRa;
                             selectedAtClick.HasDebt = backup.HasDebt;
 
-                            await Application.Current.Dispatcher.InvokeAsync(async () =>
+                            await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
                             {
                                 await RefreshRowVisualAsync(selectedAtClick);
                                 NotiHelper.ShowError($"Lỗi đồng bộ sau khi thu tiền mặt: {ex.Message}");
@@ -1012,7 +1077,7 @@ namespace TraSuaApp.WpfClient.Views
                             var r = await api.GetByIdAsync(idAtClick);
                             if (r.IsSuccess && r.Data != null)
                             {
-                                await Application.Current.Dispatcher.InvokeAsync(async () =>
+                                await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
                                 {
                                     selectedAtClick.TrangThai = r.Data.TrangThai;
                                     selectedAtClick.ConLai = r.Data.ConLai;
@@ -1024,7 +1089,7 @@ namespace TraSuaApp.WpfClient.Views
                             else
                             {
                                 await AppProviders.HoaDons.ReloadAsync();
-                                await Application.Current.Dispatcher.InvokeAsync(async () =>
+                                await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
                                 {
                                     ReloadHoaDonUI(idAtClick, restorePreviousIfNoPrefer: false);
                                     await SelectHoaDonByIdAsync(idAtClick);
@@ -1038,7 +1103,7 @@ namespace TraSuaApp.WpfClient.Views
                             selectedAtClick.NgayRa = backup.NgayRa;
                             selectedAtClick.HasDebt = backup.HasDebt;
 
-                            await Application.Current.Dispatcher.InvokeAsync(async () =>
+                            await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
                             {
                                 await RefreshRowVisualAsync(selectedAtClick);
                                 NotiHelper.ShowError($"Lỗi đồng bộ sau khi chuyển khoản: {ex.Message}");
@@ -1097,7 +1162,7 @@ namespace TraSuaApp.WpfClient.Views
                     Owner = owner,
                     Width = owner?.ActualWidth ?? 1200,
                     Height = owner?.ActualHeight ?? 800,
-                    Background = MakeBrush((Brush)Application.Current.Resources["DangerBrush"], 0.8)
+                    Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["DangerBrush"], 0.8)
                 };
                 form.SoTienTextBox.IsReadOnly = true;
 
@@ -1118,7 +1183,7 @@ namespace TraSuaApp.WpfClient.Views
                             var r = await api.GetByIdAsync(idAtClick);
                             if (r.IsSuccess && r.Data != null)
                             {
-                                await Application.Current.Dispatcher.InvokeAsync(async () =>
+                                await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
                                 {
                                     selectedAtClick.TrangThai = r.Data.TrangThai;
                                     selectedAtClick.ConLai = r.Data.ConLai;
@@ -1130,7 +1195,7 @@ namespace TraSuaApp.WpfClient.Views
                             else
                             {
                                 await AppProviders.HoaDons.ReloadAsync();
-                                await Application.Current.Dispatcher.InvokeAsync(async () =>
+                                await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
                                 {
                                     ReloadHoaDonUI(idAtClick, restorePreviousIfNoPrefer: false);
                                     await SelectHoaDonByIdAsync(idAtClick);
@@ -1145,7 +1210,7 @@ namespace TraSuaApp.WpfClient.Views
                             selectedAtClick.NgayRa = backup.NgayRa;
                             selectedAtClick.HasDebt = backup.HasDebt;
 
-                            await Application.Current.Dispatcher.InvokeAsync(async () =>
+                            await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
                             {
                                 await RefreshRowVisualAsync(selectedAtClick);
                                 NotiHelper.ShowError($"Lỗi đồng bộ sau khi ghi nợ: {ex.Message}");
@@ -1741,27 +1806,27 @@ namespace TraSuaApp.WpfClient.Views
         // ==================== UI STYLE TT THANH TOÁN & FOOTER ====================
         private void UpdateThongTinThanhToanStyle(HoaDonDto hd)
         {
-            ThongTinThanhToanGroupBox.Background = (Brush)Application.Current.Resources["InfoBrush"];
-            ThongTinThanhToanGroupBox.Foreground = (Brush)Application.Current.Resources["DarkBrush"];
+            ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["InfoBrush"];
+            ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
 
             if (hd.TongNoKhachHang > 0)
             {
-                ThongTinThanhToanGroupBox.Background = (Brush)Application.Current.Resources["DangerBrush"];
-                ThongTinThanhToanGroupBox.Foreground = (Brush)Application.Current.Resources["LightBrush"];
+                ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["DangerBrush"];
+                ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["LightBrush"];
                 return;
             }
 
             switch (hd.TrangThai)
             {
                 case "Tiền mặt":
-                    ThongTinThanhToanGroupBox.Background = (Brush)Application.Current.Resources["SuccessBrush"];
-                    ThongTinThanhToanGroupBox.Foreground = (Brush)Application.Current.Resources["LightBrush"];
+                    ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["SuccessBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["LightBrush"];
                     break;
 
                 case "Chuyển khoản":
                 case "Banking Nhã":
-                    ThongTinThanhToanGroupBox.Background = (Brush)Application.Current.Resources["WarningBrush"];
-                    ThongTinThanhToanGroupBox.Foreground = (Brush)Application.Current.Resources["DarkBrush"];
+                    ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["WarningBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
                     break;
 
                 case "Chuyển khoản + Tiền mặt":
@@ -1777,7 +1842,7 @@ namespace TraSuaApp.WpfClient.Views
                             new GradientStop(Colors.LightYellow, 1.0)
                         }
                     };
-                    ThongTinThanhToanGroupBox.Foreground = (Brush)Application.Current.Resources["DarkBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
                     break;
 
                 case "Banking Nhã + Tiền mặt":
@@ -1793,22 +1858,22 @@ namespace TraSuaApp.WpfClient.Views
                             new GradientStop(Colors.Gold, 1.0)
                         }
                     };
-                    ThongTinThanhToanGroupBox.Foreground = (Brush)Application.Current.Resources["DarkBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
                     break;
 
                 case "Thu một phần":
-                    ThongTinThanhToanGroupBox.Background = (Brush)Application.Current.Resources["SuccessBrush"];
-                    ThongTinThanhToanGroupBox.Foreground = (Brush)Application.Current.Resources["DarkBrush"];
+                    ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["SuccessBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
                     break;
 
                 case "Nợ một phần":
-                    ThongTinThanhToanGroupBox.Background = (Brush)Application.Current.Resources["DangerBrush"];
-                    ThongTinThanhToanGroupBox.Foreground = (Brush)Application.Current.Resources["DarkBrush"];
+                    ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["DangerBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
                     break;
 
                 case "Ghi nợ":
-                    ThongTinThanhToanGroupBox.Background = (Brush)Application.Current.Resources["DangerBrush"];
-                    ThongTinThanhToanGroupBox.Foreground = (Brush)Application.Current.Resources["LightBrush"];
+                    ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["DangerBrush"];
+                    ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["LightBrush"];
                     break;
             }
         }
@@ -1871,6 +1936,12 @@ namespace TraSuaApp.WpfClient.Views
                 if (includeLine) host.Children.Add(new Separator());
                 AddGridRow("Công nợ:", VND(hd.TongNoKhachHang));
                 AddGridRow("TỔNG:", VND(hd.TongNoKhachHang + hd.ConLai));
+            }
+            if (hd.TongDonKhacDangGiao > 0)
+            {
+                if (includeLine) host.Children.Add(new Separator());
+                AddGridRow("Đơn khác:", VND(hd.TongDonKhacDangGiao));
+                AddGridRow("TỔNG:", VND(hd.TongNoKhachHang + hd.ConLai + hd.TongDonKhacDangGiao));
             }
         }
 

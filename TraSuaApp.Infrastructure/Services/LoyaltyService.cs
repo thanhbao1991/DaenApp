@@ -53,6 +53,23 @@ public static class LoyaltyService
         ).AnyAsync(ct);
     }
 
+
+
+    public static async Task<decimal> TinhTongDonKhacDangGiaoAsync(
+    AppDbContext db, Guid khachHangId, Guid? excludeHoaDonId = null, CancellationToken ct = default)
+    {
+        return await db.HoaDons.AsNoTracking()
+            .Where(h => !h.IsDeleted
+                        && h.KhachHangId == khachHangId
+                        && (excludeHoaDonId == null || h.Id != excludeHoaDonId)
+                        && h.ConLai > 0
+                        && !h.HasDebt
+                        && h.Ngay >= DateTime.Now.Date
+                        )
+            .SumAsync(h => (decimal?)h.ConLai, ct) ?? 0m;
+    }
+
+
     public static async Task<decimal> TinhTongNoKhachHangAsync(AppDbContext db, Guid khachHangId, Guid? excludeHoaDonId = null, CancellationToken ct = default)
     {
         var q = db.ChiTietHoaDonNos.AsNoTracking()

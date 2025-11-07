@@ -113,6 +113,9 @@ namespace TraSuaApp.Infrastructure.Services
                 {
                     dto.TongNoKhachHang = await LoyaltyService
                         .TinhTongNoKhachHangAsync(_context, h.KhachHangId.Value, h.Id);
+                    dto.TongDonKhacDangGiao = await LoyaltyService
+                           .TinhTongDonKhacDangGiaoAsync(_context, h.KhachHangId.Value, h.Id);
+
                 }
 
                 result.Add(dto);

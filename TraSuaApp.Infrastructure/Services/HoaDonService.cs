@@ -680,6 +680,7 @@ public class HoaDonService : IHoaDonService
             dto.DiemThangTruoc = diemThangTruoc;
 
             dto.TongNoKhachHang = await LoyaltyService.TinhTongNoKhachHangAsync(_context, khId, dto.Id);
+            dto.TongDonKhacDangGiao = await LoyaltyService.TinhTongDonKhacDangGiaoAsync(_context, khId, dto.Id);
         }
 
 

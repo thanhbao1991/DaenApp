@@ -125,6 +125,7 @@ namespace TraSuaApp.Api.Controllers
                 await LoyaltyService.TinhDiemThangAsync(_db, khachHangId, DateTime.Now, kh.DuocNhanVoucher, cts.Token);
 
             var tongNo = await LoyaltyService.TinhTongNoKhachHangAsync(_db, khachHangId, null, cts.Token);
+            var donKhac = await LoyaltyService.TinhTongDonKhacDangGiaoAsync(_db, khachHangId, null, cts.Token);
 
             bool daNhanVoucher = kh.DuocNhanVoucher
                 ? await LoyaltyService.DaNhanVoucherTrongThangAsync(_db, khachHangId, DateTime.Now, cts.Token)
@@ -138,6 +139,7 @@ namespace TraSuaApp.Api.Controllers
                 DiemThangNay = diemThangNay,
                 DiemThangTruoc = diemThangTruoc,
                 TongNo = tongNo,
+                DonKhac = donKhac,
                 MonYeuThich = kh.FavoriteMon
             };
         }

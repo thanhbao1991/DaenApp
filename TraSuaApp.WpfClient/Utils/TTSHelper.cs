@@ -4,34 +4,38 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 public static class TTSHelper
 {
-    private static readonly MediaPlayer _player = new MediaPlayer();
-    private static readonly Queue<string> _queue = new Queue<string>();
-    private static bool _isPlaying = false;
-    private static readonly object _lock = new object();
+    // Hàng đợi các file cần phát
+    private static readonly Queue<string> _queue = new();
+    private static readonly object _lock = new();
 
-    static TTSHelper()
-    {
-        _player.MediaEnded += Player_MediaEnded;
-        _player.MediaFailed += Player_MediaFailed;
-    }
+    // Cờ đang phát và player hiện tại
+    private static bool _isPlaying = false;
+    private static MediaPlayer? _currentPlayer;
+
+    // Lấy Dispatcher UI (của WPF App)
+    private static Dispatcher UiDispatcher
+        => Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+
+    // --- NORMALIZE TÊN SẢN PHẨM ---------------------------------
     private static string NormalizeTenSanPham(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
             return input ?? string.Empty;
 
         var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        { "Cf", "Cà Phê" },
-        { "Cafe", "Cà Phê" },
-        { "TCĐĐ", "Trân Châu Đường Đen" },
-        { "TCT", "Trân Châu Trắng" },
-        { "TS", "Trà Sữa" },
-        { "S/MV", "" },
-        { "Olong", "Ô Long" },
-    };
+        {
+            { "Cf", "Cà Phê" },
+            { "Cafe", "Cà Phê" },
+            { "TCĐĐ", "Trân Châu Đường Đen" },
+            { "TCT", "Trân Châu Trắng" },
+            { "TS", "Trà Sữa" },
+            { "S/MV", "" },
+            { "Olong", "Ô Long" },
+        };
 
         foreach (var kv in replacements)
         {
@@ -47,7 +51,10 @@ public static class TTSHelper
         return input;
     }
 
+    // Alias tiện gọi: TTSHelper.Speak("xin chào");
+    public static Task Speak(string text) => DownloadAndPlayGoogleTTSAsync(text);
 
+    // --- DOWNLOAD + ENQUEUE -------------------------------------
     public static async Task DownloadAndPlayGoogleTTSAsync(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
@@ -58,7 +65,7 @@ public static class TTSHelper
 
         string safeFileName = ReplaceInvalidFileNameChars(text);
         if (safeFileName.Length > 50) // tránh tên file quá dài
-            safeFileName = safeFileName.Substring(0, 50);
+            safeFileName = safeFileName[..50];
 
         string filePath = Path.Combine(folder, safeFileName + ".mp3");
 
@@ -69,12 +76,10 @@ public static class TTSHelper
 
             try
             {
-                using (HttpClient client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
-                    byte[] audioBytes = await client.GetByteArrayAsync(url);
-                    await File.WriteAllBytesAsync(filePath, audioBytes);
-                }
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+                byte[] audioBytes = await client.GetByteArrayAsync(url);
+                await File.WriteAllBytesAsync(filePath, audioBytes);
             }
             catch (Exception ex)
             {
@@ -86,60 +91,121 @@ public static class TTSHelper
             }
         }
 
+        bool shouldStart = false;
+
+        // Đưa file vào queue, quyết định có cần start phát không
         lock (_lock)
         {
             _queue.Enqueue(filePath);
             if (!_isPlaying)
-                PlayNext();
+            {
+                _isPlaying = true;
+                shouldStart = true;
+            }
+        }
+
+        if (shouldStart)
+        {
+            // Bắt đầu phát file đầu tiên trên UI thread
+            StartNextOnUi();
         }
     }
 
-    private static void PlayNext()
+    // --- PLAYBACK PIPELINE --------------------------------------
+    private static void StartNextOnUi()
     {
-        if (_queue.Count == 0)
-        {
-            _isPlaying = false;
-            return;
-        }
+        UiDispatcher.BeginInvoke((Action)PlayNextCore, DispatcherPriority.Background);
+    }
 
-        _isPlaying = true;
-        string nextFile = _queue.Dequeue();
+    private static void PlayNextCore()
+    {
+        string? nextFile = null;
+
+        lock (_lock)
+        {
+            if (_queue.Count == 0)
+            {
+                _isPlaying = false;
+                return;
+            }
+
+            nextFile = _queue.Dequeue();
+        }
 
         try
         {
-            _player.Open(new Uri(nextFile));
-            _player.Volume = 1.0; // max volume
-            _player.Play();
+            // Dọn player cũ nếu có
+            _currentPlayer?.Stop();
+            _currentPlayer?.Close();
         }
-        catch
+        catch { }
+
+        // Tạo player mới cho file này
+        var player = new MediaPlayer();
+        _currentPlayer = player;
+
+        player.Volume = 1.0;
+
+        player.MediaEnded += (s, e) =>
         {
-            // nếu lỗi thì thử phát cái tiếp theo
-            _isPlaying = false;
-            PlayNext();
+            try
+            {
+                player.Stop();
+                player.Close();
+            }
+            catch { }
+
+            StartNextOnUi();
+        };
+
+        player.MediaFailed += (s, e) =>
+        {
+            try
+            {
+                player.Stop();
+                player.Close();
+            }
+            catch { }
+
+            StartNextOnUi();
+        };
+
+        try
+        {
+            player.Open(new Uri(nextFile!, UriKind.Absolute));
+            player.Position = TimeSpan.Zero;
+            player.Play();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine("TTS play error: " + ex.Message);
+            // Nếu lỗi thì thử phát file tiếp theo
+            StartNextOnUi();
         }
     }
 
-    private static void Player_MediaEnded(object? sender, EventArgs e)
-    {
-        _isPlaying = false;
-        PlayNext();
-    }
-
-    private static void Player_MediaFailed(object? sender, ExceptionEventArgs e)
-    {
-        _isPlaying = false;
-        PlayNext();
-    }
+    // --- STOP ----------------------------------------------------
     public static void Stop()
     {
-        try
+        lock (_lock)
         {
-            _player.Stop();
             _queue.Clear();
             _isPlaying = false;
         }
-        catch { }
+
+        UiDispatcher.BeginInvoke((Action)(() =>
+        {
+            try
+            {
+                _currentPlayer?.Stop();
+                _currentPlayer?.Close();
+                _currentPlayer = null;
+            }
+            catch { }
+        }));
     }
+
+    // --- UTILS ---------------------------------------------------
     private static string ReplaceInvalidFileNameChars(string input)
     {
         foreach (char c in Path.GetInvalidFileNameChars())

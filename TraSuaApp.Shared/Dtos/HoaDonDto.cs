@@ -106,6 +106,8 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public bool BaoDon { get; set; }
     public bool HasDebt { get; set; }
     public decimal TongNoKhachHang { get; set; }
+    public decimal TongDonKhacDangGiao { get; set; }
+
     public int TongDiem { get; set; }
     public int DiemThangNay { get; set; }
     public int DiemThangTruoc { get; set; }
@@ -205,6 +207,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
         UuTien = other.UuTien;
         BaoDon = other.BaoDon;
         TongNoKhachHang = other.TongNoKhachHang;
+        TongDonKhacDangGiao = other.TongDonKhacDangGiao;
         TongDiem = other.TongDiem;
         DiemThangNay = other.DiemThangNay;
         DiemThangTruoc = other.DiemThangTruoc;

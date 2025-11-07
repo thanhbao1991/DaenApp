@@ -13,8 +13,8 @@
     .icon-bar {
         display: flex;
         align-items: center;
-        gap: .4rem;
         flex-wrap: wrap;
+        gap: .3rem;           /* khoảng cách giữa các nút */
         margin: 0;
         padding: 0;
         list-style: none;
@@ -24,24 +24,43 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 42px;
-            height: 42px;
-            border-radius: .5rem;
+            width: 36px;       /* kích thước nút */
+            height: 36px;
+            border-radius: .45rem;
+            padding: 0;
             transition: background-color .15s ease, border-color .15s ease;
         }
 
             .icon-bar .nav-link:hover {
                 background: rgba(0,0,0,.06);
             }
+
             /* Hiển thị active */
             .icon-bar .nav-link.active {
                 background: #e9ecef !important;
                 border: 1px solid #cbd3da;
             }
+
             /* Ẩn text nếu có */
             .icon-bar .nav-link span {
                 display: none !important;
             }
+
+        /* Icon to hơn xíu cho cân với nút */
+        .icon-bar .nav-link i {
+            font-size: 1.1rem;
+        }
+
+    /* Giảm padding navbar cho gọn trên mobile */
+    .navbar.navbar-light {
+        padding-top: .15rem;
+        padding-bottom: .15rem;
+    }
+
+    .navbar.navbar-light .container-fluid {
+        padding-left: .25rem;
+        padding-right: .25rem;
+    }
 </style>
 
 <nav class="navbar navbar-light bg-white border-bottom mb-3">
@@ -73,7 +92,15 @@
                 </a>
             </li>
 
-            <!-- (4) Thanh toán -->
+            <!-- (4) Doanh thu tháng -->
+            <li class="nav-item">
+                <a class="nav-link @Active("/DoanhThuThang")"
+                   asp-page="/DoanhThuThang" title="Doanh Thu Tháng">
+                    <i class="fa-solid fa-chart-line text-warning"></i>
+                </a>
+            </li>
+
+            <!-- (5) Thanh toán -->
             <li class="nav-item">
                 <a class="nav-link @Active("/ChiTietHoaDonThanhToanTab")"
                    asp-page="/ChiTietHoaDonThanhToanTab" title="Thanh Toán">
@@ -81,7 +108,7 @@
                 </a>
             </li>
 
-            <!-- (5) Công nợ -->
+            <!-- (6) Công nợ -->
             <li class="nav-item">
                 <a class="nav-link @Active("/ChiTietHoaDonNoTab")"
                    asp-page="/ChiTietHoaDonNoTab" title="Công Nợ">
@@ -89,7 +116,7 @@
                 </a>
             </li>
 
-            <!-- (6) Chi tiêu -->
+            <!-- (7) Chi tiêu -->
             <li class="nav-item">
                 <a class="nav-link @Active("/ChiTieuHangNgayTab")"
                    asp-page="/ChiTieuHangNgayTab" title="Chi Tiêu">
@@ -97,7 +124,7 @@
                 </a>
             </li>
 
-            <!-- (7) Công việc -->
+            <!-- (8) Công việc -->
             <li class="nav-item">
                 <a class="nav-link @Active("/CongViecNoiBoTab")"
                    asp-page="/CongViecNoiBoTab" title="Công Việc">
@@ -105,8 +132,7 @@
                 </a>
             </li>
 
-
-            <!-- (8) Nhóm 2 -->
+            <!-- (9) Nhóm 2 -->
             <li class="nav-item dropdown">
                 <a class="nav-link" href="#" id="moreDropdown" role="button"
                    data-bs-toggle="dropdown" title="Mở rộng">
@@ -114,10 +140,7 @@
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreDropdown">
 
-                    <li class="dropdown-header">Doanh thu</li>
-                    <li><a class="dropdown-item" asp-page="/DoanhThuThang">Doanh Thu Tháng</a></li>
-
-                    <li><hr class="dropdown-divider" /></li>
+                    @* ĐÃ BỎ "Doanh Thu Tháng" khỏi dropdown *@
 
                     <li class="dropdown-header">Xếp hạng</li>
                     <li><a class="dropdown-item" asp-page="/XepHangSanPham">TOP Sản phẩm</a></li>

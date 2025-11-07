@@ -118,6 +118,13 @@ namespace TraSuaApp.WpfClient.Helpers
                 AddRow(sb, "TỔNG:", hoaDon.TongNoKhachHang + hoaDon.ConLai);
             }
 
+            if (hoaDon.TongDonKhacDangGiao > 0)
+            {
+                if (includeLine) sb.AppendLine("---------------------------");
+                AddRow(sb, "Đơn khác:", hoaDon.TongDonKhacDangGiao);
+                AddRow(sb, "TỔNG:", hoaDon.TongNoKhachHang + hoaDon.ConLai + hoaDon.TongDonKhacDangGiao);
+            }
+
             if (includeLine) sb.AppendLine("===========================");
             return sb.ToString();
         }
