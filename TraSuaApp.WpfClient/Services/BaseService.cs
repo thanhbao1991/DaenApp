@@ -53,6 +53,8 @@ namespace TraSuaApp.WpfClient.Apis
 
         protected async Task<Result<T>> PostAsync<T>(string url, object? dto)
         {
+
+
             var response = await ApiClient.PostAsync(url, dto);
             return await HandleResponseAsync<T>(response);
         }

@@ -34,6 +34,7 @@ namespace TraSuaApp.WpfClient.Views
         public LoginForm()
         {
             InitializeComponent();
+
             _errorHandler = new WpfErrorHandler(ErrorTextBlock);
 
             _statusText = this.FindName("LoadingStatusText") as TextBlock ?? ErrorTextBlock;
@@ -158,6 +159,7 @@ namespace TraSuaApp.WpfClient.Views
                         // ================================
                         // ⏳ HIỂN THỊ TIẾN TRÌNH LOAD NGAY TRÊN LOGIN
                         // ================================
+
                         _progressCts?.Cancel();
                         _progressCts = new CancellationTokenSource();
                         var token = _progressCts.Token;
@@ -166,20 +168,17 @@ namespace TraSuaApp.WpfClient.Views
                         var simulateTask = SimulateProgressAsync(maxPercent: 85, token);
 
                         // Các mốc trạng thái "thật"
-                        SetLoadingStatus("Đang kết nối máy chủ...", 20);
+                        SetLoadingStatus("Đang kết nối máy chủ.", 20);
 
-                        // Gọi init thật — giữ nguyên code cũ, không làm mất logic
-                        SetLoadingStatus("Đang tải dữ liệu hệ thống...", 30);
+                        // 1) Kết nối SignalR + tạo providers (không load data)
+                        SetLoadingStatus("Đang tải dữ liệu hệ thống.", 30);
                         await AppProviders.EnsureCreatedAsync();
 
-                        // 🟟 Đăng ký sự kiện cập nhật công việc → đá TTS mỗi lần đổi
-                        //if (AppProviders.CongViecNoiBos != null)
-                        //{
-                        //AppProviders.CongViecNoiBos.OnChanged -= OnCongViecChanged;
-                        //AppProviders.CongViecNoiBos.OnChanged += OnCongViecChanged;
-                        //}
+                        //// 2) 🟟 MỚI: khởi tạo providers, subscribe SignalR, bật timer, load data
+                        //SetLoadingStatus("Đang tải dữ liệu hoá đơn & danh mục…", 40);
+                        //await AppProviders.InitializeAsync();
 
-                        // 🟟 Khởi tạo (hoặc tái sử dụng) singleton TTS và Start (idempotent)
+                        // 3) Phần TTS + mở MainWindow giữ nguyên
                         if (_cvTtsSingleton == null)
                         {
                             _cvTtsSingleton = new CongViecNoiBoTtsService
@@ -190,6 +189,8 @@ namespace TraSuaApp.WpfClient.Views
                             };
                         }
                         _cvTtsSingleton.Start();
+
+
 
                         // Kết thúc mô phỏng, đẩy 100%
                         _progressCts.Cancel();

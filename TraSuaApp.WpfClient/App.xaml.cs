@@ -25,6 +25,7 @@ namespace TraSuaApp.WpfClient
 
         protected override void OnStartup(StartupEventArgs e)
         {
+
             const string mutexName = "TraSuaApp_WpfClient_OnlyOneInstance";
             _mutex = new Mutex(true, mutexName, out bool isNewInstance);
 
@@ -65,6 +66,8 @@ namespace TraSuaApp.WpfClient
             base.OnStartup(e);
 
             // Đăng ký handler hết hạn token: lần login lại sau sẽ tự init ngay trong LoginForm
+
+
             RegisterTokenExpiredHandler();
 
             // 🟟 Mở Login — LoginForm sẽ tự: login → hiển thị tiến trình load → init AppProviders → start TTS → mở Dashboard

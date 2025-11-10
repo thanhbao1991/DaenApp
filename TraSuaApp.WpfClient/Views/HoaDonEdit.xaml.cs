@@ -77,6 +77,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 Action<string>? showMessage // truyền null để không popup
             )
             {
+
                 var dsMonCapNhat = new List<string>();
                 foreach (var ct in lines)
                 {
@@ -185,12 +186,13 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 };
 
                 decimal donGia = bienThe.GiaBan;
-                if (Model.KhachHangId != null)
+                if (Model.KhachHangId != null && !string.Equals(Model.PhanLoai, "App", StringComparison.OrdinalIgnoreCase))
+
                 {
                     var customGia = AppProviders.KhachHangGiaBans.Items
-                        .FirstOrDefault(x => x.KhachHangId == Model.KhachHangId.Value
-                                          && x.SanPhamBienTheId == bienThe.Id
-                                          && !x.IsDeleted);
+                    .FirstOrDefault(x => x.KhachHangId == Model.KhachHangId.Value
+                                      && x.SanPhamBienTheId == bienThe.Id
+                                      && !x.IsDeleted);
                     if (customGia != null)
                     {
                         donGia = customGia.GiaBan;
@@ -924,12 +926,13 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             };
 
             decimal donGia = bt.GiaBan;
-            if (Model.KhachHangId != null)
+            if (Model.KhachHangId != null && !string.Equals(Model.PhanLoai, "App", StringComparison.OrdinalIgnoreCase))
+
             {
                 var customGia = AppProviders.KhachHangGiaBans.Items
-                    .FirstOrDefault(x => x.KhachHangId == Model.KhachHangId.Value
-                                      && x.SanPhamBienTheId == bt.Id
-                                      && !x.IsDeleted);
+                .FirstOrDefault(x => x.KhachHangId == Model.KhachHangId.Value
+                                  && x.SanPhamBienTheId == bt.Id
+                                  && !x.IsDeleted);
                 if (customGia != null) donGia = customGia.GiaBan;
             }
             ct.DonGia = donGia;
@@ -1030,7 +1033,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                         };
 
                         decimal donGia = bienThe.GiaBan;
-                        if (Model.KhachHangId != null)
+                        if (Model.KhachHangId != null && !string.Equals(Model.PhanLoai, "App", StringComparison.OrdinalIgnoreCase))
+
                         {
                             var customGia = AppProviders.KhachHangGiaBans.Items
                                 .FirstOrDefault(x => x.KhachHangId == Model.KhachHangId.Value
@@ -1135,6 +1139,11 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
         private void ApplyCustomerPricingForAllLines(Guid khId, bool showMessage = true)
         {
+            // Nếu đơn là App => bỏ qua hoàn toàn
+            if (string.Equals(Model.PhanLoai, "App", StringComparison.OrdinalIgnoreCase))
+                return;
+
+
             Pricing.ApplyCustomerPricingForAllLines(
                 Model.ChiTietHoaDons,
                 khId,

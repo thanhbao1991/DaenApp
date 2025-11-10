@@ -49,6 +49,7 @@ public class AppShippingHelperText
                                  List<SanPhamDto> sanPhamList,
                                  List<ToppingDto> toppingList)
     {
+
         _username = username;
         _password = password;
 
@@ -826,6 +827,7 @@ internal static class AppShippingHelperFactory
 
     private static async Task<AppShippingHelperText> InitializeAsync(string username, string password)
     {
+
         await AppProviders.EnsureCreatedAsync();
 
         if (AppProviders.SanPhams == null || AppProviders.Toppings == null)
