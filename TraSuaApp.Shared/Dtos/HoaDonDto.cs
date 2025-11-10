@@ -120,22 +120,40 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     {
         get
         {
+            // Nếu hoá đơn chưa thu tiền
             if (TrangThai == "Chưa thu")
             {
-                var phut = (int)(DateTime.Now - NgayGio).TotalMinutes;
-                return $"{phut}'";
+                // Cùng ngày -> hiển thị thời gian đã trôi qua tính theo phút + giây
+                if (DateTime.Now.Date == Ngay)
+                {
+                    var span = DateTime.Now - NgayGio;
+                    if (span.TotalSeconds < 0)
+                        span = TimeSpan.Zero; // tránh số âm nếu NgayGio ở tương lai
+
+                    var minutes = (int)span.TotalMinutes;
+                    var seconds = span.Seconds;
+
+                    // Ví dụ: 5p30'
+                    return $"{minutes}:{seconds:00}";
+                }
+                else
+                {
+                    // Khác ngày -> hiển thị ngày dạng dd/MM
+                    return Ngay.ToString("dd/MM");
+                }
             }
+
+            // Các trạng thái khác -> hiển thị giờ chuẩn HH:mm
             return NgayGio.ToString("HH:mm");
         }
     }
-
     public event PropertyChangedEventHandler? PropertyChanged;
+
     protected void OnPropertyChanged(string propertyName) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-    // Hàm gọi mỗi phút để refresh cell
+    // Hàm sẽ được gọi MỖI GIÂY để refresh cell
     public void RefreshGioHienThi() => OnPropertyChanged(nameof(GioHienThi));
-
     public string? PhanLoai { get; set; }
     public override string ApiRoute => "HoaDon";
     public DateTime Ngay { get; set; }

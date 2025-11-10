@@ -10,6 +10,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using FontAwesome.Sharp;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
@@ -28,7 +29,7 @@ namespace TraSuaApp.WpfClient.Views
         private List<ChiTietHoaDonDto> _fullChiTietHoaDonList = new();
         private readonly int _hoaDonDueBatchSize = 3;
         private readonly DateTime today = DateTime.Today;
-
+        private DispatcherTimer? _baoDonTimer;
         private ICollectionView? _hoaDonView;
         private bool _suspendSelectionChanged = false;
         private Guid? _selectedIdBeforeRebind = null;
@@ -55,8 +56,55 @@ namespace TraSuaApp.WpfClient.Views
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
+
+            if (_baoDonTimer != null)
+            {
+                _baoDonTimer.Tick -= BaoDonTimer_Tick;
+                _baoDonTimer.Stop();
+                _baoDonTimer = null;
+            }
         }
 
+        // ==================== TIMER BÁO ĐƠN HẸN GIỜ ====================
+        private async void BaoDonTimer_Tick(object? sender, EventArgs e)
+        {
+            var now = DateTime.Now;
+
+            // 1) Refresh GioHienThi mỗi giây, nhưng chỉ cho hoá đơn đang "Chưa thu" hôm nay
+            var visible = HoaDonDataGrid.Items
+                .OfType<HoaDonDto>()
+                .Where(h => h.TrangThai == "Chưa thu" && h.Ngay.Date == now.Date);
+
+            foreach (var item in visible)
+                item.RefreshGioHienThi();
+
+            // 2) Phần hẹn giờ: chỉ chạy mỗi 10 giây (hoặc 5 giây tuỳ anh)
+            if (now.Second % 10 != 0)
+                return;
+
+            var dueBatch = await Task.Run(() =>
+                _fullHoaDonList
+                    .Where(h => h.NgayHen.HasValue && h.NgayHen.Value <= now)
+                    .OrderBy(h => h.NgayHen)
+                    .Take(_hoaDonDueBatchSize)
+                    .ToList()
+            );
+
+            if (dueBatch.Count == 0) return;
+
+            var api = new HoaDonApi();
+            foreach (var hd in dueBatch)
+            {
+                NotiHelper.Show($"⏰ Đến giờ hẹn: {hd.Ten} ({hd.TongTien:N0}đ)");
+                hd.NgayHen = null;
+
+                _ = Task.Run(async () =>
+                {
+                    try { await api.UpdateSingleAsync(hd.Id, hd); }
+                    catch { }
+                });
+            }
+        }
         private async void HoaDonTab_Loaded(object? sender, RoutedEventArgs e)
         {
             // Khởi tạo combos giờ/phút cho hẹn giờ
@@ -71,6 +119,18 @@ namespace TraSuaApp.WpfClient.Views
 
             // Khôi phục selection lần đầu (optional)
             await RestoreSelectionByIdAsync(null);
+
+            // Khởi động timer 1 giây cho GioHienThi + hẹn giờ
+            if (_baoDonTimer == null)
+            {
+                _baoDonTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                _baoDonTimer.Tick += BaoDonTimer_Tick;
+                _baoDonTimer.Start();
+            }
+
         }
 
         // ==================== DEBOUNCE & UTIL ====================
@@ -112,7 +172,7 @@ namespace TraSuaApp.WpfClient.Views
         {
             _fullHoaDonList = AppProviders.HoaDons.Items
                 .Where(x => !x.IsDeleted)
-                .Where(x => x.Ngay.Date == today.Date || x.DaThuHoacGhiNo)
+                .Where(x => x.Ngay.Date == today.Date || !x.DaThuHoacGhiNo)
                 .OrderBy(x =>
                 {
                     if (x.UuTien) return 0;

@@ -1037,7 +1037,7 @@ public class HoaDonService : IHoaDonService
     public async Task<List<HoaDonDto>> GetAllAsync()
     {
         var today = DateTime.Today;
-        var fromDate = today.AddDays(0);
+        var fromDate = today.AddDays(-1);
 
         var list = await _context.HoaDons.AsNoTracking()
             .Where(x => !x.IsDeleted &&

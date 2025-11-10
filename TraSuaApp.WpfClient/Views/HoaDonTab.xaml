@@ -170,7 +170,7 @@
 
                     <DataGridTextColumn
                         Binding="{Binding GioHienThi}"
-                        ElementStyle="{StaticResource CenterTextCellStyle}"
+                        ElementStyle="{StaticResource RightTextCellStyle}"
                         Header="Giờ" />
                     <DataGridTemplateColumn Width="Auto" Header="">
                         <DataGridTemplateColumn.CellTemplate>
