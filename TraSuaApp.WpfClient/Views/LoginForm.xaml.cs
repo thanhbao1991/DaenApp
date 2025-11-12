@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using TraSuaApp.Shared.Config;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
@@ -34,7 +35,7 @@ namespace TraSuaApp.WpfClient.Views
         public LoginForm()
         {
             InitializeComponent();
-
+            sv.Text = Config.SignalRHubUrl;
             _errorHandler = new WpfErrorHandler(ErrorTextBlock);
 
             _statusText = this.FindName("LoadingStatusText") as TextBlock ?? ErrorTextBlock;
@@ -174,9 +175,9 @@ namespace TraSuaApp.WpfClient.Views
                         SetLoadingStatus("Đang tải dữ liệu hệ thống.", 30);
                         await AppProviders.EnsureCreatedAsync();
 
-                        //// 2) 🟟 MỚI: khởi tạo providers, subscribe SignalR, bật timer, load data
-                        //SetLoadingStatus("Đang tải dữ liệu hoá đơn & danh mục…", 40);
-                        //await AppProviders.InitializeAsync();
+                        // 2) 🟟 MỚI: khởi tạo providers, subscribe SignalR, bật timer, load data
+                        SetLoadingStatus("Đang tải dữ liệu hoá đơn & danh mục…", 40);
+                        await AppProviders.InitializeAsync();
 
                         // 3) Phần TTS + mở MainWindow giữ nguyên
                         if (_cvTtsSingleton == null)
@@ -188,7 +189,8 @@ namespace TraSuaApp.WpfClient.Views
                                 Interval = TimeSpan.FromMinutes(5)
                             };
                         }
-                        _cvTtsSingleton.Start();
+                        if (username == "admin")
+                            _cvTtsSingleton.Start();
 
 
 

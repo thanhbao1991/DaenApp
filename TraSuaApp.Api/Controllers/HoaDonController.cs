@@ -6,6 +6,7 @@ using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Shared.Services;
 
 namespace TraSuaApp.Api.Controllers;
 
@@ -36,6 +37,7 @@ public class HoaDonController : BaseApiController
         {
             await _hub.Clients.All.SendAsync("EntityChanged", "HoaDon", action, id.ToString(), ConnectionId ?? "");
         }
+        DiscordService.SendAsync(DiscordEventType.Admin, action);
     }
 
     [HttpGet]

@@ -45,7 +45,6 @@ namespace TraSuaApp.Shared.Services
                 DiscordEventType.GhiNo => GhiNoWebhookUrl,
                 _ => throw new ArgumentOutOfRangeException(nameof(eventType), eventType, null)
             };
-
             return SendToWebhook(url, message);
         }
         public static Task SendAsync(DiscordEventType eventType, string message, string fileNameIfTooLong)

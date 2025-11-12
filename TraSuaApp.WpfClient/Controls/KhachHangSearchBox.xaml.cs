@@ -19,7 +19,43 @@ namespace TraSuaApp.WpfClient.Controls
         public event Action<KhachHangDto>? KhachHangConfirmed;  // Double-click xác nhận chọn khách
         public event Action? KhachHangCleared;
         public event Action? KhachMoiSelected;                   // Chọn “Khách mới”
+                                                                 // KhachHangSearchBox.xaml.cs  (thêm vào class KhachHangSearchBox)
+        public bool TrySelectUniqueMatchFromText(bool fireConfirmedEvent = true)
+        {
+            string raw = SearchTextBox.Text?.Trim() ?? "";
+            if (string.IsNullOrEmpty(raw)) return false;
 
+            string keyword = StringHelper.MyNormalizeText(raw);
+
+            // Lọc giống y như SearchTextBox_TextChanged để thống nhất tiêu chí
+            var results = KhachHangList
+                .Where(x => x.TimKiem.Contains(keyword))
+                .OrderByDescending(x => x.ThuTu)
+                .Take(2) // chỉ cần biết 0/1/>1
+                .ToList();
+
+            if (results.Count == 1)
+            {
+                var kh = results[0];
+
+                // Không bật popup
+                bool old = SuppressPopup;
+                SuppressPopup = true;
+                try
+                {
+                    Select(kh); // sẽ set SelectedKhachHang + Text + raise KhachHangSelected
+                    if (fireConfirmedEvent) KhachHangConfirmed?.Invoke(kh); // tuỳ chọn raise "đã xác nhận"
+                }
+                finally
+                {
+                    SuppressPopup = old;
+                }
+                return true;
+            }
+
+            // 0 hoặc >1 kết quả: không làm gì, để hành vi cũ
+            return false;
+        }
         // 🟟 Tuỳ chọn hành vi
         public bool ShowAllWhenEmpty { get; set; } = false;
         public bool SuppressPopup { get; set; } = false;

@@ -28,7 +28,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         public Guid? SavedHoaDonId { get; internal set; }
         private readonly QuickOrderService _quick = new(Config.apiChatGptKey);
         private bool _openedFromMessenger;
-
+        private bool _messengerInputIsImage = false; // chỉ true khi mở từ Messenger và input là ảnh
         private List<SanPhamDto> _sanPhamList = new();
         private List<SanPhamBienTheDto> _bienTheList = new();
         private List<ToppingDto> _toppingList = new();
@@ -138,6 +138,53 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 item.Stt = stt++;
         }
         #endregion
+        private void TryAutoPickCustomerFromMessenger(string? rawName)
+        {
+            try
+            {
+                if (!_openedFromMessenger) return;
+                if (_messengerInputIsImage) return;
+                if (string.IsNullOrWhiteSpace(rawName)) return;
+
+                var name = rawName.Trim();
+
+                // 1) Exact match
+                var exact = _khachHangsList.FirstOrDefault(x =>
+                    string.Equals((x.Ten ?? "").Trim(), name, StringComparison.OrdinalIgnoreCase));
+
+                if (exact != null)
+                {
+                    KhachHangSearchBox.SuppressPopup = true;
+                    KhachHangSearchBox.SetSelectedKhachHang(exact);
+                    KhachHangSearchBox.SuppressPopup = false;
+                    KhachHangSearchBox.IsPopupOpen = false;           // 🟟 không mở popup
+                    KhachHangSearchBox.TriggerSelectedEvent(exact);   // chạy pipeline
+                    return;
+                }
+
+                // 2) Fallback: 1 kết quả duy nhất theo TimKiem
+                var key = StringHelper.MyNormalizeText(name);
+                var matches = _khachHangsList
+                    .Where(x => x.TimKiem.Contains(key))
+                    .OrderByDescending(x => x.ThuTu)
+                    .Take(15)
+                    .ToList();
+
+                if (matches.Count == 1)
+                {
+                    var kh = matches[0];
+                    KhachHangSearchBox.SuppressPopup = true;
+                    KhachHangSearchBox.SetSelectedKhachHang(kh);
+                    KhachHangSearchBox.SuppressPopup = false;
+                    KhachHangSearchBox.IsPopupOpen = false;           // 🟟 không mở popup
+                    KhachHangSearchBox.TriggerSelectedEvent(kh);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("TryAutoPickCustomerFromMessenger error: " + ex.Message);
+            }
+        }
 
         // 🟟 Hiển thị mm:ss
         private void UpdateCountdownText()
@@ -545,68 +592,63 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     isImage = ext == ".png" || ext == ".jpg" || ext == ".jpeg";
                 }
 
-                Guid? khId = null;
-                if (KhachHangSearchBox.SelectedKhachHang is KhachHangDto kh)
+                Guid? khId = (KhachHangSearchBox.SelectedKhachHang as KhachHangDto)?.Id;
+
+                // 🟟 HIỂN THỊ BUSY NGAY BÊN CHI TIẾT (thay vì trên Save)
+                SetGptBusy(true, isImage ? "Đang phân tích ảnh..." : "Đang phân tích văn bản...");
+                await System.Windows.Threading.Dispatcher.Yield
+                //   (System.Windows.Threading.DispatcherPriority.Background);
+                (System.Windows.Threading.DispatcherPriority.Render);
+
+                var (hd, raw, preds) = await _quick.BuildHoaDonAsync(
+                    input,
+                    isImage: isImage,
+                    khachHangId: khId,
+                    customerNameHint: latestCustomerName
+                );
+
+                var parsed = hd ?? new HoaDonDto { ChiTietHoaDons = new() };
+                parsed.ChiTietHoaDons ??= new();
+
+                parsed.PhanLoai = string.IsNullOrWhiteSpace(Model.PhanLoai) ? "Ship" : Model.PhanLoai;
+
+                Model.ChiTietHoaDons.Clear();
+                foreach (var ct in parsed.ChiTietHoaDons)
                 {
-                    khId = kh.Id;
+                    ct.PropertyChanged += (s, e) =>
+                    {
+                        if (e.PropertyName == nameof(ChiTietHoaDonDto.SoLuong) ||
+                            e.PropertyName == nameof(ChiTietHoaDonDto.DonGia) ||
+                            e.PropertyName == nameof(ChiTietHoaDonDto.ThanhTien) ||
+                            e.PropertyName == nameof(ChiTietHoaDonDto.ToppingDtos))
+                        {
+                            UpdateTotals();
+                        }
+                    };
+                    Model.ChiTietHoaDons.Add(ct);
                 }
 
-                using (BusyUI.Scope(this, SaveButton, isImage ? "Đang phân tích ảnh..." : "Đang phân tích văn bản..."))
+                if (KhachHangSearchBox.SelectedKhachHang is KhachHangDto khSel)
+                    ApplyCustomerPricingForAllLines(khSel.Id, showMessage: false);
+                else if (Model.KhachHangId != null)
+                    ApplyCustomerPricingForAllLines(Model.KhachHangId.Value, showMessage: false);
+
+                Model.ChiTietHoaDonToppings = parsed.ChiTietHoaDonToppings;
+                Model.VoucherId = parsed.VoucherId;
+                Model.GhiChu = parsed.GhiChu;
+
+                ChiTietListBox.Items.Refresh();
+                UpdateTotals();
+
+                if (Model.VoucherId != null)
                 {
-                    var (hd, raw, preds) = await _quick.BuildHoaDonAsync(
-                        input,
-                        isImage: isImage,
-                        khachHangId: khId,
-                        customerNameHint: latestCustomerName
-                    );
-
-                    var parsed = hd ?? new HoaDonDto { ChiTietHoaDons = new() };
-                    parsed.ChiTietHoaDons ??= new();
-
-                    parsed.PhanLoai = string.IsNullOrWhiteSpace(Model.PhanLoai) ? "Ship" : Model.PhanLoai;
-
-                    Model.ChiTietHoaDons.Clear();
-                    foreach (var ct in parsed.ChiTietHoaDons)
-                    {
-                        ct.PropertyChanged += (s, e) =>
-                        {
-                            if (e.PropertyName == nameof(ChiTietHoaDonDto.SoLuong) ||
-                                e.PropertyName == nameof(ChiTietHoaDonDto.DonGia) ||
-                                e.PropertyName == nameof(ChiTietHoaDonDto.ThanhTien) ||
-                                e.PropertyName == nameof(ChiTietHoaDonDto.ToppingDtos))
-                            {
-                                UpdateTotals();
-                            }
-                        };
-                        Model.ChiTietHoaDons.Add(ct);
-                    }
-
-                    if (KhachHangSearchBox.SelectedKhachHang is KhachHangDto khSel)
-                    {
-                        ApplyCustomerPricingForAllLines(khSel.Id, showMessage: false);
-                    }
-                    else if (Model.KhachHangId != null)
-                    {
-                        ApplyCustomerPricingForAllLines(Model.KhachHangId.Value, showMessage: false);
-                    }
-
-                    Model.ChiTietHoaDonToppings = parsed.ChiTietHoaDonToppings;
-                    Model.VoucherId = parsed.VoucherId;
-                    Model.GhiChu = parsed.GhiChu;
-
-                    ChiTietListBox.Items.Refresh();
-                    UpdateTotals();
-
-                    if (Model.VoucherId != null)
-                    {
-                        VoucherComboBox.SelectedValue = Model.VoucherId;
-                        HuyVoucherButton.Visibility = Visibility.Visible;
-                    }
-                    else
-                    {
-                        VoucherComboBox.SelectedIndex = -1;
-                        HuyVoucherButton.Visibility = Visibility.Collapsed;
-                    }
+                    VoucherComboBox.SelectedValue = Model.VoucherId;
+                    HuyVoucherButton.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    VoucherComboBox.SelectedIndex = -1;
+                    HuyVoucherButton.Visibility = Visibility.Collapsed;
                 }
             }
             catch (TimeoutException)
@@ -618,17 +660,58 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 MessageBox.Show("GPT lỗi: " + ex.Message);
                 Debug.WriteLine(ex);
             }
+            finally
+            {
+                // 🟟 TẮT OVERLAY
+                SetGptBusy(false);
+            }
         }
 
+        private void SetGptBusy(bool on, string? text = null)
+        {
+            try
+            {
+                GptBusyOverlay.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+                if (text != null) GptBusyText.Text = text;
+
+                // Nhẹ nhàng nhấn mạnh khu nội dung
+                Mouse.OverrideCursor = on ? Cursors.AppStarting : null;
+            }
+            catch { /* an toàn UI */ }
+        }
         public HoaDonEdit(HoaDonDto? dto, string? gptInput, string? latestCustomerName, bool openedFromMessenger)
             : this(dto) // gọi lại constructor gốc để khởi tạo UI/bindings
         {
             _openedFromMessenger = openedFromMessenger;
 
-            if (!string.IsNullOrWhiteSpace(latestCustomerName))
-                KhachHangSearchBox.SearchTextBox.Text = latestCustomerName;
+            // 🟟 Xác định input từ Messenger là ảnh hay text (để chỉ auto-pick cho TEXT)
+            _messengerInputIsImage = false;
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(gptInput))
+                {
+                    if (File.Exists(gptInput))
+                    {
+                        var ext = Path.GetExtension(gptInput).ToLowerInvariant();
+                        _messengerInputIsImage = ext == ".png" || ext == ".jpg" || ext == ".jpeg";
+                    }
+                }
+            }
+            catch { /* ignore */ }
 
-            this.ContentRendered += async (_, __) => await RunGptFromMessengerIfNeededAsync(latestCustomerName, gptInput);
+            // mới:
+            if (!string.IsNullOrWhiteSpace(latestCustomerName))
+                KhachHangSearchBox.SetTextWithoutPopup(latestCustomerName);
+
+            // 🟟 Auto-pick KH theo tên chat (EXACT → 1 kết quả) TRƯỚC khi chạy GPT
+            this.ContentRendered += async (_, __) =>
+            {
+                TryAutoPickCustomerFromMessenger(latestCustomerName);
+                await RunGptFromMessengerIfNeededAsync(latestCustomerName, gptInput);
+            };
+
+
+
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)

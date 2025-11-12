@@ -40,6 +40,10 @@
                         FontWeight="Bold"
                         Foreground="{StaticResource LightBrush}"
                         Text="Đăng nhập" />
+                    <TextBlock
+                        x:Name="sv"
+                        HorizontalAlignment="Center"
+                        Foreground="{StaticResource LightBrush}" />
                     <Button
                         Width="32"
                         Height="32"

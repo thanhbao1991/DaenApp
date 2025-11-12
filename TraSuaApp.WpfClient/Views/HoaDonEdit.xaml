@@ -482,7 +482,25 @@
                             </StackPanel>
                         </GroupBox.Header>
                         <Grid>
-
+                            <Border
+                                x:Name="GptBusyOverlay"
+                                Panel.ZIndex="1"
+                                Background="#40FFFFFF"
+                                Visibility="Collapsed">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <ProgressBar
+                                        Width="160"
+                                        Height="6"
+                                        IsIndeterminate="True" />
+                                    <TextBlock
+                                        x:Name="GptBusyText"
+                                        FontSize="16"
+                                        FontWeight="SemiBold"
+                                        Foreground="White"
+                                        Text="Đang phân tích ..."
+                                        TextAlignment="Center" />
+                                </StackPanel>
+                            </Border>
                             <TextBlock
                                 x:Name="TongSoSanPhamTextBlock"
                                 Margin="0,-100,30,0"
@@ -660,6 +678,7 @@
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
+
                         </Grid>
                     </GroupBox>
                 </Grid>

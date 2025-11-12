@@ -7,6 +7,7 @@ namespace TraSuaApp.Shared.Dtos;
 
 public class HoaDonDto : DtoBase, INotifyPropertyChanged
 {
+
     public string? TenBan { get; set; }
 
     // ✅ Server tính trạng thái → không bind từ client
@@ -120,21 +121,30 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     {
         get
         {
-            // Nếu hoá đơn chưa thu tiền
             if (TrangThai == "Chưa thu")
             {
                 // Cùng ngày -> hiển thị thời gian đã trôi qua tính theo phút + giây
                 if (DateTime.Now.Date == Ngay)
                 {
-                    var span = DateTime.Now - NgayGio;
+                    TimeSpan span;
+                    if (NgayShip != null)
+                        span = NgayShip.Value - NgayGio;
+                    else
+                        span = DateTime.Now - NgayGio;
+
                     if (span.TotalSeconds < 0)
                         span = TimeSpan.Zero; // tránh số âm nếu NgayGio ở tương lai
 
+                    var HOURS = (int)span.TotalHours;
                     var minutes = (int)span.TotalMinutes;
                     var seconds = span.Seconds;
 
                     // Ví dụ: 5p30'
-                    return $"{minutes}:{seconds:00}";
+                    if (minutes > 59)
+                        return $"{HOURS}g{minutes % 60}";
+                    else
+                        return $"{minutes}p{seconds:00}";
+
                 }
                 else
                 {

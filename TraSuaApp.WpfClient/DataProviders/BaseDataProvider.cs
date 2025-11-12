@@ -36,7 +36,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
             // Đăng ký nhận realtime update
             _signalR.Subscribe("EntityChanged", async (string entityName, string action, string id, string senderConnectionId) =>
             {
-                System.Diagnostics.Debug.WriteLine($"🟟 Nhận signal: {entityName}-{action}-{id}");
+                //DiscordService.SendAsync(DiscordEventType.Admin, $"🟟 Nhận signal: {entityName}-{action}-{id}");
 
                 if (!string.Equals(entityName, _entityName, StringComparison.OrdinalIgnoreCase))
                     return;
@@ -67,30 +67,50 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                         if (entityName.Equals("HoaDon", StringComparison.OrdinalIgnoreCase))
                         {
                             var hoaDon = Items.OfType<HoaDonDto>().FirstOrDefault(x => x.Id.ToString() == id);
-                            if (hoaDon != null && hoaDon.NguoiShip == "Khánh" && hoaDon.GhiChuShipper != null)
+                            if (hoaDon.PhanLoai == "Ship")
                             {
-                                var note = hoaDon.GhiChuShipper.ToLower();
-                                if (note.StartsWith("chuyển khoản"))
-                                {
-                                    AudioHelper.Play("chuyen-khoan.mp3");
-                                    //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                }
-                                else if (note.StartsWith("ghi nợ"))
-                                {
-                                    AudioHelper.Play("ghi-no.mp3");
-                                    //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                }
-                                else if (note.StartsWith("tí nữa chuyển khoản"))
-                                {
-                                    AudioHelper.Play("chuyen-khoan-sau.mp3");
-                                    //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                }
-                                else if (note.Contains("trả nợ"))
-                                {
-                                    AudioHelper.Play("tra-no.mp3");
-                                    //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                                }
+                                if (hoaDon.TenKhachHangText != null)
+                                    TTSHelper.DownloadAndPlayGoogleTTSAsync(hoaDon.TenKhachHangText);
+                                if (hoaDon.DiaChiText != null)
+                                    TTSHelper.DownloadAndPlayGoogleTTSAsync(hoaDon.DiaChiText);
                             }
+                            else
+                            if (hoaDon.PhanLoai == "Mv")
+                            {
+                                TTSHelper.DownloadAndPlayGoogleTTSAsync(hoaDon.TenBan.Replace("Mv", "Mua về "));
+                            }
+                            else
+                            if (hoaDon.PhanLoai == "App")
+                            {
+                                TTSHelper.DownloadAndPlayGoogleTTSAsync(hoaDon.TenBan.Replace("App", "App Shipping "));
+                            }
+                            else
+                                TTSHelper.DownloadAndPlayGoogleTTSAsync("Bàn " + hoaDon.TenBan);
+
+                            //if (hoaDon != null && hoaDon.NguoiShip == "Khánh" && hoaDon.GhiChuShipper != null)
+                            //{
+                            //    var note = hoaDon.GhiChuShipper.ToLower();
+                            //    if (note.StartsWith("chuyển khoản"))
+                            //    {
+                            //        AudioHelper.Play("chuyen-khoan.mp3");
+                            //        //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                            //    }
+                            //    else if (note.StartsWith("ghi nợ"))
+                            //    {
+                            //        AudioHelper.Play("ghi-no.mp3");
+                            //        //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                            //    }
+                            //    else if (note.StartsWith("tí nữa chuyển khoản"))
+                            //    {
+                            //        AudioHelper.Play("chuyen-khoan-sau.mp3");
+                            //        //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                            //    }
+                            //    else if (note.Contains("trả nợ"))
+                            //    {
+                            //        AudioHelper.Play("tra-no.mp3");
+                            //        //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
+                            //    }
+                            //}
                         }
                     }
                 });
