@@ -10,6 +10,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using FontAwesome.Sharp;
 using TraSuaApp.Shared.Dtos;
@@ -421,6 +422,7 @@ namespace TraSuaApp.WpfClient.Views
                 try
                 {
                     helper = await AppShippingHelperFactory.GetAsync();
+
                 }
                 catch
                 {
@@ -612,11 +614,7 @@ namespace TraSuaApp.WpfClient.Views
                 _fullChiTietHoaDonList = hd.ChiTietHoaDons?.ToList() ?? new List<ChiTietHoaDonDto>();
 
                 StartReadMonNotes(hd);
-
-
-
-
-                UpdateThongTinThanhToanStyle(hd);
+                UpdateChiTietHoaDonStyle(hd);
                 ThongTinThanhToanPanel.DataContext = hd;
                 RenderFooterPanel(ThongTinThanhToanPanel, hd, includeLine: false);
                 TenHoaDonTextBlock.Text = $"{hd.TenHienThi} - {hd.DiaChiText}";
@@ -640,6 +638,20 @@ namespace TraSuaApp.WpfClient.Views
                     TongSoSanPhamTextBlock.Text = sum.ToString("N0");
                     TongSoSanPhamTextBlock.Visibility = Visibility.Visible;
                     SearchChiTietHoaDonTextBox.Visibility = Visibility.Collapsed;
+
+
+                    var tong = hd.TongNoKhachHang + hd.ConLai;
+                    if (tong < 100000)
+                        TienThoiButton.Content = (100000 - tong).ToString("N0");
+                    else if (tong < 200000)
+                        TienThoiButton.Content = (200000 - tong).ToString("N0");
+                    else if (tong < 300000)
+                        TienThoiButton.Content = (300000 - tong).ToString("N0");
+                    else if (tong < 400000)
+                        TienThoiButton.Content = (400000 - tong).ToString("N0");
+                    else if (tong < 500000)
+                        TienThoiButton.Content = (500000 - tong).ToString("N0");
+
                 }
                 catch { /* ignore */ }
 
@@ -647,7 +659,7 @@ namespace TraSuaApp.WpfClient.Views
                     HoaDonDetailPanel.Visibility == Visibility.Visible ? HoaDonDetailPanel : null,
                     HoaDonDetailPanel);
             }
-            catch (Exception ex) { NotiHelper.ShowError($"Lỗi: {ex.Message}"); }
+            catch (Exception ex) { NotiHelper.ShowError($"Lỗi: {ex.Message}s"); }
             finally
             {
                 SetRightBusy(false);
@@ -1348,6 +1360,7 @@ namespace TraSuaApp.WpfClient.Views
                 });
             }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
         }
+
         private async void EscButton_Click(object sender, RoutedEventArgs e)
         {
             await SafeButtonHandlerAsync(EscButton, async _ =>
@@ -1356,12 +1369,8 @@ namespace TraSuaApp.WpfClient.Views
 
                 var idAtClick = selectedAtClick.Id;
 
-                var confirm = MessageBox.Show(
-                    $"Nếu shipper là Khánh chọn YES\nNếu không phải chọn NO\nHuỷ bỏ chọn CANCEL",
-                    "QUAN TRỌNG:",
-                    MessageBoxButton.YesNoCancel,
-                    MessageBoxImage.Question
-                );
+                // ⬇️ dùng dialog hình ảnh thay cho MessageBox
+                var confirm = ShowShipperImageDialog();
                 if (confirm == MessageBoxResult.Cancel) return;
 
                 var oldNguoiShip = selectedAtClick.NguoiShip;
@@ -1431,34 +1440,191 @@ namespace TraSuaApp.WpfClient.Views
                 });
             }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
         }
-        private async Task RollbackDeletedRowAsync(HoaDonDto backup, int oldIndex, string errorMessage)
+        // Hiển thị 2 hình khanh.jpg / nha.jpg cho user chọn.
+        // Trả về MessageBoxResult.Yes (Khánh) / No (Nhã) / Cancel.
+        private MessageBoxResult ShowShipperImageDialog()
         {
-            await Dispatcher.InvokeAsync(() =>
+            try
             {
-                try
+                var exeDir = AppDomain.CurrentDomain.BaseDirectory;
+                var khanhPath = Path.Combine(exeDir, "khanh.jpg");
+                var nhaPath = Path.Combine(exeDir, "nha.jpg");
+
+                // Nếu thiếu file thì dùng lại MessageBox cũ
+                if (!File.Exists(khanhPath) || !File.Exists(nhaPath))
                 {
-                    // 🟟 Khôi phục lại vị trí cũ nếu chưa có trong list
-                    if (!_fullHoaDonList.Any(x => x.Id == backup.Id))
+                    return MessageBox.Show(
+                        $"Nếu shipper là Khánh chọn YES\nNếu không phải chọn NO\nHuỷ bỏ chọn CANCEL",
+                        "QUAN TRỌNG:",
+                        MessageBoxButton.YesNoCancel,
+                        MessageBoxImage.Question
+                    );
+                }
+
+                var owner = Window.GetWindow(this);
+
+                var win = new Window
+                {
+                    Owner = owner,
+                    Title = "Shipper",
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    ResizeMode = ResizeMode.NoResize,
+                    SizeToContent = SizeToContent.WidthAndHeight,
+                    WindowStyle = WindowStyle.ToolWindow,
+                    Background = Brushes.White,
+                };
+
+                var root = new StackPanel
+                {
+                    Orientation = Orientation.Vertical,
+                    Background = Brushes.White,
+                    Margin = new Thickness(16),
+                };
+
+                var txt = new TextBlock
+                {
+                    Text = "Nhấn vào hình shipper:",
+                    Foreground = Brushes.Black,
+                    FontSize = 18,
+                    Margin = new Thickness(0, 0, 0, 12)
+                };
+                root.Children.Add(txt);
+
+                var panel = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Background = Brushes.White,
+
+                };
+
+                MessageBoxResult result = MessageBoxResult.Cancel;
+
+                Image MakeImage(string path, string label, MessageBoxResult res)
+                {
+                    var img = new Image
                     {
-                        int insertIndex = Math.Clamp(oldIndex, 0, _fullHoaDonList.Count);
-                        _fullHoaDonList.Insert(insertIndex, backup);
-                    }
+                        Width = 200,
+                        Height = 200,
+                        Margin = new Thickness(8),
+                        Stretch = Stretch.UniformToFill,
+                        Cursor = Cursors.Hand,
+                        Source = new BitmapImage(new Uri(path, UriKind.Absolute))
+                    };
 
-                    _hoaDonView.Refresh();
-                    RecomputeSttForCurrentView();
+                    var sp = new StackPanel
+                    {
+                        Orientation = Orientation.Vertical,
+                        Margin = new Thickness(8),
+                    };
+                    sp.Children.Add(img);
+                    sp.Children.Add(new TextBlock
+                    {
+                        Text = label,
+                        Foreground = Brushes.White,
+                        FontSize = 16,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        Margin = new Thickness(0, 4, 0, 0)
+                    });
 
-                    // Chọn lại hoá đơn rollback
-                    HoaDonDataGrid.SelectedItem = _fullHoaDonList.First(x => x.Id == backup.Id);
-                    HoaDonDataGrid.ScrollIntoView(HoaDonDataGrid.SelectedItem);
+                    sp.MouseLeftButtonUp += (s, e) =>
+                    {
+                        result = res;
+                        win.DialogResult = true;
+                        win.Close();
+                    };
 
-                    // 🟟 Chỉ báo lỗi khi xoá thất bại
-                    NotiHelper.ShowError(errorMessage);
+                    return img; // chỉ cần Image để trả về nếu muốn, nhưng hiện chưa dùng
                 }
-                catch (Exception ex)
+
+                // Khánh = YES, Nhã = NO
+                MakeImage(khanhPath, "Khánh", MessageBoxResult.Yes);
+                MakeImage(nhaPath, "Nhã", MessageBoxResult.No);
+
+                // phải add StackPanel chứa 2 ảnh
                 {
-                    NotiHelper.ShowError($"Rollback thất bại: {ex.Message}");
+                    var spKhanh = new StackPanel { Orientation = Orientation.Vertical, Margin = new Thickness(8) };
+                    spKhanh.Children.Add(new Image
+                    {
+                        Width = 200,
+                        Height = 200,
+                        Margin = new Thickness(8),
+                        Stretch = Stretch.UniformToFill,
+                        Cursor = Cursors.Hand,
+                        Source = new BitmapImage(new Uri(khanhPath, UriKind.Absolute))
+                    });
+                    spKhanh.Children.Add(new TextBlock
+                    {
+                        Text = "Khánh",
+                        Foreground = Brushes.Black,
+                        FontSize = 16,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        Margin = new Thickness(0, 4, 0, 0)
+                    });
+                    spKhanh.MouseLeftButtonUp += (s, e) =>
+                    {
+                        result = MessageBoxResult.Yes;
+                        win.DialogResult = true;
+                        win.Close();
+                    };
+
+                    var spNha = new StackPanel { Orientation = Orientation.Vertical, Margin = new Thickness(8) };
+                    spNha.Children.Add(new Image
+                    {
+                        Width = 200,
+                        Height = 200,
+                        Margin = new Thickness(8),
+                        Stretch = Stretch.UniformToFill,
+                        Cursor = Cursors.Hand,
+                        Source = new BitmapImage(new Uri(nhaPath, UriKind.Absolute))
+                    });
+                    spNha.Children.Add(new TextBlock
+                    {
+                        Text = "Nhã",
+                        Foreground = Brushes.Black,
+                        FontSize = 16,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        Margin = new Thickness(0, 4, 0, 0)
+                    });
+                    spNha.MouseLeftButtonUp += (s, e) =>
+                    {
+                        result = MessageBoxResult.No;
+                        win.DialogResult = true;
+                        win.Close();
+                    };
+
+                    panel.Children.Add(spKhanh);
+                    panel.Children.Add(spNha);
                 }
-            });
+
+                root.Children.Add(panel);
+
+                win.Content = root;
+
+                // Esc = Cancel
+                win.KeyDown += (s, e) =>
+                {
+                    if (e.Key == Key.Escape)
+                    {
+                        result = MessageBoxResult.Cancel;
+                        win.DialogResult = false;
+                        win.Close();
+                    }
+                };
+
+                win.ShowDialog();
+                return result;
+            }
+            catch
+            {
+                // fallback cũ nếu có lỗi
+                return MessageBox.Show(
+                    $"Nếu shipper là Khánh chọn YES\nNếu không phải chọn NO\nHuỷ bỏ chọn CANCEL",
+                    "QUAN TRỌNG:",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Question
+                );
+            }
         }
         private async void F7Button_Click(object sender, RoutedEventArgs e)
         {
@@ -1621,7 +1787,7 @@ namespace TraSuaApp.WpfClient.Views
                 {
                     HoaDonDetailPanel.DataContext = sel;
                     // Style TT thanh toán + footer
-                    UpdateThongTinThanhToanStyle(sel);
+                    UpdateChiTietHoaDonStyle(sel);
                     ThongTinThanhToanPanel.DataContext = sel;
                     RenderFooterPanel(ThongTinThanhToanPanel, sel, includeLine: false);
                 }
@@ -1863,8 +2029,15 @@ namespace TraSuaApp.WpfClient.Views
             }, () => HoaDonDataGrid.SelectedItem is HoaDonDto);
         }
 
+
+        private void TienThoiButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+
         // ==================== UI STYLE TT THANH TOÁN & FOOTER ====================
-        private void UpdateThongTinThanhToanStyle(HoaDonDto hd)
+        private void UpdateChiTietHoaDonStyle(HoaDonDto hd)
         {
             ThongTinThanhToanGroupBox.Background = (Brush)System.Windows.Application.Current.Resources["InfoBrush"];
             ThongTinThanhToanGroupBox.Foreground = (Brush)System.Windows.Application.Current.Resources["DarkBrush"];
@@ -1996,6 +2169,7 @@ namespace TraSuaApp.WpfClient.Views
                 if (includeLine) host.Children.Add(new Separator());
                 AddGridRow("Công nợ:", VND(hd.TongNoKhachHang));
                 AddGridRow("TỔNG:", VND(hd.TongNoKhachHang + hd.ConLai));
+
             }
             if (hd.TongDonKhacDangGiao > 0)
             {
@@ -2127,6 +2301,7 @@ namespace TraSuaApp.WpfClient.Views
             SelectRow(sender);
             DelButton_Click(sender, e);         // Del - Xoá
         }
+
 
     }
 }

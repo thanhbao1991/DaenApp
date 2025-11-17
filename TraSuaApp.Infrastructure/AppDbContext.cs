@@ -17,6 +17,7 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+    public virtual DbSet<Location> Locations { get; set; }
     public virtual DbSet<ChiTieuHangNgay> ChiTieuHangNgays { get; set; }
     public virtual DbSet<ChiTietHoaDonEntity> ChiTietHoaDons { get; set; }
     public virtual DbSet<ChiTietHoaDonNhapEntity> ChiTietHoaDonNhaps { get; set; }

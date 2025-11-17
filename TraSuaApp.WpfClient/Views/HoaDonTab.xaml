@@ -828,6 +828,14 @@
                             <TextBlock Margin="5,0,0,0" Text=" Lịch sử" />
                         </StackPanel>
                     </Button>
+                    <Button
+                        Name="TienThoiButton"
+                        Margin="5"
+                        Background="Transparent"
+                        Click="TienThoiButton_Click"
+                        FontWeight="Bold"
+                        Foreground="Blue"
+                        Style="{StaticResource AddButtonStyle}" />
                 </StackPanel>
             </Grid>
 

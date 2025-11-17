@@ -4,6 +4,7 @@
     {
         public static readonly Dictionary<string, string> _tableFriendlyNames = new()
         {
+            ["Location"] = "Vị Trí",
             ["TuDienTraCuu"] = "Từ Điển Tra Cứu",
             ["Shipper"] = "Shipper",
             ["ThongKe"] = "Thống Kê",

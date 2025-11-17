@@ -29,27 +29,23 @@ public class AppShippingHelperText
     private static WebDriverWait? _wait;
     private PerfCdpSniffer? _sniffer;
 
+    // Đánh dấu đã xác thực (đã login thành công ít nhất 1 lần)
+    private static bool _isAuthenticated;
+
     // --- XPath & URL ---
     private readonly string usernameXPath = "//*[@id='app']/div/form/div[2]/div/div[1]/input";
     private readonly string passwordXPath = "//*[@id='app']/div/form/div[3]/div/div[1]/input";
     private readonly string loginButtonXPath = "/html/body/div/div/form/button";
     private readonly string avatarXPath = "//*[@id=\"app\"]/div/div[2]/div/div/div[3]/div/div/img";
     private readonly string orderPageUrl = "https://store.shippershipping.com/#/store/order";
-    private readonly string CodeRow1XPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[3]/div[3]/table/tbody/tr[1]/td[2]/div/p";
-    private readonly string TrangThaiRow1XPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[3]/div[3]/table/tbody/tr[1]/td[2]/div/span";
-    private readonly string TenTaiXeRow1XPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[3]/div[3]/table/tbody/tr[1]/td[3]/div/ul/li/span";
-    private readonly string TongTienRow1XPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[3]/div[3]/table/tbody/tr[1]/td[5]/div/div[2]/span";
-    private readonly string TenKhachHangRow1XPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[3]/div[3]/table/tbody/tr[1]/td[4]/div/ul/li[1]/span";
-    private readonly string DiaChiRow1XPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[3]/div[3]/table/tbody/tr[1]/td[4]/div/ul/li[2]/span";
-    private readonly string XemChiTietRow1XPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[3]/div[3]/table/tbody/tr[1]/td[5]/div/div[1]/a/span";
-    private readonly string ChiTietPopupXPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[6]/div";
+    private readonly string xemChiTietRow1XPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[3]/div[3]/table/tbody/tr[1]/td[5]/div/div[1]/a/span";
+    private readonly string chiTietPopupXPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[6]/div";
 
     // ⚠️ Constructor
     public AppShippingHelperText(string username, string password,
                                  List<SanPhamDto> sanPhamList,
                                  List<ToppingDto> toppingList)
     {
-
         _username = username;
         _password = password;
 
@@ -81,260 +77,440 @@ public class AppShippingHelperText
         _driver = new ChromeDriver(service, options);
         _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(20));
 
-        // Bật Network qua CDP (không cần DevTools typed)
+        // Bật Network qua CDP
         try { _driver.ExecuteCdpCommand("Network.enable", new Dictionary<string, object>()); } catch { }
 
-        // Sniffer dựa trên Performance Logs
         _sniffer = new PerfCdpSniffer(_driver);
     }
 
     public HoaDonDto GetFirstOrderPopup()
     {
-        if (_driver == null || _wait == null) EnsureDriver();
-
-        var driver = _driver!;
-        var wait = _wait!;
-
-        driver.Navigate().GoToUrl("https://store.shippershipping.com");
-
-        // load cookie
-        if (File.Exists(_cookieFile))
+        // Cho phép thử tối đa 2 lần:
+        //  - Lần 1: bình thường
+        //  - Nếu fail / status COMPLETE -> reset + thử lại 1 lần nữa
+        for (int attempt = 0; attempt < 2; attempt++)
         {
-            try
+            if (_driver == null || _wait == null) EnsureDriver();
+
+            var driver = _driver!;
+            var wait = _wait!;
+
+            // ==== LOGIN CHỈ 1 LẦN CHO MỖI SESSION ====
+            if (!_isAuthenticated)
             {
-                var json = File.ReadAllText(_cookieFile);
-                var cookies = JsonSerializer.Deserialize<List<CookieData>>(json);
-                foreach (var c in cookies ?? new List<CookieData>())
+                driver.Navigate().GoToUrl("https://store.shippershipping.com");
+
+                // load cookie 1 lần
+                if (File.Exists(_cookieFile))
                 {
-                    if (!string.IsNullOrEmpty(c.Name) && !string.IsNullOrEmpty(c.Value))
+                    try
                     {
-                        driver.Manage().Cookies.AddCookie(new Cookie(c.Name, c.Value, c.Domain, c.Path, c.Expiry));
+                        var json = File.ReadAllText(_cookieFile);
+                        var cookies = JsonSerializer.Deserialize<List<CookieData>>(json);
+                        foreach (var c in cookies ?? new List<CookieData>())
+                        {
+                            if (!string.IsNullOrEmpty(c.Name) && !string.IsNullOrEmpty(c.Value))
+                            {
+                                driver.Manage().Cookies.AddCookie(
+                                    new Cookie(c.Name, c.Value, c.Domain, c.Path, c.Expiry));
+                            }
+                        }
+
+                        driver.Navigate().Refresh();
+                    }
+                    catch
+                    {
+                        // ignore cookie errors
                     }
                 }
-                driver.Navigate().Refresh();
-                wait.Until(d => d.FindElements(By.XPath(avatarXPath)).Count > 0);
+
+                try
+                {
+                    // nếu thấy avatar thì coi như đã login
+                    wait.Until(d => d.FindElements(By.XPath(avatarXPath)).Count > 0);
+                    _isAuthenticated = true;
+                }
+                catch
+                {
+                    // chưa login hoặc cookie hết hạn -> login tay
+                    if (!IsLoggedIn(driver))
+                    {
+                        Login(driver, wait);
+                        _isAuthenticated = true;
+                    }
+                }
             }
-            catch
-            {
-                // ignore cookie errors
-            }
-        }
 
-        if (!IsLoggedIn(driver))
-        {
-            Login(driver, wait);
-        }
+            // ==== TỪ ĐÂY: CHỈ VÀO TRANG ORDER & BẮT PAYLOAD ====
+            driver.Navigate().GoToUrl(orderPageUrl);
 
-        driver.Navigate().GoToUrl(orderPageUrl);
+            // đảm bảo không còn popup cũ che nút "Xem chi tiết"
+            CloseOldPopupIfAny(driver);
 
-        // Chờ bảng load
-        wait.Until(d => d.FindElements(By.XPath(CodeRow1XPath)).Count > 0);
-
-        string code = driver.FindElement(By.XPath(CodeRow1XPath)).Text.Trim();
-        string tenKH = driver.FindElement(By.XPath(TenKhachHangRow1XPath)).Text.Trim();
-        string diaChi = driver.FindElement(By.XPath(DiaChiRow1XPath)).Text.Trim();
-        string taiXe = driver.FindElement(By.XPath(TenTaiXeRow1XPath)).Text.Trim();
-        string trangThai = driver.FindElement(By.XPath(TrangThaiRow1XPath)).Text.Trim();
-        string tongTien = driver.FindElement(By.XPath(TongTienRow1XPath)).Text.Trim();
-
-        // ==== BẮT PAYLOAD ẨN SAU KHI CLICK "Xem chi tiết" ====
-        // 1) Xoá backlog để chỉ lấy request mới phát sinh do click
-        _sniffer!.Flush();
-
-        // 2) Filter theo URL: siết vào nhóm order detail (sửa theo endpoint thực tế nếu biết chắc)
-        bool UrlFilter(string url) =>
-            url.Contains("/v1/store/orderFood", StringComparison.OrdinalIgnoreCase)
-            || url.Contains("/v1/store/orderDetail", StringComparison.OrdinalIgnoreCase)
-            || url.Contains("/graphql", StringComparison.OrdinalIgnoreCase);
-
-        // 3) Filter body: loại payload thống kê, bắt buộc chứa code của đơn đang xem
-        bool BodyFilter(string body)
-        {
-            if (string.IsNullOrWhiteSpace(body)) return false;
-
-            // loại thống kê
-            if (body.Contains("\"totalIncome\"", StringComparison.OrdinalIgnoreCase) &&
-                body.Contains("\"totalRevenue\"", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            // phải chứa code vừa lấy từ dòng
-            if (!string.IsNullOrEmpty(code) &&
-                !body.Contains($"\"code\":\"{code}\"", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            // gợi ý các key thường thấy của payload chi tiết
-            if (body.Contains("\"foodList\"", StringComparison.OrdinalIgnoreCase)) return true;
-            if (body.Contains("\"items\"", StringComparison.OrdinalIgnoreCase)) return true;
-            if (body.Contains("\"product\"", StringComparison.OrdinalIgnoreCase)) return true;
-            if (body.Contains("\"data\":[", StringComparison.OrdinalIgnoreCase)) return true;
-
-            // hoặc có thông tin KH/ghi chú
-            if (body.Contains("\"phone\"", StringComparison.OrdinalIgnoreCase)) return true;
-            if (body.Contains("\"note\"", StringComparison.OrdinalIgnoreCase)) return true;
-            if (body.Contains("\"store\"", StringComparison.OrdinalIgnoreCase)) return true;
-
-            return false;
-        }
-
-        // 4) Bắt JSON của request kế tiếp sau click
-        var ctsPayload = new CancellationTokenSource(TimeSpan.FromSeconds(12));
-        var waitJsonTask = _sniffer.WaitForJsonAsync(
-            UrlFilter,
-            BodyFilter,
-            onlyXhr: true,
-            timeoutMs: 12000,
-            ct: ctsPayload.Token
-        );
-
-        // 5) Click xem chi tiết -> server bắn XHR -> ta hứng body ở trên
-        driver.FindElement(By.XPath(XemChiTietRow1XPath)).Click();
-
-        // 6) Chờ popup hiện (DOM)
-        var popup = wait.Until(d =>
-        {
-            var elems = d.FindElements(By.XPath(ChiTietPopupXPath));
-            return (elems.Count > 0 && elems[0].Displayed) ? elems[0] : null;
-        });
-
-        // 7) Chờ payload JSON (nếu có)
-        (string Url, string Json)? jsonHit = null;
-        try { jsonHit = waitJsonTask.GetAwaiter().GetResult(); } catch { /* ignore */ }
-
-        // 🟟 HIỂN THỊ BẢN JSON ĐÃ LỌC THEO YÊU CẦU
-        if (jsonHit is not null)
-        {
+            // nếu không thấy nút "xem chi tiết" -> có thể session hỏng, thử reset nếu còn lượt
             try
             {
-                var filtered = BuildFilteredShippingJson(jsonHit.Value.Json);
-                ShowJsonPopup("Filtered Shipping JSON", filtered);
+                wait.Until(d => d.FindElements(By.XPath(xemChiTietRow1XPath)).Count > 0);
             }
             catch
             {
-                // nếu có lỗi lọc thì fallback hiển thị bản thô
-                ShowJsonPopup($"Payload JSON: {jsonHit.Value.Url}", jsonHit.Value.Json);
+                if (attempt == 0)
+                {
+                    // reset session + thử lại
+                    ForceResetSession();
+                    continue;
+                }
+
+                // hết lượt thử -> trả về hoá đơn fallback
+                var nowFail = DateTime.Now;
+                return new HoaDonDto
+                {
+                    Id = Guid.Empty,
+                    Ngay = nowFail.Date,
+                    KhachHangId = Guid.Parse("D6A1CFA4-E070-4599-92C2-884CD6469BF4"),
+                    NgayGio = nowFail,
+                    MaHoaDon = MaHoaDonGenerator.Generate(),
+                    PhanLoai = "App",
+                    DiaChiText = "",
+                    ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(),
+                    GhiChu = "⚠️ Không đọc được danh sách đơn từ app shipping (không thấy nút Xem chi tiết)."
+                };
             }
-        }
 
-        // Parse các trường ẩn từ payload (giữ nguyên logic cũ)
-        string? customerPhone = null, customerNote = null, internalId = null;
-        decimal? serviceFee = null, shipFee = null, voucherValue = null;
+            // ==== BẮT PAYLOAD SAU KHI CLICK "Xem chi tiết" ====
+            _sniffer!.Flush();
 
-        if (jsonHit is not null)
-        {
+            bool UrlFilter(string url) =>
+                url.Contains("/v1/store/orderFood", StringComparison.OrdinalIgnoreCase) ||
+                url.Contains("/v1/store/orderDetail", StringComparison.OrdinalIgnoreCase) ||
+                url.Contains("/graphql", StringComparison.OrdinalIgnoreCase);
+
+            bool BodyFilter(string body)
+            {
+                if (string.IsNullOrWhiteSpace(body)) return false;
+
+                // loại các payload thống kê / dashboard
+                if (body.Contains("\"totalIncome\"", StringComparison.OrdinalIgnoreCase) &&
+                    body.Contains("\"totalRevenue\"", StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                // chi tiết đơn thường có "details" + "store" hoặc "customer"
+                if (!body.Contains("\"details\"", StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                if (!body.Contains("\"store\"", StringComparison.OrdinalIgnoreCase) &&
+                    !body.Contains("\"customer\"", StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                return true;
+            }
+
+            var ctsPayload = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            var waitJsonTask = _sniffer.WaitForJsonAsync(
+                UrlFilter,
+                BodyFilter,
+                onlyXhr: true,
+                timeoutMs: 12000,
+                ct: ctsPayload.Token
+            );
+
+            // dùng wait để chắc chắn element click được, tránh bị overlay che
+            var xemChiTiet = wait.Until(d =>
+            {
+                try
+                {
+                    var el = d.FindElement(By.XPath(xemChiTietRow1XPath));
+                    return (el.Displayed && el.Enabled) ? el : null;
+                }
+                catch
+                {
+                    return null;
+                }
+            });
+            xemChiTiet.Click();
+
+            // Chờ popup xuất hiện (đảm bảo request đã chạy)
+            wait.Until(d =>
+            {
+                var elems = d.FindElements(By.XPath(chiTietPopupXPath));
+                return elems.Count > 0 && elems[0].Displayed;
+            });
+
+            (string Url, string Json)? jsonHit = null;
+            try
+            {
+                jsonHit = waitJsonTask.GetAwaiter().GetResult();
+            }
+            catch
+            {
+                // ignore
+            }
+
+            // ========== TRƯỜNG HỢP KHÔNG BẮT ĐƯỢC PAYLOAD ==========
+            if (jsonHit is null)
+            {
+                // đóng popup nếu có
+                CloseOldPopupIfAny(driver);
+
+                if (attempt == 0)
+                {
+                    // lần đầu fail -> reset + thử lại
+                    ForceResetSession();
+                    continue;
+                }
+
+                // lần 2 vẫn fail -> trả fallback
+                var nowFallback = DateTime.Now;
+                return new HoaDonDto
+                {
+                    Id = Guid.Empty,
+                    Ngay = nowFallback.Date,
+                    KhachHangId = Guid.Parse("D6A1CFA4-E070-4599-92C2-884CD6469BF4"),
+                    NgayGio = nowFallback,
+                    MaHoaDon = MaHoaDonGenerator.Generate(),
+                    PhanLoai = "App",
+                    DiaChiText = "",
+                    ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(),
+                    GhiChu = "⚠️ Không đọc được payload từ app shipping sau khi reset session."
+                };
+            }
+
+            // gửi JSON lên Discord để theo dõi (không pretty để nhanh)
+            ShowJsonPopup("Shipping JSON", jsonHit.Value.Json);
+
+            // ====== PARSE PAYLOAD ======
+            var chiTietPayloads = ExtractDetailsFromPayload(jsonHit.Value.Json);
+            var chiTiets = new List<ChiTietHoaDonDto>();
+
+            // Thông tin chung
+            string code = "";
+            string tenKH = "";
+            string diaChi = "";
+            string taiXe = "";
+            string trangThai = "";
+            string tongTien = "";
+
+            string? customerPhone = null;
+            string? customerNote = null;
+            string? internalId = null;
+            decimal? serviceFee = null;
+            decimal? shipFee = null;
+            decimal? voucherValue = null;
+
             try
             {
                 using var doc = JsonDocument.Parse(jsonHit.Value.Json);
                 var root = doc.RootElement;
 
-                // Tìm node order phổ biến: data.order / data.orderDetail / order
-                JsonElement orderNode = default;
-                if (root.TryGetProperty("data", out var data))
-                {
-                    if (data.TryGetProperty("order", out var ord)) orderNode = ord;
-                    else if (data.TryGetProperty("orderDetail", out var ord2)) orderNode = ord2;
-                    else if (data.EnumerateObject().FirstOrDefault().Value.ValueKind != JsonValueKind.Undefined)
-                        orderNode = data.EnumerateObject().First().Value;
-                }
-                else
-                {
-                    orderNode = root;
-                }
+                JsonElement orderNode = root;
+                if (root.TryGetProperty("data", out var dataNode) && dataNode.ValueKind == JsonValueKind.Object)
+                    orderNode = dataNode;
 
                 if (orderNode.ValueKind != JsonValueKind.Undefined)
                 {
-                    customerPhone = TryGetString(orderNode, "customerPhone", "phone", "customer_mobile");
-                    customerNote = TryGetString(orderNode, "note", "customerNote", "instruction", "customer_note");
-                    internalId = TryGetString(orderNode, "id", "orderId", "code");
+                    // Mã đơn
+                    code = TryGetString(orderNode, "code") ?? "";
 
+                    // Địa chỉ giao
+                    diaChi = TryGetString(orderNode, "startAddress", "address") ?? "";
+
+                    // Tổng tiền: moneyTotal
+                    var totalMoney = TryGetDecimal(orderNode, "moneyTotal");
+                    if (totalMoney is not null && totalMoney.Value > 0)
+                        tongTien = $"{totalMoney.Value:#,0}";
+
+                    // Trạng thái
+                    trangThai = TryGetString(orderNode, "status") ?? "";
+
+                    // *** NẾU ĐƠN ĐÃ COMPLETE THÌ RESET VÀ THỬ LẠI ***
+                    if (attempt == 0 &&
+                        !string.IsNullOrEmpty(trangThai) &&
+                        trangThai.Equals("COMPLETE", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // đóng popup cũ rồi reset
+                        CloseOldPopupIfAny(driver);
+                        ForceResetSession();
+                        continue; // quay lại vòng for, thử lần 2
+                    }
+
+                    // Thông tin khách
+                    customerPhone = TryGetString(orderNode, "customerPhone", "phone", "customer_mobile");
+
+                    if (orderNode.TryGetProperty("customer", out var custNode) &&
+                        custNode.ValueKind == JsonValueKind.Object)
+                    {
+                        customerPhone ??= TryGetString(custNode, "phone", "mobile", "customerPhone");
+                        tenKH = TryGetString(custNode, "name")?.Trim() ?? tenKH;
+                    }
+
+                    // Ghi chú khách
+                    customerNote = TryGetString(orderNode, "note", "customerNote", "instruction", "customer_note");
+
+                    internalId = TryGetString(orderNode, "id", "orderId");
+
+                    // Tài xế
+                    if (orderNode.TryGetProperty("driver", out var drvNode) &&
+                        drvNode.ValueKind == JsonValueKind.Object)
+                    {
+                        taiXe = TryGetString(drvNode, "name")?.Trim() ?? taiXe;
+                    }
+
+                    // Phí dịch vụ & ship
                     serviceFee = TryGetDecimal(orderNode, "serviceFee", "platformFee", "service_fee");
                     shipFee = TryGetDecimal(orderNode, "shipFee", "shippingFee", "ship_fee");
+                    shipFee ??= TryGetDecimal(orderNode, "moneyDistance");
 
-                    if (orderNode.TryGetProperty("voucher", out var vch))
+                    // Voucher
+                    if (orderNode.TryGetProperty("voucher", out var vch) &&
+                        vch.ValueKind == JsonValueKind.Object)
+                    {
                         voucherValue = TryGetDecimal(vch, "value", "amount");
+                    }
                     else
+                    {
                         voucherValue ??= TryGetDecimal(orderNode, "voucher", "discount");
+                    }
                 }
             }
-            catch { /* ignore format khác */ }
-        }
-
-        // Lấy chi tiết món từ DOM (giữ như cũ)
-        var itemElements = popup.FindElements(By.CssSelector("ul.food-list > li.food-item"));
-        var chiTiets = new List<ChiTietHoaDonDto>();
-
-        foreach (var item in itemElements)
-        {
-            string tenSP = item.FindElement(By.CssSelector("div.product-name > span.name")).Text.Trim();
-
-            string qtyText = item.FindElement(By.CssSelector("div.product-order > span.quantity-badge"))
-                                 .Text.Replace("x", "").Trim();
-            int soLuong = int.TryParse(qtyText, out int qty) ? qty : 1;
-
-            string priceText = item.FindElement(By.CssSelector("div.product-name span.single-price"))
-                                   .Text.Replace(",", "").Trim();
-            decimal donGia = decimal.TryParse(priceText, out decimal price) ? price : 0;
-
-            var optionsDiv = item.FindElements(By.CssSelector("div.product-name > div > div"));
-            string? tenBienThe = optionsDiv.FirstOrDefault()?.Text;
-            if (!string.IsNullOrEmpty(tenBienThe))
+            catch
             {
-                tenBienThe = StringHelper.MyNormalizeText(tenBienThe).ToLower()
-                    .Replace("x 1", "", StringComparison.OrdinalIgnoreCase)
-                    .Trim();
+                // ignore parse errors, sẽ có default
             }
 
-            Guid bienTheId = MapSanPhamBienTheId(tenSP, tenBienThe, donGia);
-            if (bienTheId != Guid.Empty)
+            // ====== TẠO CHI TIẾT HÓA ĐƠN TỪ PAYLOAD ======
+            foreach (var pd in chiTietPayloads)
             {
+                string tenSP = pd.Name?.Trim() ?? "";
+                if (string.IsNullOrWhiteSpace(tenSP)) continue;
+
+                int soLuong = pd.Amount > 0 ? pd.Amount : 1;
+                decimal donGiaWeb = pd.FinalPrice > 0 ? pd.FinalPrice : 0;
+
+                string? tenBienThe = null;
+                if (!string.IsNullOrWhiteSpace(pd.VariationNameRaw))
+                {
+                    tenBienThe = StringHelper.MyNormalizeText(pd.VariationNameRaw).ToLower().Trim();
+                }
+
+                Guid bienTheId = MapSanPhamBienTheId(tenSP, tenBienThe, donGiaWeb);
+                if (bienTheId == Guid.Empty)
+                    continue;
+
                 var bienThe = _bienTheList.FirstOrDefault(b => b.Id == bienTheId);
+
+                var toppingDtos = new List<ToppingDto>();
+                foreach (var tNameRaw in pd.ToppingNames)
+                {
+                    if (string.IsNullOrWhiteSpace(tNameRaw)) continue;
+                    string norm = StringHelper.MyNormalizeText(tNameRaw).ToLower();
+
+                    toppingDtos.Add(new ToppingDto
+                    {
+                        Id = MapToppingId(norm),
+                        Ten = norm,
+                        Gia = GetToppingGia(norm),
+                        SoLuong = 1
+                    });
+                }
 
                 var ct = new ChiTietHoaDonDto
                 {
                     Id = Guid.NewGuid(),
                     SanPhamIdBienThe = bienTheId,
                     TenSanPham = tenSP,
-                    TenBienThe = tenBienThe ?? "",
-                    DonGia = bienThe?.GiaBan ?? donGia,
+                    TenBienThe = tenBienThe ?? (bienThe?.TenBienThe ?? ""),
+                    DonGia = bienThe?.GiaBan ?? donGiaWeb,
                     SoLuong = soLuong,
-                    ToppingDtos = optionsDiv.Skip(1).Select(opt =>
-                    {
-                        string name = StringHelper.MyNormalizeText(opt.Text).ToLower();
-                        return new ToppingDto
-                        {
-                            Id = MapToppingId(name),
-                            Ten = name,
-                            Gia = GetToppingGia(name),
-                            SoLuong = 1
-                        };
-                    }).ToList()
+                    ToppingDtos = toppingDtos
                 };
 
                 chiTiets.Add(ct);
             }
+
+            var now = DateTime.Now;
+
+            // đóng popup chi tiết để lần sau không bị che nút
+            CloseOldPopupIfAny(driver);
+
+            // Nếu tới đây nghĩa là:
+            //  - Đã có payload hợp lệ
+            //  - Và (status không COMPLETE) hoặc đang ở lần thử thứ 2
+            return new HoaDonDto
+            {
+                Id = Guid.Empty,
+                Ngay = now.Date,
+                KhachHangId = Guid.Parse("D6A1CFA4-E070-4599-92C2-884CD6469BF4"),
+                DiaChiText = taiXe,
+                NgayGio = now,
+                MaHoaDon = string.IsNullOrWhiteSpace(code) ? MaHoaDonGenerator.Generate() : code,
+                PhanLoai = "App",
+                ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(chiTiets),
+                GhiChu =
+                    $"• {tongTien}\n" +
+                    $"• {diaChi}"
+                  + (string.IsNullOrEmpty(customerPhone) ? "" : $"\n• {tenKH} - {customerPhone}")
+                  + (string.IsNullOrEmpty(customerNote) ? "" : $"\n🟟• {customerNote}")
+                  + (serviceFee is null ? "" : $"\n⚙️ Phí DV: {serviceFee:#,0}")
+                  + (shipFee is null ? "" : $"\n🟟 Ship: {shipFee:#,0}")
+                  + (voucherValue is null ? "" : $"\n🟟️ Voucher: -{voucherValue:#,0}")
+                  + (string.IsNullOrEmpty(trangThai) ? "" : $"\nTrạng thái: {trangThai}")
+                  + (string.IsNullOrEmpty(internalId) ? "" : $"\n#ID nội bộ: {internalId}")
+            };
         }
 
-        var now = DateTime.Now;
+        // Nếu vì lý do gì đó vẫn thoát khỏi for mà chưa return, trả fallback.
+        var nowFallbackFinal = DateTime.Now;
         return new HoaDonDto
         {
             Id = Guid.Empty,
-            Ngay = now.Date,
+            Ngay = nowFallbackFinal.Date,
             KhachHangId = Guid.Parse("D6A1CFA4-E070-4599-92C2-884CD6469BF4"),
-            DiaChiText = taiXe,
-            NgayGio = now,
-            MaHoaDon = string.IsNullOrWhiteSpace(code) ? MaHoaDonGenerator.Generate() : code,
+            NgayGio = nowFallbackFinal,
+            MaHoaDon = MaHoaDonGenerator.Generate(),
             PhanLoai = "App",
-            ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(chiTiets),
-            GhiChu =
-                $"{tongTien}\n{diaChi}"
-              + (string.IsNullOrEmpty(customerPhone) ? "" : $"\n🟟 {customerPhone}")
-              + (string.IsNullOrEmpty(customerNote) ? "" : $"\n🟟️ {customerNote}")
-              + (serviceFee is null ? "" : $"\n⚙️ Phí DV: {serviceFee:#,0}")
-              + (shipFee is null ? "" : $"\n🟟 Ship: {shipFee:#,0}")
-              + (voucherValue is null ? "" : $"\n🟟️ Voucher: -{voucherValue:#,0}")
-              + (string.IsNullOrEmpty(internalId) ? "" : $"\n#ID nội bộ: {internalId}")
+            DiaChiText = "",
+            ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(),
+            GhiChu = "⚠️ AppShipping: không thể bắt đơn mới sau 2 lần thử."
         };
     }
 
+    private void ForceResetSession()
+    {
+        // reset toàn bộ driver + auth, lần gọi sau sẽ EnsureDriver + login lại
+        AppShippingHelperText.DisposeDriver();
+        _isAuthenticated = false;
+    }
+    private void CloseOldPopupIfAny(IWebDriver driver)
+    {
+        try
+        {
+            var wrappers = driver.FindElements(By.CssSelector("div.el-dialog__wrapper"));
+            foreach (var wrapper in wrappers)
+            {
+                if (!wrapper.Displayed) continue;
+
+                var closeButtons = wrapper.FindElements(By.CssSelector(".el-dialog__headerbtn"));
+                foreach (var btn in closeButtons)
+                {
+                    if (btn.Displayed && btn.Enabled)
+                    {
+                        btn.Click();
+                        System.Threading.Thread.Sleep(150);
+                    }
+                }
+            }
+
+            try
+            {
+                driver.FindElement(By.TagName("body")).SendKeys(Keys.Escape);
+            }
+            catch { }
+        }
+        catch
+        {
+            // ignore
+        }
+    }
     public static void DisposeDriver()
     {
         try
@@ -350,6 +526,7 @@ public class AppShippingHelperText
         {
             _driver = null;
             _wait = null;
+            _isAuthenticated = false;
 
             foreach (var process in Process.GetProcessesByName("chromedriver"))
             {
@@ -363,6 +540,8 @@ public class AppShippingHelperText
 
     private void Login(IWebDriver driver, WebDriverWait wait)
     {
+        // đảm bảo đang ở trang login
+        driver.Navigate().GoToUrl("https://store.shippershipping.com");
         driver.FindElement(By.XPath(usernameXPath)).SendKeys(_username);
         driver.FindElement(By.XPath(passwordXPath)).SendKeys(_password);
         driver.FindElement(By.XPath(loginButtonXPath)).Click();
@@ -439,7 +618,7 @@ public class AppShippingHelperText
             ?.Gia ?? 0;
     }
 
-    // ===== JSON helper =====
+    // ===== JSON helpers =====
     private static string? TryGetString(JsonElement node, params string[] keys)
     {
         foreach (var k in keys)
@@ -456,15 +635,20 @@ public class AppShippingHelperText
         return null;
     }
 
-    // ===== MessageBox helpers =====
+    // ===== Logging helpers =====
     private static void ShowJsonPopup(string title, string rawJson)
     {
         try
         {
             var pretty = TryPrettyJson(rawJson);
             var redacted = RedactSecrets(pretty);
-            var text = TruncateForMessageBox(redacted, 100000); // nâng lên 100k ký tự
-            DiscordService.SendAsync(TraSuaApp.Shared.Enums.DiscordEventType.Admin, pretty);
+            var text = TruncateForMessageBox(redacted, 100000);
+
+            // Gửi Discord để theo dõi
+            DiscordService.SendAsync(TraSuaApp.Shared.Enums.DiscordEventType.Admin, text);
+
+#if DEBUG
+            // Chỉ popup khi DEBUG để tránh làm chậm bản release
             if (Application.Current?.Dispatcher != null &&
                 !Application.Current.Dispatcher.CheckAccess())
             {
@@ -475,10 +659,13 @@ public class AppShippingHelperText
             {
                 MessageBox.Show(text, title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
+#endif
         }
         catch
         {
+#if DEBUG
             MessageBox.Show(rawJson, title, MessageBoxButton.OK, MessageBoxImage.Information);
+#endif
         }
     }
 
@@ -490,13 +677,12 @@ public class AppShippingHelperText
             var opts = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // hiện đúng tiếng Việt
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             };
             return JsonSerializer.Serialize(doc.RootElement, opts);
         }
         catch
         {
-            // Fallback unescape nếu server trả chuỗi JSON escaped
             return Regex.Replace(s, @"\\u(?<code>[0-9a-fA-F]{4})", m =>
             {
                 var code = Convert.ToInt32(m.Groups["code"].Value, 16);
@@ -528,145 +714,180 @@ public class AppShippingHelperText
     }
 
     // ============================
-    //  JSON FILTER THEO YÊU CẦU
+    //  MODEL + PARSER PAYLOAD
     // ============================
-    private static string BuildFilteredShippingJson(string raw)
+
+    private sealed class ShippingDetailPayload
     {
-        using var doc = JsonDocument.Parse(raw);
-        var root = doc.RootElement;
+        public string Name { get; set; } = "";
+        public int Amount { get; set; } = 1;
+        public decimal FinalPrice { get; set; }
+        public string? VariationNameRaw { get; set; }
+        public decimal? VariationExtra { get; set; }
+        public List<string> ToppingNames { get; } = new();
+    }
 
-        JsonElement data = root;
-        if (root.TryGetProperty("data", out var d)) data = d;
+    private static bool LooksLikeSize(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        var norm = StringHelper.MyNormalizeText(name).ToLower();
 
-        using var ms = new MemoryStream();
-        using var writer = new Utf8JsonWriter(ms, new JsonWriterOptions { Indented = true });
+        if (norm.Contains("size")) return true;
+        if (Regex.IsMatch(norm, @"\b(s|m|l|xl|xs|xxl)\b")) return true;
 
-        writer.WriteStartObject();
+        return false;
+    }
 
-        // Top-level fields
-        WriteStringIfExists(writer, "phone", data, "phone");
-        WriteStringIfExists(writer, "startAddress", data, "startAddress");
-        WriteNumberIfExists(writer, "distance", data, "distance");
-        WriteNumberIfExists(writer, "startLong", data, "startLong");
-        WriteNumberIfExists(writer, "startLat", data, "startLat");
-        WriteNumberIfExists(writer, "moneyDistance", data, "moneyDistance");
-        WriteNullableStringIfExists(writer, "note", data, "note");
-        WriteStringIfExists(writer, "matrix", data, "matrix");
-        WriteStringIfExists(writer, "status", data, "status");
-        WriteNumberIfExists(writer, "totalFood", data, "totalFood");
+    /// <summary>
+    /// Đọc mảng details từ payload JSON để lấy: tên món, số lượng, đơn giá, biến thể (Size L,...), topping.
+    /// </summary>
+    private static List<ShippingDetailPayload> ExtractDetailsFromPayload(string rawJson)
+    {
+        var result = new List<ShippingDetailPayload>();
 
-        // customer
-        writer.WritePropertyName("customer");
-        if (data.TryGetProperty("customer", out var cust) && cust.ValueKind == JsonValueKind.Object)
+        try
         {
-            writer.WriteStartObject();
-            WriteStringIfExists(writer, "phone", cust, "phone");
-            WriteStringIfExists(writer, "email", cust, "email");
-            WriteStringIfExists(writer, "dayOfBirth", cust, "dayOfBirth");
-            WriteStringIfExists(writer, "gender", cust, "gender");
-            WriteStringIfExists(writer, "name", cust, "name");
-            writer.WriteEndObject();
-        }
-        else
-        {
-            writer.WriteStartObject();
-            writer.WriteEndObject();
-        }
+            using var doc = JsonDocument.Parse(rawJson);
+            var root = doc.RootElement;
 
-        // details
-        writer.WritePropertyName("details");
-        if (data.TryGetProperty("details", out var details) && details.ValueKind == JsonValueKind.Array)
-        {
-            writer.WriteStartArray();
+            JsonElement data = root;
+            if (root.TryGetProperty("data", out var d) && d.ValueKind == JsonValueKind.Object)
+                data = d;
+
+            JsonElement details;
+            if (!data.TryGetProperty("details", out details) || details.ValueKind != JsonValueKind.Array)
+            {
+                if (!root.TryGetProperty("details", out details) || details.ValueKind != JsonValueKind.Array)
+                    return result;
+            }
+
             foreach (var item in details.EnumerateArray())
             {
-                writer.WriteStartObject();
-
-                // name nằm trong item.food.name
                 string? name = null;
-                if (item.TryGetProperty("food", out var food) && food.ValueKind == JsonValueKind.Object)
+
+                if (item.TryGetProperty("name", out var nameEl) && nameEl.ValueKind == JsonValueKind.String)
                 {
-                    if (food.TryGetProperty("name", out var nameEl) && nameEl.ValueKind == JsonValueKind.String)
-                        name = nameEl.GetString();
+                    name = nameEl.GetString();
                 }
-                if (name is not null) writer.WriteString("name", name);
+                else if (item.TryGetProperty("food", out var foodEl) && foodEl.ValueKind == JsonValueKind.Object)
+                {
+                    if (foodEl.TryGetProperty("name", out var fn) && fn.ValueKind == JsonValueKind.String)
+                        name = fn.GetString();
+                }
 
-                // amount, finalPrice
-                WriteNumberIfExists(writer, "amount", item, "amount");
-                WriteNumberIfExists(writer, "finalPrice", item, "finalPrice");
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
 
-                // arrays: foodVariations, orderFoodVariationDetails
-                WriteArrayOrEmpty(writer, "foodVariations", item, "foodVariations");
-                WriteArrayOrEmpty(writer, "orderFoodVariationDetails", item, "orderFoodVariationDetails");
+                int amount = 1;
+                if (item.TryGetProperty("amount", out var amtEl) && amtEl.ValueKind == JsonValueKind.Number)
+                {
+                    if (!amtEl.TryGetInt32(out amount)) amount = 1;
+                    if (amount <= 0) amount = 1;
+                }
 
-                writer.WriteEndObject();
+                decimal finalPrice = 0;
+                if (item.TryGetProperty("finalPrice", out var priceEl) && priceEl.ValueKind == JsonValueKind.Number)
+                {
+                    priceEl.TryGetDecimal(out finalPrice);
+                }
+
+                var variantNames = new List<string>();
+                var toppingNames = new List<string>();
+                decimal variationExtra = 0;
+
+                // orderFoodVariationDetails: size + có thể cả topping
+                if (item.TryGetProperty("orderFoodVariationDetails", out var varArr) &&
+                    varArr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var od in varArr.EnumerateArray())
+                    {
+                        string? vName = null;
+
+                        if (od.TryGetProperty("foodVariation", out var fv) && fv.ValueKind == JsonValueKind.Object)
+                        {
+                            if (fv.TryGetProperty("name", out var vn) && vn.ValueKind == JsonValueKind.String)
+                                vName = vn.GetString();
+
+                            if (fv.TryGetProperty("price", out var p1) && p1.ValueKind == JsonValueKind.Number &&
+                                p1.TryGetDecimal(out var extra1))
+                            {
+                                variationExtra += extra1;
+                            }
+                        }
+                        else if (od.TryGetProperty("price", out var p2) && p2.ValueKind == JsonValueKind.Number &&
+                                 p2.TryGetDecimal(out var extra2))
+                        {
+                            variationExtra += extra2;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(vName))
+                        {
+                            if (LooksLikeSize(vName))
+                                variantNames.Add(vName);
+                            else
+                                toppingNames.Add(vName);
+                        }
+                    }
+                }
+
+                // foodVariations: thường là topping
+                if (item.TryGetProperty("foodVariations", out var fvArr) &&
+                    fvArr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var fvItem in fvArr.EnumerateArray())
+                    {
+                        string? tName = null;
+
+                        if (fvItem.ValueKind == JsonValueKind.String)
+                        {
+                            tName = fvItem.GetString();
+                        }
+                        else if (fvItem.ValueKind == JsonValueKind.Object)
+                        {
+                            if (fvItem.TryGetProperty("name", out var tn) && tn.ValueKind == JsonValueKind.String)
+                                tName = tn.GetString();
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(tName))
+                        {
+                            if (LooksLikeSize(tName))
+                                variantNames.Add(tName);
+                            else
+                                toppingNames.Add(tName);
+                        }
+                    }
+                }
+
+                string? variationName = variantNames.Count > 0
+                    ? string.Join(" + ", variantNames)
+                    : null;
+
+                var detail = new ShippingDetailPayload
+                {
+                    Name = name ?? "",
+                    Amount = amount,
+                    FinalPrice = finalPrice,
+                    VariationNameRaw = variationName,
+                    VariationExtra = variationExtra > 0 ? variationExtra : null
+                };
+
+                foreach (var t in toppingNames.Distinct())
+                    detail.ToppingNames.Add(t);
+
+                result.Add(detail);
             }
-            writer.WriteEndArray();
         }
-        else
+        catch
         {
-            writer.WriteStartArray();
-            writer.WriteEndArray();
+            // lỗi parse -> trả list rỗng
         }
 
-        writer.WriteEndObject();
-        writer.Flush();
-
-        return Encoding.UTF8.GetString(ms.ToArray());
-    }
-
-    private static void WriteStringIfExists(Utf8JsonWriter w, string outName, JsonElement obj, string inName)
-    {
-        if (obj.TryGetProperty(inName, out var el))
-        {
-            if (el.ValueKind == JsonValueKind.String)
-                w.WriteString(outName, el.GetString());
-        }
-    }
-
-    private static void WriteNullableStringIfExists(Utf8JsonWriter w, string outName, JsonElement obj, string inName)
-    {
-        if (obj.TryGetProperty(inName, out var el))
-        {
-            if (el.ValueKind == JsonValueKind.String)
-                w.WriteString(outName, el.GetString());
-            else if (el.ValueKind == JsonValueKind.Null)
-                w.WriteNull(outName);
-        }
-    }
-
-    private static void WriteNumberIfExists(Utf8JsonWriter w, string outName, JsonElement obj, string inName)
-    {
-        if (!obj.TryGetProperty(inName, out var el)) return;
-        if (el.ValueKind != JsonValueKind.Number) return;
-
-        if (el.TryGetInt32(out int i)) w.WriteNumber(outName, i);
-        else if (el.TryGetInt64(out long l)) w.WriteNumber(outName, l);
-        else if (el.TryGetDouble(out double d)) w.WriteNumber(outName, d);
-        else
-        {
-            // fallback: viết dạng string nếu kiểu số khó xác định (hiếm)
-            w.WriteString(outName, el.ToString());
-        }
-    }
-
-    private static void WriteArrayOrEmpty(Utf8JsonWriter w, string outName, JsonElement obj, string inName)
-    {
-        w.WritePropertyName(outName);
-        if (obj.TryGetProperty(inName, out var el) && el.ValueKind == JsonValueKind.Array)
-        {
-            el.WriteTo(w);
-        }
-        else
-        {
-            w.WriteStartArray();
-            w.WriteEndArray();
-        }
+        return result;
     }
 }
 
 // ==============================
-//   PerfCdpSniffer (không phụ thuộc Vxxx)
+//   PerfCdpSniffer
 // ==============================
 public sealed class PerfCdpSniffer
 {
@@ -680,9 +901,6 @@ public sealed class PerfCdpSniffer
         try { _driver.Manage().Logs.GetLog(LogType.Performance); } catch { }
     }
 
-    /// <summary>
-    /// Đợi JSON từ XHR/Fetch sau thời điểm gọi, với filter URL + body.
-    /// </summary>
     public async Task<(string Url, string Json)?> WaitForJsonAsync(
         Func<string, bool> urlFilter,
         Func<string, bool>? bodyFilter = null,
@@ -704,10 +922,10 @@ public sealed class PerfCdpSniffer
                     if (!doc.RootElement.TryGetProperty("message", out var msg)) continue;
 
                     var method = msg.GetProperty("method").GetString();
-                    var prms = msg.GetProperty("params");
-
                     if (!string.Equals(method, "Network.responseReceived", StringComparison.Ordinal))
                         continue;
+
+                    var prms = msg.GetProperty("params");
 
                     // Chỉ XHR/Fetch nếu cần (giảm nhiễu)
                     if (onlyXhr && prms.TryGetProperty("type", out var tEl))
@@ -827,7 +1045,6 @@ internal static class AppShippingHelperFactory
 
     private static async Task<AppShippingHelperText> InitializeAsync(string username, string password)
     {
-
         await AppProviders.EnsureCreatedAsync();
 
         if (AppProviders.SanPhams == null || AppProviders.Toppings == null)

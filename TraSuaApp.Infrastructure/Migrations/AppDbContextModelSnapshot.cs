@@ -926,6 +926,51 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.ToTable("LichSuNhapXuatKhos");
                 });
 
+            modelBuilder.Entity("TraSuaApp.Domain.Entities.Location", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double?>("DistanceKm")
+                        .HasColumnType("float");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Matrix")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("MoneyDistance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("StartAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double?>("StartLat")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("StartLong")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Locations");
+                });
+
             modelBuilder.Entity("TraSuaApp.Domain.Entities.Log", b =>
                 {
                     b.Property<Guid>("Id")

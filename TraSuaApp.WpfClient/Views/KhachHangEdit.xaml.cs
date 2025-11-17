@@ -10,53 +10,84 @@ using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.SettingsViews
 {
-
     public partial class KhachHangEdit : Window
     {
         public KhachHangDto Model { get; set; } = new();
+        public ObservableCollection<KhachHangPhoneDto> Phones { get; set; } = new();
+        public ObservableCollection<KhachHangAddressDto> Addresses { get; set; } = new();
+
         private readonly IKhachHangApi _api;
-        string _friendlyName = TuDien._tableFriendlyNames["KhachHang"];
-
-        private ObservableCollection<KhachHangPhoneDto> _phones = new();
-        private ObservableCollection<KhachHangAddressDto> _addresses = new();
-
-        private KhachHangPhoneDto? _dangSuaPhone;
-        private string? _soCuDangSua;
+        private readonly string _friendlyName = TuDien._tableFriendlyNames["KhachHang"];
 
         public KhachHangEdit(KhachHangDto? dto = null)
         {
+            // Chuẩn bị dữ liệu trước
+            if (dto != null)
+            {
+                Model = dto;
+
+                Phones = new ObservableCollection<KhachHangPhoneDto>(
+                    dto.Phones.Select(p => new KhachHangPhoneDto
+                    {
+                        Id = p.Id,
+                        KhachHangId = p.KhachHangId,
+                        SoDienThoai = p.SoDienThoai,
+                        IsDefault = p.IsDefault
+                    }));
+
+                Addresses = new ObservableCollection<KhachHangAddressDto>(
+                    dto.Addresses.Select(a => new KhachHangAddressDto
+                    {
+                        Id = a.Id,
+                        KhachHangId = a.KhachHangId,
+                        DiaChi = a.DiaChi,
+                        IsDefault = a.IsDefault
+                    }));
+
+                if (Phones.Count == 0)
+                    Phones.Add(new KhachHangPhoneDto { IsDefault = true });
+
+                if (Addresses.Count == 0)
+                    Addresses.Add(new KhachHangAddressDto { IsDefault = true });
+            }
+            else
+            {
+                // Mặc định khi thêm mới
+                Model = new KhachHangDto
+                {
+                    DuocNhanVoucher = true
+                };
+
+                Phones = new ObservableCollection<KhachHangPhoneDto>
+                {
+                    new KhachHangPhoneDto { IsDefault = true }
+                };
+                Addresses = new ObservableCollection<KhachHangAddressDto>
+                {
+                    new KhachHangAddressDto { IsDefault = true }
+                };
+            }
+
             InitializeComponent();
+
             this.KeyDown += Window_KeyDown;
             this.Title = _friendlyName;
             TieuDeTextBlock.Text = _friendlyName;
 
             _api = new KhachHangApi();
 
-            if (dto != null)
-            {
-                Model = dto;
-                TenTextBox.Text = dto.Ten;
-                DuocNhanVoucherCheckBox.IsChecked = dto.DuocNhanVoucher;
-                _phones = new ObservableCollection<KhachHangPhoneDto>(dto.Phones ?? []);
-                _addresses = new ObservableCollection<KhachHangAddressDto>(dto.Addresses ?? []);
-            }
-            else
-            {
-                Model.DuocNhanVoucher = true;
-                DuocNhanVoucherCheckBox.IsChecked = true;
-                TenTextBox.Focus();
-            }
+            // Binding
+            DataContext = this;
 
-            PhoneListBox.ItemsSource = _phones;
-            DiaChiListBox.ItemsSource = _addresses;
-
+            // Nếu đang ở trạng thái Deleted thì chỉ cho khôi phục
             if (Model.IsDeleted)
             {
                 TenTextBox.IsEnabled = false;
-                PhoneTextBox.IsEnabled = false;
-                DiaChiTextBox.IsEnabled = false;
+                DuocNhanVoucherCheckBox.IsEnabled = false;
+
+                AddPhoneButton.IsEnabled = false;
+                AddAddressButton.IsEnabled = false;
                 SaveButton.Content = "Khôi phục";
-                DuocNhanVoucherCheckBox.IsEnabled = true;
             }
         }
 
@@ -64,130 +95,88 @@ namespace TraSuaApp.WpfClient.SettingsViews
         {
             ErrorTextBlock.Text = "";
 
-            var soDangNhap = PhoneTextBox.Text.Trim();
-            var diaChiDangNhap = DiaChiTextBox.Text.Trim();
-
-            Model.Ten = TenTextBox.Text.Trim();
-            if (string.IsNullOrWhiteSpace(Model.Ten))
+            if (!Model.IsDeleted)
             {
-                ErrorTextBlock.Text = "Tên không được để trống.";
-                return;
+                // Bắt lỗi tên trống (nếu không muốn bắt thì bỏ đoạn này)
+                if (string.IsNullOrWhiteSpace(TenTextBox.Text))
+                {
+                    ErrorTextBlock.Text = $"Tên {_friendlyName} không được để trống.";
+                    TenTextBox.Focus();
+                    return;
+                }
             }
 
-            Model.DuocNhanVoucher = DuocNhanVoucherCheckBox.IsChecked ?? false;
+            // Cập nhật Model từ UI
+            Model.Ten = (TenTextBox.Text ?? string.Empty).Trim();
+            Model.DuocNhanVoucher = DuocNhanVoucherCheckBox.IsChecked == true;
 
-            var dangSuaTruocKhiThem = _dangSuaPhone;
-            var soCu = _soCuDangSua;
+            // Đồng bộ phones/addresses (lọc rỗng)
+            var phoneList = Phones
+                .Where(p => !string.IsNullOrWhiteSpace(p.SoDienThoai))
+                .ToList();
+            var addressList = Addresses
+                .Where(a => !string.IsNullOrWhiteSpace(a.DiaChi))
+                .ToList();
 
-            if (!string.IsNullOrWhiteSpace(soDangNhap))
+            if (!Model.IsDeleted)
             {
-                var soNormalized = soDangNhap.Replace(" ", "").ToLower();
-                var trung = _phones.Any(x =>
-                    (x.SoDienThoai ?? "").Replace(" ", "").ToLower() == soNormalized &&
-                    x != _dangSuaPhone
-                );
-
-                if (trung)
+                if (phoneList.Count == 0)
                 {
-                    ErrorTextBlock.Text = "Số điện thoại đang nhập đã tồn tại.";
-                    PhoneTextBox.Focus();
+                    ErrorTextBlock.Text = "Vui lòng nhập ít nhất một số điện thoại.";
                     return;
                 }
 
-                ThemPhone();
-            }
-
-            if (!string.IsNullOrWhiteSpace(diaChiDangNhap))
-            {
-                var diaChiTrung = _addresses.Any(x =>
-                    string.Equals(x.DiaChi?.Trim(), diaChiDangNhap, StringComparison.OrdinalIgnoreCase));
-
-                if (diaChiTrung)
+                if (addressList.Count == 0)
                 {
-                    ErrorTextBlock.Text = "Địa chỉ đang nhập đã tồn tại.";
-                    DiaChiTextBox.Focus();
+                    ErrorTextBlock.Text = "Vui lòng nhập ít nhất một địa chỉ.";
                     return;
                 }
-
-                ThemDiaChi();
             }
 
-            Model.Phones = _phones.ToList();
-            Model.Addresses = _addresses.ToList();
+            // Đảm bảo luôn có 1 default (UI cố gắng làm rồi, nhưng đảm bảo thêm)
+            EnsureOneDefault(phoneList);
+            EnsureOneDefault(addressList);
+
+            Model.Phones = phoneList
+                .Select(p => new KhachHangPhoneDto
+                {
+                    Id = p.Id,
+                    KhachHangId = Model.Id,
+                    SoDienThoai = p.SoDienThoai?.Trim() ?? "",
+                    IsDefault = p.IsDefault
+                })
+                .ToList();
+
+            Model.Addresses = addressList
+                .Select(a => new KhachHangAddressDto
+                {
+                    Id = a.Id,
+                    KhachHangId = Model.Id,
+                    DiaChi = a.DiaChi?.Trim() ?? "",
+                    IsDefault = a.IsDefault
+                })
+                .ToList();
 
             Result<KhachHangDto> result;
             if (Model.Id == Guid.Empty)
+            {
+                // Thêm mới
                 result = await _api.CreateAsync(Model);
+            }
             else if (Model.IsDeleted)
+            {
+                // Khôi phục
                 result = await _api.RestoreAsync(Model.Id);
+            }
             else
+            {
+                // Cập nhật
                 result = await _api.UpdateAsync(Model.Id, Model);
+            }
 
             if (!result.IsSuccess)
             {
                 ErrorTextBlock.Text = result.Message;
-                bool refreshed = false;
-
-                if (result.Message.Contains("điện thoại") && result.Message.Contains($"{_friendlyName} khác"))
-                {
-                    var duplicate = _phones.FirstOrDefault(x =>
-                        string.Equals(x.SoDienThoai?.Trim(), soDangNhap, StringComparison.OrdinalIgnoreCase));
-
-                    if (duplicate != null)
-                    {
-                        if (dangSuaTruocKhiThem != null && duplicate == dangSuaTruocKhiThem)
-                        {
-                            if (soCu != null)
-                            {
-                                duplicate.SoDienThoai = soCu;
-                                PhoneTextBox.Text = soCu;
-                                PhoneListBox.Items.Refresh();
-                                PhoneListBox.UnselectAll();
-                                PhoneTextBox.Focus();
-                                _dangSuaPhone = null;
-                                _soCuDangSua = null;
-                                PhoneModeTextBlock.Text = "";
-                            }
-                        }
-                        else
-                        {
-                            _phones.Remove(duplicate);
-                            Model.Phones = _phones.ToList();
-                            refreshed = true;
-                        }
-                    }
-
-                    PhoneTextBox.Text = soDangNhap;
-                    PhoneTextBox.Focus();
-                    ErrorTextBlock.Text = $"Số điện thoại này đã tồn tại ở {_friendlyName} khác.";
-                }
-
-                if (result.Message.Contains("địa chỉ") && result.Message.Contains("trùng"))
-                {
-                    var duplicate = _addresses.FirstOrDefault(x =>
-                        string.Equals(x.DiaChi?.Trim(), diaChiDangNhap, StringComparison.OrdinalIgnoreCase));
-
-                    if (duplicate != null)
-                    {
-                        _addresses.Remove(duplicate);
-                        Model.Addresses = _addresses.ToList();
-                        refreshed = true;
-                    }
-
-                    DiaChiTextBox.Text = diaChiDangNhap;
-                    DiaChiTextBox.Focus();
-                    ErrorTextBlock.Text = "Địa chỉ này đã tồn tại.";
-                }
-
-                if (refreshed)
-                {
-                    PhoneListBox.ItemsSource = null;
-                    PhoneListBox.ItemsSource = _phones;
-
-                    DiaChiListBox.ItemsSource = null;
-                    DiaChiListBox.ItemsSource = _addresses;
-                }
-
                 return;
             }
 
@@ -195,278 +184,125 @@ namespace TraSuaApp.WpfClient.SettingsViews
             Close();
         }
 
-        private void ThemPhone()
+        private void EnsureOneDefault<T>(IList<T> list) where T : class
         {
-            ErrorTextBlock.Text = "";
+            if (list.Count == 0) return;
 
-            var so = PhoneTextBox.Text.Trim();
-            if (string.IsNullOrEmpty(so)) return;
+            // dynamic một tí cho nhanh
+            var defaults = list
+                .Where(x => (bool)(x.GetType().GetProperty("IsDefault")?.GetValue(x)!))
+                .ToList();
 
-            var soNormalized = so.Replace(" ", "").ToLower();
-
-            if (_dangSuaPhone != null)
+            if (defaults.Count == 0)
             {
-                var trung = _phones.FirstOrDefault(x =>
-                    x != _dangSuaPhone &&
-                    (x.SoDienThoai ?? "").Replace(" ", "").ToLower() == soNormalized
-                );
-
-                if (trung != null)
-                {
-                    ErrorTextBlock.Text = "Số điện thoại này đã tồn tại.";
-                    return;
-                }
-
-                _dangSuaPhone.SoDienThoai = so;
+                // Không có default -> set phần tử cuối cùng
+                var last = list[^1];
+                last.GetType().GetProperty("IsDefault")?.SetValue(last, true);
             }
-            else
+            else if (defaults.Count > 1)
             {
-                var existing = _phones.FirstOrDefault(x =>
-                    (x.SoDienThoai ?? "").Replace(" ", "").ToLower() == soNormalized
-                );
-
-                if (existing != null)
-                {
-                    ErrorTextBlock.Text = "Số điện thoại này đã tồn tại.";
-                    return;
-                }
-
-                _phones.Add(new KhachHangPhoneDto
-                {
-                    Id = Guid.Empty,
-                    SoDienThoai = so,
-                    IsDefault = _phones.Count == 0
-                });
-            }
-
-            PhoneTextBox.Clear();
-            PhoneListBox.UnselectAll();
-            PhoneTextBox.Focus();
-            _dangSuaPhone = null;
-            _soCuDangSua = null;
-            PhoneListBox.Items.Refresh();
-            PhoneModeTextBlock.Text = "";
-        }
-
-        private void ThemDiaChi()
-        {
-            var dc = DiaChiTextBox.Text.Trim();
-            if (string.IsNullOrEmpty(dc)) return;
-
-            if (DiaChiListBox.SelectedItem is KhachHangAddressDto selected)
-            {
-                selected.DiaChi = dc;
-            }
-            else
-            {
-                var existing = _addresses.FirstOrDefault(x => x.DiaChi == dc);
-                if (existing == null)
-                {
-                    _addresses.Add(new KhachHangAddressDto
-                    {
-                        Id = Guid.Empty,
-                        DiaChi = dc,
-                        IsDefault = _addresses.Count == 0
-                    });
-                }
-            }
-
-            DiaChiTextBox.Clear();
-            DiaChiListBox.UnselectAll();
-            DiaChiTextBox.Focus();
-            DiaChiListBox.Items.Refresh();
-            DiaChiModeTextBlock.Text = "";
-        }
-
-        private void PhoneTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            PhoneModeTextBlock.Text = string.IsNullOrWhiteSpace(PhoneTextBox.Text)
-                ? ""
-                : _dangSuaPhone != null ? "Đang sửa số điện thoại" : "Đang thêm mới...";
-        }
-
-        private void DiaChiTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            DiaChiModeTextBlock.Text = string.IsNullOrWhiteSpace(DiaChiTextBox.Text)
-                ? ""
-                : DiaChiListBox.SelectedItem != null ? "Đang sửa địa chỉ" : "Đang thêm mới...";
-        }
-
-        private void PhoneListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (PhoneListBox.SelectedItem is KhachHangPhoneDto p)
-            {
-                if (_dangSuaPhone == p)
-                {
-                    PhoneListBox.UnselectAll();
-                    PhoneTextBox.Clear();
-                    PhoneTextBox.Focus();
-                    _dangSuaPhone = null;
-                    _soCuDangSua = null;
-                    PhoneModeTextBlock.Text = "";
-                }
-                else
-                {
-                    PhoneTextBox.Text = p.SoDienThoai;
-                    _dangSuaPhone = p;
-                    _soCuDangSua = p.SoDienThoai;
-                    PhoneTextBox.Focus();
-                    PhoneModeTextBlock.Text = "Đang sửa số điện thoại";
-                }
-            }
-            else
-            {
-                _dangSuaPhone = null;
-                _soCuDangSua = null;
-                PhoneModeTextBlock.Text = "";
+                // Nhiều default -> chỉ giữ lại cái cuối cùng
+                for (int i = 0; i < defaults.Count - 1; i++)
+                    defaults[i].GetType().GetProperty("IsDefault")?.SetValue(defaults[i], false);
             }
         }
 
-        private void DiaChiListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (DiaChiListBox.SelectedItem is KhachHangAddressDto d)
-            {
-                if (DiaChiTextBox.Text == d.DiaChi)
-                {
-                    DiaChiListBox.UnselectAll();
-                    DiaChiTextBox.Clear();
-                    DiaChiTextBox.Focus();
-                    DiaChiModeTextBlock.Text = "";
-                }
-                else
-                {
-                    DiaChiTextBox.Text = d.DiaChi;
-                    DiaChiTextBox.Focus();
-                    DiaChiModeTextBlock.Text = "Đang sửa địa chỉ";
-                }
-            }
-            else
-            {
-                DiaChiModeTextBlock.Text = "";
-            }
-        }
-
-        private void XoaDienThoai_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.DataContext is KhachHangPhoneDto phone)
-            {
-                _phones.Remove(phone);
-                if (_phones.Count == 1)
-                    _phones[0].IsDefault = true;
-
-                PhoneListBox.Items.Refresh();
-            }
-        }
-
-        private void XoaDiaChi_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.DataContext is KhachHangAddressDto addr)
-            {
-                _addresses.Remove(addr);
-                if (_addresses.Count == 1)
-                    _addresses[0].IsDefault = true;
-
-                DiaChiListBox.Items.Refresh();
-            }
-        }
-
-        private void DienThoaiCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox cb && cb.DataContext is KhachHangPhoneDto current)
-            {
-                foreach (var item in _phones)
-                    item.IsDefault = item == current;
-
-                PhoneListBox.Items.Refresh();
-            }
-        }
-
-        private void DiaChiCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox cb && cb.DataContext is KhachHangAddressDto current)
-            {
-                foreach (var item in _addresses)
-                    item.IsDefault = item == current;
-
-                DiaChiListBox.Items.Refresh();
-            }
-        }
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape)
+            {
                 CloseButton_Click(null!, null!);
-            else
+                return;
+            }
             if (e.Key == Key.Enter)
             {
-                SaveButton_Click(null, null);
-
+                SaveButton_Click(null!, null!);
             }
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        // ====== PHONE ======
+        private void AddPhoneButton_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            bool any = Phones.Any();
+            Phones.Add(new KhachHangPhoneDto
+            {
+                IsDefault = !any
+            });
         }
 
-        private void PhoneListBoxItem_Click(object sender, MouseButtonEventArgs e)
+        private void DeletePhoneButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is ListBoxItem item && item.DataContext is KhachHangPhoneDto p)
-            {
-                if (PhoneListBox.SelectedItem == p)
-                {
-                    PhoneListBox.UnselectAll();
-                    PhoneTextBox.Clear();
-                    PhoneTextBox.Focus();
-                    PhoneModeTextBlock.Text = "Nhập để thêm mới";
+            if (sender is not Button btn || btn.DataContext is not KhachHangPhoneDto dto) return;
 
-                    _dangSuaPhone = null;
-                    _soCuDangSua = null;
-                    e.Handled = true;
-                }
+            bool wasDefault = dto.IsDefault;
+            Phones.Remove(dto);
+
+            if (wasDefault && Phones.Count > 0 && !Phones.Any(x => x.IsDefault))
+            {
+                Phones[0].IsDefault = true;
             }
         }
 
-        private void DiaChiListBoxItem_Click(object sender, MouseButtonEventArgs e)
+
+        // ====== ADDRESS ======
+        private void AddAddressButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is ListBoxItem item && item.DataContext is KhachHangAddressDto d)
+            bool any = Addresses.Any();
+            Addresses.Add(new KhachHangAddressDto
             {
-                if (DiaChiListBox.SelectedItem == d)
-                {
-                    DiaChiListBox.UnselectAll();
-                    DiaChiTextBox.Clear();
-                    DiaChiTextBox.Focus();
-                    DiaChiModeTextBlock.Text = "Nhập để thêm mới";
-
-                    e.Handled = true;
-                }
-            }
+                IsDefault = !any
+            });
         }
 
-        private void DiaChiTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void DeleteAddressButton_Click(object sender, RoutedEventArgs e)
         {
-            if (e.Key == Key.Down)
-            {
-                if (DiaChiListBox.SelectedIndex < DiaChiListBox.Items.Count - 1)
-                {
-                    DiaChiListBox.SelectedIndex++;
-                    DiaChiListBox.ScrollIntoView(DiaChiListBox.SelectedItem);
-                    DiaChiTextBox.SelectAll();
-                    e.Handled = true;
+            if (sender is not Button btn || btn.DataContext is not KhachHangAddressDto dto) return;
 
-                }
-            }
-            else
-            if (e.Key == Key.Up)
+            bool wasDefault = dto.IsDefault;
+            Addresses.Remove(dto);
+
+            if (wasDefault && Addresses.Count > 0 && !Addresses.Any(x => x.IsDefault))
             {
-                if (DiaChiListBox.SelectedIndex > 0)
-                {
-                    DiaChiListBox.SelectedIndex--;
-                    DiaChiListBox.ScrollIntoView(DiaChiListBox.SelectedItem);
-                    DiaChiTextBox.SelectAll();
-                    e.Handled = true;
-                }
+                Addresses[0].IsDefault = true;
             }
         }
+
+        // ====== PHONE ======
+        private void PhoneDefaultCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox cb) return;
+            if (cb.DataContext is not KhachHangPhoneDto current) return;
+
+            // Duyệt qua ObservableCollection Phones
+            foreach (var p in Phones)
+            {
+                if (!ReferenceEquals(p, current))
+                    p.IsDefault = false;
+            }
+
+            // 🟟 BẮT BUỘC: refresh lại UI để checkbox khác tắt
+            PhonesItemsControl.Items.Refresh();
+        }
+
+        // ====== ADDRESS ======
+        private void AddressDefaultCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox cb) return;
+            if (cb.DataContext is not KhachHangAddressDto current) return;
+
+            // Duyệt qua ObservableCollection Addresses
+            foreach (var a in Addresses)
+            {
+                if (!ReferenceEquals(a, current))
+                    a.IsDefault = false;
+            }
+
+            // 🟟 BẮT BUỘC: refresh lại UI
+            AddressesItemsControl.Items.Refresh();
+        }
+
+
     }
 }

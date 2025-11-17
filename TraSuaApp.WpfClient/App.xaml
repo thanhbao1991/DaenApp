@@ -531,11 +531,7 @@
             </Setter>
         </Style>
 
-        <!--  GroupBox  -->
-        <Style TargetType="{x:Type GroupBox}">
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
-        </Style>
+
 
         <!--  DataGrid cell text styles  -->
         <Style x:Key="CenterTextCellStyle" TargetType="TextBlock">
