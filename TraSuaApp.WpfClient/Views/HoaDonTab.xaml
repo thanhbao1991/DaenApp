@@ -137,10 +137,10 @@
                 </DataGrid.RowStyle>
 
                 <DataGrid.Columns>
-                    <!--<DataGridTextColumn
+                    <DataGridTextColumn
                         Binding="{Binding Stt}"
                         ElementStyle="{StaticResource CenterTextCellStyle}"
-                        Header="STT" />-->
+                        Header="STT" />
 
                     <!--<DataGridTemplateColumn Width="auto" Header="">
                         <DataGridTemplateColumn.CellTemplate>
@@ -815,7 +815,7 @@
                     </StackPanel>
                     <Button
                         Name="HisButton"
-                        Margin="5"
+                        Margin="5,5,0,5"
                         Background="Transparent"
                         Click="HisButton_Click"
                         Foreground="{StaticResource DarkBrush}"
@@ -830,7 +830,6 @@
                     </Button>
                     <Button
                         Name="TienThoiButton"
-                        Margin="5"
                         Background="Transparent"
                         Click="TienThoiButton_Click"
                         FontWeight="Bold"

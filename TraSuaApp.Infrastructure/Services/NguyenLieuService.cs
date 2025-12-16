@@ -25,15 +25,17 @@ public class NguyenLieuService : INguyenLieuService
             Ten = entity.Ten,
             DonViTinh = entity.DonViTinh,
             GiaNhap = entity.GiaNhap,
-            TonKho = entity.TonKho,
             DangSuDung = entity.DangSuDung,
             CreatedAt = entity.CreatedAt,
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
+
+            // 🟟 mapping mới
+            NguyenLieuBanHangId = entity.NguyenLieuBanHangId,
+            HeSoQuyDoiBanHang = entity.HeSoQuyDoiBanHang
         };
     }
-
 
     public async Task<Result<NguyenLieuDto>> CreateAsync(NguyenLieuDto dto)
     {
@@ -50,11 +52,14 @@ public class NguyenLieuService : INguyenLieuService
             Ten = dto.Ten.Trim(),
             DangSuDung = dto.DangSuDung,
             DonViTinh = dto.DonViTinh,
-            TonKho = dto.TonKho,
             GiaNhap = dto.GiaNhap,
             CreatedAt = now,
             LastModified = now,
             IsDeleted = false,
+
+            // 🟟 mapping mới
+            NguyenLieuBanHangId = dto.NguyenLieuBanHangId,
+            HeSoQuyDoiBanHang = dto.HeSoQuyDoiBanHang
         };
 
         _context.NguyenLieus.Add(entity);
@@ -90,10 +95,13 @@ public class NguyenLieuService : INguyenLieuService
 
         entity.Ten = dto.Ten.Trim();
         entity.GiaNhap = dto.GiaNhap;
-        entity.TonKho = dto.TonKho;
         entity.DonViTinh = dto.DonViTinh;
         entity.DangSuDung = dto.DangSuDung;
         entity.LastModified = now;
+
+        // 🟟 mapping mới
+        entity.NguyenLieuBanHangId = dto.NguyenLieuBanHangId;
+        entity.HeSoQuyDoiBanHang = dto.HeSoQuyDoiBanHang;
 
         await _context.SaveChangesAsync();
 
@@ -157,6 +165,7 @@ public class NguyenLieuService : INguyenLieuService
             .Select(x => ToDto(x))
             .ToListAsync();
     }
+
     public async Task<List<NguyenLieuDto>> GetAllAsync()
     {
         return await _context.NguyenLieus.AsNoTracking()
@@ -174,5 +183,4 @@ public class NguyenLieuService : INguyenLieuService
 
         return entity == null ? null : ToDto(entity);
     }
-
 }

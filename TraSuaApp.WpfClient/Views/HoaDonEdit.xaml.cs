@@ -305,6 +305,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                         Model.DaNhanVoucher = info.DaNhanVoucher;
 
                         CongNoTextBlock.Text = info.TongNo.ToString("N0");
+                        if (info.TongNo > 0) MessageBox.Show($"Công nợ: {CongNoTextBlock.Text}");
                         DiemThangNayTextBlock.Text = StarHelper.GetStarText(Model.DiemThangNay);
                         DiemThangTruocTextBlock.Text = StarHelper.GetStarText(Model.DiemThangTruoc);
 
@@ -949,7 +950,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     var btn = new Button
                     {
                         Style = Application.Current.FindResource("AddButtonStyle") as Style,
-                        Margin = new Thickness(4),
+                        Margin = new Thickness(0, 4, 4, 0),
                         Content = name,
                         Opacity = 1,
                         Tag = sp.Id

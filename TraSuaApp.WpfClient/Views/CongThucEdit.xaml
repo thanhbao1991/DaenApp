@@ -1,0 +1,62 @@
+﻿<Window
+    x:Class="TraSuaApp.WpfClient.AdminViews.CongThucEdit"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
+    Style="{StaticResource EditWindowStyle}"
+    WindowStartupLocation="CenterScreen">
+
+    <Border Style="{StaticResource EditFormBorderStyle}">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--  Header  -->
+            <DockPanel Grid.Row="0" Style="{StaticResource EditHeaderPanelStyle}">
+                <TextBlock x:Name="TieuDeTextBlock" Style="{StaticResource EditTitleTextStyle}" />
+                <Button
+                    Click="CloseButton_Click"
+                    Content="✖"
+                    Style="{StaticResource CloseButtonStyle}" />
+            </DockPanel>
+
+            <!--  Body  -->
+            <StackPanel
+                Grid.Row="1"
+                Margin="0,8,0,0"
+                VerticalAlignment="Top">
+                <GroupBox Header="Sản phẩm / biến thể">
+                    <ctrl:SanPhamSearchBox x:Name="SanPhamSearchBox" HorizontalAlignment="Stretch" />
+                </GroupBox>
+            </StackPanel>
+
+            <!--  Footer  -->
+            <StackPanel
+                Grid.Row="2"
+                Margin="0,8,0,0"
+                Orientation="Vertical">
+                <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
+
+                <StackPanel
+                    Margin="0,8,0,0"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+                    <Button
+                        x:Name="SaveButton"
+                        Click="SaveButton_Click"
+                        Content="Lưu và tiếp"
+                        Style="{StaticResource AddButtonStyle}" />
+                    <Button
+                        x:Name="SaveAndCloseButton"
+                        Margin="8,0,0,0"
+                        Click="SaveAndCloseButton_Click"
+                        Content="Lưu và đóng"
+                        Style="{StaticResource EditButtonStyle}" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

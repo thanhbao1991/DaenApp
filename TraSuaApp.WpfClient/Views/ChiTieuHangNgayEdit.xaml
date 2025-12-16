@@ -35,17 +35,16 @@
                     <ctrl:NguyenLieuSearchBox x:Name="NguyenLieuComboBox" HorizontalAlignment="Stretch" />
                 </GroupBox>
                 <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                    <GroupBox Header="Số lượng">
+                    <GroupBox Margin="0,0,8,0" Header="Số lượng">
                         <ctrl:NumericUpDown x:Name="SoLuongTextBox" Width="100" />
                     </GroupBox>
-                    <GroupBox Header="Đơn giá">
+                    <GroupBox Margin="0,0,8,0" Header="Đơn giá">
                         <ctrl:NumericTextBox x:Name="DonGiaTextBox" Width="100" />
                     </GroupBox>
                     <GroupBox Header="Thành tiền">
                         <ctrl:NumericTextBox
                             x:Name="ThanhTienTextBox"
                             Width="100"
-                            Background="#EEE"
                             IsReadOnly="True" />
                     </GroupBox>
                 </StackPanel>

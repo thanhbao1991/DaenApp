@@ -447,14 +447,14 @@ public class AppShippingHelperText
                 ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(chiTiets),
                 GhiChu =
                     $"• {tongTien}\n" +
+                (string.IsNullOrEmpty(customerNote) ? "" : $"\n🟟• {customerNote}") +
                     $"• {diaChi}"
-                  + (string.IsNullOrEmpty(customerPhone) ? "" : $"\n• {tenKH} - {customerPhone}")
-                  + (string.IsNullOrEmpty(customerNote) ? "" : $"\n🟟• {customerNote}")
-                  + (serviceFee is null ? "" : $"\n⚙️ Phí DV: {serviceFee:#,0}")
-                  + (shipFee is null ? "" : $"\n🟟 Ship: {shipFee:#,0}")
-                  + (voucherValue is null ? "" : $"\n🟟️ Voucher: -{voucherValue:#,0}")
-                  + (string.IsNullOrEmpty(trangThai) ? "" : $"\nTrạng thái: {trangThai}")
-                  + (string.IsNullOrEmpty(internalId) ? "" : $"\n#ID nội bộ: {internalId}")
+                //+ (string.IsNullOrEmpty(customerPhone) ? "" : $"\n• {tenKH} - {customerPhone}")
+                //+ (serviceFee is null ? "" : $"\n⚙️ Phí DV: {serviceFee:#,0}")
+                //+ (shipFee is null ? "" : $"\n🟟 Ship: {shipFee:#,0}")
+                //+ (voucherValue is null ? "" : $"\n🟟️ Voucher: -{voucherValue:#,0}")
+                //+ (string.IsNullOrEmpty(trangThai) ? "" : $"\nTrạng thái: {trangThai}")
+                //+ (string.IsNullOrEmpty(internalId) ? "" : $"\n#ID nội bộ: {internalId}")
             };
         }
 

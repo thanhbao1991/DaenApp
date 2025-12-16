@@ -5,7 +5,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Services;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
@@ -93,14 +92,19 @@ namespace TraSuaApp.WpfClient.Views
                     await Task.Delay(TimeSpan.FromSeconds(60));
                     try
                     {
-                        // ⚠️ Đặt tài khoản thật của bạn tại đây
-                        await AppShippingHelperFactory.CreateAsync("12122431577", "baothanh1991");
-                        await DiscordService.SendAsync(DiscordEventType.Admin, "🟟 AppShippingHelperText INIT after 60s");
+                        // thay bằng tài khoản shipping thực tế
+                        string shippingUsername = "12122431577";
+                        string shippingPassword = "baothanh1991";
+
+                        await AppShippingHelperFactory.CreateAsync(shippingUsername, shippingPassword);
                     }
                     catch (Exception ex)
                     {
-                        await DiscordService.SendAsync(DiscordEventType.Admin,
-                            "⚠️ Lỗi init Shipping Helper:\n```" + ex + "```");
+                        MessageBox.Show(
+                            "Không khởi tạo được AppShippingHelper: " + ex.Message,
+                            "Lỗi Shipping",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
                     }
                 });
             }
@@ -248,7 +252,7 @@ namespace TraSuaApp.WpfClient.Views
                             && t.Name.Contains("List"))
                 .OrderBy(t => t.Name);
 
-            foreach (var view in views)
+            foreach (var view in views.OrderBy(x => x.Name))
             {
                 string friendly = view.Name.Replace("List", "").Replace("Edit", "");
                 string header = (TuDien._tableFriendlyNames != null &&
@@ -267,7 +271,13 @@ namespace TraSuaApp.WpfClient.Views
                     Margin = new Thickness(4)
                 };
                 btn.Click += MenuButton_Click;
-                m.Items.Add(btn);
+                if (view.Name == "SuDungNguyenLieuList" ||
+                    view.Name == "NguyenLieuTransactionList" ||
+                    view.Name == "LocationList"
+                    )
+                    ;
+                else
+                    m.Items.Add(btn);
             }
         }
 

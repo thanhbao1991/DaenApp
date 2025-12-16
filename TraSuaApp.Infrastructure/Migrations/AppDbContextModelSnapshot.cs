@@ -348,6 +348,9 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<DateTime>("NgayGio")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("NguyenLieuBanHangId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("PhuongThucThanhToanId")
                         .HasColumnType("uniqueidentifier");
 
@@ -367,6 +370,8 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.HasIndex("ChiTietHoaDonNoId");
 
                     b.HasIndex("KhachHangId");
+
+                    b.HasIndex("NguyenLieuBanHangId");
 
                     b.HasIndex("TuDienTraCuuId");
 
@@ -520,14 +525,23 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModified")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Loai")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid>("SanPhamBienTheId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Ten")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -880,52 +894,6 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.ToTable("KhachHangPhones");
                 });
 
-            modelBuilder.Entity("TraSuaApp.Domain.Entities.LichSuNhapXuatKho", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("GhiChu")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("IdNguyenLieu")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastModified")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Loai")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("NguyenLieuId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("SoLuong")
-                        .HasColumnType("decimal(18, 2)");
-
-                    b.Property<DateTime>("ThoiGian")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex(new[] { "IsDeleted", "LastModified" }, "IX_LichSuNhapXuatKhos_IsDeleted_LastModified")
-                        .IsDescending(false, true);
-
-                    b.HasIndex(new[] { "NguyenLieuId" }, "IX_LichSuNhapXuatKhos_NguyenLieuId");
-
-                    b.ToTable("LichSuNhapXuatKhos");
-                });
-
             modelBuilder.Entity("TraSuaApp.Domain.Entities.Location", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1056,11 +1024,17 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<decimal>("GiaNhap")
                         .HasColumnType("decimal(18, 2)");
 
+                    b.Property<decimal?>("HeSoQuyDoiBanHang")
+                        .HasColumnType("decimal(18,4)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModified")
                         .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("NguyenLieuBanHangId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("OldId")
                         .HasColumnType("int");
@@ -1069,15 +1043,101 @@ namespace TraSuaApp.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal?>("TonKho")
-                        .HasColumnType("decimal(18, 2)");
-
                     b.HasKey("Id");
+
+                    b.HasIndex("NguyenLieuBanHangId");
 
                     b.HasIndex(new[] { "IsDeleted", "LastModified" }, "IX_NguyenLieus_IsDeleted_LastModified")
                         .IsDescending(false, true);
 
                     b.ToTable("NguyenLieus");
+                });
+
+            modelBuilder.Entity("TraSuaApp.Domain.Entities.NguyenLieuBanHang", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("DangSuDung")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DonViTinh")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Ten")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TenPhienDich")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TonKho")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("NguyenLieuBanHangs");
+                });
+
+            modelBuilder.Entity("TraSuaApp.Domain.Entities.NguyenLieuTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ChiTieuHangNgayId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("DonGia")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("GhiChu")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("HoaDonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Loai")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("NgayGio")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("NguyenLieuId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("SoLuong")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("NguyenLieuTransactions");
                 });
 
             modelBuilder.Entity("TraSuaApp.Domain.Entities.NhomSanPham", b =>
@@ -1272,12 +1332,6 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("IdCongThuc")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("IdNguyenLieu")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -1287,10 +1341,15 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Property<Guid>("NguyenLieuId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("NguyenLieuId1")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("SoLuong")
                         .HasColumnType("decimal(18, 2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("NguyenLieuId1");
 
                     b.HasIndex(new[] { "CongThucId" }, "IX_SuDungNguyenLieus_CongThucId");
 
@@ -1638,6 +1697,10 @@ namespace TraSuaApp.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("KhachHangId");
 
+                    b.HasOne("TraSuaApp.Domain.Entities.NguyenLieuBanHang", null)
+                        .WithMany("ChiTietHoaDonThanhToans")
+                        .HasForeignKey("NguyenLieuBanHangId");
+
                     b.HasOne("TraSuaApp.Domain.Entities.PhuongThucThanhToan", "PhuongThucThanhToan")
                         .WithMany("ChiTietHoaDonThanhToans")
                         .HasForeignKey("PhuongThucThanhToanId")
@@ -1773,15 +1836,13 @@ namespace TraSuaApp.Infrastructure.Migrations
                     b.Navigation("KhachHang");
                 });
 
-            modelBuilder.Entity("TraSuaApp.Domain.Entities.LichSuNhapXuatKho", b =>
+            modelBuilder.Entity("TraSuaApp.Domain.Entities.NguyenLieu", b =>
                 {
-                    b.HasOne("TraSuaApp.Domain.Entities.NguyenLieu", "NguyenLieu")
-                        .WithMany("LichSuNhapXuatKhos")
-                        .HasForeignKey("NguyenLieuId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                    b.HasOne("TraSuaApp.Domain.Entities.NguyenLieuBanHang", "NguyenLieuBanHang")
+                        .WithMany("NguyenLieus")
+                        .HasForeignKey("NguyenLieuBanHangId");
 
-                    b.Navigation("NguyenLieu");
+                    b.Navigation("NguyenLieuBanHang");
                 });
 
             modelBuilder.Entity("TraSuaApp.Domain.Entities.SanPham", b =>
@@ -1814,11 +1875,15 @@ namespace TraSuaApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TraSuaApp.Domain.Entities.NguyenLieu", "NguyenLieu")
+                    b.HasOne("TraSuaApp.Domain.Entities.NguyenLieuBanHang", "NguyenLieu")
                         .WithMany("SuDungNguyenLieus")
                         .HasForeignKey("NguyenLieuId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("TraSuaApp.Domain.Entities.NguyenLieu", null)
+                        .WithMany("SuDungNguyenLieus")
+                        .HasForeignKey("NguyenLieuId1");
 
                     b.Navigation("CongThuc");
 
@@ -1867,7 +1932,14 @@ namespace TraSuaApp.Infrastructure.Migrations
                 {
                     b.Navigation("ChiTietHoaDonNhaps");
 
-                    b.Navigation("LichSuNhapXuatKhos");
+                    b.Navigation("SuDungNguyenLieus");
+                });
+
+            modelBuilder.Entity("TraSuaApp.Domain.Entities.NguyenLieuBanHang", b =>
+                {
+                    b.Navigation("ChiTietHoaDonThanhToans");
+
+                    b.Navigation("NguyenLieus");
 
                     b.Navigation("SuDungNguyenLieus");
                 });

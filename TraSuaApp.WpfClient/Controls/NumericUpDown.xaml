@@ -26,8 +26,9 @@
             VerticalContentAlignment="Center"
             BorderBrush="Transparent"
             FontWeight="Medium"
-            Foreground="{StaticResource PrimaryBrush}"
-            Text="{Binding Value, RelativeSource={RelativeSource AncestorType={x:Type local:NumericUpDown}}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            Foreground="{StaticResource PrimaryBrush}" />
+
+
         <!--  Nút cộng  -->
         <Button
             Grid.Column="2"

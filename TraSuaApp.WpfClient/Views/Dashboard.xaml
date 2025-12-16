@@ -172,14 +172,13 @@
                         Margin="4"
                         VerticalAlignment="Center"
                         VerticalContentAlignment="Center"
-                        Header="Cài đặt">
-                        <MenuItem
-                            Name="AdminMenu"
-                            Margin="4"
-                            VerticalAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            Header="Admin" />
-                    </MenuItem>
+                        Header="Cài đặt" />
+                    <MenuItem
+                        Name="AdminMenu"
+                        Margin="4"
+                        VerticalAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Header="Admin" />
                 </Menu>
                 <StackPanel
                     Grid.Column="1"

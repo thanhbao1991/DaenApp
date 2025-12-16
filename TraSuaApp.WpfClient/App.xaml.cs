@@ -125,7 +125,7 @@ namespace TraSuaApp.WpfClient
 
         private void Application_Exit(object sender, ExitEventArgs e)
         {
-            AppShippingHelperText.DisposeDriver();
+            //AppShippingHelperText.DisposeDriver();
         }
     }
 }

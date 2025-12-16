@@ -12,8 +12,13 @@ public static class AppProviders
     public static string? CurrentConnectionId { get; private set; }
 
     // Providers
+    public static NguyenLieuTransactionDataProvider? NguyenLieuTransactions { get; private set; }
     public static LocationDataProvider? Locations { get; private set; }
     public static TuDienTraCuuDataProvider? TuDienTraCuus { get; private set; }
+    public static NguyenLieuBanHangDataProvider? NguyenLieuBanHangs { get; private set; }
+    public static CongThucDataProvider? CongThucs { get; private set; }
+    public static SuDungNguyenLieuDataProvider? SuDungNguyenLieus { get; private set; }
+
     public static VoucherDataProvider? Vouchers { get; private set; }
     public static SanPhamDataProvider? SanPhams { get; private set; }
     public static SanPhamDataProvider? SanPhamBienThes { get; private set; }
@@ -64,6 +69,9 @@ public static class AppProviders
         if (KhachHangGiaBans != null) await KhachHangGiaBans.ReloadAsync();
         if (PhuongThucThanhToans != null) await PhuongThucThanhToans.ReloadAsync();
         if (TuDienTraCuus != null) await TuDienTraCuus.ReloadAsync();
+        if (NguyenLieuBanHangs != null) await NguyenLieuBanHangs.ReloadAsync();
+        if (CongThucs != null) await CongThucs.ReloadAsync();
+        if (SuDungNguyenLieus != null) await SuDungNguyenLieus.ReloadAsync();
         if (Locations != null) await Locations.ReloadAsync();
         if (SanPhamBienThes != null) await SanPhamBienThes.ReloadAsync();
 
@@ -157,6 +165,9 @@ public static class AppProviders
         HoaDons = new HoaDonDataProvider(_signalR);
         PhuongThucThanhToans = new PhuongThucThanhToanDataProvider(_signalR);
         TuDienTraCuus = new TuDienTraCuuDataProvider(_signalR);
+        NguyenLieuBanHangs = new NguyenLieuBanHangDataProvider(_signalR);
+        CongThucs = new CongThucDataProvider(_signalR);
+        SuDungNguyenLieus = new SuDungNguyenLieuDataProvider(_signalR);
         Locations = new LocationDataProvider(_signalR);
         KhachHangGiaBans = new KhachHangGiaBanDataProvider(_signalR);
         CongViecNoiBos = new CongViecNoiBoDataProvider(_signalR);
@@ -189,6 +200,9 @@ public static class AppProviders
            HoaDons!.InitializeAsync(),
            PhuongThucThanhToans!.InitializeAsync(),
            TuDienTraCuus!.InitializeAsync(),
+           NguyenLieuBanHangs!.InitializeAsync(),
+           CongThucs!.InitializeAsync(),
+           SuDungNguyenLieus!.InitializeAsync(),
            Locations!.InitializeAsync(),
            KhachHangGiaBans!.InitializeAsync(),
            CongViecNoiBos!.InitializeAsync(),

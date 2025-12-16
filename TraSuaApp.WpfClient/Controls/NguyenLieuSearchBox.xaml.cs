@@ -71,6 +71,7 @@ namespace TraSuaApp.WpfClient.Controls
             var parts = keyword.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
             var result = NguyenLieuList
+                .Where(x => x.DangSuDung == false)
                 .Where(sp => (sp.TimKiem ?? "").Contains(keyword)
                      || parts.All(p => (sp.TimKiem ?? "").Contains(p))
                 )

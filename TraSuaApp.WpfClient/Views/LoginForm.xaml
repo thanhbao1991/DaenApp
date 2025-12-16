@@ -61,14 +61,18 @@
 
             <!--  Form đăng nhập  -->
             <StackPanel Grid.Row="1" Margin="20">
-                <TextBlock Margin="0,0,0,5" Text="Tên đăng nhập" />
-                <TextBox x:Name="UsernameTextBox" Margin="0,0,0,10" />
+                <GroupBox Margin="0,0,0,5" Header="Tên đăng nhập">
 
-                <TextBlock Margin="0,10,0,5" Text="Mật khẩu" />
-                <PasswordBox x:Name="PasswordBox" />
+
+                    <TextBox x:Name="UsernameTextBox" Margin="0,0,0,10" />
+                </GroupBox>
+
+                <GroupBox Margin="0,0,0,5" Header="Mật khẩu">
+                    <PasswordBox x:Name="PasswordBox" BorderThickness="0" />
+                </GroupBox>
 
                 <!--  Group Tuỳ chọn  -->
-                <GroupBox Margin="0,20,0,0">
+                <GroupBox Margin="0,20,0,0" BorderThickness="0">
                     <StackPanel Orientation="Horizontal">
                         <!--  Lưu đăng nhập  -->
                         <CheckBox

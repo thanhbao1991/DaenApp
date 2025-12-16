@@ -296,6 +296,20 @@ public class ChiTietHoaDonNoService : IChiTietHoaDonNoService
         entity.DeletedAt = DateTime.Now;
         entity.LastModified = DateTime.Now;
 
+        // ➜ Clear GhiChuShipper của hoá đơn liên quan
+        if (entity.HoaDonId != Guid.Empty)
+        {
+            var hoaDon = await _context.HoaDons
+                .FirstOrDefaultAsync(h => h.Id == entity.HoaDonId);
+            if (hoaDon != null)
+            {
+                hoaDon.GhiChuShipper = null;   // tên property đúng với entity của bạn
+                hoaDon.LastModified = DateTime.Now;
+            }
+        }
+
+
+
         await _context.SaveChangesAsync();
         await HoaDonHelper.RecalcConLaiAsync(_context, entity.HoaDonId);
         await _context.SaveChangesAsync();

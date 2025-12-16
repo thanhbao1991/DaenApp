@@ -24,7 +24,7 @@
             <!--  Nội dung form  -->
             <StackPanel Grid.Row="1" Margin="0,0,0,10">
                 <StackPanel Orientation="Horizontal">
-                    <GroupBox Header="Ngày">
+                    <GroupBox Margin="0,0,8,0" Header="Ngày">
                         <TextBox
                             x:Name="NgayTextBox"
                             Width="150"
@@ -38,7 +38,7 @@
                     </GroupBox>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <GroupBox Header="Tên bàn/khách">
+                    <GroupBox Margin="0,0,8,0" Header="Tên bàn/khách">
                         <TextBox
                             x:Name="TenTextBox"
                             Width="150"

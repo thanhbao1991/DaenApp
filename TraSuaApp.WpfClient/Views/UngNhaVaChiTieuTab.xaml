@@ -1,0 +1,101 @@
+﻿<UserControl
+    x:Class="TraSuaApp.WpfClient.Views.ChiTieuTab"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:TraSuaApp.WpfClient.Controls">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <DockPanel Margin="4">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                <TextBlock
+                    Padding="8"
+                    VerticalAlignment="Center"
+                    Text="Tìm kiếm:" />
+                <local:NguyenLieuSearchBox
+                    x:Name="NguyenLieuBox"
+                    Width="320"
+                    Margin="8,0,0,0"
+                    NguyenLieuCleared="NguyenLieuBox_NguyenLieuCleared"
+                    NguyenLieuSelected="NguyenLieuBox_NguyenLieuSelected"
+                    ToolTip="Nhập tên nguyên liệu để lọc..." />
+            </StackPanel>
+              ⬇️ NÚT TÌM NHANH KHÔI PHỤC  
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button
+                    x:Name="PrevButton"
+                    Margin="8,0,0,0"
+                    Click="PrevButton_Click"
+                    Style="{StaticResource AddButtonStyle}">
+                    ← Tháng trước
+                </Button>
+                <TextBlock
+                    x:Name="MonthLabel"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    FontSize="{StaticResource FontSizeLarge}"
+                    FontWeight="Bold"
+                    Foreground="{StaticResource LightBrush}"
+                    Text="MM/yyyy" />
+                <Button
+                    x:Name="NextButton"
+                    Margin="8,0,0,0"
+                    Click="NextButton_Click"
+                    Style="{StaticResource AddButtonStyle}">
+                    Tháng sau →
+                </Button>
+                <Button
+                    x:Name="ReloadButton"
+                    Margin="8,0,0,0"
+                    Click="ReloadButton_Click"
+                    Style="{StaticResource ReloadButtonStyle}"
+                    ToolTip="Tải lại dữ liệu tháng đang xem">
+                    Tải lại
+                </Button>
+            </StackPanel>
+
+        </DockPanel>
+
+
+
+          Bảng dữ liệu  
+        <DataGrid
+            x:Name="ChiTieuDataGrid"
+            Grid.Row="1"
+            AutoGenerateColumns="False"
+            IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn
+                    Width="60"
+                    Binding="{Binding Stt}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="STT" />
+                <DataGridTextColumn
+                    Width="110"
+                    Binding="{Binding Ngay, StringFormat=dd/MM/yyyy}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="Ngày" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Ten}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Tên" />
+                <DataGridTextColumn
+                    x:Name="TongTienTextBlock"
+                    Width="160"
+                    Binding="{Binding ThanhTien, StringFormat=N0}"
+                    ElementStyle="{StaticResource RightTextCellStyle}"
+                    Header="Thành tiền" />
+          
+                <DataGridTextColumn
+                    Width="2*"
+                    Binding="{Binding GhiChu}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Ghi chú" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

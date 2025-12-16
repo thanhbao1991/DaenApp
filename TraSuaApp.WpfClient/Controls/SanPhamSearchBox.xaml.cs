@@ -332,7 +332,25 @@ namespace TraSuaApp.WpfClient.Controls
             }
         }
 
+        public void SetSelectedBienTheById(Guid bienTheId)
+        {
+            var sp = SanPhamList.FirstOrDefault(s => s.BienThe.Any(bt => bt.Id == bienTheId));
+            if (sp != null)
+            {
+                var bt = sp.BienThe.FirstOrDefault(x => x.Id == bienTheId);
+                if (bt != null)
+                {
+                    SetSelectedSanPham(sp, bt);
+                    return;
+                }
+            }
 
+            // Không tìm thấy -> clear
+            SelectedSanPham = null;
+            SelectedBienThe = null;
+            SearchTextBox.Text = "";
+            Popup.IsOpen = false;
+        }
 
     }
 }

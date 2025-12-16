@@ -1,4 +1,6 @@
-﻿namespace TraSuaApp.Domain.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TraSuaApp.Domain.Entities;
 
 public partial class NguyenLieu
 {
@@ -9,7 +11,6 @@ public partial class NguyenLieu
 
     public string? DonViTinh { get; set; }
 
-    public decimal? TonKho { get; set; }
 
     public decimal GiaNhap { get; set; }
 
@@ -23,9 +24,19 @@ public partial class NguyenLieu
 
     public DateTime? LastModified { get; set; }
 
-    public virtual ICollection<ChiTietHoaDonNhapEntity> ChiTietHoaDonNhaps { get; set; } = new List<ChiTietHoaDonNhapEntity>();
+    // 🟟 Map sang NguyenLieuBanHang (đơn vị bán nhỏ nhất, vd: lon, ml, gram...)
+    public Guid? NguyenLieuBanHangId { get; set; }
 
-    public virtual ICollection<LichSuNhapXuatKho> LichSuNhapXuatKhos { get; set; } = new List<LichSuNhapXuatKho>();
+    /// <summary>
+    /// 1 đơn vị nhập (thùng / lốc / kg...) = bao nhiêu đơn vị bán
+    /// VD: 1 thùng Bò húc = 24 lon -> HeSoQuyDoiBanHang = 24
+    /// </summary>
+    [Column(TypeName = "decimal(18,4)")]
+    public decimal? HeSoQuyDoiBanHang { get; set; }
+
+    public virtual NguyenLieuBanHang? NguyenLieuBanHang { get; set; }
+
+    public virtual ICollection<ChiTietHoaDonNhapEntity> ChiTietHoaDonNhaps { get; set; } = new List<ChiTietHoaDonNhapEntity>();
 
     public virtual ICollection<SuDungNguyenLieu> SuDungNguyenLieus { get; set; } = new List<SuDungNguyenLieu>();
 }

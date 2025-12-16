@@ -36,7 +36,7 @@
         <SolidColorBrush x:Key="DangerBrush" Color="#dc3545" />
         <SolidColorBrush x:Key="SecondaryBrush" Color="#6c757d" />
         <SolidColorBrush x:Key="InfoBrush" Color="#0dcaf0" />
-        <SolidColorBrush x:Key="LightBrush" Color="#f8f9fa" />
+        <SolidColorBrush x:Key="LightBrush" Color="#ffffff" />
         <SolidColorBrush x:Key="DarkBrush" Color="#212529" />
 
         <!--  Bootstrap grays  -->
@@ -111,29 +111,29 @@
             <Setter Property="HorizontalAlignment" Value="Left" />
             <Setter Property="Background" Value="{StaticResource LightBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource Gray400Brush}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style BasedOn="{StaticResource BaseInputStyle}" TargetType="{x:Type ctrl:NumericTextBox}">
             <Setter Property="HorizontalAlignment" Value="Left" />
             <Setter Property="Background" Value="{StaticResource LightBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource Gray400Brush}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style BasedOn="{StaticResource BaseInputStyle}" TargetType="{x:Type ctrl:PhoneNumberTextBox}">
             <Setter Property="HorizontalAlignment" Value="Left" />
             <Setter Property="Background" Value="{StaticResource LightBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource Gray400Brush}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style BasedOn="{StaticResource BaseInputStyle}" TargetType="TextBox">
             <Setter Property="Background" Value="{StaticResource LightBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource Gray400Brush}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style BasedOn="{StaticResource BaseInputStyle}" TargetType="ComboBox">
             <Setter Property="Background" Value="{StaticResource LightBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource Gray400Brush}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style BasedOn="{StaticResource BaseInputStyle}" TargetType="PasswordBox">
             <Setter Property="Background" Value="{StaticResource LightBrush}" />
@@ -145,6 +145,7 @@
         <Style TargetType="DatePicker">
             <Setter Property="Height" Value="32" />
             <Setter Property="Padding" Value="5" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
 
         <!--  CheckBox chung  -->

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,30 +16,33 @@ namespace TraSuaApp.WpfClient.SettingsViews
     {
         private readonly CollectionViewSource _viewSource = new();
         private readonly WpfErrorHandler _errorHandler = new();
-        string _friendlyName = TuDien._tableFriendlyNames["NguyenLieu"];
+        private readonly string _friendlyName = TuDien._tableFriendlyNames["NguyenLieu"];
 
         public NguyenLieuList()
         {
             InitializeComponent();
-            this.Title = _friendlyName;
-            this.TieuDeTextBlock.Text = _friendlyName;
-            this.PreviewKeyDown += NguyenLieuList_PreviewKeyDown;
+
+            Title = _friendlyName;
+            TieuDeTextBlock.Text = _friendlyName;
+            PreviewKeyDown += NguyenLieuList_PreviewKeyDown;
 
             while (AppProviders.NguyenLieus?.Items == null)
             {
-                Task.Delay(100); // chờ 100ms rồi kiểm tra lại
+                Task.Delay(100);
             }
 
-
-            // 1. Gán Source ngay
+            // 1) source
             _viewSource.Source = AppProviders.NguyenLieus.Items;
             _viewSource.Filter += ViewSource_Filter;
             NguyenLieuDataGrid.ItemsSource = _viewSource.View;
 
-            // 2. Subscribe OnChanged (sau khi Source đã có)
+            // 2) reload + refresh
             AppProviders.NguyenLieus.OnChanged += () => ApplySearch();
 
-            // 3. Sau cùng mới reload async
+            // ✅ Khi NL bán hàng đổi, list NL cũng cần Refresh vì cột lookup phụ thuộc
+            if (AppProviders.NguyenLieuBanHangs != null)
+                AppProviders.NguyenLieuBanHangs.OnChanged += () => ApplySearch();
+
             Loaded += async (_, __) =>
             {
                 await AppProviders.NguyenLieus.ReloadAsync();
@@ -46,13 +50,13 @@ namespace TraSuaApp.WpfClient.SettingsViews
             };
         }
 
-
         private void ApplySearch()
         {
             _viewSource.View.Refresh();
 
             _viewSource.View.SortDescriptions.Clear();
-            _viewSource.View.SortDescriptions.Add(new SortDescription(nameof(NguyenLieuDto.LastModified), ListSortDirection.Descending));
+            _viewSource.View.SortDescriptions.Add(
+                new SortDescription(nameof(NguyenLieuDto.LastModified), ListSortDirection.Descending));
 
             var view = _viewSource.View.Cast<NguyenLieuDto>().ToList();
             for (int i = 0; i < view.Count; i++)
@@ -70,9 +74,11 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var keyword = StringHelper.MyNormalizeText(SearchTextBox.Text.Trim());
             e.Accepted = string.IsNullOrEmpty(keyword) || (item.TimKiem?.Contains(keyword) ?? false);
         }
+
         private async void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
             await AppProviders.NguyenLieus.ReloadAsync();
+            ApplySearch();
         }
 
         private async void AddButton_Click(object sender, RoutedEventArgs e)
@@ -80,8 +86,10 @@ namespace TraSuaApp.WpfClient.SettingsViews
             var window = new NguyenLieuEdit()
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight,                 Owner = this
+                Height = this.ActualHeight,
+                Owner = this
             };
+
             if (window.ShowDialog() == true)
                 await AppProviders.NguyenLieus.ReloadAsync();
         }
@@ -90,16 +98,18 @@ namespace TraSuaApp.WpfClient.SettingsViews
         {
             if (NguyenLieuDataGrid.SelectedItem is not NguyenLieuDto selected)
             {
-                MessageBox.Show("Vui lòng chọn dòng cần sửa.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Vui lòng chọn dòng cần sửa.", "Thông báo",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-
 
             var window = new NguyenLieuEdit(selected)
             {
                 Width = this.ActualWidth,
-                Height = this.ActualHeight,                 Owner = this
+                Height = this.ActualHeight,
+                Owner = this
             };
+
             if (window.ShowDialog() == true)
                 await AppProviders.NguyenLieus.ReloadAsync();
         }
@@ -108,7 +118,8 @@ namespace TraSuaApp.WpfClient.SettingsViews
         {
             if (NguyenLieuDataGrid.SelectedItem is not NguyenLieuDto selected)
             {
-                MessageBox.Show("Vui lòng chọn dòng cần xoá.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Vui lòng chọn dòng cần xoá.", "Thông báo",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -123,6 +134,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
                 Mouse.OverrideCursor = Cursors.Wait;
                 var response = await ApiClient.DeleteAsync($"/api/NguyenLieu/{selected.Id}");
                 var result = await response.Content.ReadFromJsonAsync<Result<NguyenLieuDto>>();
+
                 if (result?.IsSuccess == true)
                     AppProviders.NguyenLieus.Remove(selected.Id);
                 else
@@ -141,7 +153,14 @@ namespace TraSuaApp.WpfClient.SettingsViews
         private async void NguyenLieuDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (NguyenLieuDataGrid.SelectedItem is not NguyenLieuDto selected) return;
-            var window = new NguyenLieuEdit(selected);
+
+            var window = new NguyenLieuEdit(selected)
+            {
+                Width = this.ActualWidth,
+                Height = this.ActualHeight,
+                Owner = this
+            };
+
             if (window.ShowDialog() == true)
                 await AppProviders.NguyenLieus.ReloadAsync();
         }
@@ -157,7 +176,37 @@ namespace TraSuaApp.WpfClient.SettingsViews
             else if (e.Key == Key.Delete) { DeleteButton_Click(null!, null!); e.Handled = true; }
             else if (e.Key == Key.F5) { ReloadButton_Click(null!, null!); e.Handled = true; }
         }
+    }
 
+    // ==========================================================
+    // Converters lookup theo NguyenLieuBanHangId (để khỏi sửa DTO)
+    // ==========================================================
 
+    public class NguyenLieuBanHangNameConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not Guid id || id == Guid.Empty) return "";
+            var list = AppProviders.NguyenLieuBanHangs?.Items;
+            var item = list?.FirstOrDefault(x => x.Id == id);
+            return item?.TenPhienDich ?? "";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => Binding.DoNothing;
+    }
+
+    public class NguyenLieuBanHangDonViConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not Guid id || id == Guid.Empty) return "";
+            var list = AppProviders.NguyenLieuBanHangs?.Items;
+            var item = list?.FirstOrDefault(x => x.Id == id);
+            return item?.DonViTinh ?? "";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => Binding.DoNothing;
     }
 }

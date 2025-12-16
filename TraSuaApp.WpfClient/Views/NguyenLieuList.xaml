@@ -2,8 +2,15 @@
     x:Class="TraSuaApp.WpfClient.SettingsViews.NguyenLieuList"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:TraSuaApp.WpfClient.SettingsViews"
     Style="{StaticResource PopupWindowWithBorderStyle}"
     WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <!--  Converter lookup NL bán hàng  -->
+        <local:NguyenLieuBanHangNameConverter x:Key="NguyenLieuBanHangNameConverter" />
+        <local:NguyenLieuBanHangDonViConverter x:Key="NguyenLieuBanHangDonViConverter" />
+    </Window.Resources>
 
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -77,17 +84,69 @@
             AutoGenerateColumns="False"
             CanUserSortColumns="False"
             MouseDoubleClick="NguyenLieuDataGrid_MouseDoubleClick">
+
             <DataGrid.Columns>
+                <!--  STT  -->
                 <DataGridTextColumn
                     Width="50"
-                    Binding="{Binding STT}"
+                    Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
+
+                <!--  Tên nguyên liệu  -->
                 <DataGridTextColumn
                     Width="*"
                     Binding="{Binding Ten}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Tên nguyên liệu" />
+
+                <!--  ĐVT nhập  -->
+
+                <DataGridTextColumn
+                    Width="Auto"
+                    MinWidth="50"
+                    Binding="{Binding GiaNhap, StringFormat={}{0:N0}}"
+                    ElementStyle="{StaticResource RightTextCellStyle}"
+                    Header="Giá nhập (đ)" />
+                <!--  NL bán hàng (lookup)  -->
+                <DataGridTextColumn
+                    Width="Auto"
+                    MinWidth="50"
+                    Binding="{Binding DonViTinh}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
-                    Header="Tên công việc" />
+                    Header="ĐVT nhập" />
+
+                <!--  Giá nhập  -->
+                <DataGridTextColumn
+                    Width="Auto"
+                    MinWidth="50"
+                    Binding="{Binding HeSoQuyDoiBanHang, StringFormat={}{0:0.####}}"
+                    ElementStyle="{StaticResource RightTextCellStyle}"
+                    Header="Hệ số" />
+
+                <!--  ĐVT bán (lookup)  -->
+                <DataGridTextColumn
+                    Width="Auto"
+                    MinWidth="50"
+                    Binding="{Binding NguyenLieuBanHangId, Converter={StaticResource NguyenLieuBanHangDonViConverter}}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="ĐVT bán" />
+                <DataGridTextColumn
+                    Width="auto"
+                    MinWidth="50"
+                    Binding="{Binding NguyenLieuBanHangId, Converter={StaticResource NguyenLieuBanHangNameConverter}}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Nguyên liệu bán" />
+
+                <!--  Hệ số  -->
+
+                <!--  Ẩn / Đang dùng  -->
+                <DataGridCheckBoxColumn
+                    Width="Auto"
+                    MinWidth="50"
+                    Binding="{Binding DangSuDung}"
+                    ElementStyle="{StaticResource DataGridCheckBoxElementStyle}"
+                    Header="Ẩn" />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

@@ -2,6 +2,7 @@
     x:Class="TraSuaApp.WpfClient.SettingsViews.NguyenLieuEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
     Style="{StaticResource EditWindowStyle}"
     WindowStartupLocation="CenterScreen">
 
@@ -13,6 +14,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
+            <!--  Header  -->
             <DockPanel Grid.Row="0" Style="{StaticResource EditHeaderPanelStyle}">
                 <TextBlock Name="TieuDeTextBlock" Style="{StaticResource EditTitleTextStyle}" />
                 <Button
@@ -20,19 +22,65 @@
                     Content="✖"
                     Style="{StaticResource CloseButtonStyle}" />
             </DockPanel>
-            <!--  Nội dung form  -->
-            <StackPanel Grid.Row="1">
-                <GroupBox Margin="0,0,0,5" Header="Tên công việc">
+
+            <!--  Body  -->
+            <StackPanel Grid.Row="1" Margin="0,8,0,0">
+
+                <!--  Tên nguyên liệu (tên có dấu để hiển thị)  -->
+                <GroupBox Margin="0,0,0,5" Header="Tên nguyên liệu">
                     <StackPanel Orientation="Horizontal">
                         <TextBox
                             x:Name="TenTextBox"
-                            Width="200"
+                            Width="320"
                             Margin="0,0,8,0" />
                     </StackPanel>
                 </GroupBox>
+
+                <!--  Đơn vị nhập (thùng/lốc/kg/gói...)  -->
+                <GroupBox Margin="0,0,0,5" Header="Đơn vị nhập (thùng/lốc/kg/gói...)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox
+                            x:Name="DonViTinhTextBox"
+                            Width="160"
+                            Margin="0,0,8,0" />
+                        <TextBlock VerticalAlignment="Center" Text="VD: thùng / lốc / kg / gói" />
+                    </StackPanel>
+                </GroupBox>
+
+                <!--  Giá nhập  -->
+                <GroupBox Margin="0,0,0,5" Header="Giá nhập gần nhất (VNĐ)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox
+                            x:Name="GiaNhapTextBox"
+                            Width="160"
+                            Margin="0,0,8,0" />
+                        <TextBlock VerticalAlignment="Center" Text="(chỉ số)" />
+                    </StackPanel>
+                </GroupBox>
+
+                <!--  Map sang nguyên liệu bán hàng  -->
+                <GroupBox Margin="0,0,0,5" Header="Nguyên liệu bán hàng (đơn vị bán nhỏ nhất)">
+                    <StackPanel>
+                        <ctrl:NguyenLieuBanHangSearchBox x:Name="NguyenLieuBanHangSearchBox" HorizontalAlignment="Stretch" />
+
+                    </StackPanel>
+                </GroupBox>
+
+                <!--  Hệ số quy đổi  -->
+                <GroupBox Margin="0,0,0,5" Header="Hệ số quy đổi (1 đơn vị nhập = X đơn vị bán)">
+                    <StackPanel Orientation="Horizontal">
+                        <ctrl:NumericUpDown x:Name="HeSoQuyDoiNumeric" Width="160" />
+                    </StackPanel>
+                </GroupBox>
+
+                <!--  Đang sử dụng  -->
+                <CheckBox
+                    x:Name="DangSuDungCheckBox"
+                    Margin="0,4,0,0"
+                    Content="Ẩn" />
             </StackPanel>
 
-            <!--  Nút và lỗi  -->
+            <!--  Footer  -->
             <StackPanel Grid.Row="2">
                 <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
                 <Button

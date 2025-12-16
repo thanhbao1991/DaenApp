@@ -1,31 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace TraSuaApp.Domain.Entities;
-
-public partial class SuDungNguyenLieu
+﻿namespace TraSuaApp.Domain.Entities
 {
-    public Guid Id { get; set; }
+    public partial class SuDungNguyenLieu
+    {
+        public Guid Id { get; set; }
 
-    public Guid IdCongThuc { get; set; }
+        public decimal SoLuong { get; set; }
 
-    public Guid IdNguyenLieu { get; set; }
+        // FK -> NguyenLieuBanHang (đơn vị bán)
+        public Guid NguyenLieuId { get; set; }
 
-    public decimal SoLuong { get; set; }
+        public Guid CongThucId { get; set; }
 
-    public Guid CongThucId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? DeletedAt { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime? LastModified { get; set; }
 
-    public Guid NguyenLieuId { get; set; }
+        public virtual CongThuc CongThuc { get; set; } = null!;
 
-    public DateTime CreatedAt { get; set; }
-
-    public DateTime? DeletedAt { get; set; }
-
-    public bool IsDeleted { get; set; }
-
-    public DateTime? LastModified { get; set; }
-
-    public virtual CongThuc CongThuc { get; set; } = null!;
-
-    public virtual NguyenLieu NguyenLieu { get; set; } = null!;
+        // Trước đây: public virtual NguyenLieu NguyenLieu { get; set; } = null!;
+        // Giờ trỏ sang NguyenLieuBanHang
+        public virtual NguyenLieuBanHang NguyenLieu { get; set; } = null!;
+    }
 }
