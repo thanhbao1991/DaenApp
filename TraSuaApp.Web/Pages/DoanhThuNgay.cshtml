@@ -291,31 +291,82 @@
         public string Tooltip { get; set; } = string.Empty;
     }
 
-    public TienHienThi GetThongTinTien(TraSuaApp.Shared.Dtos.DoanhThuHoaDonDto item)
+
+   public TienHienThi GetThongTinTien(TraSuaApp.Shared.Dtos.DoanhThuHoaDonDto item)
+{
+    var r = new TienHienThi();
+
+    // ---- Safe numbers ----
+    var tong = Math.Max(0, item?.TongTien ?? 0m);
+    var conLai = Math.Max(0, item?.ConLai ?? 0m);
+
+    var tienMat = Math.Max(0, item?.TienMat ?? 0m);
+    var tienBank = Math.Max(0, item?.TienBank ?? 0m);
+
+    // TienNo đôi khi backend chưa set → dựa thêm vào NgayNo để nhận diện
+    var tienNo = Math.Max(0, item?.TienNo ?? 0m);
+    var hasNoLine = (tienNo > 0m) || (item?.NgayNo != null);
+
+    var hasMat = tienMat > 0m;
+    var hasBank = tienBank > 0m;
+
+    // ---- Default display: luôn show tổng tiền (không bao giờ "0" nữa) ----
+    r.SoTien = tong.ToString("N0");
+
+    // ---- 1) NỢ (đỏ): ưu tiên cao nhất, để không bị nhầm qua "chưa thu" ----
+    if (hasNoLine && conLai > 0m)
     {
-        var r = new TienHienThi();
-        var tong = Math.Max(0, item.TongTien);
-        var conLai = Math.Max(0, item.ConLai);
-
-        if (conLai >= tong)
-        {
-            r.MauNen = "white";
-            r.SoTien = tong.ToString("N0");
-            r.Tooltip = "Chưa thu";
-        }
-        else if (conLai > 0)
-        {
-            r.MauNen = "#ffcccc";
-            r.SoTien = conLai.ToString("N0");
-            r.Tooltip = "Khách còn nợ";
-        }
-        else
-        {
-            r.MauNen = "#ccffcc";
-            r.SoTien = "0";
-            r.Tooltip = "Đã thu đủ";
-        }
-
+        r.MauNen = "#ffcccc"; // đỏ nhạt
+        r.Tooltip = $"Khách còn nợ: {conLai:N0}";
         return r;
     }
+
+    // ---- 2) CHƯA THANH TOÁN (trắng): chưa trả đồng nào ----
+    // Trường hợp điển hình: conLai ~= tong và không có line nợ
+    if (conLai >= tong && !hasMat && !hasBank)
+    {
+        r.MauNen = "white";
+        r.Tooltip = "Chưa thu";
+        return r;
+    }
+
+    // ---- 3) CÒN LẠI > 0 nhưng không ghi nợ: coi là chưa thu đủ (trắng) ----
+    // (ví dụ đơn đang mở, chưa chốt nợ)
+    if (conLai > 0m)
+    {
+        r.MauNen = "white";
+        r.Tooltip = $"Chưa thu đủ: còn {conLai:N0}";
+        return r;
+    }
+
+    // ---- 4) ĐÃ THU ĐỦ (conLai == 0): phân loại theo phương thức ----
+    if (hasMat && hasBank)
+    {
+        r.MauNen = "#ffe0b2"; // cam nhạt
+        r.Tooltip = $"Hỗn hợp - Tiền mặt: {tienMat:N0} | Chuyển khoản: {tienBank:N0}";
+        return r;
+    }
+
+    if (hasBank)
+    {
+        r.MauNen = "#fff3cd"; // vàng nhạt
+        r.Tooltip = $"Chuyển khoản: {tienBank:N0}";
+        return r;
+    }
+
+    if (hasMat)
+    {
+        r.MauNen = "#ccffcc"; // xanh lá nhạt
+        r.Tooltip = $"Tiền mặt: {tienMat:N0}";
+        return r;
+    }
+
+    // ---- 5) Fallback: không có thông tin thanh toán nhưng cũng không còn lại ----
+    // (trường hợp dữ liệu thiếu/đang sync)
+    r.MauNen = "white";
+    r.Tooltip = "Chưa xác định";
+    return r;
+}
+
+
 }

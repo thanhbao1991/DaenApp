@@ -1122,105 +1122,6 @@ public class HoaDonService : IHoaDonService
 
 
 
-    /// <summary>
-    /// Trừ/hoàn kho bán hàng dựa trên công thức (SuDungNguyenLieu).
-    /// sign = -1: trừ kho, sign = +1: hoàn kho
-    /// Lưu ý: SuDungNguyenLieu.NguyenLieu là NguyenLieuBanHang (theo model hiện tại của anh),
-    /// nên NguyenLieuId chính là NguyenLieuBanHangId.
-    /// </summary>
-    private async Task ApplyTonKhoByCongThucAsync(
-        IEnumerable<(Guid BienTheId, decimal SoLuongSP)> chiTietBienThe,
-        int sign,
-        DateTime now)
-    {
-        if (sign != 1 && sign != -1)
-            throw new ArgumentException("sign phải là +1 hoặc -1");
-
-        var list = chiTietBienThe
-            .Where(x => x.BienTheId != Guid.Empty && x.SoLuongSP > 0)
-            .ToList();
-
-        if (!list.Any()) return;
-
-        // Gom số lượng theo biến thể
-        var qtyByBienThe = list
-            .GroupBy(x => x.BienTheId)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.SoLuongSP));
-
-        var bienTheIds = qtyByBienThe.Keys.ToList();
-
-        // 1) Chọn công thức theo biến thể: ưu tiên IsDefault, fallback theo LastModified/CreatedAt
-        var congThucPick = await _context.CongThucs
-            .AsNoTracking()
-            .Where(ct => !ct.IsDeleted && bienTheIds.Contains(ct.SanPhamBienTheId))
-            .OrderByDescending(ct => ct.IsDefault)
-            .ThenByDescending(ct => ct.LastModified ?? ct.CreatedAt)
-            .Select(ct => new { ct.Id, ct.SanPhamBienTheId })
-            .ToListAsync();
-
-        if (!congThucPick.Any()) return;
-
-        var congThucIdByBienThe = congThucPick
-            .GroupBy(x => x.SanPhamBienTheId)
-            .ToDictionary(g => g.Key, g => g.First().Id);
-
-        var congThucIds = congThucIdByBienThe.Values.Distinct().ToList();
-        if (!congThucIds.Any()) return;
-
-        // 2) Lấy định mức SuDungNguyenLieu: NguyenLieuId chính là NguyenLieuBanHangId
-        var suDung = await _context.SuDungNguyenLieus
-            .AsNoTracking()
-            .Where(x => !x.IsDeleted && congThucIds.Contains(x.CongThucId))
-            .Select(x => new
-            {
-                x.CongThucId,
-                NguyenLieuBanHangId = x.NguyenLieuId,
-                DinhMuc = x.SoLuong
-            })
-            .ToListAsync();
-
-        if (!suDung.Any()) return;
-
-        // 3) Tính tổng trừ theo NguyenLieuBanHangId
-        var tongTheoNLBH = new Dictionary<Guid, decimal>();
-
-        foreach (var btId in bienTheIds)
-        {
-            if (!congThucIdByBienThe.TryGetValue(btId, out var congThucId)) continue;
-            if (!qtyByBienThe.TryGetValue(btId, out var soLuongSP)) continue;
-
-            var items = suDung.Where(x => x.CongThucId == congThucId);
-            foreach (var it in items)
-            {
-                if (it.NguyenLieuBanHangId == Guid.Empty) continue;
-                if (it.DinhMuc <= 0) continue;
-
-                var soLuongCanTru = it.DinhMuc * soLuongSP; // ✅ không nhân hệ số
-
-                if (!tongTheoNLBH.ContainsKey(it.NguyenLieuBanHangId))
-                    tongTheoNLBH[it.NguyenLieuBanHangId] = 0;
-
-                tongTheoNLBH[it.NguyenLieuBanHangId] += soLuongCanTru;
-            }
-        }
-
-        if (!tongTheoNLBH.Any()) return;
-
-        // 4) Update kho bán hàng theo batch
-        var ids = tongTheoNLBH.Keys.ToList();
-        var nlbhs = await _context.NguyenLieuBanHangs
-            .Where(x => ids.Contains(x.Id) && !x.IsDeleted)
-            .ToListAsync();
-
-        foreach (var nlb in nlbhs)
-        {
-            if (!tongTheoNLBH.TryGetValue(nlb.Id, out var delta)) continue;
-
-            nlb.TonKho += sign * delta;
-            if (nlb.TonKho < 0) nlb.TonKho = 0;
-            nlb.LastModified = now;
-        }
-    }
 
     // Helper: lấy list (BienTheId, SoLuongSP) từ DTO (Create/Update trước SaveChanges)
     private static IEnumerable<(Guid BienTheId, decimal SoLuongSP)> ExtractBienTheFromDto(HoaDonDto dto)
@@ -1342,7 +1243,15 @@ public class HoaDonService : IHoaDonService
             }
 
             // ✅ TRỪ KHO theo công thức (SuDungNguyenLieu) - dùng DTO (không phụ thuộc DB)
-            await ApplyTonKhoByCongThucAsync(ExtractBienTheFromDto(dto), sign: -1, now);
+            // ✅ TRỪ KHO + GHI LỊCH SỬ
+            await ApplyTonKhoByCongThucAsync(
+                ExtractBienTheFromDto(dto),
+                sign: -1,
+                now: now,
+                hoaDonId: entity.Id,
+                loai: LoaiGiaoDichNguyenLieu.XuatBan,
+                ghiChu: "Xuất kho theo hoá đơn (tạo mới)"
+            );
 
             await AddTichDiemAsync(dto.KhachHangId, thanhTien, entity.Id, now);
 
@@ -1387,8 +1296,14 @@ public class HoaDonService : IHoaDonService
             var before = ToDto(entity);
 
             // ✅ HOÀN KHO theo chi tiết cũ (dùng entity đang load)
-            await ApplyTonKhoByCongThucAsync(ExtractBienTheFromEntity(entity.ChiTietHoaDons), sign: +1, now);
-
+            await ApplyTonKhoByCongThucAsync(
+     ExtractBienTheFromEntity(entity.ChiTietHoaDons),
+     sign: +1,
+     now: now,
+     hoaDonId: entity.Id,
+     loai: LoaiGiaoDichNguyenLieu.DieuChinh,
+     ghiChu: "Hoàn kho do cập nhật hoá đơn (hoàn chi tiết cũ)"
+ );
             dto.PhanLoai = (dto.PhanLoai);
 
             if (dto.PhanLoai == "Tại chỗ" && string.IsNullOrWhiteSpace(dto.TenBan))
@@ -1441,8 +1356,14 @@ public class HoaDonService : IHoaDonService
             entity.ThanhTien = thanhTien;
 
             // ✅ TRỪ KHO theo chi tiết mới (dùng DTO)
-            await ApplyTonKhoByCongThucAsync(ExtractBienTheFromDto(dto), sign: -1, now);
-
+            await ApplyTonKhoByCongThucAsync(
+     ExtractBienTheFromDto(dto),
+     sign: -1,
+     now: now,
+     hoaDonId: entity.Id,
+     loai: LoaiGiaoDichNguyenLieu.XuatBan,
+     ghiChu: "Xuất kho theo hoá đơn (sau khi cập nhật)"
+ );
             var ctList = dto.ChiTietHoaDons ?? new ObservableCollection<ChiTietHoaDonDto>();
             if (string.IsNullOrWhiteSpace(entity.GhiChu) && ctList.Count > 0)
             {
@@ -1515,7 +1436,14 @@ public class HoaDonService : IHoaDonService
             var now = DateTime.Now;
 
             // ✅ DELETE: hoàn kho lại theo chi tiết hiện có
-            await ApplyTonKhoByCongThucAsync(ExtractBienTheFromEntity(entity.ChiTietHoaDons), sign: +1, now);
+            await ApplyTonKhoByCongThucAsync(
+      ExtractBienTheFromEntity(entity.ChiTietHoaDons),
+      sign: +1,
+      now: now,
+      hoaDonId: entity.Id,
+      loai: LoaiGiaoDichNguyenLieu.DieuChinh,
+      ghiChu: "Hoàn kho do xoá hoá đơn"
+  );
 
             foreach (var ct in entity.ChiTietHoaDons)
             {
@@ -1638,7 +1566,14 @@ public class HoaDonService : IHoaDonService
             entity.LastModified = now;
 
             // ✅ RESTORE: trừ kho lại theo chi tiết restored
-            await ApplyTonKhoByCongThucAsync(ExtractBienTheFromEntity(entity.ChiTietHoaDons), sign: -1, now);
+            await ApplyTonKhoByCongThucAsync(
+          ExtractBienTheFromEntity(entity.ChiTietHoaDons),
+          sign: -1,
+          now: now,
+          hoaDonId: entity.Id,
+          loai: LoaiGiaoDichNguyenLieu.XuatBan,
+          ghiChu: "Xuất kho do khôi phục hoá đơn"
+      );
 
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
@@ -1657,5 +1592,148 @@ public class HoaDonService : IHoaDonService
     }
 
 
+
+
+
+
+
+    private void AddNguyenLieuTransactionsFromCongThuc(
+    Dictionary<Guid, decimal> tongTheoNLBH,
+    Guid? hoaDonId,
+    LoaiGiaoDichNguyenLieu loai,
+    int sign,
+    DateTime now,
+    string? ghiChu = null)
+    {
+        foreach (var kv in tongTheoNLBH)
+        {
+            var nlbhId = kv.Key;
+            var qty = kv.Value;
+
+            var soLuong = sign * qty; // ✅ xuất âm, hoàn dương
+
+            _context.NguyenLieuTransactions.Add(new NguyenLieuTransaction
+            {
+                Id = Guid.NewGuid(),
+                NguyenLieuId = nlbhId, // ✅ NguyenLieuBanHangId
+                NgayGio = now,
+                Loai = loai,
+                SoLuong = soLuong,
+                DonGia = null,
+                GhiChu = ghiChu,
+                HoaDonId = hoaDonId,
+
+                CreatedAt = now,
+                LastModified = now,
+                IsDeleted = false
+            });
+        }
+    }
+    private async Task ApplyTonKhoByCongThucAsync(
+        IEnumerable<(Guid BienTheId, decimal SoLuongSP)> chiTietBienThe,
+        int sign,
+        DateTime now,
+        Guid? hoaDonId,
+        LoaiGiaoDichNguyenLieu loai,
+        string? ghiChu)
+    {
+        if (sign != 1 && sign != -1)
+            throw new ArgumentException("sign phải là +1 hoặc -1");
+
+        var list = chiTietBienThe
+            .Where(x => x.BienTheId != Guid.Empty && x.SoLuongSP > 0)
+            .ToList();
+
+        if (!list.Any()) return;
+
+        var qtyByBienThe = list
+            .GroupBy(x => x.BienTheId)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.SoLuongSP));
+
+        var bienTheIds = qtyByBienThe.Keys.ToList();
+
+        // 1) chọn công thức ưu tiên IsDefault
+        var congThucPick = await _context.CongThucs
+            .AsNoTracking()
+            .Where(ct => !ct.IsDeleted && bienTheIds.Contains(ct.SanPhamBienTheId))
+            .OrderByDescending(ct => ct.IsDefault)
+            .ThenByDescending(ct => ct.LastModified ?? ct.CreatedAt)
+            .Select(ct => new { ct.Id, ct.SanPhamBienTheId })
+            .ToListAsync();
+
+        if (!congThucPick.Any()) return;
+
+        var congThucIdByBienThe = congThucPick
+            .GroupBy(x => x.SanPhamBienTheId)
+            .ToDictionary(g => g.Key, g => g.First().Id);
+
+        var congThucIds = congThucIdByBienThe.Values.Distinct().ToList();
+        if (!congThucIds.Any()) return;
+
+        // 2) lấy định mức SuDungNguyenLieu: NguyenLieuId chính là NguyenLieuBanHangId
+        var suDung = await _context.SuDungNguyenLieus
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted && congThucIds.Contains(x.CongThucId))
+            .Select(x => new
+            {
+                x.CongThucId,
+                NguyenLieuBanHangId = x.NguyenLieuId,
+                DinhMuc = x.SoLuong // ✅ định mức cho 1 ly
+            })
+            .ToListAsync();
+
+        if (!suDung.Any()) return;
+
+        // 3) tính tổng theo NguyenLieuBanHangId
+        var tongTheoNLBH = new Dictionary<Guid, decimal>();
+
+        foreach (var btId in bienTheIds)
+        {
+            if (!congThucIdByBienThe.TryGetValue(btId, out var congThucId)) continue;
+            if (!qtyByBienThe.TryGetValue(btId, out var soLuongSP)) continue;
+
+            var items = suDung.Where(x => x.CongThucId == congThucId);
+            foreach (var it in items)
+            {
+                if (it.NguyenLieuBanHangId == Guid.Empty) continue;
+                if (it.DinhMuc <= 0) continue;
+
+                // ✅ 1 ly => không nhân hệ số
+                var soLuongCan = it.DinhMuc * soLuongSP;
+
+                if (!tongTheoNLBH.ContainsKey(it.NguyenLieuBanHangId))
+                    tongTheoNLBH[it.NguyenLieuBanHangId] = 0;
+
+                tongTheoNLBH[it.NguyenLieuBanHangId] += soLuongCan;
+            }
+        }
+
+        if (!tongTheoNLBH.Any()) return;
+
+        // ✅ 3.5) GHI LỊCH SỬ transaction
+        AddNguyenLieuTransactionsFromCongThuc(
+            tongTheoNLBH,
+            hoaDonId: hoaDonId,
+            loai: loai,
+            sign: sign,
+            now: now,
+            ghiChu: ghiChu
+        );
+
+        // 4) update kho bán hàng
+        var ids = tongTheoNLBH.Keys.ToList();
+        var nlbhs = await _context.NguyenLieuBanHangs
+            .Where(x => ids.Contains(x.Id) && !x.IsDeleted)
+            .ToListAsync();
+
+        foreach (var nlb in nlbhs)
+        {
+            if (!tongTheoNLBH.TryGetValue(nlb.Id, out var delta)) continue;
+
+            nlb.TonKho += sign * delta;
+            if (nlb.TonKho < 0) nlb.TonKho = 0;
+            nlb.LastModified = now;
+        }
+    }
 
 }

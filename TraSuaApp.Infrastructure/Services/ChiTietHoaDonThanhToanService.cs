@@ -295,7 +295,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
     public async Task<List<ChiTietHoaDonThanhToanDto>> GetAllAsync()
     {
         var today = DateTime.Today;
-        var fromDate = today.AddDays(0);
+        var fromDate = today.AddDays(-1);
 
         return await _context.ChiTietHoaDonThanhToans.AsNoTracking()
             .Where(x => !x.IsDeleted && x.Ngay >= fromDate)

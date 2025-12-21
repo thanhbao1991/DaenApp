@@ -14,7 +14,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         private readonly IChiTieuHangNgayApi _api;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["ChiTieuHangNgay"];
         private List<NguyenLieuDto> _nguyenLieuList = new();
-
+        public bool ReturnOnly { get; set; } = false;
         public ChiTieuHangNgayEdit(ChiTieuHangNgayDto? dto = null)
         {
             InitializeComponent();

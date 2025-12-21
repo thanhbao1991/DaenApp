@@ -16,7 +16,10 @@ namespace TraSuaApp.Shared.Dtos
             $"{Ten?.ToLower() ?? ""} " +
             StringHelper.MyNormalizeText(Ten ?? "") + " " +
             StringHelper.MyNormalizeText((Ten ?? "").Replace(" ", "")) + " " +
-            StringHelper.GetShortName(Ten ?? "");
+            StringHelper.GetShortName(Ten ?? "") + " " +
+            StringHelper.MyNormalizeText(DonViTinh ?? "") +
+             DonViTinh?.ToLower() + " "
+            ;
 
         // 🟟 mapping mới
         public Guid? NguyenLieuBanHangId { get; set; }

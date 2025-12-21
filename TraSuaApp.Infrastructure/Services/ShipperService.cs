@@ -58,7 +58,14 @@ namespace TraSuaApp.Infrastructure.Services
                 TrangThai = trangThai
             };
         }
+        private static string ResolveLoaiThanhToan(HoaDon entity, DateTime now)
+        {
+            // So sánh theo Date để bỏ giờ
+            if (entity.Ngay.Date == now.Date)
+                return "Trong ngày";
 
+            return "Trả nợ qua ngày";
+        }
         public async Task<List<HoaDonDto>> GetForShipperAsync(DateTime? day = null, string? shipper = "Khánh")
         {
             var start = (day?.Date ?? DateTime.Today);
@@ -131,10 +138,8 @@ namespace TraSuaApp.Infrastructure.Services
 
             if (entity == null)
                 return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
-            if (!string.IsNullOrEmpty(entity.GhiChuShipper))
-            {
+            if (IsFinalizedByShipper(entity))
                 return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
-            }
             var now = DateTime.Now;
             var before = ToDto(entity);
 
@@ -278,8 +283,9 @@ namespace TraSuaApp.Infrastructure.Services
 
             if (entity == null)
                 return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
-            if (!string.IsNullOrEmpty(entity.GhiChuShipper))
+            if (IsFinalizedByShipper(entity))
                 return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
+
             if (entity.KhachHangId == null)
                 return Result<HoaDonDto>.Failure("Hóa đơn này chưa gắn khách, không thể ghi nợ.");
 
@@ -343,9 +349,9 @@ namespace TraSuaApp.Infrastructure.Services
             }
 
             // Guard cũ: nếu đã có ghi chú shipper thì không cho thao tác nữa
-            if (!string.IsNullOrEmpty(entity.GhiChuShipper))
+            // Nếu đã có ghi chú “chốt đơn” (trừ “Tí nữa chuyển khoản”) thì khóa lại
+            if (IsFinalizedByShipper(entity))
                 return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
-
             // Nếu đã ghi nợ và còn nợ thì không được dùng Thu tiền mặt
             if (entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted && n.SoTienConLai > 0))
                 return Result<HoaDonDto>.Failure("Hoá đơn đã ghi nợ, vui lòng dùng chức năng Trả nợ.");
@@ -372,10 +378,11 @@ namespace TraSuaApp.Infrastructure.Services
                 if (pm == null)
                     return Result<HoaDonDto>.Failure("Không tìm thấy phương thức thanh toán 'Tiền mặt'.");
 
-                bool daCoNo = entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted);
-                var loai = daCoNo
-                    ? (entity.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày")
-                    : "Trong ngày";
+                //bool daCoNo = entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted);
+                //var loai = daCoNo
+                //    ? (entity.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày")
+                //    : "Trong ngày";
+                var loai = ResolveLoaiThanhToan(entity, now);
 
                 var thanhToan = new ChiTietHoaDonThanhToan
                 {
@@ -430,9 +437,8 @@ namespace TraSuaApp.Infrastructure.Services
                 return Result<HoaDonDto>.Failure("Shipper đã thu CHUYỂN KHOẢN cho đơn này, không thể thu lại.");
             }
 
-            if (!string.IsNullOrEmpty(entity.GhiChuShipper))
+            if (IsFinalizedByShipper(entity))
                 return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
-
             if (entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted && n.SoTienConLai > 0))
                 return Result<HoaDonDto>.Failure("Hoá đơn đã ghi nợ, vui lòng dùng chức năng Trả nợ.");
 
@@ -458,10 +464,11 @@ namespace TraSuaApp.Infrastructure.Services
                 if (pm == null)
                     return Result<HoaDonDto>.Failure("Không tìm thấy phương thức thanh toán 'Chuyển khoản'.");
 
-                bool daCoNo = entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted);
-                var loai = daCoNo
-                    ? (entity.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày")
-                    : "Trong ngày";
+                //bool daCoNo = entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted);
+                //var loai = daCoNo
+                //    ? (entity.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày")
+                //    : "Trong ngày";
+                var loai = ResolveLoaiThanhToan(entity, now);
 
                 var thanhToan = new ChiTietHoaDonThanhToan
                 {
@@ -496,145 +503,66 @@ namespace TraSuaApp.Infrastructure.Services
                 .WithId(id).WithBefore(before).WithAfter(after);
         }
 
-        //public async Task<Result<HoaDonDto>> ThuTienMatAsync(Guid id)
-        //{
-        //    var entity = await _context.HoaDons
-        //        .Include(x => x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted))
-        //        .Include(x => x.ChiTietHoaDonNos.Where(n => !n.IsDeleted))
-        //        .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+        private static bool IsFinalizedByShipper(HoaDon entity)
+        {
+            var note = entity.GhiChuShipper?.Trim();
+            if (string.IsNullOrEmpty(note))
+                return false;
 
-        //    if (entity == null)
-        //        return Result<HoaDonDto>.Failure("Không tìm thấy hoá đơn.");
-        //    if (!string.IsNullOrEmpty(entity.GhiChuShipper))
-        //        return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
-        //    if (entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted && n.SoTienConLai > 0))
-        //        return Result<HoaDonDto>.Failure("Hoá đơn đã ghi nợ, vui lòng dùng chức năng Trả nợ.");
+            // “Tí nữa chuyển khoản …” chỉ là ghi chú tạm, KHÔNG tính là đã chốt đơn
+            if (note.StartsWith("Tí nữa chuyển khoản"))
+                return false;
 
-        //    var now = DateTime.Now;
-        //    var before = ToDto(entity);
-
-        //    var daThu = entity.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted).Sum(t => t.SoTien);
-        //    var soTienThu = entity.ThanhTien - daThu;
-
-        //    if (soTienThu > 0)
-        //    {
-        //        var pm = await _context.PhuongThucThanhToans
-        //            .Where(p => !p.IsDeleted && p.Ten == "Tiền mặt")
-        //            .Select(p => new { p.Id, p.Ten })
-        //            .FirstOrDefaultAsync();
-
-        //        if (pm == null)
-        //            return Result<HoaDonDto>.Failure("Không tìm thấy phương thức thanh toán 'Tiền mặt'.");
-
-        //        bool daCoNo = entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted);
-        //        var loai = daCoNo
-        //            ? (entity.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày")
-        //            : "Trong ngày";
-
-        //        var thanhToan = new ChiTietHoaDonThanhToan
-        //        {
-        //            Id = Guid.NewGuid(),
-        //            HoaDonId = entity.Id,
-        //            KhachHangId = entity.KhachHangId,
-        //            Ngay = now.Date,
-        //            NgayGio = now,
-        //            SoTien = soTienThu,
-        //            LoaiThanhToan = loai,
-        //            PhuongThucThanhToanId = pm.Id,
-        //            TenPhuongThucThanhToan = pm.Ten,
-        //            GhiChu = "Shipper",
-        //            CreatedAt = now,
-        //            LastModified = now,
-        //            IsDeleted = false,
-        //            ChiTietHoaDonNoId = null
-        //        };
-
-        //        _context.ChiTietHoaDonThanhToans.Add(thanhToan);
-        //    }
-
-        //    entity.GhiChuShipper = $"Tiền mặt: {soTienThu:N0} đ";
-        //    entity.LastModified = now;
-
-        //    await _context.SaveChangesAsync();
-        //    await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
-        //    await _context.SaveChangesAsync();
-        //    await AuditDebtGuard.CheckAndNotifyAsync(_context, entity.Id, "CreatePayment");
-
-        //    var after = ToDto(entity);
-        //    return Result<HoaDonDto>.Success(after, "Đã thu tiền mặt.")
-        //        .WithId(id).WithBefore(before).WithAfter(after);
-        //}
-
-        //public async Task<Result<HoaDonDto>> ThuChuyenKhoanAsync(Guid id)
-        //{
-        //    var entity = await _context.HoaDons
-        //        .Include(x => x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted))
-        //        .Include(x => x.ChiTietHoaDonNos.Where(n => !n.IsDeleted))
-        //        .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-
-        //    if (entity == null)
-        //        return Result<HoaDonDto>.Failure("Không tìm thấy hoá đơn.");
-        //    if (!string.IsNullOrEmpty(entity.GhiChuShipper))
-        //        return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
-        //    if (entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted && n.SoTienConLai > 0))
-        //        return Result<HoaDonDto>.Failure("Hoá đơn đã ghi nợ, vui lòng dùng chức năng Trả nợ.");
-
-        //    var now = DateTime.Now;
-        //    var before = ToDto(entity);
-
-        //    var daThu = entity.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted).Sum(t => t.SoTien);
-        //    var soTienThu = entity.ThanhTien - daThu;
-
-        //    if (soTienThu > 0)
-        //    {
-        //        var pm = await _context.PhuongThucThanhToans
-        //            .Where(p => !p.IsDeleted && p.Ten == "Chuyển khoản")
-        //            .Select(p => new { p.Id, p.Ten })
-        //            .FirstOrDefaultAsync();
-
-        //        if (pm == null)
-        //            return Result<HoaDonDto>.Failure("Không tìm thấy phương thức thanh toán 'Chuyển khoản'.");
-
-        //        bool daCoNo = entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted);
-        //        var loai = daCoNo
-        //            ? (entity.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày")
-        //            : "Trong ngày";
-
-        //        var thanhToan = new ChiTietHoaDonThanhToan
-        //        {
-        //            Id = Guid.NewGuid(),
-        //            HoaDonId = entity.Id,
-        //            KhachHangId = entity.KhachHangId,
-        //            Ngay = now.Date,
-        //            NgayGio = now,
-        //            SoTien = soTienThu,
-        //            LoaiThanhToan = loai,
-        //            PhuongThucThanhToanId = pm.Id,
-        //            TenPhuongThucThanhToan = pm.Ten,
-        //            GhiChu = "Shipper",
-        //            CreatedAt = now,
-        //            LastModified = now,
-        //            IsDeleted = false,
-        //            ChiTietHoaDonNoId = null
-        //        };
-
-        //        _context.ChiTietHoaDonThanhToans.Add(thanhToan);
-        //    }
-
-        //    entity.LastModified = now;
-
-        //    await _context.SaveChangesAsync();
-        //    await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
-        //    await _context.SaveChangesAsync();
-        //    await AuditDebtGuard.CheckAndNotifyAsync(_context, entity.Id, "CreatePayment");
-
-        //    var after = ToDto(entity);
-        //    return Result<HoaDonDto>.Success(after, "Đã thu chuyển khoản.")
-        //        .WithId(id).WithBefore(before).WithAfter(after);
-        //}
+            // Các ghi chú khác coi như đã xử lý xong
+            return true;
+        }
 
 
+        public async Task<ShipperSummaryDto> GetSummaryAsync(DateTime ngay, string? shipper = null)
+        {
+            var start = ngay.Date;
+            var end = start.AddDays(1);
 
+            // Các dòng thanh toán trong ngày có GhiChu = 'Shipper'
+            var payQ = _context.ChiTietHoaDonThanhToans
+                .AsNoTracking()
+                .Where(t => !t.IsDeleted
+                         && t.Ngay >= start && t.Ngay < end
+                         && t.GhiChu == "Shipper");
+
+            // Nếu sau này cần tách theo từng shipper thì có thể join HoaDon.NguoiShip ở đây
+
+            // Trong ngày + trả nợ trong ngày = "Đã thu" (giống ThongKe)
+            var daThuQ = payQ.Where(t =>
+                t.LoaiThanhToan == "Trong ngày"
+                || t.LoaiThanhToan == "Trả nợ trong ngày");
+
+            decimal tienMat = await daThuQ
+                .Where(t => t.TenPhuongThucThanhToan == "Tiền mặt")
+                .SumAsync(t => (decimal?)t.SoTien) ?? 0m;
+
+            decimal chuyenKhoan = await daThuQ
+                .Where(t => t.TenPhuongThucThanhToan != "Tiền mặt")
+                .SumAsync(t => (decimal?)t.SoTien) ?? 0m;
+
+            var traNoQ = payQ.Where(t => t.LoaiThanhToan == "Trả nợ qua ngày");
+
+            decimal traNoTrongNgay = await payQ
+                .Where(t => t.LoaiThanhToan == "Trả nợ trong ngày")
+                .SumAsync(t => (decimal?)t.SoTien) ?? 0m;
+
+            decimal traNoQuaNgay = await traNoQ
+                .SumAsync(t => (decimal?)t.SoTien) ?? 0m;
+
+            return new ShipperSummaryDto
+            {
+                Ngay = start,
+                TienMat = tienMat,
+                ChuyenKhoan = chuyenKhoan,
+                TraNoTrongNgay = traNoTrongNgay,
+                TraNoQuaNgay = traNoQuaNgay
+            };
+        }
 
     }
 }

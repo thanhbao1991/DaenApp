@@ -2,19 +2,17 @@
 
 public enum LoaiGiaoDichNguyenLieu
 {
-    Nhap = 1,      // Mua hàng, nhập kho (dương)
-    XuatBan = 2,   // Xuất do bán ly cho khách (âm)
-    XuatKhac = 3,  // Đổ bỏ, pha sai... (âm)
-    DieuChinh = 4  // Kiểm kê, chỉnh lệch (+/-)
+    Nhap = 1,      // Mua hàng, nhập kho
+    XuatBan = 2,   // Xuất do bán ly cho khách
+    XuatKhac = 3,  // Đổ bỏ, pha sai...
+    DieuChinh = 4  // Kiểm kê, chỉnh lệch
 }
 
 public partial class NguyenLieuTransaction
 {
     public Guid Id { get; set; }
 
-    /// <summary>
-    /// FK -> NguyenLieuBanHang.Id (đơn vị bán nhỏ nhất)
-    /// </summary>
+    // ✅ FK -> NguyenLieuBanHang.Id (đơn vị bán)
     public Guid NguyenLieuId { get; set; }
 
     public DateTime NgayGio { get; set; }
@@ -22,7 +20,7 @@ public partial class NguyenLieuTransaction
     public LoaiGiaoDichNguyenLieu Loai { get; set; }
 
     /// <summary>
-    /// Nhập: dương, Xuất: âm, Điều chỉnh: +/-.
+    /// Nhập: +, Xuất: -, Điều chỉnh: +/- theo delta
     /// </summary>
     public decimal SoLuong { get; set; }
 
@@ -33,10 +31,10 @@ public partial class NguyenLieuTransaction
     public Guid? HoaDonId { get; set; }
 
     public DateTime CreatedAt { get; set; }
-    public DateTime? DeletedAt { get; set; }
-    public DateTime? LastModified { get; set; }
-    public bool IsDeleted { get; set; }
 
-    // Nav (nếu bạn có cấu hình)
-    public virtual NguyenLieuBanHang? NguyenLieu { get; set; }
+    // ✅ nullable cho soft-delete
+    public DateTime? DeletedAt { get; set; }
+
+    public DateTime LastModified { get; set; }
+    public bool IsDeleted { get; set; }
 }

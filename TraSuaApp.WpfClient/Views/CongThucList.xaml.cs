@@ -11,54 +11,81 @@ using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.AdminViews
 {
-    public partial class CongThucList : Window
+    public partial class CongThucMasterDetailList : Window
     {
-        private readonly CollectionViewSource _viewSource = new();
+        private readonly CollectionViewSource _congThucViewSource = new();
+        private readonly CollectionViewSource _suDungViewSource = new();
+
         private readonly WpfErrorHandler _errorHandler = new();
         private readonly string _friendlyName = TuDien._tableFriendlyNames["CongThuc"];
 
-        public CongThucList()
+        private CongThucDto? _selectedCongThuc;
+
+        public CongThucMasterDetailList()
         {
             InitializeComponent();
+
             Title = _friendlyName;
             TieuDeTextBlock.Text = _friendlyName;
-            PreviewKeyDown += CongThucList_PreviewKeyDown;
 
-            // Chờ AppProviders.CongThucs được khởi tạo
-            while (AppProviders.CongThucs?.Items == null)
+            PreviewKeyDown += CongThucMasterDetail_PreviewKeyDown;
+
+            // Chờ AppProviders (giữ đúng pattern hiện tại của anh)
+            while (AppProviders.CongThucs?.Items == null || AppProviders.SuDungNguyenLieus?.Items == null)
             {
                 Task.Delay(100);
             }
 
-            _viewSource.Source = AppProviders.CongThucs.Items;
-            _viewSource.Filter += ViewSource_Filter;
-            CongThucDataGrid.ItemsSource = _viewSource.View;
+            // Master source
+            _congThucViewSource.Source = AppProviders.CongThucs.Items;
+            _congThucViewSource.Filter += CongThucViewSource_Filter;
+            CongThucDataGrid.ItemsSource = _congThucViewSource.View;
 
-            AppProviders.CongThucs.OnChanged += () => ApplySearch();
+            AppProviders.CongThucs.OnChanged += () => ApplyCongThucSearch();
+
+            // Detail source
+            _suDungViewSource.Source = AppProviders.SuDungNguyenLieus.Items;
+            _suDungViewSource.Filter += SuDungViewSource_Filter;
+            SuDungNguyenLieuDataGrid.ItemsSource = _suDungViewSource.View;
+
+            AppProviders.SuDungNguyenLieus.OnChanged += () => ApplySuDungSearch();
 
             Loaded += async (_, __) =>
             {
                 await AppProviders.CongThucs.ReloadAsync();
-                ApplySearch();
+                await AppProviders.SuDungNguyenLieus.ReloadAsync();
+
+                ApplyCongThucSearch();
+
+                // auto select dòng đầu nếu có
+                if (CongThucDataGrid.Items.Count > 0)
+                {
+                    CongThucDataGrid.SelectedIndex = 0;
+                }
+
+                RefreshDetailTitle();
+                ToggleDetailButtons();
+                ApplySuDungSearch();
             };
         }
 
-        #region Filter + Sort + STT
-
-        private void ApplySearch()
+        // =========================
+        // MASTER: FILTER + SORT + STT
+        // =========================
+        private void ApplyCongThucSearch()
         {
-            _viewSource.View.Refresh();
+            _congThucViewSource.View.Refresh();
 
-            _viewSource.View.SortDescriptions.Clear();
-            _viewSource.View.SortDescriptions.Add(
+            _congThucViewSource.View.SortDescriptions.Clear();
+            _congThucViewSource.View.SortDescriptions.Add(
                 new SortDescription(nameof(CongThucDto.LastModified), ListSortDirection.Descending));
 
-            var view = _viewSource.View.Cast<CongThucDto>().ToList();
+            var view = _congThucViewSource.View.Cast<CongThucDto>().ToList();
             for (int i = 0; i < view.Count; i++)
                 view[i].Stt = i + 1;
         }
 
-        private void ViewSource_Filter(object sender, FilterEventArgs e)
+        private void CongThucViewSource_Filter(object sender, FilterEventArgs e)
         {
             if (e.Item is not CongThucDto item)
             {
@@ -66,38 +93,127 @@ namespace TraSuaApp.WpfClient.AdminViews
                 return;
             }
 
-            var keyword = StringHelper.MyNormalizeText(SearchTextBox.Text.Trim());
+            var keyword = StringHelper.MyNormalizeText(CongThucSearchTextBox.Text.Trim());
             if (string.IsNullOrEmpty(keyword))
             {
                 e.Accepted = true;
                 return;
             }
 
-            var timKiem = item.TimKiem ?? "";
-            e.Accepted = timKiem.Contains(keyword);
+            e.Accepted = (item.TimKiem ?? "").Contains(keyword);
         }
 
-        #endregion
+        private void CongThucSearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+            => ApplyCongThucSearch();
 
-        #region Buttons
+        // =========================
+        // DETAIL: FILTER + SORT + STT
+        // =========================
+        private void ApplySuDungSearch()
+        {
+            if (_suDungViewSource.View == null) return;
+            _suDungViewSource.View.Refresh();
 
-        private async void ReloadButton_Click(object sender, RoutedEventArgs e)
+            _suDungViewSource.View.SortDescriptions.Clear();
+            _suDungViewSource.View.SortDescriptions.Add(
+                new SortDescription(nameof(SuDungNguyenLieuDto.LastModified), ListSortDirection.Descending));
+
+            var view = _suDungViewSource.View.Cast<SuDungNguyenLieuDto>().ToList();
+            int stt = 1;
+            foreach (var x in view)
+                x.Stt = stt++;
+        }
+
+        private void SuDungViewSource_Filter(object sender, FilterEventArgs e)
+        {
+            if (e.Item is not SuDungNguyenLieuDto item)
+            {
+                e.Accepted = false;
+                return;
+            }
+
+            // chỉ hiện theo công thức đang chọn
+            if (_selectedCongThuc == null || _selectedCongThuc.Id == Guid.Empty)
+            {
+                e.Accepted = false;
+                return;
+            }
+
+            if (item.CongThucId != _selectedCongThuc.Id)
+            {
+                e.Accepted = false;
+                return;
+            }
+
+            var keyword = StringHelper.MyNormalizeText(SuDungSearchTextBox.Text.Trim());
+            if (string.IsNullOrEmpty(keyword))
+            {
+                e.Accepted = true;
+                return;
+            }
+
+            e.Accepted = item.TimKiem?.Contains(keyword) ?? false;
+        }
+
+        private void SuDungSearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+            => ApplySuDungSearch();
+
+        // =========================
+        // SELECTION CHANGED
+        // =========================
+        private void CongThucDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _selectedCongThuc = CongThucDataGrid.SelectedItem as CongThucDto;
+
+            RefreshDetailTitle();
+            ToggleDetailButtons();
+            ApplySuDungSearch();
+        }
+
+        private void RefreshDetailTitle()
+        {
+            if (_selectedCongThuc == null)
+            {
+                return;
+            }
+
+            var sp = _selectedCongThuc.TenSanPham ?? "";
+            var bt = _selectedCongThuc.TenBienThe ?? "";
+        }
+
+        private void ToggleDetailButtons()
+        {
+            bool enable = _selectedCongThuc != null && _selectedCongThuc.Id != Guid.Empty;
+
+            SuDungAddButton.IsEnabled = enable;
+            SuDungEditButton.IsEnabled = enable;
+            SuDungDeleteButton.IsEnabled = enable;
+            SuDungReloadButton.IsEnabled = true; // vẫn cho reload list
+        }
+
+        // =========================
+        // MASTER BUTTONS
+        // =========================
+        private async void CongThucReloadButton_Click(object sender, RoutedEventArgs e)
         {
             await AppProviders.CongThucs.ReloadAsync();
-            ApplySearch();
+            ApplyCongThucSearch();
         }
 
-        private async void AddButton_Click(object sender, RoutedEventArgs e)
+        private async void CongThucAddButton_Click(object sender, RoutedEventArgs e)
         {
             var window = new CongThucEdit();
             window.Owner = this;
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
             if (window.ShowDialog() == true)
+            {
                 await AppProviders.CongThucs.ReloadAsync();
+                ApplyCongThucSearch();
+            }
         }
 
-        private async void EditButton_Click(object sender, RoutedEventArgs e)
+        private async void CongThucEditButton_Click(object sender, RoutedEventArgs e)
         {
             if (CongThucDataGrid.SelectedItem is not CongThucDto selected)
             {
@@ -111,10 +227,13 @@ namespace TraSuaApp.WpfClient.AdminViews
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
             if (window.ShowDialog() == true)
+            {
                 await AppProviders.CongThucs.ReloadAsync();
+                ApplyCongThucSearch();
+            }
         }
 
-        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
+        private async void CongThucDeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (CongThucDataGrid.SelectedItem is not CongThucDto selected)
             {
@@ -132,12 +251,19 @@ namespace TraSuaApp.WpfClient.AdminViews
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
+
                 var response = await ApiClient.DeleteAsync($"/api/CongThuc/{selected.Id}");
                 var result = await response.Content.ReadFromJsonAsync<Result<CongThucDto>>();
+
                 if (result?.IsSuccess == true)
+                {
                     AppProviders.CongThucs.Remove(selected.Id);
+                    ApplyCongThucSearch();
+                }
                 else
+                {
                     throw new Exception(result?.Message ?? "Không thể xoá.");
+                }
             }
             catch (Exception ex)
             {
@@ -149,12 +275,6 @@ namespace TraSuaApp.WpfClient.AdminViews
             }
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
-
-        #endregion
-
-        #region DataGrid events
-
         private async void CongThucDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (CongThucDataGrid.SelectedItem is not CongThucDto selected) return;
@@ -164,58 +284,180 @@ namespace TraSuaApp.WpfClient.AdminViews
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
             if (window.ShowDialog() == true)
+            {
                 await AppProviders.CongThucs.ReloadAsync();
+                ApplyCongThucSearch();
+            }
         }
 
-        /// <summary>
-        /// Mở form Nguyên liệu cho công thức đang chọn
-        /// </summary>
-        private void NguyenLieuButton_Click(object sender, RoutedEventArgs e)
+        // =========================
+        // DETAIL BUTTONS
+        // =========================
+        private async void SuDungReloadButton_Click(object sender, RoutedEventArgs e)
         {
-            if (CongThucDataGrid.SelectedItem is not CongThucDto selected)
+            await AppProviders.SuDungNguyenLieus.ReloadAsync();
+            ApplySuDungSearch();
+        }
+
+        private async void SuDungAddButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedCongThuc == null || _selectedCongThuc.Id == Guid.Empty)
             {
-                MessageBox.Show("Vui lòng chọn công thức.", "Thông báo",
+                MessageBox.Show("Vui lòng chọn công thức ở bên trái.", "Thông báo",
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            // Mở SuDungNguyenLieuList với công thức đã chọn
-            var window = new SuDungNguyenLieuList(selected);
+            var window = new SuDungNguyenLieuEdit(_selectedCongThuc, null);
             window.Owner = this;
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            window.ShowDialog();
+
+            if (window.ShowDialog() == true)
+            {
+                await AppProviders.SuDungNguyenLieus.ReloadAsync();
+                ApplySuDungSearch();
+            }
         }
 
-        #endregion
-
-        #region Search + Hotkeys
-
-        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e) => ApplySearch();
-
-        private void CongThucList_PreviewKeyDown(object sender, KeyEventArgs e)
+        private async void SuDungEditButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_selectedCongThuc == null || _selectedCongThuc.Id == Guid.Empty)
+            {
+                MessageBox.Show("Vui lòng chọn công thức ở bên trái.", "Thông báo",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (SuDungNguyenLieuDataGrid.SelectedItem is not SuDungNguyenLieuDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn dòng cần sửa.", "Thông báo",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var window = new SuDungNguyenLieuEdit(_selectedCongThuc, selected);
+            window.Owner = this;
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+
+            if (window.ShowDialog() == true)
+            {
+                await AppProviders.SuDungNguyenLieus.ReloadAsync();
+                ApplySuDungSearch();
+            }
+        }
+
+        private async void SuDungDeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedCongThuc == null || _selectedCongThuc.Id == Guid.Empty)
+            {
+                MessageBox.Show("Vui lòng chọn công thức ở bên trái.", "Thông báo",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (SuDungNguyenLieuDataGrid.SelectedItem is not SuDungNguyenLieuDto selected)
+            {
+                MessageBox.Show("Vui lòng chọn dòng cần xoá.", "Thông báo",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Bạn có chắc chắn muốn xoá nguyên liệu '{selected.TenNguyenLieu}' khỏi công thức này?",
+                "Xác nhận xoá",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+
+                var response = await ApiClient.DeleteAsync($"/api/SuDungNguyenLieu/{selected.Id}");
+                var result = await response.Content.ReadFromJsonAsync<Result<SuDungNguyenLieuDto>>();
+
+                if (result?.IsSuccess == true)
+                {
+                    AppProviders.SuDungNguyenLieus.Remove(selected.Id);
+                    ApplySuDungSearch();
+                }
+                else
+                {
+                    throw new Exception(result?.Message ?? "Không thể xoá.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandler.Handle(ex, "Delete");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
+
+        private async void SuDungNguyenLieuDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (_selectedCongThuc == null || _selectedCongThuc.Id == Guid.Empty) return;
+            if (SuDungNguyenLieuDataGrid.SelectedItem is not SuDungNguyenLieuDto selected) return;
+
+            var window = new SuDungNguyenLieuEdit(_selectedCongThuc, selected);
+            window.Owner = this;
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+
+            if (window.ShowDialog() == true)
+            {
+                await AppProviders.SuDungNguyenLieus.ReloadAsync();
+                ApplySuDungSearch();
+            }
+        }
+
+        // =========================
+        // HOTKEYS (thông minh theo focus)
+        // =========================
+        private void CongThucMasterDetail_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            bool focusCongThuc = CongThucDataGrid.IsKeyboardFocusWithin;
+            bool focusSuDung = SuDungNguyenLieuDataGrid.IsKeyboardFocusWithin;
+
+            // Ctrl+N
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N)
             {
-                AddButton_Click(null!, null!);
+                if (focusSuDung) SuDungAddButton_Click(null!, null!);
+                else CongThucAddButton_Click(null!, null!);
                 e.Handled = true;
+                return;
             }
-            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E)
+
+            // Ctrl+E
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E)
             {
-                EditButton_Click(null!, null!);
+                if (focusSuDung) SuDungEditButton_Click(null!, null!);
+                else CongThucEditButton_Click(null!, null!);
                 e.Handled = true;
+                return;
             }
-            else if (e.Key == Key.Delete)
+
+            // Delete
+            if (e.Key == Key.Delete)
             {
-                DeleteButton_Click(null!, null!);
+                if (focusSuDung) SuDungDeleteButton_Click(null!, null!);
+                else CongThucDeleteButton_Click(null!, null!);
                 e.Handled = true;
+                return;
             }
-            else if (e.Key == Key.F5)
+
+            // F5
+            if (e.Key == Key.F5)
             {
-                ReloadButton_Click(null!, null!);
+                if (focusSuDung) SuDungReloadButton_Click(null!, null!);
+                else CongThucReloadButton_Click(null!, null!);
                 e.Handled = true;
+                return;
             }
         }
 
-        #endregion
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
     }
 }

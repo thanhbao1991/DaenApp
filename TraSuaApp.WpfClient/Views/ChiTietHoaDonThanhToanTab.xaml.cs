@@ -42,6 +42,7 @@ namespace TraSuaApp.WpfClient.Views
         public async Task ReloadUI()
         {
             var todayLocal = Today;
+            //var todayLocal = Today.AddDays(-1);
 
             _fullChiTietHoaDonThanhToanList = await UiListHelper.BuildListAsync(
                 AppProviders.ChiTietHoaDonThanhToans.Items.Where(x => !x.IsDeleted),

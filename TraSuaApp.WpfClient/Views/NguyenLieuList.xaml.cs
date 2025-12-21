@@ -189,7 +189,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
             if (value is not Guid id || id == Guid.Empty) return "";
             var list = AppProviders.NguyenLieuBanHangs?.Items;
             var item = list?.FirstOrDefault(x => x.Id == id);
-            return item?.TenPhienDich ?? "";
+            return item?.Ten ?? "";
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

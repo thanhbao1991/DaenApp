@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Applicationn.Interfaces;
+using TraSuaApp.Domain.Entities;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
@@ -15,10 +16,62 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
     {
         _context = context;
     }
+    public async Task<Result<List<ChiTieuHangNgayDto>>> CreateBulkAsync(
+    ChiTieuHangNgayBulkCreateDto dto)
+    {
+        if (dto.Items == null || dto.Items.Count == 0)
+            return Result<List<ChiTieuHangNgayDto>>
+                .Failure("Danh sách chi tiêu trống");
 
-    // =========================
-    //  DTO mapping
-    // =========================
+        var now = DateTime.Now;
+        var result = new List<ChiTieuHangNgayDto>();
+
+        using var tx = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var item in dto.Items)
+            {
+                if (item.NguyenLieuId == Guid.Empty || item.SoLuong <= 0)
+                    continue;
+
+                var entity = new ChiTieuHangNgay
+                {
+                    Id = Guid.NewGuid(),
+                    NguyenLieuId = item.NguyenLieuId,
+                    SoLuong = item.SoLuong,
+                    DonGia = item.DonGia,
+                    ThanhTien = item.ThanhTien ?? item.SoLuong * item.DonGia,
+                    GhiChu = item.GhiChu,
+
+                    Ngay = dto.Ngay.Date,
+                    NgayGio = dto.NgayGio ?? now,
+                    BillThang = dto.BillThang,
+
+                    CreatedAt = now,
+                    LastModified = now,
+                    IsDeleted = false
+                };
+
+                _context.ChiTieuHangNgays.Add(entity);
+
+                // cập nhật kho
+                await ApplyTonKhoNhapAsync(entity, +1, now);
+
+                result.Add(ToDto(entity));
+            }
+
+            await _context.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+
+        return Result<List<ChiTieuHangNgayDto>>
+            .Success(result, $"Đã nhập {result.Count} dòng");
+    }
     private static ChiTieuHangNgayDto ToDto(ChiTieuHangNgay e)
     {
         return new ChiTieuHangNgayDto
@@ -44,20 +97,16 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
         };
     }
 
-    // =========================
-    //  Quy tắc: có phải phiếu nhập kho không?
-    //  -> Chỉ cần có NguyenLieuId + SoLuong > 0
-    // =========================
     private static bool IsNhapKho(ChiTieuHangNgay e)
     {
         return e.NguyenLieuId != Guid.Empty && e.SoLuong > 0;
     }
 
-    // =========================
-    //  Áp kho: sign = +1 (cộng), -1 (hoàn/trừ lại)
-    //  - Cộng/trừ NguyenLieu.TonKho
-    //  - Nếu NguyenLieu có NguyenLieuBanHangId + HeSoQuyDoiBanHang => cộng/trừ NguyenLieuBanHang.TonKho
-    // =========================
+    /// <summary>
+    /// Áp kho nhập (phiếu nhập): sign=+1 cộng kho, sign=-1 hoàn kho
+    /// - Kho bán hàng: NguyenLieuBanHang.TonKho cộng/trừ theo hệ số quy đổi
+    /// - Đồng thời ghi lịch sử vào NguyenLieuTransaction
+    /// </summary>
     private async Task ApplyTonKhoNhapAsync(ChiTieuHangNgay e, int sign, DateTime now)
     {
         if (!IsNhapKho(e)) return;
@@ -67,10 +116,10 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
 
         if (nl == null) return;
 
-        // 1) Kho nhập
+        // đánh dấu chỉnh sửa
         nl.LastModified = now;
 
-        // 2) Kho bán hàng (nếu có map + hệ số)
+        // Kho bán hàng (nếu có map + hệ số)
         if (nl.NguyenLieuBanHangId != null && nl.NguyenLieuBanHangId != Guid.Empty)
         {
             var heSo = nl.HeSoQuyDoiBanHang ?? 0;
@@ -81,17 +130,36 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
 
                 if (nlb != null)
                 {
-                    nlb.TonKho += (e.SoLuong * heSo) * sign;
+                    var qtyBanHang = (e.SoLuong * heSo) * sign;
+
+                    // ✅ cộng/trừ tồn kho bán hàng
+                    nlb.TonKho += qtyBanHang;
                     if (nlb.TonKho < 0) nlb.TonKho = 0;
                     nlb.LastModified = now;
+
+                    // ✅ ghi lịch sử nhập/hoàn nhập
+                    _context.NguyenLieuTransactions.Add(new NguyenLieuTransaction
+                    {
+                        Id = Guid.NewGuid(),
+                        NguyenLieuId = nlb.Id, // ✅ NguyenLieuBanHangId
+                        NgayGio = e.NgayGio == default ? now : e.NgayGio,
+                        Loai = LoaiGiaoDichNguyenLieu.Nhap,
+                        SoLuong = qtyBanHang, // dương khi nhập, âm khi hoàn nhập (xoá/sửa)
+                        DonGia = e.DonGia,
+                        GhiChu = sign == 1
+                            ? $"Nhập kho từ ChiTieuHangNgay: {e.Ten}"
+                            : $"Hoàn nhập kho (do sửa/xoá): {e.Ten}",
+                        ChiTieuHangNgayId = e.Id,
+
+                        CreatedAt = now,
+                        LastModified = now,
+                        IsDeleted = false
+                    });
                 }
             }
         }
     }
 
-    // =========================
-    //  CRUD
-    // =========================
     public async Task<List<ChiTieuHangNgayDto>> GetAllAsync()
     {
         return await _context.ChiTieuHangNgays
@@ -117,7 +185,6 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
 
         if (dto.Id == Guid.Empty) dto.Id = Guid.NewGuid();
 
-        // Validate tối thiểu cho dòng nhập kho (vì entity bắt buộc NguyenLieuId)
         if (dto.NguyenLieuId == Guid.Empty)
             return Result<ChiTieuHangNgayDto>.Failure("Vui lòng chọn nguyên liệu.");
 
@@ -132,7 +199,6 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
 
             SoLuong = dto.SoLuong,
             DonGia = dto.DonGia,
-
             ThanhTien = dto.ThanhTien > 0 ? dto.ThanhTien : (dto.SoLuong * dto.DonGia),
 
             Ngay = dto.Ngay == default ? now.Date : dto.Ngay.Date,
@@ -153,7 +219,7 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
         {
             _context.ChiTieuHangNgays.Add(entity);
 
-            // ✅ Tăng kho ngay khi tạo phiếu nhập
+            // ✅ Tăng kho + ghi lịch sử
             await ApplyTonKhoNhapAsync(entity, sign: +1, now);
 
             await _context.SaveChangesAsync();
@@ -194,10 +260,9 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
         using var tx = await _context.Database.BeginTransactionAsync();
         try
         {
-            // ✅ Hoàn kho theo dữ liệu cũ
+            // ✅ Hoàn kho theo dữ liệu cũ (có ghi lịch sử âm)
             await ApplyTonKhoNhapAsync(entity, sign: -1, now);
 
-            // Update entity
             entity.Ten = (dto.Ten ?? "").Trim();
             entity.GhiChu = dto.GhiChu;
 
@@ -214,7 +279,7 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
             entity.LastModified = now;
             StringHelper.NormalizeAllStrings(entity);
 
-            // ✅ Áp kho theo dữ liệu mới
+            // ✅ Áp kho theo dữ liệu mới (có ghi lịch sử dương)
             await ApplyTonKhoNhapAsync(entity, sign: +1, now);
 
             await _context.SaveChangesAsync();
@@ -247,7 +312,7 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
         using var tx = await _context.Database.BeginTransactionAsync();
         try
         {
-            // ✅ Xoá phiếu nhập => hoàn kho
+            // ✅ Xoá phiếu nhập => hoàn kho (ghi lịch sử âm)
             await ApplyTonKhoNhapAsync(entity, sign: -1, now);
 
             entity.IsDeleted = true;
@@ -288,7 +353,7 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
             entity.DeletedAt = null;
             entity.LastModified = now;
 
-            // ✅ Khôi phục phiếu nhập => cộng kho lại
+            // ✅ Khôi phục phiếu nhập => cộng kho lại (ghi lịch sử dương)
             await ApplyTonKhoNhapAsync(entity, sign: +1, now);
 
             await _context.SaveChangesAsync();

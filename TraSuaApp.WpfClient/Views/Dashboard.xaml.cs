@@ -75,6 +75,7 @@ namespace TraSuaApp.WpfClient.Views
         }
         private async void Dashboard_Loaded(object? sender, RoutedEventArgs e)
         {
+
             try
             {
                 Today = DateTime.Today;

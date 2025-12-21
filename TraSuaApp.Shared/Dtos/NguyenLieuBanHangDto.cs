@@ -6,7 +6,6 @@ namespace TraSuaApp.Shared.Dtos;
 public class NguyenLieuBanHangDto : DtoBase
 {
     public override string ApiRoute => "NguyenLieuBanHang";
-    public string TenPhienDich { get; set; } = null!;
 
     public bool DangSuDung { get; set; }
     public string? DonViTinh { get; set; }

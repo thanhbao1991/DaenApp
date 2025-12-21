@@ -7,7 +7,6 @@ public partial class NguyenLieuBanHang
     public Guid Id { get; set; }
 
     public string Ten { get; set; } = null!;
-    public string TenPhienDich { get; set; } = null!;
 
     public bool DangSuDung { get; set; }
 

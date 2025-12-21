@@ -22,10 +22,8 @@ public class NguyenLieuBanHangService : INguyenLieuBanHangService
         {
             Id = entity.Id,
             Ten = entity.Ten,
-            TenPhienDich = entity.TenPhienDich,
             DangSuDung = entity.DangSuDung,
 
-            // 🟟 mapping mới
             DonViTinh = entity.DonViTinh,
             TonKho = entity.TonKho,
 
@@ -63,18 +61,19 @@ public class NguyenLieuBanHangService : INguyenLieuBanHangService
             return Result<NguyenLieuBanHangDto>.Failure($"{_friendlyName} {dto.Ten} đã tồn tại.");
 
         var now = DateTime.Now;
+
+        // ✅ TonKho không âm
+        var tonKho = dto.TonKho;
+        if (tonKho < 0) tonKho = 0;
+
         var entity = new NguyenLieuBanHang
         {
             Id = Guid.NewGuid(),
-
-            // Ten lưu dạng normalize để search cho dễ
             Ten = dto.Ten.Trim(),
-            TenPhienDich = dto.TenPhienDich.Trim(),
             DangSuDung = dto.DangSuDung,
 
-            // 🟟 mapping mới
             DonViTinh = dto.DonViTinh,
-            TonKho = dto.TonKho, // thường tạo mới = 0, nhưng nếu muốn anh có thể nhập sẵn
+            TonKho = tonKho,
 
             CreatedAt = now,
             LastModified = now,
@@ -82,6 +81,27 @@ public class NguyenLieuBanHangService : INguyenLieuBanHangService
         };
 
         _context.NguyenLieuBanHangs.Add(entity);
+
+        // ✅ Nếu tạo mới mà nhập TonKho khác 0 -> log 1 giao dịch điều chỉnh khởi tạo
+        if (entity.TonKho != 0)
+        {
+            _context.NguyenLieuTransactions.Add(new NguyenLieuTransaction
+            {
+                Id = Guid.NewGuid(),
+                NguyenLieuId = entity.Id,
+                NgayGio = now,
+                Loai = LoaiGiaoDichNguyenLieu.DieuChinh,
+                SoLuong = entity.TonKho, // từ 0 lên TonKho
+                DonGia = null,
+                GhiChu = "Khởi tạo tồn kho khi tạo nguyên liệu bán hàng",
+                HoaDonId = null,
+                ChiTieuHangNgayId = null,
+                CreatedAt = now,
+                LastModified = now,
+                IsDeleted = false
+            });
+        }
+
         await _context.SaveChangesAsync();
 
         var after = ToDto(entity);
@@ -110,17 +130,44 @@ public class NguyenLieuBanHangService : INguyenLieuBanHangService
             return Result<NguyenLieuBanHangDto>.Failure($"{_friendlyName} {dto.Ten} đã tồn tại.");
 
         var before = ToDto(entity);
+        var now = DateTime.Now;
+
+        // ✅ giữ lại tồn cũ để log delta
+        var oldTonKho = entity.TonKho;
 
         // Cập nhật
         entity.Ten = dto.Ten.Trim();
-        entity.TenPhienDich = dto.TenPhienDich.Trim();
         entity.DangSuDung = dto.DangSuDung;
 
-        // 🟟 mapping mới
         entity.DonViTinh = dto.DonViTinh;
-        entity.TonKho = dto.TonKho; // thường không sửa tay, nhưng cho phép nếu cần chỉnh kho
 
-        entity.LastModified = DateTime.Now;
+        // ✅ TonKho không âm
+        var newTonKho = dto.TonKho;
+        if (newTonKho < 0) newTonKho = 0;
+
+        entity.TonKho = newTonKho;
+        entity.LastModified = now;
+
+        // ✅ LOG TRANSACTION nếu có thay đổi tồn
+        var delta = newTonKho - oldTonKho;
+        if (delta != 0)
+        {
+            _context.NguyenLieuTransactions.Add(new NguyenLieuTransaction
+            {
+                Id = Guid.NewGuid(),
+                NguyenLieuId = entity.Id,
+                NgayGio = now,
+                Loai = LoaiGiaoDichNguyenLieu.DieuChinh,
+                SoLuong = delta, // +/- theo delta
+                DonGia = null,
+                GhiChu = "Điều chỉnh tồn kho thủ công từ NguyenLieuBanHangEdit",
+                HoaDonId = null,
+                ChiTieuHangNgayId = null,
+                CreatedAt = now,
+                LastModified = now,
+                IsDeleted = false
+            });
+        }
 
         await _context.SaveChangesAsync();
 

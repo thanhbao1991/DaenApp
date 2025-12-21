@@ -20,6 +20,12 @@ public class ChiTieuHangNgayApi : BaseApi, IChiTieuHangNgayApi
     {
         return await GetAsync<ChiTieuHangNgayDto>($"{BASE_URL}/{id}");
     }
+    public async Task<Result<List<ChiTieuHangNgayDto>>> CreateBulkAsync(
+    ChiTieuHangNgayBulkCreateDto dto)
+    {
+        return await PostAsync<List<ChiTieuHangNgayDto>>(
+            $"{BASE_URL}/bulk", dto);
+    }
 
     public async Task<Result<ChiTieuHangNgayDto>> CreateAsync(ChiTieuHangNgayDto dto)
     {

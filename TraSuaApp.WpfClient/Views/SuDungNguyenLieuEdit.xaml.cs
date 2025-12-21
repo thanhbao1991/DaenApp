@@ -4,7 +4,6 @@ using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Apis;
-using TraSuaApp.WpfClient.Controls;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.AdminViews
@@ -24,6 +23,8 @@ namespace TraSuaApp.WpfClient.AdminViews
         public SuDungNguyenLieuEdit(CongThucDto congThuc, SuDungNguyenLieuDto? dto = null)
         {
             InitializeComponent();
+            DataContext = this;
+
             KeyDown += Window_KeyDown;
 
             _api = new SuDungNguyenLieuApi();
@@ -32,7 +33,6 @@ namespace TraSuaApp.WpfClient.AdminViews
             Title = _friendlyName;
             TieuDeTextBlock.Text = $"Công thức: {congThuc.TenSanPham} - {congThuc.TenBienThe}";
 
-            // Nạp list nguyên liệu bán hàng
             if (AppProviders.NguyenLieuBanHangs?.Items != null)
                 _nguyenLieuBanHangList = AppProviders.NguyenLieuBanHangs.Items.ToList();
 
@@ -47,19 +47,21 @@ namespace TraSuaApp.WpfClient.AdminViews
             Model = dto ?? new SuDungNguyenLieuDto
             {
                 CongThucId = congThuc.Id,
-                SoLuong = 1
+                SoLuong = 1,
+                GhiChu = ""
             };
 
             if (dto != null)
             {
-                // Model.NguyenLieuId lúc này được hiểu là Id của NguyenLieuBanHang
                 NguyenLieuBanHangSearchBox.SetSelectedNguyenLieuBanHangByIdWithoutPopup(dto.NguyenLieuId);
                 SoLuongNumeric.Value = dto.SoLuong;
+                // GhiChu đã bind trực tiếp
+                Loaded += (_, __) => SoLuongNumeric.Focus();
             }
             else
             {
                 SoLuongNumeric.Value = Model.SoLuong;
-                NguyenLieuBanHangSearchBox.SearchTextBox.Focus();
+                Loaded += (_, __) => NguyenLieuBanHangSearchBox.SearchTextBox.Focus();
             }
 
             if (Model.IsDeleted)
@@ -73,17 +75,16 @@ namespace TraSuaApp.WpfClient.AdminViews
         {
             NguyenLieuBanHangSearchBox.IsEnabled = enabled;
             SoLuongNumeric.IsEnabled = enabled;
+            GhiChuTextBox.IsEnabled = enabled;
         }
 
         private async Task<bool> SaveAsync()
         {
             ErrorTextBlock.Text = "";
 
-            // luôn gán công thức cha
             Model.CongThucId = _parentCongThuc.Id;
 
             var selectedNl = NguyenLieuBanHangSearchBox.SelectedNguyenLieuBanHang;
-            // 🟟 Model.NguyenLieuId bây giờ là Id của NguyenLieuBanHang
             Model.NguyenLieuId = selectedNl?.Id ?? Guid.Empty;
 
             if (Model.NguyenLieuId == Guid.Empty ||
@@ -102,6 +103,7 @@ namespace TraSuaApp.WpfClient.AdminViews
             }
 
             Model.SoLuong = SoLuongNumeric.Value;
+            Model.GhiChu = (Model.GhiChu ?? "").Trim();
 
             Result<SuDungNguyenLieuDto> result;
             if (Model.Id == Guid.Empty)
@@ -122,7 +124,7 @@ namespace TraSuaApp.WpfClient.AdminViews
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            KeepAdding = true; // Lưu & tiếp
+            KeepAdding = true;
             if (await SaveAsync())
             {
                 DialogResult = true;
@@ -132,7 +134,7 @@ namespace TraSuaApp.WpfClient.AdminViews
 
         private async void SaveAndCloseButton_Click(object sender, RoutedEventArgs e)
         {
-            KeepAdding = false; // Lưu & đóng
+            KeepAdding = false;
             if (await SaveAsync())
             {
                 DialogResult = true;

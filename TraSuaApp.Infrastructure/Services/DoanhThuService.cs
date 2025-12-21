@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Applicationn.Interfaces;
+using TraSuaApp.Domain.Entities;
 using TraSuaApp.Shared.Dtos;
 
 namespace TraSuaApp.Infrastructure.Services;
@@ -51,9 +52,10 @@ public class DoanhThuService : IDoanhThuService
     public async Task<DoanhThuNgayDto> GetDoanhThuNgayAsync(DateTime ngay)
     {
         var ngayBatDau = ngay.Date;
-        var ngayKetThuc = ngay.Date.AddDays(1);
+        var ngayKetThuc = ngayBatDau.AddDays(1);
 
-        var list = await _context.HoaDons
+        // Lấy toàn bộ hóa đơn trong ngày + các line thanh toán + các line nợ
+        var hoaDons = await _context.HoaDons
             .Include(x => x.KhachHang)
             .Include(x => x.ChiTietHoaDonThanhToans)
             .Include(x => x.ChiTietHoaDonNos)
@@ -61,64 +63,89 @@ public class DoanhThuService : IDoanhThuService
             .Where(x => !x.IsDeleted && x.Ngay >= ngayBatDau && x.Ngay < ngayKetThuc)
             .ToListAsync();
 
-        var hoaDonIds = list.Select(x => x.Id).ToList();
-
-        var tongDoanhThu = list.Sum(x => x.ThanhTien);
-
-        var tongDaThu = await _context.ChiTietHoaDonThanhToans.AsNoTracking()
-            .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
-            .SumAsync(ct => (decimal?)ct.SoTien) ?? 0m;
-
-        var tongChuyenKhoan = await _context.ChiTietHoaDonThanhToans.AsNoTracking()
-            .Where(ct => hoaDonIds.Contains(ct.HoaDonId) &&
-                         ct.TenPhuongThucThanhToan.ToLower() != "tiền mặt" &&
-                         !ct.IsDeleted)
-            .SumAsync(ct => (decimal?)ct.SoTien) ?? 0m;
-
-        var tongNoTuNoLines = await _context.ChiTietHoaDonNos.AsNoTracking()
-            .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
-            .SumAsync(ct => (decimal?)ct.SoTienConLai) ?? 0m;
-
-        var chuaThuKhongNo = await _context.HoaDons.AsNoTracking()
-            .Where(h => hoaDonIds.Contains(h.Id) && !h.IsDeleted && !h.ChiTietHoaDonNos.Any(n => !n.IsDeleted))
-            .Select(h => (decimal?)(h.ThanhTien - (h.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted).Sum(t => (decimal?)t.SoTien) ?? 0m)))
-            .SumAsync() ?? 0m;
-
-        var tongConLai = await _context.HoaDons.AsNoTracking()
-            .Where(h => !h.IsDeleted && h.Ngay >= ngayBatDau && h.Ngay < ngayKetThuc)
-            .SumAsync(h => (decimal?)h.ConLai) ?? 0m;
-
-        var tongChiTieu = await _context.ChiTieuHangNgays.AsNoTracking()
-            .Where(ct => !ct.IsDeleted && !ct.BillThang && ct.Ngay >= ngayBatDau && ct.Ngay < ngayKetThuc)
-            .SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0m;
-
-        string viecChuaLam = string.Join(", ",
-            await _context.CongViecNoiBos
-                .AsNoTracking()
-                .Where(ct => !ct.DaHoanThanh && !ct.IsDeleted)
-                .Select(ct => ct.Ten)
-                .ToListAsync()
-        );
-
-        var dto = new DoanhThuNgayDto
+        // ===== Helper: normalize payment method =====
+        static bool IsTienMat(string? tenPhuongThuc)
         {
-            Ngay = ngay,
-            TongSoDon = list.Count(),
-            TongDoanhThu = tongDoanhThu,
-            TongDaThu = tongDaThu,
-            TongConLai = tongConLai,
-            TongChiTieu = tongChiTieu,
-            TongChuyenKhoan = tongChuyenKhoan,
-            TongTienNo = tongNoTuNoLines,
-            TongCongNo = tongNoTuNoLines,
+            if (string.IsNullOrWhiteSpace(tenPhuongThuc)) return false;
+            var s = tenPhuongThuc.Trim().ToLower();
+            // chấp nhận vài biến thể hay gặp
+            return s == "tiền mặt" || s == "tien mat" || s.Contains("tiền mặt") || s.Contains("tien mat");
+        }
 
-            TaiCho = list.Where(x => x.PhanLoai == "Tại Chỗ").Sum(x => x.ThanhTien),
-            MuaVe = list.Where(x => x.PhanLoai == "Mv").Sum(x => x.ThanhTien),
-            DiShip = list.Where(x => x.PhanLoai == "Ship").Sum(x => x.ThanhTien),
-            AppShipping = list.Where(x => x.PhanLoai == "App").Sum(x => x.ThanhTien),
-            ViecChuaLam = viecChuaLam,
+        // ===== Tính tổng & map từng hóa đơn =====
+        decimal tongDoanhThu = 0m;
+        decimal tongDaThu = 0m;
+        decimal tongChuyenKhoan = 0m;
+        decimal tongTienMat = 0m;
+        decimal tongTienNo = 0m;
+        decimal tongConLai = 0m;
 
-            HoaDons = list.Select(h => new DoanhThuHoaDonDto
+        var hoaDonDtos = new List<DoanhThuHoaDonDto>();
+
+        foreach (var h in hoaDons)
+        {
+            var thanhToans = (h.ChiTietHoaDonThanhToans ?? new List<ChiTietHoaDonThanhToan>())
+                .Where(t => !t.IsDeleted)
+                .ToList();
+
+            var noLines = (h.ChiTietHoaDonNos ?? new List<ChiTietHoaDonNo>())
+                .Where(n => !n.IsDeleted)
+                .ToList();
+
+            var tienMat = thanhToans
+                .Where(t => IsTienMat(t.TenPhuongThucThanhToan))
+                .Sum(t => (decimal)t.SoTien);
+
+            var tienBank = thanhToans
+                .Where(t => !IsTienMat(t.TenPhuongThucThanhToan))
+                .Sum(t => (decimal)t.SoTien);
+
+            // Nợ còn lại (để tô đỏ)
+            var tienNo = noLines.Sum(n => (decimal?)n.SoTienConLai) ?? 0m;
+
+            // ConLai lấy từ HoaDon để đúng logic hệ thống (anh đang dùng rồi)
+            var conLai = (decimal)h.ConLai;
+            if (conLai < 0) conLai = 0;
+
+            var tongTien = (decimal)h.ThanhTien;
+            if (tongTien < 0) tongTien = 0;
+
+            var daThu = tienMat + tienBank;
+            var daThanhToan = conLai <= 0;
+
+            // Ngày nợ/Ngày trả (nếu entity có NgayGio)
+            DateTime? ngayNo = null;
+            DateTime? ngayTra = null;
+
+            // Nếu entity ChiTietHoaDonNo có NgayGio, lấy cái mới nhất
+            // (Nếu tên field khác, anh đổi lại đúng field)
+            if (noLines.Count > 0)
+            {
+                // giả định entity có property NgayGio
+                ngayNo = noLines
+                    .Select(n => (DateTime?)n.NgayGio)
+                    .OrderByDescending(x => x)
+                    .FirstOrDefault();
+            }
+
+            if (thanhToans.Count > 0)
+            {
+                // giả định entity có property NgayGio
+                ngayTra = thanhToans
+                    .Select(t => (DateTime?)t.NgayGio)
+                    .OrderByDescending(x => x)
+                    .FirstOrDefault();
+            }
+
+            // Cộng tổng
+            tongDoanhThu += tongTien;
+            tongDaThu += daThu;
+            tongChuyenKhoan += tienBank;
+            tongTienMat += tienMat;
+            tongTienNo += tienNo;
+            tongConLai += conLai;
+
+            hoaDonDtos.Add(new DoanhThuHoaDonDto
             {
                 Id = h.Id,
                 IdKhachHang = h.KhachHangId,
@@ -127,17 +154,70 @@ public class DoanhThuService : IDoanhThuService
                 DiaChi = h.DiaChiText,
                 DiaChiShip = h.DiaChiText,
                 PhanLoai = h.PhanLoai,
+
                 NgayHoaDon = h.NgayGio,
                 NgayShip = h.NgayShip,
+
+                NgayNo = ngayNo,
+                NgayTra = ngayTra,
+
+                DaThanhToan = daThanhToan,
                 BaoDon = h.BaoDon,
-                TongTien = h.ThanhTien,
-                ConLai = h.ConLai,
-            }).ToList()
+
+                TongTien = tongTien,
+                DaThu = daThu,
+                ConLai = conLai,
+                TienBank = tienBank,
+                TienMat = tienMat,
+                TienNo = tienNo
+            });
+        }
+
+        // Chi tiêu trong ngày
+        var tongChiTieu = await _context.ChiTieuHangNgays.AsNoTracking()
+            .Where(ct => !ct.IsDeleted && !ct.BillThang && ct.Ngay >= ngayBatDau && ct.Ngay < ngayKetThuc)
+            .SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0m;
+
+        // Việc chưa làm
+        var viecChuaLam = string.Join(", ",
+            await _context.CongViecNoiBos
+                .AsNoTracking()
+                .Where(ct => !ct.DaHoanThanh && !ct.IsDeleted)
+                .Select(ct => ct.Ten)
+                .ToListAsync()
+        );
+
+        // DTO trả về
+        var dto = new DoanhThuNgayDto
+        {
+            Ngay = ngayBatDau,
+            TongSoDon = hoaDons.Count,
+            TongDoanhThu = tongDoanhThu,
+            TongDaThu = tongDaThu,
+            TongConLai = tongConLai,
+            TongChiTieu = tongChiTieu,
+
+            TongChuyenKhoan = tongChuyenKhoan,
+            TongTienMat = tongTienMat,
+            TongTienNo = tongTienNo,
+            TongCongNo = tongTienNo,
+
+            TaiCho = hoaDons.Where(x => x.PhanLoai == "Tại Chỗ").Sum(x => (decimal)x.ThanhTien),
+            MuaVe = hoaDons.Where(x => x.PhanLoai == "Mv").Sum(x => (decimal)x.ThanhTien),
+            DiShip = hoaDons.Where(x => x.PhanLoai == "Ship").Sum(x => (decimal)x.ThanhTien),
+            AppShipping = hoaDons.Where(x => x.PhanLoai == "App").Sum(x => (decimal)x.ThanhTien),
+
+            ViecChuaLam = viecChuaLam,
+            HoaDons = hoaDonDtos
+                .OrderByDescending(x => x.PhanLoai == "Ship" && x.NgayShip == null)
+                .ThenByDescending(x => x.NgayHoaDon)
+                .ToList()
         };
 
-        dto.TongTienMat = -1;
         return dto;
     }
+
+
 
     public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
     {

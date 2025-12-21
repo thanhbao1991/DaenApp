@@ -102,4 +102,20 @@ public class ChiTieuHangNgayController : BaseApiController
         var list = await _service.GetUpdatedSince(lastSync);
         return Result<List<ChiTieuHangNgayDto>>.Success(list);
     }
+
+    [HttpPost("bulk")]
+    public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> CreateBulk(
+    ChiTieuHangNgayBulkCreateDto dto)
+    {
+        var result = await _service.CreateBulkAsync(dto);
+
+        if (result.IsSuccess && result.Data != null)
+        {
+            foreach (var item in result.Data)
+                await NotifyClients("created", item.Id);
+        }
+
+        return result;
+    }
+
 }

@@ -15,13 +15,15 @@ namespace TraSuaApp.WpfClient.AdminViews
         private readonly ICongThucApi _api;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["CongThuc"];
 
-        private readonly List<SanPhamDto> _sanPhamList = new();
+        private List<SanPhamDto> _sanPhamList = new();
 
         public bool KeepAdding { get; private set; } = true;
 
         public CongThucEdit(CongThucDto? dto = null)
         {
             InitializeComponent();
+            DataContext = this;
+
             KeyDown += Window_KeyDown;
 
             Title = _friendlyName;
@@ -29,7 +31,6 @@ namespace TraSuaApp.WpfClient.AdminViews
 
             _api = new CongThucApi();
 
-            // load list sản phẩm
             if (AppProviders.SanPhams?.Items != null)
                 _sanPhamList = AppProviders.SanPhams.Items.ToList();
 
@@ -46,6 +47,8 @@ namespace TraSuaApp.WpfClient.AdminViews
                 else
                 {
                     Model.SanPhamBienTheId = Guid.Empty;
+                    Model.TenSanPham = null;
+                    Model.TenBienThe = null;
                 }
             };
 
@@ -53,19 +56,24 @@ namespace TraSuaApp.WpfClient.AdminViews
             {
                 Model = dto;
 
-                // set lại selection theo SanPhamBienTheId
                 var sp = _sanPhamList.FirstOrDefault(
                     s => s.BienThe.Any(bt => bt.Id == dto.SanPhamBienTheId));
-
                 var bt = sp?.BienThe.FirstOrDefault(b => b.Id == dto.SanPhamBienTheId);
 
                 if (sp != null && bt != null)
                     SanPhamSearchBox.SetSelectedSanPham(sp, bt);
+
+                // focus tên công thức cho nhanh
+                Loaded += (_, __) => TenTextBox.Focus();
             }
             else
             {
-                // focus ô search
-                SanPhamSearchBox.SearchTextBox.Focus();
+                Loaded += (_, __) => SanPhamSearchBox.SearchTextBox.Focus();
+
+                // default gợi ý (anh muốn gì thì đổi)
+                Model.Ten ??= "Công thức chuẩn";
+                Model.Loai ??= "Default";
+                Model.IsDefault = true;
             }
 
             if (Model.IsDeleted)
@@ -78,6 +86,9 @@ namespace TraSuaApp.WpfClient.AdminViews
         private void SetControlsEnabled(bool enabled)
         {
             SanPhamSearchBox.IsEnabled = enabled;
+            TenTextBox.IsEnabled = enabled;
+            LoaiTextBox.IsEnabled = enabled;
+            IsDefaultCheckBox.IsEnabled = enabled;
         }
 
         private async Task<bool> SaveAsync()
@@ -93,7 +104,17 @@ namespace TraSuaApp.WpfClient.AdminViews
                 return false;
             }
 
-            // cập nhật lại tên SP / BT từ selection để chắc ăn
+            Model.Ten = (Model.Ten ?? "").Trim();
+            Model.Loai = (Model.Loai ?? "").Trim();
+
+            if (string.IsNullOrWhiteSpace(Model.Ten))
+            {
+                ErrorTextBlock.Text = "Tên công thức không được để trống.";
+                TenTextBox.Focus();
+                return false;
+            }
+
+            // cập nhật lại tên SP/BT chắc ăn
             Model.TenSanPham = SanPhamSearchBox.SelectedSanPham!.Ten;
             Model.TenBienThe = SanPhamSearchBox.SelectedBienThe!.TenBienThe;
 
@@ -116,7 +137,7 @@ namespace TraSuaApp.WpfClient.AdminViews
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            KeepAdding = true; // Lưu và thêm tiếp
+            KeepAdding = true;
             if (await SaveAsync())
             {
                 DialogResult = true;
@@ -126,7 +147,7 @@ namespace TraSuaApp.WpfClient.AdminViews
 
         private async void SaveAndCloseButton_Click(object sender, RoutedEventArgs e)
         {
-            KeepAdding = false; // Lưu và đóng
+            KeepAdding = false;
             if (await SaveAsync())
             {
                 DialogResult = true;

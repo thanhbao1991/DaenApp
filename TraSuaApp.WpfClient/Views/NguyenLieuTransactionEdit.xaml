@@ -2,7 +2,6 @@
     x:Class="TraSuaApp.WpfClient.AdminViews.NguyenLieuTransactionEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
     Style="{StaticResource EditWindowStyle}"
     WindowStartupLocation="CenterScreen">
 
@@ -14,40 +13,39 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <DockPanel Grid.Row="0" Style="{StaticResource EditHeaderPanelStyle}">
-                <TextBlock Name="TieuDeTextBlock" Style="{StaticResource EditTitleTextStyle}" />
+            <DockPanel Grid.Row="0">
+                <TextBlock
+                    x:Name="TieuDeTextBlock"
+                    Style="{StaticResource EditTitleTextStyle}"
+                    Text="Giao dịch nguyên liệu" />
                 <Button
                     Click="CloseButton_Click"
-                    Content="✖"
+                    DockPanel.Dock="Right"
                     Style="{StaticResource CloseButtonStyle}" />
             </DockPanel>
-            <!--  Nội dung form  -->
+
             <StackPanel Grid.Row="1">
-                <GroupBox Margin="0,0,0,5" Header="Từ khoá tra cứu (không dấu):">
-                    <TextBox
-                        x:Name="TenTextBox"
-                        Width="300"
-                        Margin="0,0,8,0" />
-                </GroupBox>
 
-                <GroupBox Margin="0,0,0,5" Header="Chuẩn (dịch) sang:">
-                    <TextBox
-                        x:Name="TenPhienDichTextBox"
-                        Width="300"
-                        Margin="0,0,8,0" />
-                </GroupBox>
+                <Label Content="Nguyên liệu" />
+                <ComboBox
+                    x:Name="NguyenLieuComboBox"
+                    DisplayMemberPath="Ten"
+                    SelectedValuePath="Id" />
 
-                <GroupBox>
-                    <CheckBox x:Name="DangSuDungCheckBox" Content="Đang sử dụng" />
-                </GroupBox>
+                <Label Content="Loại giao dịch" />
+                <ComboBox x:Name="LoaiComboBox" />
+
+                <Label Content="Số lượng" />
+                <TextBox x:Name="SoLuongTextBox" />
+
+                <Label Content="Ghi chú" />
+                <TextBox x:Name="GhiChuTextBox" />
 
             </StackPanel>
 
-            <!--  Nút lưu và lỗi  -->
             <StackPanel Grid.Row="2">
                 <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
                 <Button
-                    Name="SaveButton"
                     Click="SaveButton_Click"
                     Content="Lưu"
                     Style="{StaticResource SaveButtonStyle}" />

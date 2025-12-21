@@ -36,6 +36,13 @@
                 <GroupBox Header="Số lượng">
                     <ctrl:NumericUpDown x:Name="SoLuongNumeric" Width="120" />
                 </GroupBox>
+
+                <GroupBox Margin="0,8,0,0" Header="Ghi chú">
+                    <TextBox
+                        x:Name="GhiChuTextBox"
+                        Style="{StaticResource TextBoxStyle}"
+                        Text="{Binding Model.GhiChu, UpdateSourceTrigger=PropertyChanged}" />
+                </GroupBox>
             </StackPanel>
 
             <!--  Footer  -->

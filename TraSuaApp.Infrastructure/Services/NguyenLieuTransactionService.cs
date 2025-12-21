@@ -1,11 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Domain.Entities;
+using TraSuaApp.Infrastructure;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-
-namespace TraSuaApp.Infrastructure.Services;
 
 public class NguyenLieuTransactionService : INguyenLieuTransactionService
 {
@@ -17,66 +16,71 @@ public class NguyenLieuTransactionService : INguyenLieuTransactionService
         _context = context;
     }
 
-    private static NguyenLieuTransactionDto ToDto(NguyenLieuTransaction e, NguyenLieuBanHang? nlbh = null)
+    private NguyenLieuTransactionDto ToDto(NguyenLieuTransaction entity, NguyenLieuBanHang? nlb = null)
     {
         return new NguyenLieuTransactionDto
         {
-            Id = e.Id,
+            Id = entity.Id,
 
-            NguyenLieuId = e.NguyenLieuId,
-            TenNguyenLieu = nlbh?.Ten,
-            DonViTinh = nlbh?.DonViTinh,
+            NguyenLieuId = entity.NguyenLieuId,
+            NgayGio = entity.NgayGio,
+            Loai = entity.Loai,
+            SoLuong = entity.SoLuong,
+            DonGia = entity.DonGia,
+            GhiChu = entity.GhiChu,
+            ChiTieuHangNgayId = entity.ChiTieuHangNgayId,
+            HoaDonId = entity.HoaDonId,
 
-            NgayGio = e.NgayGio,
-            Loai = e.Loai,
-            SoLuong = e.SoLuong,
-            DonGia = e.DonGia,
-            GhiChu = e.GhiChu,
+            TenNguyenLieu = nlb?.Ten,
+            DonViTinh = nlb?.DonViTinh,
 
-            ChiTieuHangNgayId = e.ChiTieuHangNgayId,
-            HoaDonId = e.HoaDonId,
-
-            CreatedAt = e.CreatedAt,
-            LastModified = e.LastModified,
-            DeletedAt = e.DeletedAt,
-            IsDeleted = e.IsDeleted
+            CreatedAt = entity.CreatedAt,
+            LastModified = entity.LastModified,
+            DeletedAt = entity.DeletedAt,
+            IsDeleted = entity.IsDeleted
         };
-    }
-
-    private IQueryable<NguyenLieuTransaction> BaseQuery()
-    {
-        return _context.NguyenLieuTransactions
-            .Include(x => x.NguyenLieu); // NguyenLieuBanHang
     }
 
     public async Task<List<NguyenLieuTransactionDto>> GetAllAsync()
     {
-        var list = await BaseQuery()
-            .AsNoTracking()
+        var list = await _context.NguyenLieuTransactions.AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.NgayGio)
-            .ThenByDescending(x => x.LastModified ?? x.CreatedAt)
             .ToListAsync();
 
-        return list.Select(x => ToDto(x, x.NguyenLieu)).ToList();
+        if (!list.Any()) return new List<NguyenLieuTransactionDto>();
+
+        var ids = list.Select(x => x.NguyenLieuId).Distinct().ToList();
+
+        var nlbMap = await _context.NguyenLieuBanHangs.AsNoTracking()
+            .Where(x => ids.Contains(x.Id) && !x.IsDeleted)
+            .ToDictionaryAsync(x => x.Id, x => x);
+
+        return list.Select(x => ToDto(x, nlbMap.TryGetValue(x.NguyenLieuId, out var n) ? n : null)).ToList();
     }
 
     public async Task<NguyenLieuTransactionDto?> GetByIdAsync(Guid id)
     {
-        var e = await BaseQuery()
-            .AsNoTracking()
+        var entity = await _context.NguyenLieuTransactions.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
-        return e == null ? null : ToDto(e, e.NguyenLieu);
+        if (entity == null) return null;
+
+        var nlb = await _context.NguyenLieuBanHangs.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == entity.NguyenLieuId && !x.IsDeleted);
+
+        return ToDto(entity, nlb);
     }
 
     public async Task<Result<NguyenLieuTransactionDto>> CreateAsync(NguyenLieuTransactionDto dto)
     {
+        // ✅ Transaction thường do hệ thống tạo (nhập kho / bán / điều chỉnh).
+        // Nếu vẫn muốn tạo tay từ UI, validate tối thiểu:
         if (dto.NguyenLieuId == Guid.Empty)
-            return Result<NguyenLieuTransactionDto>.Failure("Vui lòng chọn nguyên liệu.");
+            return Result<NguyenLieuTransactionDto>.Failure("Vui lòng chọn nguyên liệu (NguyenLieuBanHang).");
 
         if (dto.SoLuong == 0)
-            return Result<NguyenLieuTransactionDto>.Failure("Số lượng phải khác 0.");
+            return Result<NguyenLieuTransactionDto>.Failure("Số lượng không được = 0.");
 
         var now = DateTime.Now;
 
@@ -85,10 +89,12 @@ public class NguyenLieuTransactionService : INguyenLieuTransactionService
             Id = Guid.NewGuid(),
             NguyenLieuId = dto.NguyenLieuId,
             NgayGio = dto.NgayGio == default ? now : dto.NgayGio,
+
             Loai = dto.Loai,
             SoLuong = dto.SoLuong,
             DonGia = dto.DonGia,
             GhiChu = dto.GhiChu,
+
             ChiTieuHangNgayId = dto.ChiTieuHangNgayId,
             HoaDonId = dto.HoaDonId,
 
@@ -100,9 +106,10 @@ public class NguyenLieuTransactionService : INguyenLieuTransactionService
         _context.NguyenLieuTransactions.Add(entity);
         await _context.SaveChangesAsync();
 
-        var loaded = await BaseQuery().FirstAsync(x => x.Id == entity.Id);
-        var after = ToDto(loaded, loaded.NguyenLieu);
+        var nlb = await _context.NguyenLieuBanHangs.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == entity.NguyenLieuId && !x.IsDeleted);
 
+        var after = ToDto(entity, nlb);
         return Result<NguyenLieuTransactionDto>.Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
             .WithId(after.Id)
             .WithAfter(after);
@@ -119,18 +126,12 @@ public class NguyenLieuTransactionService : INguyenLieuTransactionService
         if (dto.LastModified < entity.LastModified)
             return Result<NguyenLieuTransactionDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
-        if (dto.NguyenLieuId == Guid.Empty)
-            return Result<NguyenLieuTransactionDto>.Failure("Vui lòng chọn nguyên liệu.");
+        var beforeNlb = await _context.NguyenLieuBanHangs.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == entity.NguyenLieuId && !x.IsDeleted);
 
-        if (dto.SoLuong == 0)
-            return Result<NguyenLieuTransactionDto>.Failure("Số lượng phải khác 0.");
+        var before = ToDto(entity, beforeNlb);
 
-        var beforeLoaded = await BaseQuery().AsNoTracking().FirstAsync(x => x.Id == id);
-        var before = ToDto(beforeLoaded, beforeLoaded.NguyenLieu);
-
-        var now = DateTime.Now;
-
-        entity.NguyenLieuId = dto.NguyenLieuId;
+        // Cho phép chỉnh tay ghi chú / ngày giờ / loại / số lượng nếu anh muốn
         entity.NgayGio = dto.NgayGio == default ? entity.NgayGio : dto.NgayGio;
         entity.Loai = dto.Loai;
         entity.SoLuong = dto.SoLuong;
@@ -138,12 +139,15 @@ public class NguyenLieuTransactionService : INguyenLieuTransactionService
         entity.GhiChu = dto.GhiChu;
         entity.ChiTieuHangNgayId = dto.ChiTieuHangNgayId;
         entity.HoaDonId = dto.HoaDonId;
-        entity.LastModified = now;
+
+        entity.LastModified = DateTime.Now;
 
         await _context.SaveChangesAsync();
 
-        var loaded = await BaseQuery().FirstAsync(x => x.Id == id);
-        var after = ToDto(loaded, loaded.NguyenLieu);
+        var afterNlb = await _context.NguyenLieuBanHangs.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == entity.NguyenLieuId && !x.IsDeleted);
+
+        var after = ToDto(entity, afterNlb);
 
         return Result<NguyenLieuTransactionDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
             .WithId(id)
@@ -154,13 +158,16 @@ public class NguyenLieuTransactionService : INguyenLieuTransactionService
     public async Task<Result<NguyenLieuTransactionDto>> DeleteAsync(Guid id)
     {
         var entity = await _context.NguyenLieuTransactions.FirstOrDefaultAsync(x => x.Id == id);
+
         if (entity == null || entity.IsDeleted)
             return Result<NguyenLieuTransactionDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        var beforeLoaded = await BaseQuery().AsNoTracking().FirstAsync(x => x.Id == id);
-        var before = ToDto(beforeLoaded, beforeLoaded.NguyenLieu);
+        var nlb = await _context.NguyenLieuBanHangs.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == entity.NguyenLieuId && !x.IsDeleted);
 
+        var before = ToDto(entity, nlb);
         var now = DateTime.Now;
+
         entity.IsDeleted = true;
         entity.DeletedAt = now;
         entity.LastModified = now;
@@ -175,21 +182,23 @@ public class NguyenLieuTransactionService : INguyenLieuTransactionService
     public async Task<Result<NguyenLieuTransactionDto>> RestoreAsync(Guid id)
     {
         var entity = await _context.NguyenLieuTransactions.FirstOrDefaultAsync(x => x.Id == id);
+
         if (entity == null)
             return Result<NguyenLieuTransactionDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
         if (!entity.IsDeleted)
             return Result<NguyenLieuTransactionDto>.Failure($"{_friendlyName} này chưa bị xoá.");
 
-        var now = DateTime.Now;
         entity.IsDeleted = false;
         entity.DeletedAt = null;
-        entity.LastModified = now;
+        entity.LastModified = DateTime.Now;
 
         await _context.SaveChangesAsync();
 
-        var loaded = await BaseQuery().FirstAsync(x => x.Id == id);
-        var after = ToDto(loaded, loaded.NguyenLieu);
+        var nlb = await _context.NguyenLieuBanHangs.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == entity.NguyenLieuId && !x.IsDeleted);
+
+        var after = ToDto(entity, nlb);
 
         return Result<NguyenLieuTransactionDto>.Success(after, $"Khôi phục {_friendlyName.ToLower()} thành công.")
             .WithId(after.Id)
@@ -198,12 +207,19 @@ public class NguyenLieuTransactionService : INguyenLieuTransactionService
 
     public async Task<List<NguyenLieuTransactionDto>> GetUpdatedSince(DateTime lastSync)
     {
-        var list = await BaseQuery()
-            .AsNoTracking()
-            .Where(x => (x.LastModified ?? x.CreatedAt) > lastSync)
-            .OrderByDescending(x => x.LastModified ?? x.CreatedAt)
+        var list = await _context.NguyenLieuTransactions.AsNoTracking()
+            .Where(x => x.LastModified > lastSync)
+            .OrderByDescending(x => x.LastModified)
             .ToListAsync();
 
-        return list.Select(x => ToDto(x, x.NguyenLieu)).ToList();
+        if (!list.Any()) return new List<NguyenLieuTransactionDto>();
+
+        var ids = list.Select(x => x.NguyenLieuId).Distinct().ToList();
+
+        var nlbMap = await _context.NguyenLieuBanHangs.AsNoTracking()
+            .Where(x => ids.Contains(x.Id) && !x.IsDeleted)
+            .ToDictionaryAsync(x => x.Id, x => x);
+
+        return list.Select(x => ToDto(x, nlbMap.TryGetValue(x.NguyenLieuId, out var n) ? n : null)).ToList();
     }
 }

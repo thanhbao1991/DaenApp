@@ -5,6 +5,8 @@ namespace TraSuaApp.WpfClient.Apis;
 
 public interface IChiTieuHangNgayApi
 {
+    Task<Result<List<ChiTieuHangNgayDto>>> CreateBulkAsync(
+    ChiTieuHangNgayBulkCreateDto dto);
     Task<Result<List<ChiTieuHangNgayDto>>> GetAllAsync();
     Task<Result<ChiTieuHangNgayDto>> GetByIdAsync(Guid id);
     Task<Result<List<ChiTieuHangNgayDto>>> GetUpdatedSince(DateTime since);

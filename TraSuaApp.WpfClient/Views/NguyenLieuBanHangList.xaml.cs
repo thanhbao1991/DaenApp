@@ -52,7 +52,11 @@ namespace TraSuaApp.WpfClient.AdminViews
 
             _viewSource.View.SortDescriptions.Clear();
             _viewSource.View.SortDescriptions.Add(
-                new SortDescription(nameof(NguyenLieuBanHangDto.LastModified), ListSortDirection.Descending));
+                // new SortDescription(nameof(NguyenLieuBanHangDto.LastModified), ListSortDirection.Descending),
+                new SortDescription(nameof(NguyenLieuBanHangDto.TonKho), ListSortDirection.Descending)
+
+
+                );
 
             var view = _viewSource.View.Cast<NguyenLieuBanHangDto>().ToList();
             for (int i = 0; i < view.Count; i++)

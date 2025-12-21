@@ -5,6 +5,8 @@ namespace TraSuaApp.Applicationn.Interfaces;
 
 public interface IChiTieuHangNgayService
 {
+    Task<Result<List<ChiTieuHangNgayDto>>> CreateBulkAsync(
+    ChiTieuHangNgayBulkCreateDto dto);
     Task<List<ChiTieuHangNgayDto>> GetAllAsync();
     Task<ChiTieuHangNgayDto?> GetByIdAsync(Guid id);
     Task<Result<ChiTieuHangNgayDto>> CreateAsync(ChiTieuHangNgayDto dto);

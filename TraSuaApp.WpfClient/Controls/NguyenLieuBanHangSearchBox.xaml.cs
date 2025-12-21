@@ -30,7 +30,6 @@ namespace TraSuaApp.WpfClient.Controls
         public void SetSelectedNguyenLieuBanHang(NguyenLieuBanHangDto dto)
         {
             SelectedNguyenLieuBanHang = dto;
-            SearchTextBox.Text = dto.TenPhienDich;
         }
 
         public void SetSelectedNguyenLieuBanHangById(Guid id)
@@ -96,7 +95,7 @@ namespace TraSuaApp.WpfClient.Controls
                            parts.All(p => timKiem.Contains(p));
                 })
                 .Take(20)
-                .OrderBy(x => x.TenPhienDich)
+                .OrderBy(x => x.Ten)
                 .ToList();
 
             ListBoxResults.ItemsSource = result;
@@ -115,7 +114,6 @@ namespace TraSuaApp.WpfClient.Controls
         private void Select(NguyenLieuBanHangDto dto)
         {
             SelectedNguyenLieuBanHang = dto;
-            SearchTextBox.Text = dto.TenPhienDich;
             SearchTextBox.CaretIndex = SearchTextBox.Text.Length;
             Popup.IsOpen = false;
             NguyenLieuBanHangSelected?.Invoke(dto);

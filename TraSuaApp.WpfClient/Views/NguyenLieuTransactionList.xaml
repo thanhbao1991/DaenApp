@@ -12,86 +12,98 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!--  Tiêu đề  -->
+        <!--  Header  -->
         <DockPanel Grid.Row="0" Margin="0,0,0,10">
-            <TextBlock Name="TieuDeTextBlock" Style="{StaticResource TitleTextStyle}" />
+            <TextBlock
+                x:Name="TieuDeTextBlock"
+                Style="{StaticResource TitleTextStyle}"
+                Text="Lịch sử giao dịch nguyên liệu" />
             <Button
                 Click="CloseButton_Click"
                 DockPanel.Dock="Right"
                 Style="{StaticResource CloseButtonStyle}" />
         </DockPanel>
 
-        <!--  Thanh công cụ  -->
+        <!--  Toolbar  -->
         <Grid Grid.Row="1" Margin="10,0,10,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <Grid Margin="0,0,4,0">
-                <TextBox
-                    x:Name="SearchTextBox"
-                    Style="{StaticResource SearchTextBoxStyle}"
-                    TextChanged="SearchTextBox_TextChanged" />
-                <TextBlock
-                    Style="{StaticResource SearchHintTextStyle}"
-                    Text="Tìm kiếm..."
-                    Visibility="{Binding Text.IsEmpty, ElementName=SearchTextBox, Converter={StaticResource BoolToVisibilityConverter}}" />
-            </Grid>
+            <TextBox
+                x:Name="SearchTextBox"
+                Style="{StaticResource SearchTextBoxStyle}"
+                TextChanged="SearchTextBox_TextChanged" />
 
-            <StackPanel
-                Grid.Column="1"
-                HorizontalAlignment="Right"
-                Orientation="Horizontal">
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <Button
-                    Width="80"
-                    Margin="0,0,4,0"
                     Click="AddButton_Click"
                     Content="Thêm"
                     Style="{StaticResource AddButtonStyle}" />
                 <Button
-                    Width="80"
-                    Margin="0,0,4,0"
                     Click="EditButton_Click"
                     Content="Sửa"
                     Style="{StaticResource EditButtonStyle}" />
                 <Button
-                    Width="80"
-                    Margin="0,0,4,0"
                     Click="DeleteButton_Click"
                     Content="Xoá"
                     Style="{StaticResource DeleteButtonStyle}" />
                 <Button
-                    Width="80"
                     Click="ReloadButton_Click"
                     Content="Tải lại"
                     Style="{StaticResource ReloadButtonStyle}" />
             </StackPanel>
         </Grid>
 
-        <!--  Danh sách  -->
+        <!--  DataGrid  -->
         <DataGrid
             x:Name="NguyenLieuTransactionDataGrid"
             Grid.Row="2"
-            Margin="10"
             AutoGenerateColumns="False"
-            CanUserSortColumns="False"
+            CanUserSortColumns="True"
             MouseDoubleClick="NguyenLieuTransactionDataGrid_MouseDoubleClick">
+
             <DataGrid.Columns>
+
                 <DataGridTextColumn
                     Width="50"
-                    Binding="{Binding STT}"
+                    Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
+
+                <DataGridTextColumn
+                    Width="150"
+                    Binding="{Binding NgayGio, StringFormat=dd/MM/yyyy HH:mm}"
+                    Header="Ngày giờ" />
+
                 <DataGridTextColumn
                     Width="*"
-                    Binding="{Binding Ten}"
+                    Binding="{Binding TenNguyenLieu}"
+                    Header="Nguyên liệu" />
+
+                <DataGridTextColumn
+                    Width="90"
+                    Binding="{Binding Loai}"
+                    Header="Loại" />
+
+                <DataGridTextColumn
+                    Width="100"
+                    Binding="{Binding SoLuong}"
+                    ElementStyle="{StaticResource RightTextCellStyle}"
+                    Header="Số lượng" />
+
+                <DataGridTextColumn
+                    Width="60"
+                    Binding="{Binding DonViTinh}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
-                    Header="Tên phương thức thanh toán" />
-                <DataGridCheckBoxColumn
-                    Width="80"
-                    Binding="{Binding DangSuDung}"
-                    Header="Kích hoạt" />
+                    Header="ĐVT" />
+
+                <DataGridTextColumn
+                    Width="200"
+                    Binding="{Binding GhiChu}"
+                    Header="Ghi chú" />
+
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

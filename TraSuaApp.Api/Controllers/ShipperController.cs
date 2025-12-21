@@ -103,4 +103,13 @@ public class ShipperController : BaseApiController
             await NotifyClients("updated", result.Data.Id);
         return result;
     }
+    [HttpGet("summary")]
+    [AllowAnonymous]
+
+    public async Task<ActionResult<ShipperSummaryDto>> Get([FromQuery] DateTime day)
+    {
+        var result = await _service.GetSummaryAsync(day);
+        return Ok(result);
+    }
+
 }

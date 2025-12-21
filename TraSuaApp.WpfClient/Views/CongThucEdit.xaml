@@ -28,9 +28,30 @@
                 Grid.Row="1"
                 Margin="0,8,0,0"
                 VerticalAlignment="Top">
+
                 <GroupBox Header="Sản phẩm / biến thể">
                     <ctrl:SanPhamSearchBox x:Name="SanPhamSearchBox" HorizontalAlignment="Stretch" />
                 </GroupBox>
+
+                <GroupBox Margin="0,8,0,0" Header="Tên công thức">
+                    <TextBox
+                        x:Name="TenTextBox"
+                        Style="{StaticResource TextBoxStyle}"
+                        Text="{Binding Model.Ten, UpdateSourceTrigger=PropertyChanged}" />
+                </GroupBox>
+
+                <GroupBox Margin="0,8,0,0" Header="Loại">
+                    <TextBox
+                        x:Name="LoaiTextBox"
+                        Style="{StaticResource TextBoxStyle}"
+                        Text="{Binding Model.Loai, UpdateSourceTrigger=PropertyChanged}" />
+                </GroupBox>
+
+                <CheckBox
+                    x:Name="IsDefaultCheckBox"
+                    Margin="0,10,0,0"
+                    Content="Mặc định (trừ kho theo công thức này)"
+                    IsChecked="{Binding Model.IsDefault}" />
             </StackPanel>
 
             <!--  Footer  -->

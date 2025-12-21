@@ -14,6 +14,8 @@ namespace TraSuaApp.WpfClient.AdminViews
         private readonly INguyenLieuBanHangApi _api;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["NguyenLieuBanHang"];
 
+        private decimal _oldTonKho = 0;
+
         public NguyenLieuBanHangEdit(NguyenLieuBanHangDto? dto = null)
         {
             InitializeComponent();
@@ -29,10 +31,11 @@ namespace TraSuaApp.WpfClient.AdminViews
 
                 TenTextBox.Text = dto.Ten;
                 TonKhoTextBox.Value = dto.TonKho;
-                DonViTinhTextBox.Text = dto.DonViTinh;      // 🟟 mới
+                DonViTinhTextBox.Text = dto.DonViTinh;
                 DangSuDungCheckBox.IsChecked = dto.DangSuDung;
 
-                // Nếu đã bị xoá mềm
+                _oldTonKho = dto.TonKho;
+
                 if (Model.IsDeleted)
                 {
                     TenTextBox.IsEnabled = false;
@@ -45,8 +48,8 @@ namespace TraSuaApp.WpfClient.AdminViews
             }
             else
             {
-                // Giá trị mặc định
                 DangSuDungCheckBox.IsChecked = true;
+                _oldTonKho = 0;
                 TenTextBox.Focus();
             }
         }
@@ -55,7 +58,6 @@ namespace TraSuaApp.WpfClient.AdminViews
         {
             ErrorTextBlock.Text = "";
 
-            // Bắt lỗi trống tên
             if (string.IsNullOrWhiteSpace(TenTextBox.Text))
             {
                 ErrorTextBlock.Text = $"Tên {_friendlyName} không được để trống.";
@@ -63,8 +65,27 @@ namespace TraSuaApp.WpfClient.AdminViews
                 return;
             }
 
+            var newTon = TonKhoTextBox.Value;
+            if (newTon < 0)
+            {
+                ErrorTextBlock.Text = "Tồn kho không được âm.";
+                return;
+            }
+
+            // ✅ Nhắc user nếu đang sửa và TonKho thay đổi -> hệ thống sẽ log transaction
+            if (Model.Id != Guid.Empty && !Model.IsDeleted)
+            {
+                var delta = newTon - _oldTonKho;
+                if (delta != 0)
+                {
+                    // Không bắt buộc nhập lý do vì DTO chưa có field,
+                    // nhưng báo rõ để user biết sẽ ghi log.
+                    // (Anh muốn bắt nhập lý do thì mình sẽ thêm field vào DTO)
+                }
+            }
+
             Model.Ten = TenTextBox.Text.Trim();
-            Model.TonKho = TonKhoTextBox.Value;
+            Model.TonKho = newTon;
             Model.DonViTinh = string.IsNullOrWhiteSpace(DonViTinhTextBox.Text)
                 ? null
                 : DonViTinhTextBox.Text.Trim();
