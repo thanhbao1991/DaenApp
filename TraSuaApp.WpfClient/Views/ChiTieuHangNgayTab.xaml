@@ -29,9 +29,20 @@
                     Style="{StaticResource ThemButtonStyle}">
                     <StackPanel Orientation="Horizontal">
                         <fa:IconBlock Margin="0,0,6,0" Icon="Plus" />
-                        <TextBlock Text="Thêm chi tiêu" />
+                        <TextBlock Text="Thêm 1 chi tiêu" />
                     </StackPanel>
                 </Button>
+                <Button
+                    x:Name="AddChiTieuHangNgayButtonN"
+                    Click="AddChiTieuHangNgayButtonN_Click"
+                    Foreground="White"
+                    Style="{StaticResource ThemButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <fa:IconBlock Margin="0,0,6,0" Icon="Plus" />
+                        <TextBlock Text="Thêm NHIỀU chi tiêu" />
+                    </StackPanel>
+                </Button>
+
             </StackPanel>
 
         </DockPanel>
@@ -71,6 +82,16 @@
                     Binding="{Binding Ten}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Tên" />
+                <DataGridTextColumn
+                    Width="90"
+                    Binding="{Binding SoLuong}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="SL" />
+                <DataGridTextColumn
+                    Width="120"
+                    Binding="{Binding DonGia, StringFormat={}{0:N0}}"
+                    ElementStyle="{StaticResource RightTextCellStyle}"
+                    Header="Đơn giá" />
                 <DataGridTextColumn
                     x:Name="TongTienChiTieuHangNgayTextBlock"
                     Width="160"

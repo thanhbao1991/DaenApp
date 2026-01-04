@@ -14,4 +14,5 @@ public class ChiTieuHangNgayBulkItemDto
     public decimal DonGia { get; set; }
     public decimal? ThanhTien { get; set; }
     public string? GhiChu { get; set; }
+    public bool BillThang { get; set; }
 }

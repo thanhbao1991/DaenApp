@@ -27,7 +27,7 @@ namespace TraSuaApp.WpfClient.Views
         public void TriggerAddNew()
         {
             // Giả lập click nút "Thêm chi tiêu"
-            AddChiTieuHangNgayButton_Click(AddChiTieuHangNgayButton, new RoutedEventArgs());
+            // AddChiTieuHangNgayButton_Click(AddChiTieuHangNgayButton, new RoutedEventArgs());
         }
         private static async Task EnsureChiTieuModuleReadyAsync()
         {
@@ -115,27 +115,20 @@ namespace TraSuaApp.WpfClient.Views
             {
                 await ReloadAfterHoaDonChangeAsync(reloadChiTieu: true);
 
-                // Chỉ mở form tiếp nếu người dùng chọn "Lưu & thêm tiếp"
-                if (window.KeepAdding)
-                    AddChiTieuHangNgayButton_Click(null!, null!);
             }
         }
         private async void ChiTieuHangNgayDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (ChiTieuHangNgayDataGrid.SelectedItem is not ChiTieuHangNgayDto selected) return;
+            if (ChiTieuHangNgayDataGrid.SelectedItem is not ChiTieuHangNgayDto selected)
+                return;
 
-            var owner = Window.GetWindow(this);
             var window = new ChiTieuHangNgayEdit(selected)
             {
-                Width = owner?.ActualWidth ?? 1200,
-                Height = owner?.ActualHeight ?? 800,
-                Owner = owner
+                Owner = Window.GetWindow(this)
             };
 
             if (window.ShowDialog() == true)
-            {
                 await ReloadAfterHoaDonChangeAsync(reloadChiTieu: true);
-            }
         }
 
         private async void XoaChiTieuHangNgayButton_Click(object sender, RoutedEventArgs e)
@@ -193,6 +186,23 @@ namespace TraSuaApp.WpfClient.Views
                 await AppProviders.ChiTieuHangNgays.ReloadAsync();
 
             await ReloadUI();
+        }
+
+        private async void AddChiTieuHangNgayButtonN_Click(object sender, RoutedEventArgs e)
+        {
+            var owner = Window.GetWindow(this);
+            var window = new ChiTieuHangNgayEditN()
+            {
+                Width = owner?.ActualWidth ?? 1200,
+                Height = owner?.ActualHeight ?? 800,
+                Owner = owner,
+            };
+
+            if (window.ShowDialog() == true)
+            {
+                await ReloadAfterHoaDonChangeAsync(reloadChiTieu: true);
+
+            }
         }
     }
 }

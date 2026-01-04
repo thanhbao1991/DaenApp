@@ -94,7 +94,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
         private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 
-        public bool KeepAdding { get; private set; } = true; // mặc định như hành vi cũ
 
         private async Task<bool> SaveAsync()
         {
@@ -136,7 +135,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            KeepAdding = true; // "Lưu & thêm tiếp"
             if (await SaveAsync())
             {
                 DialogResult = true;
@@ -144,14 +142,5 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             }
         }
 
-        private async void SaveAndCloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            KeepAdding = false; // "Lưu & đóng"
-            if (await SaveAsync())
-            {
-                DialogResult = true;
-                Close();
-            }
-        }
     }
 }

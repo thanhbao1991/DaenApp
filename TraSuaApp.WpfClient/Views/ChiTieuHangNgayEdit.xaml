@@ -73,15 +73,8 @@
                     <Button
                         Name="SaveButton"
                         Click="SaveButton_Click"
-                        Content="Lưu và tiếp"
+                        Content="Lưu"
                         Style="{StaticResource AddButtonStyle}" />
-                    <Button
-                        Name="SaveAndCloseButton"
-                        Margin="8,0,0,0"
-                        Click="SaveAndCloseButton_Click"
-                        Content="Lưu và đóng"
-                        Style="{StaticResource EditButtonStyle}" />
-
                 </StackPanel>
             </StackPanel>
         </Grid>

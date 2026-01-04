@@ -1,0 +1,188 @@
+﻿
+<Window
+    x:Class="TraSuaApp.WpfClient.HoaDonViews.ChiTieuHangNgayEditN"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
+    Title="Chi tiêu hằng ngày"
+    MinHeight="500"
+    MaxWidth="800"
+    SizeToContent="WidthAndHeight"
+    WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!--  HEADER  -->
+
+        <!--  CONTENT  -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,0">
+
+            <StackPanel Margin="0,0,0,8" Orientation="Horizontal">
+                <GroupBox Header="Chọn ngày">
+                    <DatePicker x:Name="NgayDatePicker" />
+                </GroupBox>
+
+
+                <GroupBox
+                    Width="600"
+                    Margin="8,0,0,0"
+                    Header="Chọn chi tiêu">
+                    <ctrl:NguyenLieuSearchBox x:Name="NguyenLieuComboBox" />
+                </GroupBox>
+
+                <Border
+                    Margin="12,0,0,0"
+                    Padding="12,6"
+                    VerticalAlignment="Center"
+                    Background="#F5F5F5"
+                    CornerRadius="4" />
+                <!--<Button
+                    Margin="8,22,0,0"
+                    Padding="10,4"
+                    Click="NhapTatCaNguyenLieu_Click"
+                    Content="Nhập tất cả NL" />
+
+                -->
+                <!--  NÚT XOÁ SL = 0  -->
+                <!--
+                <Button
+                    Margin="8,22,0,0"
+                    Padding="10,4"
+                    Click="XoaDongSoLuong0_Click"
+                    Content="Xoá SL = 0" />-->
+
+            </StackPanel>
+
+            <!--  GRID  -->
+            <DataGrid
+                x:Name="ChiTieuGrid"
+                MaxHeight="500"
+                AutoGenerateColumns="False"
+                CanUserAddRows="False"
+                ItemsSource="{Binding Items}"
+                PreviewKeyDown="ChiTieuGrid_PreviewKeyDown"
+                SelectionMode="Single">
+
+                <DataGrid.Columns>
+
+                    <DataGridTemplateColumn Width="200" Header="Tên">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox IsReadOnly="True" Text="{Binding Ten, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Width="75" Header="Số lượng">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox HorizontalContentAlignment="Right" Text="{Binding SoLuong, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N1}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Width="75" Header="Đơn giá">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox HorizontalContentAlignment="Right" Text="{Binding DonGia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn
+                        Width="100"
+                        Header="Thành tiền"
+                        IsReadOnly="True">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox
+                                    HorizontalContentAlignment="Right"
+                                    IsReadOnly="True"
+                                    Text="{Binding ThanhTien, Mode=OneWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Width="200" Header="Ghi chú">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding GhiChu, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+
+                    <DataGridTemplateColumn Width="50">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button
+                                    Padding="4"
+                                    Background="White"
+                                    Click="RemoveRow_Click"
+                                    Style="{StaticResource XoaButtonStyle}"
+                                    Tag="{Binding}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="✖" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+
+        </StackPanel>
+
+        <!--  FOOTER  -->
+        <StackPanel
+            Grid.Row="2"
+            HorizontalAlignment="Right"
+            Orientation="Horizontal">
+
+            <TextBlock
+                x:Name="ErrorTextBlock"
+                Margin="0,0,12,0"
+                VerticalAlignment="Center"
+                Foreground="Red" />
+            <CheckBox
+                x:Name="BillThangCheckBox"
+                Margin="0,0,12,0"
+                VerticalAlignment="Center"
+                Checked="BillThangChanged"
+                Content="Bill tháng"
+                FontWeight="Bold"
+                Foreground="Red"
+                Unchecked="BillThangChanged" />
+            <StackPanel Margin="0,0,12,0" Orientation="Horizontal">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontWeight="SemiBold"
+                    Text="Tổng tiền: " />
+
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="14"
+                    FontWeight="Bold"
+                    Foreground="#C62828"
+                    Text="{Binding TongTien, StringFormat={}{0:N0} đ}" />
+            </StackPanel>
+            <Button
+                Click="Save_Click"
+                Content="Lưu"
+                Style="{StaticResource AddButtonStyle}" />
+
+            <Button
+                Margin="8,0,0,0"
+                Click="Cancel_Click"
+                Content="Huỷ"
+                Style="{StaticResource ThemButtonStyle}" />
+        </StackPanel>
+
+    </Grid>
+</Window>
