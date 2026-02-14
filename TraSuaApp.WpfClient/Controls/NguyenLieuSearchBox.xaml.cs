@@ -210,6 +210,7 @@ namespace TraSuaApp.WpfClient.Controls
                         Select(item);
                         Popup.IsOpen = false;
                         e.Handled = true;
+                        SearchTextBox.Focus();
                     }
                 }
             }

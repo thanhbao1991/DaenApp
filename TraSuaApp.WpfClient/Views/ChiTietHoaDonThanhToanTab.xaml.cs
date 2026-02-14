@@ -87,7 +87,6 @@ namespace TraSuaApp.WpfClient.Views
 
             ChiTietHoaDonThanhToanDataGrid.ItemsSource = sourceList;
             tongTien = sourceList.Sum(x => x.SoTien);
-
             TongTienThanhToanTextBlock.Header = $"{tongTien:N0} đ";
         }
 

@@ -107,8 +107,8 @@ namespace TraSuaApp.Infrastructure.Services
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
             if (entity == null)
-                return Result<SanPhamDto>.Failure("Không tìm thấy hóa đơn.");
-
+                //  return Result<SanPhamDto>.Failure("Không tìm thấy hóa đơn.");
+                return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
             if (dto.LastModified < entity.LastModified)
                 return Result<SanPhamDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
@@ -116,14 +116,15 @@ namespace TraSuaApp.Infrastructure.Services
             var before = ToDto(entity);
 
             entity.ThuTu = dto.ThuTu;
-            entity.LastModified = dto.LastModified;
-
+            // entity.LastModified = dto.LastModified;
+            entity.LastModified = DateTime.Now;
             await _context.SaveChangesAsync();
 
 
             var after = ToDto(entity);
-            return Result<SanPhamDto>.Success(after, "Cập nhật hóa đơn thành công.")
-                            .WithId(id)
+            //  return Result<SanPhamDto>.Success(after, "Cập nhật hóa đơn thành công.")
+            return Result<SanPhamDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
+            .WithId(id)
                             .WithBefore(before)
                             .WithAfter(after);
         }
@@ -174,6 +175,7 @@ namespace TraSuaApp.Infrastructure.Services
                                      .WithAfter(after);
         }
 
+
         public async Task<Result<SanPhamDto>> UpdateAsync(Guid id, SanPhamDto dto)
         {
             var entity = await _context.SanPhams
@@ -188,44 +190,134 @@ namespace TraSuaApp.Infrastructure.Services
 
             var before = ToDto(entity);
 
-            // Cập nhật các trường
+            // ===============================
+            // 1. Cập nhật thông tin sản phẩm
+            // ===============================
             entity.Ten = dto.Ten.Trim();
             entity.DinhLuong = dto.DinhLuong?.Trim();
             entity.VietTat = dto.VietTat?.Trim();
             entity.TenKhongVietTat = string.IsNullOrWhiteSpace(dto.TenKhongVietTat)
-         ? StringHelper.MyNormalizeText(dto.Ten).ToLower()
-         : dto.TenKhongVietTat;
+                ? StringHelper.MyNormalizeText(dto.Ten).ToLower()
+                : dto.TenKhongVietTat;
 
             entity.TimKiem = BuildTimKiem(dto);
-
             entity.ThuTu = dto.ThuTu;
             entity.NgungBan = dto.NgungBan;
             entity.TichDiem = dto.TichDiem;
             entity.NhomSanPhamId = dto.NhomSanPhamId;
             entity.LastModified = DateTime.Now;
 
-            // Cập nhật danh sách biến thể: xóa hết rồi thêm lại
-            entity.SanPhamBienThes.Clear();
-            foreach (var b in dto.BienThe)
+            dto.BienThe ??= new List<SanPhamBienTheDto>();
+
+            // ======================================
+            // 2.1 ❌ XOÁ biến thể đã bị remove
+            // ======================================
+            var removedVariants = entity.SanPhamBienThes
+                .Where(x => !dto.BienThe.Any(d => d.Id == x.Id))
+                .ToList();
+
+            foreach (var v in removedVariants)
+                _context.SanPhamBienThes.Remove(v);
+
+            // ======================================
+            // 2.2 ✏️ UPDATE biến thể còn tồn tại
+            // ======================================
+            foreach (var variant in entity.SanPhamBienThes)
+            {
+                var dtoVariant = dto.BienThe.FirstOrDefault(x => x.Id == variant.Id);
+                if (dtoVariant == null) continue;
+
+                variant.TenBienThe = dtoVariant.TenBienThe;
+                variant.GiaBan = dtoVariant.GiaBan;
+                variant.MacDinh = dtoVariant.MacDinh;
+                variant.LastModified = DateTime.Now;
+            }
+
+            // ======================================
+            // 2.3 ➕ ADD biến thể mới
+            // ======================================
+            var newVariants = dto.BienThe.Where(x => x.Id == Guid.Empty);
+
+            foreach (var b in newVariants)
             {
                 entity.SanPhamBienThes.Add(new SanPhamBienThe
                 {
                     Id = Guid.NewGuid(),
+                    SanPhamId = entity.Id,
                     TenBienThe = b.TenBienThe,
                     GiaBan = b.GiaBan,
                     MacDinh = b.MacDinh,
-                    SanPhamId = entity.Id
+                    CreatedAt = DateTime.Now,
+                    LastModified = DateTime.Now
                 });
             }
 
             await _context.SaveChangesAsync();
 
             var after = ToDto(entity);
-            return Result<SanPhamDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
-                                     .WithId(id)
-                                     .WithBefore(before)
-                                     .WithAfter(after);
+
+            return Result<SanPhamDto>.Success(
+                    after,
+                    $"Cập nhật {_friendlyName.ToLower()} thành công."
+                )
+                .WithId(id)
+                .WithBefore(before)
+                .WithAfter(after);
         }
+
+        //public async Task<Result<SanPhamDto>> UpdateAsync(Guid id, SanPhamDto dto)
+        //{
+        //    var entity = await _context.SanPhams
+        //        .Include(x => x.SanPhamBienThes)
+        //        .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+        //    if (entity == null)
+        //        return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
+
+        //    if (dto.LastModified < entity.LastModified)
+        //        return Result<SanPhamDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+
+        //    var before = ToDto(entity);
+
+        //    // Cập nhật các trường
+        //    entity.Ten = dto.Ten.Trim();
+        //    entity.DinhLuong = dto.DinhLuong?.Trim();
+        //    entity.VietTat = dto.VietTat?.Trim();
+        //    entity.TenKhongVietTat = string.IsNullOrWhiteSpace(dto.TenKhongVietTat)
+        // ? StringHelper.MyNormalizeText(dto.Ten).ToLower()
+        // : dto.TenKhongVietTat;
+
+        //    entity.TimKiem = BuildTimKiem(dto);
+
+        //    entity.ThuTu = dto.ThuTu;
+        //    entity.NgungBan = dto.NgungBan;
+        //    entity.TichDiem = dto.TichDiem;
+        //    entity.NhomSanPhamId = dto.NhomSanPhamId;
+        //    entity.LastModified = DateTime.Now;
+
+        //    // Cập nhật danh sách biến thể: xóa hết rồi thêm lại
+        //    entity.SanPhamBienThes.Clear();
+        //    foreach (var b in dto.BienThe)
+        //    {
+        //        entity.SanPhamBienThes.Add(new SanPhamBienThe
+        //        {
+        //            Id = Guid.NewGuid(),
+        //            TenBienThe = b.TenBienThe,
+        //            GiaBan = b.GiaBan,
+        //            MacDinh = b.MacDinh,
+        //            SanPhamId = entity.Id
+        //        });
+        //    }
+
+        //    await _context.SaveChangesAsync();
+
+        //    var after = ToDto(entity);
+        //    return Result<SanPhamDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
+        //                             .WithId(id)
+        //                             .WithBefore(before)
+        //                             .WithAfter(after);
+        //}
+
 
         public static string BuildTimKiem(SanPhamDto dto)
         {

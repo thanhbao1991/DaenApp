@@ -113,7 +113,7 @@
                             <TextBlock
                                 Padding="0,0,8,0"
                                 HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
+                                VerticalAlignment="Stretch"
                                 FontWeight="SemiBold"
                                 Text="{Binding SoTien, StringFormat={}{0:N0} đ}">
                                 <TextBlock.Style>

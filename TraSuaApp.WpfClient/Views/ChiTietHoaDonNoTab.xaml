@@ -89,39 +89,41 @@
                                 <Button
                                     Padding="6,3"
                                     HorizontalAlignment="Center"
+                                    Background="Transparent"
                                     Click="TienMatRowButton_Click"
                                     Style="{StaticResource EditButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="{StaticResource LightBrush}"
+                                            Foreground="{StaticResource SuccessBrush}"
                                             Icon="MoneyBill" />
-                                        <TextBlock Margin="6,0,0,0" Text="Tiền mặt" />
+                                        <TextBlock
+                                            Margin="6,0,0,0"
+                                            Foreground="{StaticResource SuccessBrush}"
+                                            Text="TM" />
                                     </StackPanel>
                                 </Button>
                                 <Button
                                     Margin="8,0,0,0"
                                     Padding="6,3"
                                     HorizontalAlignment="Center"
-                                    Background="{StaticResource WarningBrush}"
+                                    Background="Transparent"
                                     Click="ChuyenKhoanRowButton_Click"
                                     Style="{StaticResource EditButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
-                                            Foreground="{StaticResource WarningForeground}"
+                                            Foreground="{StaticResource PrimaryBrush}"
                                             Icon="CreditCard" />
                                         <TextBlock
                                             Margin="6,0,0,0"
-                                            Foreground="{StaticResource WarningForeground}"
-                                            Text="Chuyển khoản" />
+                                            Foreground="{StaticResource PrimaryBrush}"
+                                            Text="Bank" />
                                     </StackPanel>
                                 </Button>
-
                             </StackPanel>
-
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

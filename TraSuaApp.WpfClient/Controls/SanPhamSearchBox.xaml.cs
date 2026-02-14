@@ -352,5 +352,12 @@ namespace TraSuaApp.WpfClient.Controls
             Popup.IsOpen = false;
         }
 
+        internal void Clear()
+        {
+            SelectedSanPham = null;
+            SelectedBienThe = null;
+            SearchTextBox.Text = "";
+            IsPopupOpen = false;
+        }
     }
 }

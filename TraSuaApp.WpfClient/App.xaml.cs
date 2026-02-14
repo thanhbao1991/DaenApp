@@ -10,7 +10,7 @@ namespace TraSuaApp.WpfClient
     {
         private static Mutex? _mutex;
         private static bool _isLoggingIn = false;
-
+        private string _loggerName;
         private void TextBox_SelectAll(object sender, RoutedEventArgs e)
         {
             if (sender is TextBox tb)
@@ -25,6 +25,10 @@ namespace TraSuaApp.WpfClient
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            //    FileViewerWindow fileViewerWindow = new FileViewerWindow();
+            //       fileViewerWindow.ShowDialog();
+
+
 
             const string mutexName = "TraSuaApp_WpfClient_OnlyOneInstance";
             _mutex = new Mutex(true, mutexName, out bool isNewInstance);

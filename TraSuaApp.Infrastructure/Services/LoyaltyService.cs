@@ -79,6 +79,9 @@ public static class LoyaltyService
             q = q.Where(h => h.HoaDonId != excludeHoaDonId.Value);
 
         // chỉ cộng phần > 0, tránh null
-        return await q.SumAsync(h => h.SoTienConLai > 0 ? h.SoTienConLai : 0m, ct);
+        //  return await q.SumAsync(h => h.SoTienConLai > 0 ? h.SoTienConLai : 0m, ct);
+        return await q
+          .Where(h => h.SoTienConLai > 0)
+          .SumAsync(h => (decimal?)h.SoTienConLai, ct) ?? 0m;
     }
 }

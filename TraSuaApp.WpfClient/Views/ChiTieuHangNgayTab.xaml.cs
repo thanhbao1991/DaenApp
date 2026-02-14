@@ -61,7 +61,7 @@ namespace TraSuaApp.WpfClient.Views
 
         public async Task ReloadUI()
         {
-            var todayLocal = Today;
+            var todayLocal = Today.AddDays(0);
 
             _fullChiTieuHangNgayList = await UiListHelper.BuildListAsync(
                 AppProviders.ChiTieuHangNgays.Items.Where(x => !x.IsDeleted),

@@ -1,6 +1,8 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.Views
@@ -37,8 +39,22 @@ namespace TraSuaApp.WpfClient.Views
         private async System.Threading.Tasks.Task LoadAsync(DateTime date)
         {
             DateTextBlock.Text = date.ToString("dd/MM/yyyy");
+            var username = Properties.Settings.Default.TaiKhoan;
 
-            var result = await _api.GetByDateAsync(date);
+            Result<ThongKeNgayDto>? result;
+
+            //if (!string.IsNullOrWhiteSpace(username) &&
+            //    username.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            //{
+            //    // 🟟 admin → số sạch (ẩn ship Khánh)
+            //    result = await _api.GetByDate_AnShipKhanhAsync(date);
+            //}
+            //else
+            //{
+            // user thường → thống kê đầy đủ
+            result = await _api.GetByDateAsync(date);
+            //}
+
             if (result?.Data == null) return;
 
             var dto = result.Data;
@@ -84,11 +100,57 @@ namespace TraSuaApp.WpfClient.Views
                 grid.Children.Add(slText);
 
                 TopSanPhamStackPanel.Children.Add(grid);
+
+
+
+
+
             }
 
+
+
+
+            // ===== Top sản phẩm bán chạy (Card thay DataGrid) =====
+            SoLuongNguyenLieuBanHangStackPanel.Children.Clear();
+            SoLuongNguyenLieuBanHangStackPanel.Children.Add(new TextBlock
+            {
+                Text = "Tồn Kho",
+                FontSize = 16,
+                FontWeight = FontWeights.Bold,
+                Foreground = Brushes.White,
+                Margin = new Thickness(0, 0, 0, 10)
+            });
+
+            foreach (var sp2 in dto.SoLuongNguyenLieuBanHangs
+                )
+            {
+                var grid2 = new Grid { Margin = new Thickness(0, 2, 0, 2) };
+                grid2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                grid2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) });
+
+                grid2.Children.Add(new TextBlock
+                {
+                    Text = sp2.TenNguyenLieu,
+                    FontSize = 14,
+                    Foreground = Brushes.White,
+                    Margin = new Thickness(0, 0, 8, 0)
+                });
+
+                var slText2 = new TextBlock
+                {
+                    Text = $"{sp2.SoLuong:N0}",
+                    FontSize = 14,
+                    Foreground = Brushes.White,
+                    HorizontalAlignment = HorizontalAlignment.Right
+                };
+                Grid.SetColumn(slText2, 1);
+                grid2.Children.Add(slText2);
+
+                SoLuongNguyenLieuBanHangStackPanel.Children.Add(grid2);
+            }
             // ===== Các card chi tiết bên phải (vẫn dynamic) =====
             FillStackPanel(DoanhThuStackPanel, "Doanh thu", dto.DoanhThu,
-                dto.DoanhThuChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());
+            dto.DoanhThuChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());
 
             FillStackPanel(ChiTieuStackPanel, "Chi tiêu", dto.ChiTieu,
                 dto.ChiTieuChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());

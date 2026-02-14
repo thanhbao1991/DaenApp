@@ -478,7 +478,6 @@ public class HoaDonService : IHoaDonService
     }
 
 
-
     private async Task<(decimal tongTien, decimal giamGia, decimal thanhTien)> AddChiTietAsync(Guid hoaDonId, HoaDonDto dto, DateTime now)
     {
         decimal tongTien = 0;
@@ -720,6 +719,14 @@ public class HoaDonService : IHoaDonService
 
         }).ToList();
     }
+    public async Task<List<HoaDonDto>> GetAllAdminAsync()
+    {
+
+        var list = await GetAllAsync();
+
+        return list;
+    }
+
 
     private static IEnumerable<(Guid BienTheId, decimal SoLuongSP)> ExtractBienTheFromDto(HoaDonDto dto)
     {

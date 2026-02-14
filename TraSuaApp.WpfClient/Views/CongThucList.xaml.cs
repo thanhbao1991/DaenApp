@@ -116,7 +116,7 @@ namespace TraSuaApp.WpfClient.AdminViews
 
             _suDungViewSource.View.SortDescriptions.Clear();
             _suDungViewSource.View.SortDescriptions.Add(
-                new SortDescription(nameof(SuDungNguyenLieuDto.LastModified), ListSortDirection.Descending));
+                new SortDescription(nameof(SuDungNguyenLieuDto.TenSanPham), ListSortDirection.Descending));
 
             var view = _suDungViewSource.View.Cast<SuDungNguyenLieuDto>().ToList();
             int stt = 1;

@@ -167,7 +167,27 @@
                                     HorizontalAlignment="Right"
                                     DockPanel.Dock="Right"
                                     Foreground="Black"
-                                    Text="{Binding DaThu_Banking, StringFormat=N0}" />
+                                    Text="{Binding DaThu_CK_Chung, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+                        <Border Padding="6" Background="LightGreen">
+                            <DockPanel>
+                                <TextBlock Foreground="Black" Text="- Banking Nhã" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    Foreground="Black"
+                                    Text="{Binding DaThu_CK_Nha, StringFormat=N0}" />
+                            </DockPanel>
+                        </Border>
+                        <Border Padding="6" Background="LightGreen">
+                            <DockPanel>
+                                <TextBlock Foreground="Black" Text="- Banking Ty" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Right"
+                                    Foreground="Black"
+                                    Text="{Binding DaThu_CK_Ty, StringFormat=N0}" />
                             </DockPanel>
                         </Border>
 
@@ -343,29 +363,36 @@
                         <StackPanel x:Name="ChiTieuStackPanel" />
                     </ScrollViewer>
                 </Border>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
 
 
-                <!--  Trả nợ tiền  -->
-                <Border
-                    Margin="5"
-                    Padding="10"
-                    Background="LightGreen"
-                    CornerRadius="8">
-                    <ScrollViewer Foreground="{StaticResource LightForeground}" VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="TraNoTienStackPanel" />
-                    </ScrollViewer>
-                </Border>
+                    <!--  Trả nợ tiền  -->
+                    <Border
+                        Margin="5"
+                        Padding="10"
+                        Background="LightGreen"
+                        CornerRadius="8">
+                        <ScrollViewer Foreground="{StaticResource LightForeground}" VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="TraNoTienStackPanel" />
+                        </ScrollViewer>
+                    </Border>
 
-                <!--  Trả nợ bank  -->
-                <Border
-                    Margin="5"
-                    Padding="10"
-                    Background="LightYellow"
-                    CornerRadius="8">
-                    <ScrollViewer Foreground="{StaticResource InfoForeground}" VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="TraNoBankStackPanel" />
-                    </ScrollViewer>
-                </Border>
+                    <!--  Trả nợ bank  -->
+                    <Border
+                        Grid.Row="1"
+                        Margin="5"
+                        Padding="10"
+                        Background="LightYellow"
+                        CornerRadius="8">
+                        <ScrollViewer Foreground="{StaticResource InfoForeground}" VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="TraNoBankStackPanel" />
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
 
 
                 <!--  Top sản phẩm bán chạy  -->
@@ -376,6 +403,15 @@
                     CornerRadius="8">
                     <ScrollViewer Foreground="{StaticResource PrimaryForeground}" VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="TopSanPhamStackPanel" />
+                    </ScrollViewer>
+                </Border>
+                <Border
+                    Margin="5"
+                    Padding="10"
+                    Background="{StaticResource InfoBrush}"
+                    CornerRadius="8">
+                    <ScrollViewer Foreground="{StaticResource PrimaryForeground}" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="SoLuongNguyenLieuBanHangStackPanel" />
                     </ScrollViewer>
                 </Border>
 

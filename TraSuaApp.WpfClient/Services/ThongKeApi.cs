@@ -14,6 +14,8 @@ namespace TraSuaApp.WpfClient.Services
         public Task<Result<ThongKeNgayDto>> GetByDateAsync(DateTime date)
             => GetAsync<ThongKeNgayDto>($"{BASE_URL}/ngay?ngay={date.Day}&thang={date.Month}&nam={date.Year}");
 
-
+        public Task<Result<ThongKeNgayDto>> GetByDate_AnShipKhanhAsync(DateTime date)
+    => GetAsync<ThongKeNgayDto>(
+        $"{BASE_URL}/ngay/an-ship-khanh?ngay={date.Day}&thang={date.Month}&nam={date.Year}");
     }
 }

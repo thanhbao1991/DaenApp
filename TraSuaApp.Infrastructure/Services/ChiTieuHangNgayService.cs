@@ -212,16 +212,50 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
             IsDeleted = false
         });
     }
+    //public async Task<List<ChiTieuHangNgayDto>> GetAllAsync()
+    //{
+    //    return await _context.ChiTieuHangNgays
+    //        .AsNoTracking()
+    //        .Where(x => !x.IsDeleted)
+    //        .OrderByDescending(x => x.LastModified ?? x.CreatedAt)
+    //        .Select(x => ToDto(x))
+    //        .ToListAsync();
+    //}
     public async Task<List<ChiTieuHangNgayDto>> GetAllAsync()
     {
+        var today = DateTime.Today;
+        var fromDate = today.AddDays(-1); // giống ChiTietHoaDonThanhToan
+
         return await _context.ChiTieuHangNgays
             .AsNoTracking()
-            .Where(x => !x.IsDeleted)
-            .OrderByDescending(x => x.LastModified ?? x.CreatedAt)
-            .Select(x => ToDto(x))
+            .Where(x =>
+                !x.IsDeleted &&
+                x.Ngay >= fromDate)
+            .OrderByDescending(x => x.Ngay)
+            .ThenByDescending(x => x.CreatedAt)
+            .Select(x => new ChiTieuHangNgayDto
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                GhiChu = x.GhiChu,
+
+                SoLuong = x.SoLuong,
+                DonGia = x.DonGia,
+                ThanhTien = x.ThanhTien,
+
+                Ngay = x.Ngay,
+                NgayGio = x.NgayGio,
+
+                NguyenLieuId = x.NguyenLieuId,
+                BillThang = x.BillThang,
+
+                CreatedAt = x.CreatedAt,
+                LastModified = x.LastModified,
+                DeletedAt = x.DeletedAt,
+                IsDeleted = x.IsDeleted
+            })
             .ToListAsync();
     }
-
     public async Task<ChiTieuHangNgayDto?> GetByIdAsync(Guid id)
     {
         var e = await _context.ChiTieuHangNgays

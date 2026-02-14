@@ -115,7 +115,7 @@
                             ElementStyle="{StaticResource LeftTextCellStyle}"
                             Header="Biến thể" />
 
-                        <DataGridTextColumn
+                        <!--<DataGridTextColumn
                             Width="Auto"
                             MinWidth="60"
                             Binding="{Binding Loai}"
@@ -127,7 +127,7 @@
                             MinWidth="70"
                             Binding="{Binding IsDefault}"
                             ElementStyle="{StaticResource DataGridCheckBoxElementStyle}"
-                            Header="Mặc định" />
+                            Header="Mặc định" />-->
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>

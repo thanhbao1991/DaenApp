@@ -33,8 +33,10 @@ builder.Services.AddControllers(options =>
 
 // 🟟 DbContext (không pooling; nếu muốn pooling, đổi sang AddDbContextPool)
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
-        opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")
+        //,opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)
+
+        ));
 
 // 🟟 Memory Cache cho IMemoryCache (bắt buộc cho service của bạn)
 builder.Services.AddMemoryCache();

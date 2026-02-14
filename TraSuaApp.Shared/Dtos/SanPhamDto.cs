@@ -46,8 +46,13 @@ public class SanPhamDto : DtoBase
         $"{Ten?.ToLower() ?? ""} " +
         StringHelper.MyNormalizeText(Ten ?? "") + " " +
         StringHelper.MyNormalizeText((Ten ?? "").Replace(" ", "")) + " " +
-        StringHelper.GetShortName(Ten ?? "");
+        StringHelper.GetShortName(Ten ?? "") + " " +
 
+        // 🟟 thêm nhóm sản phẩm
+        $"{TenNhomSanPham?.ToLower() ?? ""} " +
+        StringHelper.MyNormalizeText(TenNhomSanPham ?? "") + " " +
+        StringHelper.MyNormalizeText((TenNhomSanPham ?? "").Replace(" ", "")) + " " +
+        StringHelper.GetShortName(TenNhomSanPham ?? "");
 }
 
 

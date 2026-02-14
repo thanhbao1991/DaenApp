@@ -137,11 +137,10 @@
                 </DataGrid.RowStyle>
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn
+                    <!--<DataGridTextColumn
                         Binding="{Binding Stt}"
                         ElementStyle="{StaticResource CenterTextCellStyle}"
-                        Header="STT" />
-
+                        Header="STT" />-->
                     <!--<DataGridTemplateColumn Width="auto" Header="">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -167,7 +166,6 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>-->
-
                     <DataGridTextColumn
                         Binding="{Binding GioHienThi}"
                         ElementStyle="{StaticResource RightTextCellStyle}"
@@ -226,14 +224,6 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <!--<DataGridTextColumn
-                        Width="99"
-                        Binding="{Binding TrangThai}"
-                        ElementStyle="{StaticResource LeftTextCellStyle}"
-                        FontSize="10"
-                        FontStyle="Italic"
-                        FontWeight="Regular"
-                        Header="" />-->
                     <DataGridTextColumn
                         Width="*"
                         Binding="{Binding TenHienThi}"
@@ -250,13 +240,23 @@
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
-                    <DataGridTextColumn
+                    <!--<DataGridTextColumn
                         Width="99"
                         Binding="{Binding GhiChuShipper}"
                         ElementStyle="{StaticResource LeftTextCellStyle}"
                         FontSize="10"
                         FontStyle="Italic"
                         FontWeight="Regular"
+                        Header="" />-->
+                    <DataGridTextColumn
+                        x:Name="ThanhTienColumn"
+                        Width="99"
+                        Binding="{Binding TongTien, StringFormat=N0}"
+                        ElementStyle="{StaticResource RightTextCellStyle}"
+                        FontSize="10"
+                        FontStyle="Italic"
+                        FontWeight="Regular"
+                        Foreground="Transparent"
                         Header="" />
                     <!--  ⬇️ HAI NÚT THU TIỀN NGAY SAU CỘT "Còn lại"  -->
                     <DataGridTemplateColumn Width="auto" Header="Thanh Toán">
@@ -303,7 +303,7 @@
                                             <TextBlock
                                                 Margin="6,0,0,0"
                                                 Foreground="{StaticResource SuccessBrush}"
-                                                Text="F1 Tiền mặt" />
+                                                Text="TM" />
                                         </StackPanel>
                                     </Button>
                                     <Button
@@ -327,7 +327,6 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </Button.Style>
-
                                         <StackPanel Orientation="Horizontal">
                                             <fa:IconImage
                                                 Width="16"
@@ -337,48 +336,15 @@
                                             <TextBlock
                                                 Margin="6,0,0,0"
                                                 Foreground="{StaticResource PrimaryBrush}"
-                                                Text="F4 Chuyển khoản" />
+                                                Text="Bank" />
                                         </StackPanel>
                                     </Button>
-                                    <!--<Button
-                                        Margin="8,0,0,0"
-                                        Padding="6,3"
-                                        HorizontalAlignment="Center"
-                                        Click="RowGhiNo_Click"
-                                        Style="{StaticResource XoaButtonStyle}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <fa:IconImage
-                                                Width="16"
-                                                Height="16"
-                                                Foreground="{StaticResource DangerBrush}"
-                                                Icon="Pencil" />
-                                            <TextBlock Margin="6,0,0,0" Text="F12" />
-                                        </StackPanel>
-                                    </Button>-->
-                                    <!--<Button
-                                        Margin="8,0,0,0"
-                                        Padding="6,3"
-                                        HorizontalAlignment="Center"
-                                        Click="RowDelete_Click"
-                                        Style="{StaticResource XoaButtonStyle}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <fa:IconImage
-                                                Width="16"
-                                                Height="16"
-                                                Foreground="{StaticResource DangerBrush}"
-                                                Icon="Trash" />
-                                            <TextBlock Margin="6,0,0,0" Text="Xoá" />
-                                        </StackPanel>
-                                    </Button>-->
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-
-
                 </DataGrid.Columns>
-
             </DataGrid>
 
 
@@ -706,28 +672,12 @@
                             <TextBlock Margin="5,0,0,0" Text=" Del - Xoá" />
                         </StackPanel>
                     </Button>
+                    <Button Name="F5Button" Visibility="Collapsed" />
+                    <Button Name="F6Button" Visibility="Collapsed" />
                     <Button
-                        Name="F5Button"
                         Margin="5"
                         Background="Transparent"
-                        Click="F5Button_Click"
-                        Foreground="{StaticResource DarkBrush}"
-                        Style="{StaticResource AddButtonStyle}"
-                        Visibility="Collapsed">
-                        <StackPanel Orientation="Horizontal">
-                            <fa:IconImage
-                                Width="16"
-                                Height="16"
-                                Foreground="{StaticResource DarkBrush}"
-                                Icon="Refresh" />
-                            <TextBlock Margin="5,0,0,0" Text=" F5 - Làm mới" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        Name="F6Button"
-                        Margin="5"
-                        Background="Transparent"
-                        Click="F6Button_Click"
+                        Click="STKButton_Click"
                         Foreground="{StaticResource DarkBrush}"
                         Style="{StaticResource AddButtonStyle}">
                         <StackPanel Orientation="Horizontal">
@@ -735,7 +685,7 @@
                                 Width="16"
                                 Height="16"
                                 Icon="Qrcode" />
-                            <TextBlock Margin="5,0,0,0" Text=" F6 - Gửi Stk" />
+                            <TextBlock Margin="5,0,0,0" Text="Gửi Stk" />
                         </StackPanel>
                     </Button>
                     <Button

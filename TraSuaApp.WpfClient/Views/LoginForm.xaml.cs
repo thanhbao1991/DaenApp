@@ -69,7 +69,7 @@ namespace TraSuaApp.WpfClient.Views
             {
                 Loaded += async (s, e) =>
                 {
-                    await Task.Delay(1000);
+                    await Task.Delay(5000);
                     //0 NotiHelper.Show("Đang đăng nhập tự động...");
                     LoginButton_Click(null!, null!);
                 };

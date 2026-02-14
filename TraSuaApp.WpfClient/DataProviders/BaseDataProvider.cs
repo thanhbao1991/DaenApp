@@ -146,7 +146,6 @@ public class BaseDataProvider<T> where T : DtoBase, new()
             _ => action
         };
     }
-
     public async Task ReloadAsync()
     {
         // 🟟 NEW: chống overlap reload
@@ -154,8 +153,29 @@ public class BaseDataProvider<T> where T : DtoBase, new()
 
         try
         {
-            var response = await ApiClient.GetAsync($"/api/{_entityName}");
+            // =========================
+            // 🟟 CHỌN ENDPOINT
+            // =========================
+            var url = $"/api/{_entityName}";
+
+            // 🟟 RULE ĐẶC BIỆT CHO HÓA ĐƠN
+            if (_entityName.Equals("HoaDon", StringComparison.OrdinalIgnoreCase))
+            {
+                var username = Properties.Settings.Default.TaiKhoan;
+
+                if (!string.IsNullOrWhiteSpace(username) &&
+                    username.Equals("admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    url = "/api/HoaDon/for-admin";
+                }
+            }
+
+            // =========================
+            // 🟟 CALL API
+            // =========================
+            var response = await ApiClient.GetAsync(url);
             var result = await response.Content.ReadFromJsonAsync<Result<List<T>>>();
+
             if (result?.IsSuccess == true && result.Data != null)
             {
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
@@ -168,19 +188,55 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                 });
 
                 _lastReloadAt = DateTime.UtcNow;
-                System.Diagnostics.Debug.WriteLine($"🟟 Reload {_entityName} thành công ({result.Data.Count} items).");
+                System.Diagnostics.Debug.WriteLine(
+                    $"🟟 Reload {_entityName} thành công ({result.Data.Count} items) | URL={url}");
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
-            System.Diagnostics.Debug.WriteLine($"❌ Reload {_entityName} lỗi: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine(
+                $"❌ Reload {_entityName} lỗi: {ex.Message}");
         }
         finally
         {
             Interlocked.Exchange(ref _isReloading, 0);
         }
     }
+    //public async Task ReloadAsync()
+    //{
+    //    // 🟟 NEW: chống overlap reload
+    //    if (Interlocked.Exchange(ref _isReloading, 1) == 1) return;
+
+    //    try
+    //    {
+    //        var response = await ApiClient.GetAsync($"/api/{_entityName}");
+    //        var result = await response.Content.ReadFromJsonAsync<Result<List<T>>>();
+    //        if (result?.IsSuccess == true && result.Data != null)
+    //        {
+    //            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+    //            {
+    //                Items.Clear();
+    //                foreach (var item in result.Data)
+    //                    Items.Add(item);
+
+    //                OnChanged?.Invoke();
+    //            });
+
+    //            _lastReloadAt = DateTime.UtcNow;
+    //            System.Diagnostics.Debug.WriteLine($"🟟 Reload {_entityName} thành công ({result.Data.Count} items).");
+    //        }
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        Console.WriteLine(ex.Message);
+    //        System.Diagnostics.Debug.WriteLine($"❌ Reload {_entityName} lỗi: {ex.Message}");
+    //    }
+    //    finally
+    //    {
+    //        Interlocked.Exchange(ref _isReloading, 0);
+    //    }
+    //}
 
     public void Remove(Guid id)
     {

@@ -159,7 +159,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
                     // Thêm mới
                     _variants.Add(new SanPhamBienTheDto
                     {
-                        Id = Guid.NewGuid(),
+                        Id = Guid.Empty,
                         TenBienThe = pName,
                         GiaBan = p,
                         MacDinh = _variants.Count == 0
@@ -172,7 +172,10 @@ namespace TraSuaApp.WpfClient.SettingsViews
             }
 
             Model.BienThe = _variants.ToList();
-
+            if (Model.BienThe.Any() && !Model.BienThe.Any(x => x.MacDinh))
+            {
+                Model.BienThe[0].MacDinh = true;
+            }
             // Validate chung
             Model.Ten = TenTextBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(Model.Ten))

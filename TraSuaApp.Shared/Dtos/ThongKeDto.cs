@@ -14,7 +14,13 @@
         public decimal DoanhThu { get; set; }
         public decimal DaThu { get; set; }
         public decimal DaThu_TienMat { get; set; }
-        public decimal DaThu_Banking { get; set; }
+        public decimal DaThu_CK_Chung { get; set; }
+        public decimal DaThu_CK_Nha { get; set; }
+        public decimal DaThu_CK_Ty { get; set; }
+
+        // giữ cho UI cũ
+        public decimal DaThu_Banking
+            => DaThu_CK_Chung + DaThu_CK_Nha + DaThu_CK_Ty;
         public decimal DaThu_Khanh { get; set; } // Tiền mặt có GhiChu="Shipper"
         public decimal ChuaThu { get; set; }
         public decimal ChiTieu { get; set; }
@@ -39,8 +45,15 @@
 
         // Top bán chạy
         public List<TopSanPhamDto> TopSanPhams { get; set; } = new();
-    }
+        public List<SoLuongNguyenLieuBanHangDto> SoLuongNguyenLieuBanHangs { get; set; } = new();
 
+    }
+    public class SoLuongNguyenLieuBanHangDto
+    {
+        public int Stt { get; set; }
+        public string TenNguyenLieu { get; set; } = "";
+        public decimal SoLuong { get; set; } // = TonKho
+    }
     public class TopSanPhamDto
     {
         public int Stt { get; set; }

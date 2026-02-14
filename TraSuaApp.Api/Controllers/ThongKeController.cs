@@ -14,7 +14,14 @@ namespace TraSuaApp.Api.Controllers
         private readonly IThongKeService _service;
         public ThongKeController(IThongKeService service) => _service = service;
 
-
+        [HttpGet("ngay/an-ship-khanh")]
+        public async Task<ActionResult<Result<ThongKeNgayDto>>> GetThongKeNgay_AnShipKhanh(
+    int ngay, int thang, int nam)
+        {
+            var date = new DateTime(nam, thang, ngay);
+            var dto = await _service.TinhNgay_AnShipKhanhAsync(date);
+            return Result<ThongKeNgayDto>.Success(dto);
+        }
         [HttpGet("ngay")]
         public async Task<ActionResult<Result<ThongKeNgayDto>>> GetThongKeNgay(int ngay, int thang, int nam)
         {

@@ -13,9 +13,16 @@ namespace TraSuaApp.WpfClient.Views
 {
     public partial class ChiTietHoaDonNoTab : UserControl
     {
+        private const string METHOD_TIENMAT = "TienMat";
+        private const string METHOD_CK_CHUNG = "ChuyenKhoan";
+        private const string METHOD_CK_NHA = "ChuyenKhoanNha";
+        private const string METHOD_CK_TY = "ChuyenKhoanTy";
+
         // ====== Constants / Fields ======
         private static readonly Guid PT_TienMat = Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C");
         private static readonly Guid PT_ChuyenKhoan = Guid.Parse("2cf9a88f-3bc0-4d4b-940d-f8ffa4affa02");
+        private static readonly Guid PM_ChuyenKhoanNha = Guid.Parse("3D75DD9F-A5D3-491D-A316-6D5C9FF7E66C");
+        private static readonly Guid PM_ChuyenKhoanTy = Guid.Parse("C9D8B945-D9D0-424F-B87C-FF279337B996");
 
         private readonly DebounceManager _debouncer = new();
         private readonly WpfErrorHandler _errorHandler = new();
@@ -234,7 +241,14 @@ namespace TraSuaApp.WpfClient.Views
                     HoaDonId = item.HoaDonId,
                     KhachHangId = item.KhachHangId,
                     Ten = item.Ten,
-                    PhuongThucThanhToanId = method == "TienMat" ? PT_TienMat : PT_ChuyenKhoan,
+                    PhuongThucThanhToanId = method switch
+                    {
+                        METHOD_TIENMAT => PT_TienMat,
+                        METHOD_CK_NHA => PM_ChuyenKhoanNha,
+                        METHOD_CK_TY => PM_ChuyenKhoanTy,
+                        _ => PT_ChuyenKhoan // mặc định CK chung
+                    },
+
                     LoaiThanhToan = item.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
                     GhiChu = item.GhiChu,
                     SoTien = item.SoTienConLai,
@@ -251,7 +265,7 @@ namespace TraSuaApp.WpfClient.Views
                     Height = owner?.ActualHeight ?? 800
                 };
                 // Nếu muốn khoá phương thức trong form:
-                // win.PhuongThucThanhToanComboBox.IsEnabled = false;
+                win.PhuongThucThanhToanComboBox.IsEnabled = false;
 
                 if (win.ShowDialog() == true)
                     await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadNo: true, reloadThanhToan: true);
@@ -284,14 +298,50 @@ namespace TraSuaApp.WpfClient.Views
             bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
             await PayItemAsync(item, "ChuyenKhoan", thuNgay, null); // không có nút hàng để gắn spinner
         }
+        private async void F5aButton_Click(object sender, RoutedEventArgs e)
+        {
+            var item = SelectedNo;
+            if (item == null)
+            {
+                NotiHelper.Show("Vui lòng chọn công nợ!");
+                return;
+            }
+
+            bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+            await PayItemAsync(item, METHOD_CK_NHA, thuNgay, null);
+        }
+        private async void F6aButton_Click(object sender, RoutedEventArgs e)
+        {
+            var item = SelectedNo;
+            if (item == null)
+            {
+                NotiHelper.Show("Vui lòng chọn công nợ!");
+                return;
+            }
+
+            bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+            await PayItemAsync(item, METHOD_CK_TY, thuNgay, null);
+        }
 
         public void HandleHotkey(Key key)
         {
             switch (key)
             {
-                case Key.F1: F1aButton_Click(this, new RoutedEventArgs()); break;
-                case Key.F4: F4aButton_Click(this, new RoutedEventArgs()); break;
-                    // case Key.F5: ...
+                case Key.F1:
+                    F1aButton_Click(this, new RoutedEventArgs());
+                    break;
+
+                case Key.F4:
+                    F4aButton_Click(this, new RoutedEventArgs());
+                    break;
+
+                case Key.F5:
+                    F5aButton_Click(this, new RoutedEventArgs());
+                    break;
+
+                case Key.F6:
+                    F6aButton_Click(this, new RoutedEventArgs());
+                    break;
             }
         }
     }

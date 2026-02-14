@@ -119,7 +119,7 @@ namespace TraSuaApp.Api.Controllers
             if (kh == null) return NotFound("Không tìm thấy khách hàng.");
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
-            cts.CancelAfter(TimeSpan.FromSeconds(8)); // ✅ giới hạn tối đa phần loyalty
+            // cts.CancelAfter(TimeSpan.FromSeconds(8)); // ✅ giới hạn tối đa phần loyalty
 
             var (diemThangNay, diemThangTruoc) =
                 await LoyaltyService.TinhDiemThangAsync(_db, khachHangId, DateTime.Now, kh.DuocNhanVoucher, cts.Token);
