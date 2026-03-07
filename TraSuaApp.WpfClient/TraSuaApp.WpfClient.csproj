@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Compile Remove="MainWindow.xaml.cs" />
+    <Compile Remove="Views\ChiTietHoaDonNoEdit.xaml.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +26,7 @@
 
   <ItemGroup>
     <Page Remove="MainWindow.xaml" />
+    <Page Remove="Views\ChiTietHoaDonNoEdit.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -151,6 +153,7 @@
 
   <ItemGroup>
     <Folder Include="Utils\" />
+    <Folder Include="Views\NewFolder\" />
   </ItemGroup>
 
   <PropertyGroup>

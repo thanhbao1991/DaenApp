@@ -187,8 +187,8 @@ namespace TraSuaApp.WpfClient.Views
             if (reloadThanhToan)
                 await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
 
-            if (reloadNo)
-                await AppProviders.ChiTietHoaDonNos.ReloadAsync();
+            //if (reloadNo)
+            //    await AppProviders.ChiTietHoaDonNos.ReloadAsync();
 
             if (reloadChiTieu)
                 await AppProviders.ChiTieuHangNgays.ReloadAsync();

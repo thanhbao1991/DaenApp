@@ -9,7 +9,6 @@ public class ChiTietHoaDonThanhToanDto : DtoBase
     public bool IsToday => Ngay == DateTime.Today;
 
     public string LoaiThanhToan { get; set; }
-    public Guid? ChiTietHoaDonNoId { get; set; }
 
 
     public decimal SoTien { get; set; }

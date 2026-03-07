@@ -40,6 +40,7 @@ public class HoaDonController : BaseApiController
         DiscordService.SendAsync(DiscordEventType.Admin, action);
     }
 
+
     [HttpGet]
     public async Task<ActionResult<Result<List<HoaDonDto>>>> GetAll()
     {

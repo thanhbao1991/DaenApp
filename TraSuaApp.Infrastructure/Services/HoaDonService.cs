@@ -479,18 +479,6 @@ public class HoaDonService : IHoaDonService
                 x.CreatedAt,
                 x.LastModified,
                 x.ConLai,
-                HasDebt =
-(
-    _context.ChiTietHoaDonNos
-        .Where(n => !n.IsDeleted && n.HoaDonId == x.Id)
-        .Sum(n => (decimal?)n.SoTienNo) ?? 0
-)
->
-(
-    _context.ChiTietHoaDonThanhToans
-        .Where(t => !t.IsDeleted && t.HoaDonId == x.Id && t.ChiTietHoaDonNoId != null)
-        .Sum(t => (decimal?)t.SoTien) ?? 0
-),
 
                 CoTienMat = _context.ChiTietHoaDonThanhToans.Any(t =>
             !t.IsDeleted && t.HoaDonId == x.Id &&
@@ -578,9 +566,9 @@ public class HoaDonService : IHoaDonService
             CreatedAt = h.CreatedAt,
             LastModified = h.LastModified,
             ConLai = h.ConLai,
-            HasDebt = h.HasDebt,
+            //   HasDebt = h.HasDebt,
 
-            TrangThai = HoaDonHelper.ResolveTrangThai(h.ThanhTien, h.ConLai, h.HasDebt, h.CoTienMat, h.CoChuyenKhoan),
+            //   TrangThai = HoaDonHelper.ResolveTrangThai(h.ThanhTien, h.ConLai, h.HasDebt, h.CoTienMat, h.CoChuyenKhoan),
 
             ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(h.ChiTiets),
             ChiTietHoaDonToppings = h.Toppings,
@@ -623,7 +611,7 @@ public class HoaDonService : IHoaDonService
             dto.DiemThangNay = diemThangNay;
             dto.DiemThangTruoc = diemThangTruoc;
 
-            dto.TongNoKhachHang = await LoyaltyService.TinhTongNoKhachHangAsync(_context, khId, dto.Id);
+            dto.TongNoKhachHang = -222;
             dto.TongDonKhacDangGiao = await LoyaltyService.TinhTongDonKhacDangGiaoAsync(_context, khId, dto.Id);
         }
 
@@ -1042,7 +1030,7 @@ public class HoaDonService : IHoaDonService
                 .Include(x => x.ChiTietHoaDonToppings)
                 .Include(x => x.ChiTietHoaDonVouchers)
                 .Include(x => x.ChiTietHoaDonThanhToans)
-                .Include(x => x.ChiTietHoaDonNos)
+                //.Include(x => x.ChiTietHoaDonNos)
                 .Include(x => x.ChiTietHoaDonPoints)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -1096,12 +1084,12 @@ public class HoaDonService : IHoaDonService
                 tt.LastModified = now;
             }
 
-            foreach (var no in entity.ChiTietHoaDonNos)
-            {
-                no.IsDeleted = true;
-                no.DeletedAt = now;
-                no.LastModified = now;
-            }
+            //foreach (var no in entity.ChiTietHoaDonNos)
+            //{
+            //    no.IsDeleted = true;
+            //    no.DeletedAt = now;
+            //    no.LastModified = now;
+            //}
 
             foreach (var p in entity.ChiTietHoaDonPoints)
             {
@@ -1154,7 +1142,7 @@ public class HoaDonService : IHoaDonService
                 .Include(x => x.ChiTietHoaDonToppings)
                 .Include(x => x.ChiTietHoaDonVouchers)
                 .Include(x => x.ChiTietHoaDonThanhToans)
-                .Include(x => x.ChiTietHoaDonNos)
+                //.Include(x => x.ChiTietHoaDonNos)
                 .Include(x => x.ChiTietHoaDonPoints)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -1203,12 +1191,12 @@ public class HoaDonService : IHoaDonService
                 tt.LastModified = now;
             }
 
-            foreach (var no in entity.ChiTietHoaDonNos)
-            {
-                no.IsDeleted = false;
-                no.DeletedAt = null;
-                no.LastModified = now;
-            }
+            //foreach (var no in entity.ChiTietHoaDonNos)
+            //{
+            //    no.IsDeleted = false;
+            //    no.DeletedAt = null;
+            //    no.LastModified = now;
+            //}
 
             foreach (var p in entity.ChiTietHoaDonPoints)
             {

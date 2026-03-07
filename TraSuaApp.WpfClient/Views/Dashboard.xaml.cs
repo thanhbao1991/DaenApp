@@ -3,7 +3,6 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.WpfClient.Helpers;
 
@@ -132,9 +131,7 @@ namespace TraSuaApp.WpfClient.Views
                 () => AppProviders.CongViecNoiBos.OnChanged += _providerHandlers["CongViecNoiBos"],
                 UpdateCongViecBadge);
 
-            RegisterProvider("ChiTietHoaDonNos",
-                () => AppProviders.ChiTietHoaDonNos.OnChanged += _providerHandlers["ChiTietHoaDonNos"],
-                () => ChiTietHoaDonNoTabControl?.ReloadUI());
+
 
             RegisterProvider("ChiTietHoaDonThanhToans",
                 () => AppProviders.ChiTietHoaDonThanhToans.OnChanged += _providerHandlers["ChiTietHoaDonThanhToans"],
@@ -428,11 +425,11 @@ namespace TraSuaApp.WpfClient.Views
 
                 [TAB_TAG_CTHD_NO] = async () =>
                 {
-                    await ExecuteWithFreshnessAsync(
-                        key: PROV_CTHD_NO,
-                        reloadAsync: AppProviders.ChiTietHoaDonNos.ReloadAsync,
-                        reloadUi: () => ChiTietHoaDonNoTabControl?.ReloadUI(),
-                        friendlyNameForToast: "Chi tiết HĐ nợ");
+                    //await ExecuteWithFreshnessAsync(
+                    //    key: PROV_CTHD_NO,
+                    //    reloadAsync: AppProviders.ChiTietHoaDonNos.ReloadAsync,
+                    //    reloadUi: () => ChiTietHoaDonNoTabControl?.ReloadUI(),
+                    //    friendlyNameForToast: "Chi tiết HĐ nợ");
                 },
 
                 [TAB_TAG_CTHD_TT] = async () =>
@@ -527,24 +524,23 @@ namespace TraSuaApp.WpfClient.Views
         }
 
         // ====== Helper tạo DTO trả nợ (giữ nguyên) ======
-        private ChiTietHoaDonThanhToanDto TaoDtoTraNo(ChiTietHoaDonNoDto selected, Guid phuongThucId)
-        {
-            var now = DateTime.Now;
+        //private ChiTietHoaDonThanhToanDto TaoDtoTraNo(ChiTietHoaDonNoDto selected, Guid phuongThucId)
+        //{
+        //    var now = DateTime.Now;
 
-            return new ChiTietHoaDonThanhToanDto
-            {
-                ChiTietHoaDonNoId = selected.Id,
-                Ngay = now.Date,
-                NgayGio = now,
-                HoaDonId = selected.HoaDonId,
-                KhachHangId = selected.KhachHangId,
-                Ten = $"{selected.Ten}",
-                PhuongThucThanhToanId = phuongThucId,
-                LoaiThanhToan = selected.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
-                GhiChu = selected.GhiChu,
-                SoTien = selected.SoTienConLai,
-            };
-        }
+        //    return new ChiTietHoaDonThanhToanDto
+        //    {
+        //        Ngay = now.Date,
+        //        NgayGio = now,
+        //        HoaDonId = selected.HoaDonId,
+        //        KhachHangId = selected.KhachHangId,
+        //        Ten = $"{selected.Ten}",
+        //        PhuongThucThanhToanId = phuongThucId,
+        //        LoaiThanhToan = selected.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
+        //        GhiChu = selected.GhiChu,
+        //        SoTien = selected.SoTienConLai,
+        //    };
+        //}
 
         // ====== Đóng cửa sổ: dọn dẹp ======
 

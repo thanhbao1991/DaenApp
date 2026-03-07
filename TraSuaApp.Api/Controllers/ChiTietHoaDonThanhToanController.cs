@@ -83,7 +83,7 @@ public class ChiTietHoaDonThanhToanController : BaseApiController
             await Notify("ChiTietHoaDonThanhToan", "created", data.Id);
 
             // ✅ an toàn với null
-            await NotifyNullable("ChiTietHoaDonNo", "updated", data.ChiTietHoaDonNoId);
+            //0  await NotifyNullable("ChiTietHoaDonNo", "updated", data.ChiTietHoaDonNoId);
 
             if (data.HoaDonId != Guid.Empty)
                 await Notify("HoaDon", "updated", data.HoaDonId);
@@ -103,7 +103,7 @@ public class ChiTietHoaDonThanhToanController : BaseApiController
 
             if (result.Data != null)
             {
-                await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
+                //   await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
 
                 if (result.Data.HoaDonId != Guid.Empty)
                     await Notify("HoaDon", "updated", result.Data.HoaDonId);
@@ -124,7 +124,7 @@ public class ChiTietHoaDonThanhToanController : BaseApiController
 
             if (result.Data != null)
             {
-                await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
+                //    await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
 
                 if (result.Data.HoaDonId != Guid.Empty)
                     await Notify("HoaDon", "updated", result.Data.HoaDonId);
@@ -145,7 +145,7 @@ public class ChiTietHoaDonThanhToanController : BaseApiController
 
             if (result.Data != null)
             {
-                await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
+                //    await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
 
                 if (result.Data.HoaDonId != Guid.Empty)
                     await Notify("HoaDon", "updated", result.Data.HoaDonId);

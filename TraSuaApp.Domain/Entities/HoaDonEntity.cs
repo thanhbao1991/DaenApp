@@ -56,7 +56,6 @@ public partial class HoaDon
 
     public DateTime NgayGio { get; set; }
 
-    public virtual ICollection<ChiTietHoaDonNo> ChiTietHoaDonNos { get; set; } = new List<ChiTietHoaDonNo>();
     public virtual ICollection<ChiTietHoaDonPoint> ChiTietHoaDonPoints { get; set; } = new List<ChiTietHoaDonPoint>();
 
     public virtual ICollection<ChiTietHoaDonThanhToan> ChiTietHoaDonThanhToans { get; set; } = new List<ChiTietHoaDonThanhToan>();

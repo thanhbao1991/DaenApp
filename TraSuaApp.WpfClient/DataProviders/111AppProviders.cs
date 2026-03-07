@@ -30,7 +30,7 @@ public static class AppProviders
     public static PhuongThucThanhToanDataProvider? PhuongThucThanhToans { get; private set; }
     public static KhachHangGiaBanDataProvider? KhachHangGiaBans { get; private set; }
     public static CongViecNoiBoDataProvider? CongViecNoiBos { get; private set; }
-    public static ChiTietHoaDonNoDataProvider? ChiTietHoaDonNos { get; private set; }
+    //public static ChiTietHoaDonNoDataProvider? ChiTietHoaDonNos { get; private set; }
     public static ChiTietHoaDonThanhToanDataProvider? ChiTietHoaDonThanhToans { get; private set; }
     public static ChiTieuHangNgayDataProvider? ChiTieuHangNgays { get; private set; }
     public static NguyenLieuDataProvider? NguyenLieus { get; private set; }
@@ -60,7 +60,7 @@ public static class AppProviders
     {
         if (HoaDons != null) await HoaDons.ReloadAsync();
         if (ChiTietHoaDonThanhToans != null) await ChiTietHoaDonThanhToans.ReloadAsync();
-        if (ChiTietHoaDonNos != null) await ChiTietHoaDonNos.ReloadAsync();
+        //if (ChiTietHoaDonNos != null) await ChiTietHoaDonNos.ReloadAsync();
         if (ChiTieuHangNgays != null) await ChiTieuHangNgays.ReloadAsync();
         if (CongViecNoiBos != null) await CongViecNoiBos.ReloadAsync();
         if (Toppings != null) await Toppings.ReloadAsync();
@@ -171,7 +171,7 @@ public static class AppProviders
         Locations = new LocationDataProvider(_signalR);
         KhachHangGiaBans = new KhachHangGiaBanDataProvider(_signalR);
         CongViecNoiBos = new CongViecNoiBoDataProvider(_signalR);
-        ChiTietHoaDonNos = new ChiTietHoaDonNoDataProvider(_signalR);
+        //ChiTietHoaDonNos = new ChiTietHoaDonNoDataProvider(_signalR);
         ChiTietHoaDonThanhToans = new ChiTietHoaDonThanhToanDataProvider(_signalR);
         NguyenLieus = new NguyenLieuDataProvider(_signalR);
         ChiTieuHangNgays = new ChiTieuHangNgayDataProvider(_signalR);
@@ -206,7 +206,7 @@ public static class AppProviders
            Locations!.InitializeAsync(),
            KhachHangGiaBans!.InitializeAsync(),
            CongViecNoiBos!.InitializeAsync(),
-           ChiTietHoaDonNos!.InitializeAsync(),
+           //ChiTietHoaDonNos!.InitializeAsync(),
            ChiTietHoaDonThanhToans!.InitializeAsync(),
            NguyenLieus!.InitializeAsync(),
            ChiTieuHangNgays!.InitializeAsync()

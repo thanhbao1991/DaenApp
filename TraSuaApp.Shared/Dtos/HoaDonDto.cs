@@ -201,6 +201,7 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
         StringHelper.GetShortName(Ten ?? "");
 
     public int PaymentMethodMask { get; set; }
+    public DateTime? NgayNo { get; set; }
 
     public void CopyFrom(HoaDonDto other)
     {

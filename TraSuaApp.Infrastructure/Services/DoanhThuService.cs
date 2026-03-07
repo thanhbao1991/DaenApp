@@ -458,24 +458,24 @@ public class DoanhThuService : IDoanhThuService
             .ToListAsync();
 
         // ===== 3️⃣ NỢ =====
-        var noLines = await _context.ChiTietHoaDonNos
-            .AsNoTracking()
-            .Where(x => hoaDonIds.Contains(x.HoaDonId) && !x.IsDeleted)
-            .Select(x => new NoLite
-            {
-                HoaDonId = x.HoaDonId,
-                SoTienConLai = x.SoTienConLai,
-                NgayGio = x.NgayGio
-            })
-            .ToListAsync();
+        //var noLines = await _context.ChiTietHoaDonNos
+        //    .AsNoTracking()
+        //    .Where(x => hoaDonIds.Contains(x.HoaDonId) && !x.IsDeleted)
+        //    .Select(x => new NoLite
+        //    {
+        //        HoaDonId = x.HoaDonId,
+        //        SoTienConLai = x.SoTienConLai,
+        //        NgayGio = x.NgayGio
+        //    })
+        //    .ToListAsync();
 
         var thanhToanLookup = thanhToans
             .GroupBy(x => x.HoaDonId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        var noLookup = noLines
-            .GroupBy(x => x.HoaDonId)
-            .ToDictionary(g => g.Key, g => g.ToList());
+        //var noLookup = noLines
+        //    .GroupBy(x => x.HoaDonId)
+        //    .ToDictionary(g => g.Key, g => g.ToList());
 
         static bool IsTienMat(string? ten)
         {
@@ -499,26 +499,26 @@ public class DoanhThuService : IDoanhThuService
                 ? tts
                 : new List<ThanhToanLite>();
 
-            var nos = noLookup.TryGetValue(h.Id, out var ns)
-                ? ns
-                : new List<NoLite>();
+            //var nos = noLookup.TryGetValue(h.Id, out var ns)
+            //    ? ns
+            //    : new List<NoLite>();
 
             var tienMat = tt.Where(t => IsTienMat(t.TenPhuongThuc)).Sum(t => t.SoTien);
             var tienBank = tt.Where(t => !IsTienMat(t.TenPhuongThuc)).Sum(t => t.SoTien);
-            var tienNo = nos.Sum(n => n.SoTienConLai);
+            //var tienNo = nos.Sum(n => n.SoTienConLai);
 
             var tongTien = Math.Max(0, h.ThanhTien);
             var conLai = Math.Max(0, h.ConLai);
             var daThu = tienMat + tienBank;
 
-            DateTime? ngayNo = nos.OrderByDescending(x => x.NgayGio).Select(x => x.NgayGio).FirstOrDefault();
+            //DateTime? ngayNo = nos.OrderByDescending(x => x.NgayGio).Select(x => x.NgayGio).FirstOrDefault();
             DateTime? ngayTra = tt.OrderByDescending(x => x.NgayGio).Select(x => x.NgayGio).FirstOrDefault();
 
             tongDoanhThu += tongTien;
             tongDaThu += daThu;
             tongChuyenKhoan += tienBank;
             tongTienMat += tienMat;
-            tongTienNo += tienNo;
+            //tongTienNo += tienNo;
             tongConLai += conLai;
 
             hoaDonDtos.Add(new DoanhThuHoaDonDto
@@ -532,7 +532,7 @@ public class DoanhThuService : IDoanhThuService
                 ThongTinHoaDon = h.TenBan,
                 NgayHoaDon = h.NgayGio,
                 NgayShip = h.NgayShip,
-                NgayNo = ngayNo,
+                //NgayNo = ngayNo,
                 NgayTra = ngayTra,
                 BaoDon = h.BaoDon,
                 DaThanhToan = conLai <= 0,
@@ -541,7 +541,7 @@ public class DoanhThuService : IDoanhThuService
                 ConLai = conLai,
                 TienBank = tienBank,
                 TienMat = tienMat,
-                TienNo = tienNo
+                //TienNo = tienNo
             });
         }
 

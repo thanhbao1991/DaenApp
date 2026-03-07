@@ -53,13 +53,13 @@ namespace TraSuaApp.Infrastructure.Services
                 thanhToanQ = thanhToanQ.Where(t => t.HoaDon.NguoiShip != "Khánh");
 
             // ====== CÔNG NỢ ======
-            var noQ = _db.ChiTietHoaDonNos.AsNoTracking()
-                .Where(n => !n.IsDeleted
-                         && n.Ngay >= start
-                         && n.Ngay < end);
+            var noQ = _db.HoaDonNos.AsNoTracking()
+                .Where(n =>
+                          n.NgayNo >= start
+                         && n.NgayNo < end);
 
-            if (anShipKhanh)
-                noQ = noQ.Where(n => n.HoaDon.NguoiShip != "Khánh");
+            //if (anShipKhanh)
+            //    noQ = noQ.Where(n => n.hoa.NguoiShip != "Khánh");
 
             // ====== CHI TIÊU ======
             var chiTieuQ = _db.ChiTieuHangNgays.AsNoTracking()
@@ -154,20 +154,20 @@ namespace TraSuaApp.Infrastructure.Services
                 .ToListAsync();
 
             // ====== CÔNG NỢ ======
-            decimal congNo = await noQ.SumAsync(n => (decimal?)n.SoTienConLai) ?? 0m;
+            decimal congNo = await noQ.SumAsync(n => (decimal?)n.ConLai) ?? 0m;
 
-            var congNoChiTiet = await noQ
-    .Where(n => n.HoaDon != null)
-    .GroupBy(n => n.KhachHangId ?? Guid.Empty)
-    .Select(g => new LabelValueDto
-    {
-        Ten = g.First().HoaDon!.KhachHangId != null
-            ? (g.First().HoaDon!.TenKhachHangText ?? "(không tên)")
-            : (g.First().HoaDon!.TenBan ?? "(không tên)"),
-        GiaTri = g.Sum(x => x.SoTienConLai)
-    })
-    .OrderByDescending(x => x.GiaTri)
-    .ToListAsync();
+            //        var congNoChiTiet = await noQ
+            //.Where(n => n.ConLai != null)
+            //.GroupBy(n => n.KhachHangId ?? Guid.Empty)
+            //.Select(g => new LabelValueDto
+            //{
+            //    Ten = g.First().HoaDon!.KhachHangId != null
+            //        ? (g.First().HoaDon!.TenKhachHangText ?? "(không tên)")
+            //        : (g.First().HoaDon!.TenBan ?? "(không tên)"),
+            //    GiaTri = g.Sum(x => x.SoTienConLai)
+            //})
+            //.OrderByDescending(x => x.GiaTri)
+            //.ToListAsync();
             //var congNoChiTiet = await noQ
             //    .GroupBy(n => n.KhachHangId ?? Guid.Empty)
             //    .Select(g => new LabelValueDto
@@ -323,7 +323,7 @@ namespace TraSuaApp.Infrastructure.Services
 
                 DoanhThuChiTiet = doanhThuChiTiet,
                 ChiTieuChiTiet = chiTieuChiTiet,
-                CongNoChiTiet = congNoChiTiet,
+                //CongNoChiTiet = congNoChiTiet,
                 TraNoTienChiTiet = traNoTienChiTiet,
                 TraNoBankChiTiet = traNoBankChiTiet,
 

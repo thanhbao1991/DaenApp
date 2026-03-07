@@ -10,43 +10,53 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!--  Thanh tìm kiếm + quick filter (ĐÃ XOÁ 2 NÚT F1/F4 CŨ)  -->
-        <DockPanel Margin="4">
+        <!--  ================= Toolbar =================  -->
+
+        <DockPanel Grid.Row="0" Margin="4">
+
             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
                 <TextBlock
                     Padding="8"
                     VerticalAlignment="Center"
                     Text="Tìm kiếm:" />
+
                 <TextBox
                     x:Name="SearchChiTietHoaDonNoTextBox"
                     Width="320"
                     Margin="8,0,0,0"
                     TextChanged="SearchChiTietHoaDonNoTextBox_TextChanged" />
             </StackPanel>
-            <!--<StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+
                 <Button
                     Click="TimKiemNhanhCongNoButton_Click"
                     Content="Công nợ hôm nay"
                     Foreground="White"
                     Style="{StaticResource ThemButtonStyle}"
                     Tag="hôm nay" />
+
                 <Button
                     Click="TimKiemNhanhCongNoButton_Click"
                     Content="Công nợ hôm qua"
                     Foreground="White"
                     Style="{StaticResource ThemButtonStyle}"
                     Tag="hôm qua" />
-            </StackPanel>-->
+            </StackPanel>
+
         </DockPanel>
+
+        <!--  ================= DataGrid =================  -->
 
         <DataGrid
             x:Name="ChiTietHoaDonNoDataGrid"
             Grid.Row="1"
             AutoGenerateColumns="False"
-            IsReadOnly="True"
-            MouseDoubleClick="ChiTietHoaDonNoDataGrid_MouseDoubleClick">
+            EnableColumnVirtualization="True"
+            EnableRowVirtualization="True"
+            IsReadOnly="True">
 
-            <!--  Giữ style giống các tab khác  -->
+            <!--  Row Style  -->
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="FontSize" Value="{StaticResource FontSizeNormal}" />
@@ -54,75 +64,99 @@
             </DataGrid.RowStyle>
 
             <DataGrid.Columns>
+
                 <DataGridTextColumn
                     Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
+
                 <DataGridTextColumn
-                    Binding="{Binding Ngay, StringFormat=dd-MM-yyyy}"
+                    Binding="{Binding NgayGio, StringFormat={}{0:dd-MM-yyyy}}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Ngày" />
+
                 <DataGridTextColumn
-                    Binding="{Binding NgayGio, StringFormat=HH:mm}"
+                    Binding="{Binding NgayGio, StringFormat={}{0:HH:mm}}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Giờ" />
+
                 <DataGridTextColumn
-                    Binding="{Binding Ten}"
+                    Binding="{Binding TenKhachHangText}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Tên" />
+
                 <DataGridTextColumn
                     x:Name="TongTienChiTietHoaDonNoTextBlock"
-                    Binding="{Binding SoTienConLai, StringFormat={}{0:N0}}"
+                    Binding="{Binding ConLai, StringFormat={}{0:N0}}"
                     ElementStyle="{StaticResource RightTextCellStyle}"
                     Header="Còn lại" />
 
-                <!--  ⬇️ HAI NÚT THU TIỀN NGAY SAU CỘT "Còn lại"  -->
-                <DataGridTemplateColumn Width="auto" Header="(Thu nhanh nhấn giữ Ctrl)">
+                <!--  ===== Buttons =====  -->
+
+                <DataGridTemplateColumn Width="Auto" Header="(Thu nhanh nhấn giữ Ctrl)">
+
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
+
                             <StackPanel Orientation="Horizontal">
+
+                                <!--  Tiền mặt  -->
+
                                 <Button
                                     Padding="6,3"
-                                    HorizontalAlignment="Center"
                                     Background="Transparent"
                                     Click="TienMatRowButton_Click"
                                     Style="{StaticResource EditButtonStyle}">
+
                                     <StackPanel Orientation="Horizontal">
+
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
                                             Foreground="{StaticResource SuccessBrush}"
                                             Icon="MoneyBill" />
+
                                         <TextBlock
                                             Margin="6,0,0,0"
                                             Foreground="{StaticResource SuccessBrush}"
                                             Text="TM" />
+
                                     </StackPanel>
+
                                 </Button>
+
+                                <!--  Chuyển khoản  -->
+
                                 <Button
                                     Margin="8,0,0,0"
                                     Padding="6,3"
-                                    HorizontalAlignment="Center"
                                     Background="Transparent"
                                     Click="ChuyenKhoanRowButton_Click"
                                     Style="{StaticResource EditButtonStyle}">
+
                                     <StackPanel Orientation="Horizontal">
+
                                         <fa:IconImage
                                             Width="16"
                                             Height="16"
                                             Foreground="{StaticResource PrimaryBrush}"
                                             Icon="CreditCard" />
+
                                         <TextBlock
                                             Margin="6,0,0,0"
                                             Foreground="{StaticResource PrimaryBrush}"
                                             Text="Chuyển khoản" />
+
                                     </StackPanel>
+
                                 </Button>
+
                             </StackPanel>
+
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
 
+                </DataGridTemplateColumn>
 
                 <DataGridTextColumn
                     Width="*"
@@ -130,23 +164,10 @@
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Ghi chú" />
 
-                <!--  Cột nút Xoá  -->
-                <DataGridTemplateColumn Width="Auto">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Button
-                                HorizontalAlignment="Right"
-                                Click="XoaChiTietHoaDonNoButton_Click"
-                                Style="{StaticResource XoaButtonStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa:IconBlock Margin="0,0,5,0" Icon="Trash" />
-                                    <TextBlock Text="Xoá" />
-                                </StackPanel>
-                            </Button>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
             </DataGrid.Columns>
+
         </DataGrid>
+
     </Grid>
+
 </UserControl>

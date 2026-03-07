@@ -14,5 +14,4 @@ public interface IHoaDonService
     Task<Result<HoaDonDto>> DeleteAsync(Guid id);
     Task<Result<HoaDonDto>> RestoreAsync(Guid id);
     Task<List<HoaDonDto>> GetUpdatedSince(DateTime lastSync);
-
 }

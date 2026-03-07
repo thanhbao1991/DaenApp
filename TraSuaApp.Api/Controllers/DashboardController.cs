@@ -18,6 +18,31 @@ namespace TraSuaApp.Api.Controllers
             _db = db;
         }
 
+
+        [HttpGet("get-cong-no")]
+        public async Task<ActionResult<Result<List<HoaDonNoDto>>>> GetCongNo()
+        {
+            var query = await _db.HoaDonNos
+                .AsNoTracking()
+                .Where(x => x.ThanhTien > x.DaThu && x.NgayNo != null)
+                .OrderByDescending(x => x.NgayNo)
+                .Select(x => new HoaDonNoDto
+                {
+                    Id = x.Id,
+                    HoaDonId = x.Id,
+                    TenKhachHangText = x.TenKhachHangText,
+                    GhiChu = x.GhiChu,
+                    NgayNo = x.NgayNo,
+                    NgayGio = x.NgayGio,
+                    ThanhTien = x.ThanhTien,
+                    DaThu = x.DaThu,
+                    ConLai = x.ConLai,
+                    KhachHangId = x.KhachHangId
+                })
+                .ToListAsync();
+
+            return Result<List<HoaDonNoDto>>.Success(query);
+        }
         // ===== 🟟 XẾP HẠNG SẢN PHẨM (lọc theo năm) =====
         [HttpGet("xephang-sanpham")]
         public async Task<ActionResult<Result<List<SanPhamXepHangDto>>>> GetXepHangSanPham([FromQuery] int? year = null)
@@ -124,7 +149,7 @@ namespace TraSuaApp.Api.Controllers
             var (diemThangNay, diemThangTruoc) =
                 await LoyaltyService.TinhDiemThangAsync(_db, khachHangId, DateTime.Now, kh.DuocNhanVoucher, cts.Token);
 
-            var tongNo = await LoyaltyService.TinhTongNoKhachHangAsync(_db, khachHangId, null, cts.Token);
+            var tongNo = -1;
             var donKhac = await LoyaltyService.TinhTongDonKhacDangGiaoAsync(_db, khachHangId, null, cts.Token);
 
             bool daNhanVoucher = kh.DuocNhanVoucher

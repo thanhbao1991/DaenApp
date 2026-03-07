@@ -93,7 +93,7 @@ namespace TraSuaApp.WpfClient.Views
             ChiTieuHangNgayDataGrid.ItemsSource = sourceList;
 
             tongTien = sourceList.Sum(x => x.ThanhTien);
-            TongTienChiTieuHangNgayTextBlock.Header = $"{tongTien/1000:N0}k";
+            TongTienChiTieuHangNgayTextBlock.Header = $"{tongTien / 1000:N0}k";
         }
 
         private void SearchChiTieuHangNgayTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -198,8 +198,8 @@ namespace TraSuaApp.WpfClient.Views
             if (reloadThanhToan)
                 await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
 
-            if (reloadNo)
-                await AppProviders.ChiTietHoaDonNos.ReloadAsync();
+            //if (reloadNo)
+            //    await AppProviders.ChiTietHoaDonNos.ReloadAsync();
 
             if (reloadChiTieu)
                 await AppProviders.ChiTieuHangNgays.ReloadAsync();

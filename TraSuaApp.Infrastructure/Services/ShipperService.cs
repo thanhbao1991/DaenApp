@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Domain.Entities;
-using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Constants;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
@@ -117,8 +116,7 @@ namespace TraSuaApp.Infrastructure.Services
 
                 if (h.KhachHangId != null)
                 {
-                    dto.TongNoKhachHang = await LoyaltyService
-                        .TinhTongNoKhachHangAsync(_context, h.KhachHangId.Value, h.Id);
+                    dto.TongNoKhachHang = -333;
                     dto.TongDonKhacDangGiao = await LoyaltyService
                            .TinhTongDonKhacDangGiaoAsync(_context, h.KhachHangId.Value, h.Id);
 
@@ -169,9 +167,10 @@ namespace TraSuaApp.Infrastructure.Services
 
         public async Task<Result<HoaDonDto>> TraNoAsync(Guid id, decimal soTienKhachDua)
         {
+            return Result<HoaDonDto>
+          .Failure($"Chức năng tạm thời bị khóa");
             var entity = await _context.HoaDons
                 .Include(x => x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted))
-                .Include(x => x.ChiTietHoaDonNos.Where(n => !n.IsDeleted))
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
             if (entity == null)
@@ -192,7 +191,7 @@ namespace TraSuaApp.Infrastructure.Services
 
             var khId = entity.KhachHangId.Value;
 
-            var tongNoCu = await LoyaltyService.TinhTongNoKhachHangAsync(_context, khId, entity.Id);
+            var tongNoCu = -444;
             if (tongNoCu <= 0)
                 return Result<HoaDonDto>.Failure("Khách hàng không còn nợ để trả.");
 
@@ -207,18 +206,18 @@ namespace TraSuaApp.Infrastructure.Services
             if (pm == null)
                 return Result<HoaDonDto>.Failure("Không tìm thấy phương thức thanh toán 'Tiền mặt'.");
 
-            var noConLaiList = await _context.ChiTietHoaDonNos
-                .Where(n => !n.IsDeleted
-                         && n.KhachHangId == khId
+            var noConLaiList = await _context.HoaDonNos
+                .Where(n =>
+                          n.KhachHangId == khId
                          && n.HoaDonId != entity.Id
-                         && n.SoTienConLai > 0)
-                .OrderBy(n => n.NgayGio)
+                         && n.ConLai > 0)
+                .OrderBy(n => n.NgayNo)
                 .ToListAsync();
             var affectedInvoiceIds = new HashSet<Guid>();
 
             foreach (var n in noConLaiList)
             {
-                var soNoCon = n.SoTienConLai;
+                var soNoCon = n.ConLai;
                 if (soNoCon <= 0) continue;
 
                 var tra = Math.Min(soTienCon, soNoCon);
@@ -232,17 +231,17 @@ namespace TraSuaApp.Infrastructure.Services
                     Ngay = now.Date,
                     NgayGio = now,
                     SoTien = tra,
-                    LoaiThanhToan = n.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
+                    LoaiThanhToan = n.NgayNo.Value.Date == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
                     PhuongThucThanhToanId = pm.Id,
                     TenPhuongThucThanhToan = pm.Ten,
                     GhiChu = "Shipper",
                     CreatedAt = now,
                     LastModified = now,
                     IsDeleted = false,
-                    ChiTietHoaDonNoId = n.Id
+                    //ChiTietHoaDonNoId = n.Id
                 });
 
-                await NoHelper.UpdateSoTienConLaiAsync(_context, n.Id, -tra);
+                //await NoHelper.UpdateSoTienConLaiAsync(_context, n.Id, -tra);
                 affectedInvoiceIds.Add(n.HoaDonId);
 
                 traNoCu += tra;
@@ -275,64 +274,63 @@ namespace TraSuaApp.Infrastructure.Services
 
         public async Task<Result<HoaDonDto>> GhiNoAsync(Guid id)
         {
-            var entity = await _context.HoaDons
-                .Include(x => x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted))
-                .Include(x => x.ChiTietHoaDonNos.Where(n => !n.IsDeleted))
-                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+            return Result<HoaDonDto>
+          .Failure($"Chức năng tạm thời bị khóa");
+            //var entity = await _context.HoaDonNos
+            //    .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (entity == null)
-                return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
-            if (IsFinalizedByShipper(entity))
-                return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
+            //if (entity == null)
+            //    return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
+            //if (IsFinalizedByShipper(entity))
+            //    return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
 
-            if (entity.KhachHangId == null)
-                return Result<HoaDonDto>.Failure("Hóa đơn này chưa gắn khách, không thể ghi nợ.");
+            //if (entity.KhachHangId == null)
+            //    return Result<HoaDonDto>.Failure("Hóa đơn này chưa gắn khách, không thể ghi nợ.");
 
-            var now = DateTime.Now;
-            var before = ToDto(entity);
+            //var now = DateTime.Now;
+            //var before = ToDto(entity);
 
-            var daThu = entity.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted).Sum(t => t.SoTien);
-            var soTienNo = entity.ThanhTien - daThu;
+            //var daThu = entity.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted).Sum(t => t.SoTien);
+            //var soTienNo = entity.ThanhTien - daThu;
 
-            if (soTienNo > 0 && !entity.ChiTietHoaDonNos.Any(x => !x.IsDeleted))
-            {
-                var no = new ChiTietHoaDonNo
-                {
-                    Id = Guid.NewGuid(),
-                    HoaDonId = entity.Id,
-                    KhachHangId = entity.KhachHangId ?? Guid.Empty,
-                    Ngay = now.Date,
-                    NgayGio = now,
-                    SoTienNo = soTienNo,
-                    SoTienConLai = soTienNo,
-                    GhiChu = entity.GhiChu,
-                    CreatedAt = now,
-                    LastModified = now,
-                    IsDeleted = false
-                };
-                _context.ChiTietHoaDonNos.Add(no);
-            }
+            //if (soTienNo > 0 && !entity.ChiTietHoaDonNos.Any(x => !x.IsDeleted))
+            //{
+            //    var no = new ChiTietHoaDonNo
+            //    {
+            //        Id = Guid.NewGuid(),
+            //        HoaDonId = entity.Id,
+            //        KhachHangId = entity.KhachHangId ?? Guid.Empty,
+            //        Ngay = now.Date,
+            //        NgayGio = now,
+            //        SoTienNo = soTienNo,
+            //        SoTienConLai = soTienNo,
+            //        GhiChu = entity.GhiChu,
+            //        CreatedAt = now,
+            //        LastModified = now,
+            //        IsDeleted = false
+            //    };
+            //    _context.ChiTietHoaDonNos.Add(no);
+            //}
 
-            entity.GhiChuShipper = $"Ghi nợ";
-            entity.LastModified = now;
+            //entity.GhiChuShipper = $"Ghi nợ";
+            //entity.LastModified = now;
 
-            await _context.SaveChangesAsync();
-            await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
-            await _context.SaveChangesAsync();
+            //await _context.SaveChangesAsync();
+            //await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
+            //await _context.SaveChangesAsync();
 
-            var after = ToDto(entity);
+            //var after = ToDto(entity);
 
-            await DiscordService.SendAsync(DiscordEventType.DuyKhanh, $"{entity.TenKhachHangText} {entity.GhiChuShipper}");
+            //await DiscordService.SendAsync(DiscordEventType.DuyKhanh, $"{entity.TenKhachHangText} {entity.GhiChuShipper}");
 
-            return Result<HoaDonDto>.Success(after, "Đã ghi nợ cho hóa đơn.")
-                .WithId(id).WithBefore(before).WithAfter(after);
+            //return Result<HoaDonDto>.Success(after, "Đã ghi nợ cho hóa đơn.")
+            //    .WithId(id).WithBefore(before).WithAfter(after);
         }
 
         public async Task<Result<HoaDonDto>> ThuTienMatAsync(Guid id)
         {
             var entity = await _context.HoaDons
                 .Include(x => x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted))
-                .Include(x => x.ChiTietHoaDonNos.Where(n => !n.IsDeleted))
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
             if (entity == null)
@@ -347,13 +345,11 @@ namespace TraSuaApp.Infrastructure.Services
                 return Result<HoaDonDto>.Failure("Shipper đã thu TIỀN MẶT cho đơn này, không thể thu lại.");
             }
 
-            // Guard cũ: nếu đã có ghi chú shipper thì không cho thao tác nữa
-            // Nếu đã có ghi chú “chốt đơn” (trừ “Tí nữa Chuyển khoản”) thì khóa lại
             if (IsFinalizedByShipper(entity))
                 return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
             // Nếu đã ghi nợ và còn nợ thì không được dùng Thu tiền mặt
-            if (entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted && n.SoTienConLai > 0))
-                return Result<HoaDonDto>.Failure("Hoá đơn đã ghi nợ, vui lòng dùng chức năng Trả nợ.");
+            //if (entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted && n.SoTienConLai > 0))
+            //    return Result<HoaDonDto>.Failure("Hoá đơn đã ghi nợ, vui lòng dùng chức năng Trả nợ.");
 
             var now = DateTime.Now;
             var before = ToDto(entity);
@@ -398,7 +394,7 @@ namespace TraSuaApp.Infrastructure.Services
                     CreatedAt = now,
                     LastModified = now,
                     IsDeleted = false,
-                    ChiTietHoaDonNoId = null
+                    //ChiTietHoaDonNoId = null
                 };
 
                 _context.ChiTietHoaDonThanhToans.Add(thanhToan);
@@ -422,7 +418,6 @@ namespace TraSuaApp.Infrastructure.Services
         {
             var entity = await _context.HoaDons
                 .Include(x => x.ChiTietHoaDonThanhToans.Where(t => !t.IsDeleted))
-                .Include(x => x.ChiTietHoaDonNos.Where(n => !n.IsDeleted))
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
             if (entity == null)
@@ -439,8 +434,8 @@ namespace TraSuaApp.Infrastructure.Services
 
             if (IsFinalizedByShipper(entity))
                 return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
-            if (entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted && n.SoTienConLai > 0))
-                return Result<HoaDonDto>.Failure("Hoá đơn đã ghi nợ, vui lòng dùng chức năng Trả nợ.");
+            //if (entity.ChiTietHoaDonNos.Any(n => !n.IsDeleted && n.SoTienConLai > 0))
+            //    return Result<HoaDonDto>.Failure("Hoá đơn đã ghi nợ, vui lòng dùng chức năng Trả nợ.");
 
             var now = DateTime.Now;
             var before = ToDto(entity);
@@ -485,7 +480,7 @@ namespace TraSuaApp.Infrastructure.Services
                     CreatedAt = now,
                     LastModified = now,
                     IsDeleted = false,
-                    ChiTietHoaDonNoId = null
+                    //ChiTietHoaDonNoId = null
                 };
 
                 _context.ChiTietHoaDonThanhToans.Add(thanhToan);

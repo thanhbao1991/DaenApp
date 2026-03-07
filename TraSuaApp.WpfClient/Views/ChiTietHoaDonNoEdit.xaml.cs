@@ -1,108 +1,108 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
-using TraSuaApp.WpfClient.Models;
-using TraSuaApp.WpfClient.Services;
+﻿//using System.Windows;
+//using System.Windows.Controls;
+//using System.Windows.Input;
+//using TraSuaApp.Shared.Dtos;
+//using TraSuaApp.Shared.Enums;
+//using TraSuaApp.Shared.Helpers;
+//using TraSuaApp.WpfClient.Apis;
+//using TraSuaApp.WpfClient.Models;
+//using TraSuaApp.WpfClient.Services;
 
-namespace TraSuaApp.WpfClient.HoaDonViews
-{
-    public partial class ChiTietHoaDonNoEdit : Window
-    {
-        public ChiTietHoaDonNoDto Model { get; set; } = new();
-        private readonly IChiTietHoaDonNoApi _api;
-        private readonly string _friendlyName = TuDien._tableFriendlyNames["ChiTietHoaDonNo"];
-        private List<NhomSanPhamCheckItem> _bindingList = new();
+//namespace TraSuaApp.WpfClient.HoaDonViews
+//{
+//    public partial class ChiTietHoaDonNoEdit : Window
+//    {
+//        public ChiTietHoaDonNoDto Model { get; set; } = new();
+//        private readonly IChiTietHoaDonNoApi _api;
+//        private readonly string _friendlyName = TuDien._tableFriendlyNames["ChiTietHoaDonNo"];
+//        private List<NhomSanPhamCheckItem> _bindingList = new();
 
-        public ChiTietHoaDonNoEdit(ChiTietHoaDonNoDto? dto = null)
-        {
-            InitializeComponent();
-            this.KeyDown += Window_KeyDown;
-            this.Title = _friendlyName;
-            TieuDeTextBlock.Text = _friendlyName;
+//        public ChiTietHoaDonNoEdit(ChiTietHoaDonNoDto? dto = null)
+//        {
+//            InitializeComponent();
+//            this.KeyDown += Window_KeyDown;
+//            this.Title = _friendlyName;
+//            TieuDeTextBlock.Text = _friendlyName;
 
-            _api = new ChiTietHoaDonNoApi();
+//            _api = new ChiTietHoaDonNoApi();
 
-            if (dto != null)
-            {
-                Model = dto;
-                TenTextBox.Text = dto.Ten;
-                NgayTextBox.Text = dto.Ngay.ToString("dd-MM-yyyy");
-                GioTextBox.Text = dto.NgayGio.ToString("HH:mm:ss");
-                SoTienTextBox.Value = dto.SoTienNo;
-                SoTienTextBox.Focus();
-                // PhuongThucThanhToanComboBox.SelectedValue = dto.PhuongThucThanhToanId;
-                //GhiChuTextBox.Text = dto.GhiChu ?? "";
+//            if (dto != null)
+//            {
+//                Model = dto;
+//                TenTextBox.Text = dto.Ten;
+//                NgayTextBox.Text = dto.Ngay.ToString("dd-MM-yyyy");
+//                GioTextBox.Text = dto.NgayGio.ToString("HH:mm:ss");
+//                SoTienTextBox.Value = dto.SoTienNo;
+//                SoTienTextBox.Focus();
+//                // PhuongThucThanhToanComboBox.SelectedValue = dto.PhuongThucThanhToanId;
+//                //GhiChuTextBox.Text = dto.GhiChu ?? "";
 
-            }
-            else
-            {
-                TenTextBox.Focus();
-            }
+//            }
+//            else
+//            {
+//                TenTextBox.Focus();
+//            }
 
-            if (Model.IsDeleted)
-            {
-                TenTextBox.IsEnabled = false;
-                SaveButton.Content = "Khôi phục";
-            }
+//            if (Model.IsDeleted)
+//            {
+//                TenTextBox.IsEnabled = false;
+//                SaveButton.Content = "Khôi phục";
+//            }
 
-        }
+//        }
 
 
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            ErrorTextBlock.Text = "";
+//        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+//        {
+//            ErrorTextBlock.Text = "";
 
-            Model.Ten = TenTextBox.Text.Trim();
-            Model.NgayGio = DateTime.Now;
-            if (string.IsNullOrWhiteSpace(Model.Ten))
-            {
-                ErrorTextBlock.Text = $"Tên {_friendlyName} không được để trống.";
-                TenTextBox.Focus();
-                return;
-            }
+//            Model.Ten = TenTextBox.Text.Trim();
+//            Model.NgayGio = DateTime.Now;
+//            if (string.IsNullOrWhiteSpace(Model.Ten))
+//            {
+//                ErrorTextBlock.Text = $"Tên {_friendlyName} không được để trống.";
+//                TenTextBox.Focus();
+//                return;
+//            }
 
-            // Cập nhật danh sách NhomSanPhamIds từ checkbox
-            Result<ChiTietHoaDonNoDto> result;
-            if (Model.Id == Guid.Empty)
-                result = await _api.CreateAsync(Model);
-            else if (Model.IsDeleted)
-                result = await _api.RestoreAsync(Model.Id);
-            else
-                result = await _api.UpdateAsync(Model.Id, Model);
+//            // Cập nhật danh sách NhomSanPhamIds từ checkbox
+//            Result<ChiTietHoaDonNoDto> result;
+//            if (Model.Id == Guid.Empty)
+//                result = await _api.CreateAsync(Model);
+//            else if (Model.IsDeleted)
+//                result = await _api.RestoreAsync(Model.Id);
+//            else
+//                result = await _api.UpdateAsync(Model.Id, Model);
 
-            if (!result.IsSuccess)
-            {
-                ErrorTextBlock.Text = result.Message;
-                return;
-            }
+//            if (!result.IsSuccess)
+//            {
+//                ErrorTextBlock.Text = result.Message;
+//                return;
+//            }
 
-            DialogResult = true;
-            Close();
-        }
+//            DialogResult = true;
+//            Close();
+//        }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+//        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 
-        private void Window_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Escape)
-            {
-                CloseButton_Click(null!, null!);
-                return;
-            }
+//        private void Window_KeyDown(object sender, KeyEventArgs e)
+//        {
+//            if (e.Key == Key.Escape)
+//            {
+//                CloseButton_Click(null!, null!);
+//                return;
+//            }
 
-            if (e.Key == Key.Enter)
-            {
-                SaveButton_Click(null, null);
-            }
-        }
+//            if (e.Key == Key.Enter)
+//            {
+//                SaveButton_Click(null, null);
+//            }
+//        }
 
-        // Giữ event handler để tránh cảnh báo XAML
-        private void NhomSanPhamListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-        }
-    }
-}
+//        // Giữ event handler để tránh cảnh báo XAML
+//        private void NhomSanPhamListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+//        {
+//        }
+//    }
+//}

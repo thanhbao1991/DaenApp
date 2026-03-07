@@ -8,172 +8,197 @@ using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Services;
 
-namespace TraSuaApp.WpfClient.HoaDonViews
+namespace TraSuaApp.WpfClient.HoaDonViews;
+
+public partial class ChiTietHoaDonThanhToanEdit : Window
 {
-    public partial class ChiTietHoaDonThanhToanEdit : Window
+    public ChiTietHoaDonThanhToanDto Model { get; set; } = new();
+
+    public bool QuickSubmit { get; set; }
+
+    private readonly IChiTietHoaDonThanhToanApi _api = new ChiTietHoaDonThanhToanApi();
+
+    private readonly List<PhuongThucThanhToanDto> _phuongThucThanhToanList;
+
+    private const string FriendlyName = "Chi tiết hóa đơn thanh toán";
+
+    public ChiTietHoaDonThanhToanEdit(ChiTietHoaDonThanhToanDto? dto = null)
     {
-        public ChiTietHoaDonThanhToanDto Model { get; set; } = new();
+        InitializeComponent();
 
-        private readonly IChiTietHoaDonThanhToanApi _api;
-        private readonly IPhuongThucThanhToanApi _ptttApi;
+        Title = FriendlyName;
+        TieuDeTextBlock.Text = FriendlyName;
 
-        private readonly string _friendlyName = "Chi tiết hóa đơn thanh toán";
+        KeyDown += Window_KeyDown;
+        Loaded += Window_Loaded;
 
-        private List<PhuongThucThanhToanDto> _phuongThucThanhToanList = new();
+        _phuongThucThanhToanList =
+            AppProviders.PhuongThucThanhToans.Items
+            .Where(x => x.DangSuDung)
+            .ToList();
 
-        public ChiTietHoaDonThanhToanEdit(ChiTietHoaDonThanhToanDto? dto = null)
+        PhuongThucThanhToanComboBox.ItemsSource = _phuongThucThanhToanList;
+
+        InitModel(dto);
+    }
+
+    private void InitModel(ChiTietHoaDonThanhToanDto? dto)
+    {
+        if (dto == null)
         {
-            InitializeComponent();
-            this.KeyDown += Window_KeyDown;
-            this.Title = _friendlyName;
-            TieuDeTextBlock.Text = _friendlyName;
-
-            _api = new ChiTietHoaDonThanhToanApi();
-            _ptttApi = new PhuongThucThanhToanApi();
-
-
-            _phuongThucThanhToanList = AppProviders.PhuongThucThanhToans.Items.Where(x => x.DangSuDung).ToList();
-            PhuongThucThanhToanComboBox.ItemsSource = _phuongThucThanhToanList;
-
-
-            if (dto != null)
-            {
-                Model = dto;
-                TenTextBox.Text = dto.Ten;
-                NgayTextBox.Text = dto.Ngay.ToString("dd-MM-yyyy");
-                GioTextBox.Text = dto.NgayGio.ToString("HH:mm:ss");
-                LoaiThanhToanTextBox.Text = dto.LoaiThanhToan;
-                SoTienTextBox.Value = dto.SoTien;
-                SoTienTextBox.Focus();
-                PhuongThucThanhToanComboBox.SelectedValue = dto.PhuongThucThanhToanId;
-                //GhiChuTextBox.Text = dto.GhiChu ?? "";
-
-                if (Model.IsDeleted)
-                {
-                    TenTextBox.IsEnabled = false;
-                    SoTienTextBox.IsEnabled = false;
-                    PhuongThucThanhToanComboBox.IsEnabled = false;
-                    //GhiChuTextBox.IsEnabled = false;
-                    SaveButton.Content = "Khôi phục";
-                }
-            }
-            else
-            {
-                TenTextBox.Focus();
-            }
-
-
+            TenTextBox.Focus();
+            return;
         }
 
+        Model = dto;
 
+        TenTextBox.Text = dto.Ten;
+        NgayTextBox.Text = dto.Ngay.ToString("dd-MM-yyyy");
+        GioTextBox.Text = dto.NgayGio.ToString("HH:mm:ss");
+        LoaiThanhToanTextBox.Text = dto.LoaiThanhToan;
 
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        SoTienTextBox.Value = dto.SoTien;
+        SoTienTextBox.Focus();
+
+        PhuongThucThanhToanComboBox.SelectedValue = dto.PhuongThucThanhToanId;
+
+        if (Model.IsDeleted)
         {
-            ErrorTextBlock.Text = "";
+            TenTextBox.IsEnabled = false;
+            SoTienTextBox.IsEnabled = false;
+            PhuongThucThanhToanComboBox.IsEnabled = false;
 
-            Model.SoTien = 0;
-            if (!decimal.TryParse(SoTienTextBox.Text.Replace(",", ""), out var tien))
-            {
-                ErrorTextBlock.Text = "Số tiền không hợp lệ.";
-                SoTienTextBox.Focus();
-                return;
-            }
-            Model.SoTien = tien;
+            SaveButton.Content = "Khôi phục";
+        }
+    }
 
-            if (string.IsNullOrWhiteSpace(Model.LoaiThanhToan))
-            {
-                ErrorTextBlock.Text = "Vui lòng chọn loại thanh toán.";
-                return;
-            }
+    private async Task<bool> SaveAsync()
+    {
+        ErrorTextBlock.Text = "";
 
-            if (PhuongThucThanhToanComboBox.SelectedItem is PhuongThucThanhToanDto pt)
-            {
-                Model.PhuongThucThanhToanId = pt.Id;
-                Model.TenPhuongThucThanhToan = pt.Ten;
-            }
-            else
-            {
-                ErrorTextBlock.Text = "Vui lòng chọn phương thức thanh toán.";
-                PhuongThucThanhToanComboBox.Focus();
-                return;
-            }
+        if (!decimal.TryParse(SoTienTextBox.Text.Replace(",", ""), out var tien))
+        {
+            ErrorTextBlock.Text = "Số tiền không hợp lệ.";
+            SoTienTextBox.Focus();
+            return false;
+        }
 
-            // Model.GhiChu = GhiChuTextBox.Text.Trim();
+        Model.SoTien = tien;
 
-            //     Model.NgayGio = DateTime.Now;
+        if (string.IsNullOrWhiteSpace(Model.LoaiThanhToan))
+        {
+            ErrorTextBlock.Text = "Vui lòng chọn loại thanh toán.";
+            return false;
+        }
 
-            Result<ChiTietHoaDonThanhToanDto> result;
-            if (Model.Id == Guid.Empty)
-            {
-                result = await _api.CreateAsync(Model);
-            }
-            else if (Model.IsDeleted)
-            {
-                result = await _api.RestoreAsync(Model.Id);
-            }
-            else
-            {
-                result = await _api.UpdateAsync(Model.Id, Model);
-            }
+        if (PhuongThucThanhToanComboBox.SelectedItem is not PhuongThucThanhToanDto pt)
+        {
+            ErrorTextBlock.Text = "Vui lòng chọn phương thức thanh toán.";
+            PhuongThucThanhToanComboBox.Focus();
+            return false;
+        }
 
-            if (!result.IsSuccess)
-            {
-                ErrorTextBlock.Text = result.Message;
-                return;
-            }
+        Model.PhuongThucThanhToanId = pt.Id;
+        Model.TenPhuongThucThanhToan = pt.Ten;
 
+        Result<ChiTietHoaDonThanhToanDto> result;
 
+        if (Model.Id == Guid.Empty)
+            result = await _api.CreateAsync(Model);
+        else if (Model.IsDeleted)
+            result = await _api.RestoreAsync(Model.Id);
+        else
+            result = await _api.UpdateAsync(Model.Id, Model);
+
+        if (!result.IsSuccess)
+        {
+            ErrorTextBlock.Text = result.Message;
+            return false;
+        }
+
+        return true;
+    }
+
+    private async void SaveButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (await SaveAsync())
+        {
             DialogResult = true;
             Close();
         }
+    }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+        => Close();
 
-        private void Window_KeyDown(object sender, KeyEventArgs e)
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (!QuickSubmit) return;
+
+        if (await SaveAsync())
         {
-            if (e.Key == Key.Escape)
-            {
-                CloseButton_Click(null!, null!);
-                return;
-            }
+            DialogResult = true;
+            Close();
+        }
+    }
 
-            if (e.Key == Key.Enter)
-            {
-                SaveButton_Click(null, null);
+    private async void Window_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            Close();
+            return;
+        }
 
+        if (e.Key == Key.Enter)
+        {
+            if (await SaveAsync())
+            {
+                DialogResult = true;
+                Close();
             }
         }
-        public static SolidColorBrush MakeBrush(Brush brush, double opacity = 1.0)
+    }
+
+    private void PhuongThucThanhToanComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (PhuongThucThanhToanComboBox.SelectedValue is not Guid id)
+            return;
+
+        if (id == AppConstants.TienMatId)
         {
-            if (brush is SolidColorBrush solid)
-            {
-                var color = solid.Color;
-                var newBrush = new SolidColorBrush(color);
-                newBrush.Opacity = opacity; // 0.0 -> 1.0
-                return newBrush;
-            }
-
-            // fallback nếu không phải SolidColorBrush
-            return new SolidColorBrush(Colors.Transparent) { Opacity = opacity };
+            ApplyTheme("SuccessBrush", "Tiền mặt");
         }
-        private void PhuongThucThanhToanComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        else if (id == AppConstants.ChuyenKhoanId)
         {
-            if (Guid.Parse(PhuongThucThanhToanComboBox.SelectedValue.ToString()) == AppConstants.TienMatId)
-            {
-                Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["SuccessBrush"], 0.8);
-                SaveButton.Content = "Tiền mặt";
-                SaveButton.Foreground = Brushes.White;
-            }
-            else
-            if (Guid.Parse(PhuongThucThanhToanComboBox.SelectedValue.ToString()) == AppConstants.ChuyenKhoanId)
-
-            {
-                Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["PrimaryBrush"], 0.8);
-                SaveButton.Content = "Chuyển khoản";
-                SaveButton.Foreground = Brushes.White;
-            }
-            SaveButton.Background = this.Background;
-
+            ApplyTheme("PrimaryBrush", "Chuyển khoản");
         }
+    }
+
+    private void ApplyTheme(string brushKey, string buttonText)
+    {
+        var brush = (Brush)Application.Current.Resources[brushKey];
+
+        Background = MakeBrush(brush, 0.8);
+
+        SaveButton.Content = buttonText;
+        SaveButton.Foreground = Brushes.White;
+        SaveButton.Background = Background;
+    }
+
+    private static SolidColorBrush MakeBrush(Brush brush, double opacity)
+    {
+        if (brush is SolidColorBrush solid)
+        {
+            return new SolidColorBrush(solid.Color)
+            {
+                Opacity = opacity
+            };
+        }
+
+        return new SolidColorBrush(Colors.Transparent)
+        {
+            Opacity = opacity
+        };
     }
 }

@@ -1,8 +1,7 @@
-﻿using System.Diagnostics;
-using System.Net.Http.Json;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using TraSuaApp.Shared.Constants;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Helpers;
@@ -13,20 +12,10 @@ namespace TraSuaApp.WpfClient.Views
 {
     public partial class ChiTietHoaDonNoTab : UserControl
     {
-        private const string METHOD_TIENMAT = "TienMat";
-        private const string METHOD_CK_CHUNG = "ChuyenKhoan";
-
-        // ====== Constants / Fields ======
-        private static readonly Guid PT_TienMat = Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C");
-        private static readonly Guid PT_ChuyenKhoan = Guid.Parse("2cf9a88f-3bc0-4d4b-940d-f8ffa4affa02");
-        private static readonly Guid PM_ChuyenKhoanNha = Guid.Parse("3D75DD9F-A5D3-491D-A316-6D5C9FF7E66C");
-        private static readonly Guid PM_ChuyenKhoanTy = Guid.Parse("C9D8B945-D9D0-424F-B87C-FF279337B996");
-
         private readonly DebounceManager _debouncer = new();
-        private readonly WpfErrorHandler _errorHandler = new();
+        private readonly DashboardApi _api = new();
 
-        private List<ChiTietHoaDonNoDto> _fullChiTietHoaDonNoList = new();
-        private ChiTietHoaDonNoApi _Api;
+        private List<HoaDonNoDto> _items = new();
 
         public ChiTietHoaDonNoTab()
         {
@@ -34,114 +23,30 @@ namespace TraSuaApp.WpfClient.Views
 
             Loaded += async (_, __) =>
             {
-                // Đợi provider sẵn sàng (tránh null lúc mở window)
-                var sw = Stopwatch.StartNew();
-                while (AppProviders.ChiTietHoaDonNos?.Items == null && sw.ElapsedMilliseconds < 5000)
-                    await Task.Delay(100);
-
                 await ReloadUI();
             };
-
-            _Api = new ChiTietHoaDonNoApi();
         }
 
-        // Expose SelectedItem (nếu Dashboard còn dùng hotkey)
-        public ChiTietHoaDonNoDto? SelectedNo
-            => ChiTietHoaDonNoDataGrid.SelectedItem as ChiTietHoaDonNoDto;
+        public HoaDonNoDto? SelectedNo =>
+            ChiTietHoaDonNoDataGrid.SelectedItem as HoaDonNoDto;
+
+        // ================================
+        // LOAD DATA
+        // ================================
 
         public async Task ReloadUI()
         {
-            var todayLocal = DateTime.Today;
-
-            _fullChiTietHoaDonNoList = await UiListHelper.BuildListAsync(
-                AppProviders.ChiTietHoaDonNos.Items.Where(x => !x.IsDeleted),
-                snap => snap.Where(x => x.SoTienConLai > 0 || x.Ngay == todayLocal)
-                            .OrderByDescending(x => x.LastModified)
-                            .ToList()
-            );
-
-            ApplyFilter();
-        }
-
-        private void ApplyFilter()
-        {
-            string keyword = StringHelper.MyNormalizeText(SearchChiTietHoaDonNoTextBox.Text ?? "");
-            List<ChiTietHoaDonNoDto> sourceList = string.IsNullOrWhiteSpace(keyword)
-                ? _fullChiTietHoaDonNoList
-                : _fullChiTietHoaDonNoList.Where(x => x.TimKiem.ToLower().Contains(keyword)).ToList();
-
-            int stt = 1; foreach (var item in sourceList) item.Stt = stt++;
-            ChiTietHoaDonNoDataGrid.ItemsSource = sourceList;
-            TongTienChiTietHoaDonNoTextBlock.Header = $"{sourceList.Sum(x => x.SoTienConLai) / 1000:N0}k";
-        }
-
-        private void SearchChiTietHoaDonNoTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            _debouncer.Debounce("ChiTietHoaDonNo", 300, ApplyFilter);
-        }
-
-        private async void ChiTietHoaDonNoDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            return;
-            if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected) return;
-
-            var now = DateTime.Now;
-            var dto = new ChiTietHoaDonThanhToanDto
-            {
-                ChiTietHoaDonNoId = selected.Id,
-                Ngay = now.Date,
-                NgayGio = now,
-                HoaDonId = selected.HoaDonId,
-                KhachHangId = selected.KhachHangId,
-                Ten = $"{selected.Ten}",
-                LoaiThanhToan = selected.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
-                GhiChu = selected.GhiChu,
-                SoTien = selected.SoTienConLai,
-            };
-
-            var owner = Window.GetWindow(this);
-            var window = new ChiTietHoaDonThanhToanEdit(dto)
-            {
-                Width = owner?.ActualWidth ?? 1200,
-                Height = owner?.ActualHeight ?? 800,
-                Owner = owner
-            };
-
-            if (window.ShowDialog() == true)
-            {
-                await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadNo: true, reloadThanhToan: true);
-            }
-        }
-
-        private async void XoaChiTietHoaDonNoButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected)
-                return;
-
-            var confirm = MessageBox.Show(
-               $"Bạn có chắc chắn muốn xoá '{selected.Ten}'?",
-               "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (confirm != MessageBoxResult.Yes) return;
-
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
-                var response = await ApiClient.DeleteAsync($"/api/ChiTietHoaDonNo/{selected.Id}");
-                var result = await response.Content.ReadFromJsonAsync<Result<ChiTietHoaDonNoDto>>();
 
-                if (result?.IsSuccess == true)
-                {
-                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadNo: true);
-                }
-                else
-                {
-                    _errorHandler.Handle(new Exception(result?.Message ?? "Không thể xoá."), "Delete");
-                }
-            }
-            catch (Exception ex)
-            {
-                _errorHandler.Handle(ex, "Delete");
+                var response = await _api.GetCongNo();
+
+                _items = response.IsSuccess
+                    ? response.Data ?? new()
+                    : new();
+
+                ApplyFilter();
             }
             finally
             {
@@ -149,109 +54,122 @@ namespace TraSuaApp.WpfClient.Views
             }
         }
 
-        private async Task ReloadAfterHoaDonChangeAsync(
-            bool reloadHoaDon = true,
-            bool reloadThanhToan = false,
-            bool reloadNo = false,
-            bool reloadChiTieu = false)
+        // ================================
+        // SEARCH
+        // ================================
+
+        private void SearchChiTietHoaDonNoTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (reloadHoaDon)
-                await AppProviders.HoaDons.ReloadAsync();
-
-            if (reloadThanhToan)
-                await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
-
-            if (reloadNo)
-                await AppProviders.ChiTietHoaDonNos.ReloadAsync();
-
-            if (reloadChiTieu)
-                await AppProviders.ChiTieuHangNgays.ReloadAsync();
-
-            await ReloadUI();
+            _debouncer.Debounce("CongNoSearch", 300, ApplyFilter);
         }
+
+        private void ApplyFilter()
+        {
+            string keyword = StringHelper.MyNormalizeText(
+                SearchChiTietHoaDonNoTextBox.Text ?? ""
+            );
+
+            List<HoaDonNoDto> list = string.IsNullOrWhiteSpace(keyword)
+                ? _items
+                : _items
+                    .Where(x => x.TimKiem.ToLower().Contains(keyword))
+                    .ToList();
+
+            int stt = 1;
+            foreach (var item in list)
+                item.Stt = stt++;
+
+            ChiTietHoaDonNoDataGrid.ItemsSource = list;
+
+            TongTienChiTietHoaDonNoTextBlock.Header =
+                $"{list.Sum(x => x.ConLai) / 1000:N0}k";
+        }
+
+        // ================================
+        // QUICK FILTER
+        // ================================
 
         private void TimKiemNhanhCongNoButton_Click(object sender, RoutedEventArgs e)
         {
-            //if (sender is Button bt)
-            //{
-            //    var tag = bt.Tag?.ToString();
-            //    if (tag == "hôm nay")
-            //        SearchChiTietHoaDonNoTextBox.Text = DateTime.Today.ToString("dd-MM-yyyy");
-            //    else if (tag == "hôm qua")
-            //        SearchChiTietHoaDonNoTextBox.Text = DateTime.Today.AddDays(-1).ToString("dd-MM-yyyy");
-            //}
+            if (sender is Button bt)
+            {
+                var tag = bt.Tag?.ToString();
+
+                if (tag == "hôm nay")
+                    SearchChiTietHoaDonNoTextBox.Text =
+                        DateTime.Today.ToString("dd-MM-yyyy");
+
+                else if (tag == "hôm qua")
+                    SearchChiTietHoaDonNoTextBox.Text =
+                        DateTime.Today.AddDays(-1).ToString("dd-MM-yyyy");
+            }
         }
 
-        // ========= NÚT TRÊN MỖI DÒNG: THU TIỀN MẶT / Bank =========
+        // ================================
+        // PAY FROM ROW
+        // ================================
+
         private async void TienMatRowButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button bt && bt.DataContext is ChiTietHoaDonNoDto item)
-            {
-                // CÁCH A đảo logic: Ctrl => thu ngay, bình thường => mở form
-                bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
-                await PayItemAsync(item, "TienMat", thuNgay, bt); // truyền btn để BusyUI gắn spinner
-            }
+            await PayFromRow(sender, AppConstants.TienMatId);
         }
 
         private async void ChuyenKhoanRowButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button bt && bt.DataContext is ChiTietHoaDonNoDto item)
+            await PayFromRow(sender, AppConstants.ChuyenKhoanId);
+        }
+
+        private async Task PayFromRow(object sender, Guid methodId)
+        {
+            if (sender is Button bt && bt.DataContext is HoaDonNoDto item)
             {
-                bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
-                await PayItemAsync(item, "ChuyenKhoan", thuNgay, bt); // truyền btn để BusyUI gắn spinner
+                bool quickPay = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
+
+                await PayItemAsync(item, methodId, quickPay, bt);
             }
         }
 
-        private async Task PayItemAsync(ChiTietHoaDonNoDto item, string method, bool thuNgay = false, Button? btn = null)
+        // ================================
+        // PAY LOGIC
+        // ================================
+
+        private async Task PayItemAsync(
+       HoaDonNoDto item,
+       Guid methodId,
+       bool quickPay,
+       Button? btn = null)
         {
-            if (item.SoTienConLai == 0)
+            if (item.ConLai == 0)
             {
                 NotiHelper.Show("Công nợ đã thu đủ!");
                 return;
             }
 
             IDisposable? busy = null;
+
             try
             {
-                if (thuNgay)
-                {
-                    // Ctrl => thu ngay: giữ spinner suốt quá trình gọi API
-                    busy = BusyUI.Scope(this, btn, "Đang thu tiền...");
-                    var result = await _Api.PayAsync(item.Id, method);
-
-                    if (result.IsSuccess)
-                        await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadNo: true, reloadThanhToan: true);
-                    else
-                        NotiHelper.Show(result.Message ?? "Không thể thanh toán.");
-
-                    return;
-                }
-
-                // Bấm bình thường => mở form: hiển thị spinner ngắn trước khi mở
-                busy = BusyUI.Scope(this, btn, "Đang mở form...");
                 var owner = Window.GetWindow(this);
                 var now = DateTime.Now;
 
+                busy = BusyUI.Scope(this, btn, "Đang mở form...");
+
                 var dto = new ChiTietHoaDonThanhToanDto
                 {
-                    ChiTietHoaDonNoId = item.Id,
                     Ngay = now.Date,
                     NgayGio = now,
                     HoaDonId = item.HoaDonId,
                     KhachHangId = item.KhachHangId,
-                    Ten = item.Ten,
-                    PhuongThucThanhToanId = method switch
-                    {
-                        METHOD_TIENMAT => PT_TienMat,
-                        _ => PT_ChuyenKhoan // mặc định CK chung
-                    },
-
-                    LoaiThanhToan = item.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
+                    Ten = item.TenKhachHangText,
+                    PhuongThucThanhToanId = methodId,
+                    LoaiThanhToan =
+                        item.NgayNo?.Date == now.Date
+                        ? "Trả nợ trong ngày"
+                        : "Trả nợ qua ngày",
                     GhiChu = item.GhiChu,
-                    SoTien = item.SoTienConLai,
+                    SoTien = item.ConLai
                 };
 
-                // Ẩn spinner trước khi ShowDialog (tránh spinner nằm đè trong lúc form mở)
                 busy.Dispose();
                 busy = null;
 
@@ -261,11 +179,26 @@ namespace TraSuaApp.WpfClient.Views
                     Width = owner?.ActualWidth ?? 1200,
                     Height = owner?.ActualHeight ?? 800
                 };
-                // Nếu muốn khoá phương thức trong form:
+
                 win.PhuongThucThanhToanComboBox.IsEnabled = false;
 
+                // ===============================
+                // CTRL = THU NHANH
+                // ===============================
+
+                if (quickPay)
+                {
+                    win.QuickSubmit = true;
+                    win.WindowStartupLocation = WindowStartupLocation.Manual;
+                    win.Left = -10000;
+                    win.Top = -10000;
+                    win.ShowInTaskbar = false;
+                }
+
                 if (win.ShowDialog() == true)
-                    await ReloadAfterHoaDonChangeAsync(reloadHoaDon: true, reloadNo: true, reloadThanhToan: true);
+                {
+                    await ReloadAfterPay();
+                }
             }
             catch (Exception ex)
             {
@@ -276,39 +209,41 @@ namespace TraSuaApp.WpfClient.Views
                 busy?.Dispose();
             }
         }
+        // ================================
+        // RELOAD AFTER PAY
+        // ================================
 
-        // ===== Hotkeys cũ (F1/F4) – dùng SelectedNo, không ép sender là Button =====
-        private async void F1aButton_Click(object sender, RoutedEventArgs e)
+        private async Task ReloadAfterPay()
         {
-            var item = SelectedNo;
-            if (item == null) { NotiHelper.Show("Vui lòng chọn công nợ!"); return; }
+            await AppProviders.HoaDons.ReloadAsync();
+            await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
 
-            bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
-            await PayItemAsync(item, "TienMat", thuNgay, null); // không có nút hàng để gắn spinner
+            await ReloadUI();
         }
 
-        private async void F4aButton_Click(object sender, RoutedEventArgs e)
+        // ================================
+        // HOTKEYS
+        // ================================
+
+        public async void HandleHotkey(Key key)
         {
             var item = SelectedNo;
-            if (item == null) { NotiHelper.Show("Vui lòng chọn công nợ!"); return; }
 
-            bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
-            await PayItemAsync(item, "ChuyenKhoan", thuNgay, null); // không có nút hàng để gắn spinner
-        }
+            if (item == null)
+            {
+                NotiHelper.Show("Vui lòng chọn công nợ!");
+                return;
+            }
 
-
-        public void HandleHotkey(Key key)
-        {
             switch (key)
             {
                 case Key.F1:
-                    F1aButton_Click(this, new RoutedEventArgs());
+                    await PayItemAsync(item, AppConstants.TienMatId, false);
                     break;
 
                 case Key.F4:
-                    F4aButton_Click(this, new RoutedEventArgs());
+                    await PayItemAsync(item, AppConstants.ChuyenKhoanId, false);
                     break;
-
             }
         }
     }

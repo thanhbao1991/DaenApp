@@ -18,6 +18,7 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
     public DbSet<HoaDonPaymentMaskView> vHoaDonPaymentMasks { get; set; }
+    public DbSet<HoaDonNoDto> HoaDonNos { get; set; }
 
     public virtual DbSet<NguyenLieuTransaction> NguyenLieuTransactions { get; set; }
     public virtual DbSet<NguyenLieuBanHang> NguyenLieuBanHangs { get; set; }
@@ -25,7 +26,6 @@ public partial class AppDbContext : DbContext, IAppDbContext
     public virtual DbSet<ChiTieuHangNgay> ChiTieuHangNgays { get; set; }
     public virtual DbSet<ChiTietHoaDonEntity> ChiTietHoaDons { get; set; }
     public virtual DbSet<ChiTietHoaDonNhapEntity> ChiTietHoaDonNhaps { get; set; }
-    public virtual DbSet<ChiTietHoaDonNo> ChiTietHoaDonNos { get; set; }
     public virtual DbSet<ChiTietHoaDonThanhToan> ChiTietHoaDonThanhToans { get; set; }
     public virtual DbSet<ChiTietHoaDonTopping> ChiTietHoaDonToppings { get; set; }
     public virtual DbSet<ChiTietHoaDonVoucher> ChiTietHoaDonVouchers { get; set; }
@@ -117,22 +117,22 @@ public partial class AppDbContext : DbContext, IAppDbContext
         // ======================
         // ChiTietHoaDonNo
         // ======================
-        modelBuilder.Entity<ChiTietHoaDonNo>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK_NoHoaDons");
-            entity.HasIndex(e => e.HoaDonId, "IX_NoHoaDons_HoaDonId");
-            entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_NoHoaDons_IsDeleted_LastModified")
-                  .IsDescending(false, true);
+        //modelBuilder.Entity<ChiTietHoaDonNo>(entity =>
+        //{
+        //    entity.HasKey(e => e.Id).HasName("PK_NoHoaDons");
+        //    entity.HasIndex(e => e.HoaDonId, "IX_NoHoaDons_HoaDonId");
+        //    entity.HasIndex(e => new { e.IsDeleted, e.LastModified }, "IX_NoHoaDons_IsDeleted_LastModified")
+        //          .IsDescending(false, true);
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.SoTienNo).HasColumnType("decimal(18, 2)");
+        //    entity.Property(e => e.Id).ValueGeneratedNever();
+        //    entity.Property(e => e.SoTienNo).HasColumnType("decimal(18, 2)");
 
-            entity.HasOne(d => d.HoaDon)
-                  .WithMany(p => p.ChiTietHoaDonNos)
-                  .HasForeignKey(d => d.HoaDonId)
-                  .HasConstraintName("FK_NoHoaDons_HoaDons_HoaDonId")
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
+        //    entity.HasOne(d => d.HoaDon)
+        //          .WithMany(p => p.ChiTietHoaDonNos)
+        //          .HasForeignKey(d => d.HoaDonId)
+        //          .HasConstraintName("FK_NoHoaDons_HoaDons_HoaDonId")
+        //          .OnDelete(DeleteBehavior.Restrict);
+        //});
 
         // ======================
         // ChiTietHoaDonThanhToan

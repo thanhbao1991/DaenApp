@@ -5,7 +5,6 @@ public partial class ChiTietHoaDonThanhToan
     public Guid Id { get; set; }
 
     public string LoaiThanhToan { get; set; }
-    public Guid? ChiTietHoaDonNoId { get; set; }
     public string? GhiChu { get; set; }
 
     public string TenPhuongThucThanhToan { get; set; }
@@ -29,7 +28,6 @@ public partial class ChiTietHoaDonThanhToan
 
 
     public virtual HoaDon HoaDon { get; set; } = null!;
-    public virtual ChiTietHoaDonNo ChiTietHoaDonNo { get; set; } = null!;
 
     public virtual PhuongThucThanhToan PhuongThucThanhToan { get; set; } = null!;
     public Guid? KhachHangId { get; set; }

@@ -70,18 +70,5 @@ public static class LoyaltyService
     }
 
 
-    public static async Task<decimal> TinhTongNoKhachHangAsync(AppDbContext db, Guid khachHangId, Guid? excludeHoaDonId = null, CancellationToken ct = default)
-    {
-        var q = db.ChiTietHoaDonNos.AsNoTracking()
-            .Where(h => !h.IsDeleted && h.KhachHangId == khachHangId);
 
-        if (excludeHoaDonId.HasValue)
-            q = q.Where(h => h.HoaDonId != excludeHoaDonId.Value);
-
-        // chỉ cộng phần > 0, tránh null
-        //  return await q.SumAsync(h => h.SoTienConLai > 0 ? h.SoTienConLai : 0m, ct);
-        return await q
-          .Where(h => h.SoTienConLai > 0)
-          .SumAsync(h => (decimal?)h.SoTienConLai, ct) ?? 0m;
-    }
 }

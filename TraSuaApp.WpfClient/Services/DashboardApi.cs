@@ -6,6 +6,20 @@ namespace TraSuaApp.WpfClient.Services
 {
     public class DashboardApi
     {
+        public async Task<Result<List<HoaDonNoDto>>> GetCongNo()
+        {
+            try
+            {
+                var result = await ApiClient.Get<Result<List<HoaDonNoDto>>>($"/api/dashboard/get-cong-no");
+                return result ?? Result<List<HoaDonNoDto>>.Failure("Không nhận được dữ liệu từ server.");
+            }
+            catch (Exception ex)
+            {
+                return Result<List<HoaDonNoDto>>.Failure($"Lỗi khi tải dữ liệu hóa đơn nợ: {ex.Message}");
+            }
+        }
+
+
         public async Task<Result<List<SanPhamXepHangDto>>> GetXepHangSanPham(int year)
         {
             try
