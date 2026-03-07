@@ -70,7 +70,7 @@
                                         <Run
                                             FontWeight="Bold"
                                             Foreground="{StaticResource DangerBrush}"
-                                            Text="{Binding BienThes[0].GiaBan, StringFormat={}{0:N0} đ}" />-->
+                                            Text="{Binding BienThes[0].GiaBan, StringFormat={}{0:N0}}" />-->
                                     </TextBlock>
                                 </Button>
 
@@ -99,7 +99,7 @@
                                                     <Run
                                                         FontWeight="Bold"
                                                         Foreground="{StaticResource DangerBrush}"
-                                                        Text="{Binding GiaBan, StringFormat={}{0:N0} đ}" />
+                                                        Text="{Binding GiaBan, StringFormat={}{0:N0}}" />
                                                 </TextBlock>
                                             </Button>
                                         </DataTemplate>

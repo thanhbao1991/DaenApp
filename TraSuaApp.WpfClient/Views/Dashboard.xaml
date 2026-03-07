@@ -44,25 +44,51 @@
                 <TabItem
                     x:Name="MessengerTabItem"
                     Header="Messenger"
-                    Tag="Messenger">
+                    Tag="Messenger"
+                    ToolTip="+"
+                    ToolTipService.IsEnabled="False">
                     <ctrl:MessengerTab x:Name="MessengerView" />
                 </TabItem>
-                <TabItem Header="Thống kê" Tag="ThongKe">
+                <TabItem
+                    Header="Thống kê"
+                    Tag="ThongKe"
+                    ToolTip="+"
+                    ToolTipService.IsEnabled="False">
                     <views:ThongKeTab />
                 </TabItem>
-                <TabItem Header="Hóa đơn " Tag="HoaDon">
+                <TabItem
+                    Header="Hóa đơn "
+                    Tag="HoaDon"
+                    ToolTip="+"
+                    ToolTipService.IsEnabled="False">
                     <views:HoaDonTab x:Name="HoaDonTabControl" />
                 </TabItem>
-                <TabItem Header="Thanh toán " Tag="ChiTietHoaDonThanhToan">
+                <TabItem
+                    Header="Thanh toán "
+                    Tag="ChiTietHoaDonThanhToan"
+                    ToolTip="+"
+                    ToolTipService.IsEnabled="False">
                     <views:ChiTietHoaDonThanhToanTab x:Name="ChiTietHoaDonThanhToanTabControl" />
                 </TabItem>
-                <TabItem Header="Công nợ " Tag="ChiTietHoaDonNo">
+                <TabItem
+                    Header="Công nợ "
+                    Tag="ChiTietHoaDonNo"
+                    ToolTip="+"
+                    ToolTipService.IsEnabled="False">
                     <views:ChiTietHoaDonNoTab x:Name="ChiTietHoaDonNoTabControl" />
                 </TabItem>
-                <TabItem Header="Chi tiêu " Tag="ChiTieuHangNgay">
+                <TabItem
+                    Header="Chi tiêu "
+                    Tag="ChiTieuHangNgay"
+                    ToolTip="+"
+                    ToolTipService.IsEnabled="False">
                     <views:ChiTieuHangNgayTab x:Name="ChiTieuHangNgayTabControl" />
                 </TabItem>
-                <TabItem x:Name="CongViecTab" Tag="CongViecTab">
+                <TabItem
+                    x:Name="CongViecTab"
+                    Tag="CongViecTab"
+                    ToolTip="+"
+                    ToolTipService.IsEnabled="False">
                     <TabItem.Header>
                         <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                             <TextBlock Text="Công việc" />
@@ -89,7 +115,29 @@
                     </TabItem.Header>
                     <views:CongViecNoiBoTab x:Name="CongViecNoiBoTab" />
                 </TabItem>
-                <TabItem x:Name="ReportsTab" Tag="ReportsLauncher">
+
+                <TabItem
+                    x:Name="DoanhThuTab"
+                    Header="D.Thu Tháng "
+                    Tag="DoanhThuThangTab"
+                    ToolTip="+"
+                    ToolTipService.IsEnabled="False">
+                    <views:DoanhThuThangTab x:Name="DoanhThuThangTab" />
+                </TabItem>
+
+                <TabItem
+                    Header="D.Thu Năm"
+                    Tag="DoanhThuNamTab"
+                    ToolTip="+"
+                    ToolTipService.IsEnabled="False">
+                    <views:DoanhThuNamTab x:Name="DoanhThuNamTab" />
+                </TabItem>
+
+                <TabItem
+                    x:Name="ReportsTab"
+                    Tag="ReportsLauncher"
+                    ToolTip="+"
+                    ToolTipService.IsEnabled="False">
                     <TabItem.Header>
                         <!--  Click vào header để mở ContextMenu  -->
                         <Border

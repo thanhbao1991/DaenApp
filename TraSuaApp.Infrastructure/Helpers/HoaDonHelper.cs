@@ -30,7 +30,7 @@ public static class HoaDonHelper
         if (daTra <= 0) return hasDebt ? "Ghi nợ" : "Chưa thu";
 
         // 4) Thu một phần
-        // Nếu chỉ có CK (không có tiền mặt) → "Chuyển khoản một phần"
+        // Nếu chỉ có CK (không có tiền mặt) →
         if (!coTienMat && coChuyenKhoan) return "Chuyển khoản một phần";
 
         // Còn lại dựa trên debt
@@ -65,4 +65,5 @@ public static class HoaDonHelper
 
         h.LastModified = DateTime.Now;
     }
+
 }

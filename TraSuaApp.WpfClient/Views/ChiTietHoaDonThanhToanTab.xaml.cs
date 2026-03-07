@@ -12,7 +12,6 @@ namespace TraSuaApp.WpfClient.Views
 {
     public partial class ChiTietHoaDonThanhToanTab : UserControl
     {
-
         private readonly DebounceManager _debouncer = new();
         private readonly WpfErrorHandler _errorHandler = new();
 
@@ -25,9 +24,13 @@ namespace TraSuaApp.WpfClient.Views
         public ChiTietHoaDonThanhToanDto? SelectedThanhToan
             => ChiTietHoaDonThanhToanDataGrid.SelectedItem as ChiTietHoaDonThanhToanDto;
 
+
         public ChiTietHoaDonThanhToanTab()
         {
             InitializeComponent();
+
+            var username = Properties.Settings.Default.TaiKhoan;
+
             Loaded += async (_, __) =>
             {
                 // tránh null khi mở form
@@ -42,52 +45,75 @@ namespace TraSuaApp.WpfClient.Views
         public async Task ReloadUI()
         {
             var todayLocal = Today;
-            //var todayLocal = Today.AddDays(-1);
 
             _fullChiTietHoaDonThanhToanList = await UiListHelper.BuildListAsync(
                 AppProviders.ChiTietHoaDonThanhToans.Items.Where(x => !x.IsDeleted),
                 snap => snap.Where(x => x.Ngay == todayLocal)
-                            .OrderByDescending(x => x.NgayGio)
+                            //.OrderByDescending(x => x.NgayGio)
                             .ToList()
             );
 
             ApplyFilter();
         }
-
-        private void ApplyFilter()
+        public void ApplyFilter()
         {
-            string keyword = (SearchChiTietHoaDonThanhToanTextBox.Text ?? string.Empty).Trim().ToLower();
-            decimal tongTien = 0;
-            List<ChiTietHoaDonThanhToanDto> sourceList;
+            string keyword = (SearchChiTietHoaDonThanhToanTextBox.Text ?? string.Empty)
+                                .Trim()
+                                .ToLower();
 
-            if (string.IsNullOrWhiteSpace(keyword))
+            IEnumerable<ChiTietHoaDonThanhToanDto> query = _fullChiTietHoaDonThanhToanList;
+
+            TimKiemNhanhStackPanel.Visibility = Visibility.Visible;
+
+
+            // 2️⃣ Lọc theo từ khoá
+            if (!string.IsNullOrWhiteSpace(keyword))
             {
-                sourceList = _fullChiTietHoaDonThanhToanList;
-            }
-            else
-            {
-                // Giống code cũ: chuẩn hoá text rồi phải khớp TẤT CẢ từ khoá
                 keyword = StringHelper.MyNormalizeText(keyword);
+
                 var keywords = keyword
                     .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     .Select(k => k.ToLower())
                     .ToList();
 
-                sourceList = _fullChiTietHoaDonThanhToanList
-                    .Where(x =>
-                    {
-                        var text = x.TimKiem.ToLower();
-                        return keywords.All(k => text.Contains(k));
-                    })
-                    .ToList();
+                query = query.Where(x =>
+                {
+                    var text = (x.TimKiem ?? "").ToLower();
+                    return keywords.All(k => text.Contains(k));
+                });
             }
 
-            int stt = 1;
-            foreach (var item in sourceList) item.Stt = stt++;
+            var sourceList = query.ToList();
+            // 🔥 Lưu lại hóa đơn còn hiển thị
+            Dashboard.VisibleHoaDonIds = sourceList
+                .Select(x => x.HoaDonId)
+                .ToHashSet();
 
+            // 🔥 Lưu danh sách hóa đơn có thanh toán
+            Dashboard.HoaDonDaCoThanhToanIds = _fullChiTietHoaDonThanhToanList
+                .Select(x => x.HoaDonId)
+                .ToHashSet();
+            // 3️⃣ Đánh lại STT
+            int stt = 1;
+            foreach (var item in sourceList)
+            {
+                item.Stt = stt++;
+                //if (item.PhuongThucThanhToanId == AppConstants.TienMatId) item.TenPhuongThucThanhToan = string.Empty;
+                //if (item.LoaiThanhToan == "Trong ngày") item.LoaiThanhToan = string.Empty;
+                //if (item.GhiChu == "Thanh toán đủ") item.GhiChu = string.Empty;
+                //if (item.GhiChu == "Shipper") item.GhiChu = string.Empty;
+
+            }
+
+            // 4️⃣ Bind UI
             ChiTietHoaDonThanhToanDataGrid.ItemsSource = sourceList;
-            tongTien = sourceList.Sum(x => x.SoTien);
-            TongTienThanhToanTextBlock.Header = $"{tongTien:N0} đ";
+
+            // 5️⃣ Tính tổng tiền
+            decimal tongTien = sourceList.Sum(x => x.SoTien);
+            TongTienThanhToanTextBlock.Header = $"{tongTien / 1000:N0}k";
+
+            // 6️⃣ Lấy danh sách hóa đơn còn hiển thị
+
         }
 
         private void SearchChiTietHoaDonThanhToanTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -175,6 +201,12 @@ namespace TraSuaApp.WpfClient.Views
         {
             if (sender is Button bt)
                 SearchChiTietHoaDonThanhToanTextBox.Text = bt.Tag?.ToString() ?? "";
+        }
+
+        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+
+
         }
     }
 }

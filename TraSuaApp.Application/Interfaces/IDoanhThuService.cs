@@ -4,6 +4,7 @@ namespace TraSuaApp.Applicationn.Interfaces;
 
 public interface IDoanhThuService
 {
+    Task<List<DoanhThuNamItemDto>> GetDoanhThuNamAsync(int nam);
     Task<DoanhThuNgayDto> GetDoanhThuNgayAsync(DateTime ngay);
     Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam);
     Task<List<DoanhThuChiTietHoaDonDto>> GetChiTietHoaDonAsync(Guid hoaDonId);

@@ -7,25 +7,40 @@ namespace TraSuaApp.Shared.Dtos;
 
 public class HoaDonDto : DtoBase, INotifyPropertyChanged
 {
-
-    public string? TenBan { get; set; }
-
-    // ✅ Server tính trạng thái → không bind từ client
-    public string? TrangThai { get; set; }
-
-    // ✅ Chỉ hiển thị (follow WPF) → không bind từ client
     public override string Ten =>
         KhachHangId == null
             ? (TenBan ?? "")
             : (TenKhachHangText ?? "");
+    public string? TenBan { get; set; }
+    public string TenHienThi
+    {
+        get
+        {
+            // 1) Có tên khách -> ưu tiên
+            if (!string.IsNullOrWhiteSpace(TenKhachHangText))
+                return TenKhachHangText;
+
+            // 2) Không có KH -> nếu có bàn (Tại chỗ hay không) thì dùng tên bàn
+            if (!string.IsNullOrWhiteSpace(TenBan))
+                return TenBan;
+
+            // 3) Fallback theo ngữ cảnh giao/ship
+            if (!string.IsNullOrWhiteSpace(DiaChiText))
+                return DiaChiText;
+
+            // 4) Cuối cùng rơi về Ten (nếu nơi khác đã gán) hoặc mã HD
+            if (!string.IsNullOrWhiteSpace(Ten))
+                return Ten;
+
+            return $"HD #{Id}";
+        }
+    }
 
 
-
+    public bool IsLocalDraft { get; set; }
+    public string? TrangThai { get; set; }
+    public bool IsThanhToanHidden { get; set; }
     public bool DaThuHoacGhiNo => ConLai == 0m || HasDebt;
-
-
-
-
     public string RowBackground
     {
         get
@@ -65,7 +80,6 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
             return DaThuHoacGhiNo ? "GreenYellow" : "GreenYellow";
         }
     }
-
     public string RowForeground
     {
         get
@@ -78,8 +92,8 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
             if (statusLower.Contains("nợ") && !statusLower.Contains("trả"))
                 return "IndianRed";            // đỏ nếu "nợ" (không phải "trả nợ")
 
-            if (statusLower.Contains("chuyển khoản"))
-                return "Orange";                 // vàng nếu "chuyển khoản"
+            if (statusLower.Contains("Chuyển khoản"))
+                return "Orange";
 
             // 2) Xác định nền để chọn đen/trắng
             var noBackground =
@@ -96,11 +110,6 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
             return bgIsDark ? "Black" : "Black";
         }
     }
-
-
-
-
-
     [DefaultValue(false)]
     public bool UuTien { get; set; }
     [DefaultValue(false)]
@@ -108,15 +117,12 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
     public bool HasDebt { get; set; }
     public decimal TongNoKhachHang { get; set; }
     public decimal TongDonKhacDangGiao { get; set; }
-
     public int TongDiem { get; set; }
     public int DiemThangNay { get; set; }
     public int DiemThangTruoc { get; set; }
-
     public DateTime? NgayShip { get; set; }
     public string? NguoiShip { get; set; }
     public DateTime? NgayRa { get; set; }
-
     public string GioHienThi
     {
         get
@@ -158,28 +164,22 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
         }
     }
     public event PropertyChangedEventHandler? PropertyChanged;
-
     protected void OnPropertyChanged(string propertyName) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
     // Hàm sẽ được gọi MỖI GIÂY để refresh cell
     public void RefreshGioHienThi() => OnPropertyChanged(nameof(GioHienThi));
     public string? PhanLoai { get; set; }
     public override string ApiRoute => "HoaDon";
     public DateTime Ngay { get; set; }
     public DateTime NgayGio { get; set; }
-
     public Guid? KhachHangId { get; set; }
     public Guid? VoucherId { get; set; }
-
     public string? MaHoaDon { get; set; }
-
     public string? DiaChiText { get; set; }
     public string? SoDienThoaiText { get; set; }
     public string? TenKhachHangText { get; set; }
     public string? GhiChu { get; set; }
     public string? GhiChuShipper { get; set; }
-
     public decimal TongTien { get; set; }
     public decimal GiamGia { get; set; }
     public decimal ThanhTien { get; set; }
@@ -190,7 +190,6 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
      = new ObservableCollection<ChiTietHoaDonDto>();
     public virtual ICollection<ChiTietHoaDonToppingDto> ChiTietHoaDonToppings { get; set; } = new List<ChiTietHoaDonToppingDto>();
     public ICollection<ChiTietHoaDonVoucherDto>? ChiTietHoaDonVouchers { get; set; }
-
     public virtual KhachHang? KhachHang { get; set; }
     public virtual ICollection<ChiTietHoaDonThanhToan> ChiTietHoaDonThanhToans { get; set; } = new List<ChiTietHoaDonThanhToan>();
     public DateTime? NgayHen { get; set; }
@@ -201,33 +200,8 @@ public class HoaDonDto : DtoBase, INotifyPropertyChanged
         StringHelper.MyNormalizeText((Ten ?? "").Replace(" ", "")) + " " +
         StringHelper.GetShortName(Ten ?? "");
 
+    public int PaymentMethodMask { get; set; }
 
-    public string TenHienThi
-    {
-        get
-        {
-            // 1) Có tên khách -> ưu tiên
-            if (!string.IsNullOrWhiteSpace(TenKhachHangText))
-                return TenKhachHangText;
-
-            // 2) Không có KH -> nếu có bàn (Tại chỗ hay không) thì dùng tên bàn
-            if (!string.IsNullOrWhiteSpace(TenBan))
-                return TenBan;
-
-            // 3) Fallback theo ngữ cảnh giao/ship
-            if (!string.IsNullOrWhiteSpace(DiaChiText))
-                return DiaChiText;
-
-            // 4) Cuối cùng rơi về Ten (nếu nơi khác đã gán) hoặc mã HD
-            if (!string.IsNullOrWhiteSpace(Ten))
-                return Ten;
-
-            return $"HD #{Id}";
-        }
-    }
-
-
-    // 🟟 Hàm đồng bộ dữ liệu khi nhận update từ SignalR
     public void CopyFrom(HoaDonDto other)
     {
         if (other == null) return;

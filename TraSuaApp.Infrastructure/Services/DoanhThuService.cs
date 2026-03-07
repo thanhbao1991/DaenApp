@@ -9,6 +9,375 @@ public class DoanhThuService : IDoanhThuService
     private readonly AppDbContext _context;
     public DoanhThuService(AppDbContext context) => _context = context;
 
+    public async Task<List<DoanhThuNamItemDto>> GetDoanhThuNamAsync(int nam)
+    {
+        var yearStart = new DateTime(nam, 1, 1);
+        var yearEnd = yearStart.AddYears(1);
+
+        var hoaDons = await (
+            from h in _context.vHoaDonPaymentMasks.AsNoTracking()
+
+
+            where
+                   h.NgayGio >= yearStart
+                  && h.NgayGio < yearEnd
+                  && !(
+
+                   h.TongSoLanNhanVoucher >= 10 &&
+    h.PaymentMethodMask == 1 &&
+    (h.PhanLoai == "Ship" || h.PhanLoai == "Mv" || h.PhanLoai == "Tại Chỗ")
+
+                  )
+
+            select new
+            {
+                Thang = h.NgayGio.Month,
+                h.ThanhTien
+            }
+        ).ToListAsync();
+
+        var doanhThuTheoThang = hoaDons
+            .GroupBy(x => x.Thang)
+            .ToDictionary(
+                g => g.Key,
+                g => new
+                {
+                    SoDon = g.Count(),
+                    TongTien = g.Sum(x => x.ThanhTien)
+                });
+
+        var result = new List<DoanhThuNamItemDto>();
+
+        for (int thang = 1; thang <= 12; thang++)
+        {
+            if (doanhThuTheoThang.TryGetValue(thang, out var data))
+            {
+                result.Add(new DoanhThuNamItemDto
+                {
+                    Thang = thang,
+                    SoDon = data.SoDon,
+                    TongTien = data.TongTien
+                });
+            }
+            else
+            {
+                result.Add(new DoanhThuNamItemDto
+                {
+                    Thang = thang,
+                    SoDon = 0,
+                    TongTien = 0
+                });
+            }
+        }
+
+        return result.OrderBy(x => x.Thang).ToList();
+    }
+    public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
+    {
+        var monthStart = new DateTime(nam, thang, 1);
+        var monthEnd = monthStart.AddMonths(1);
+
+        var hoaDons = await _context.vHoaDonPaymentMasks
+            .AsNoTracking()
+            .Where(h =>
+                h.NgayGio >= monthStart &&
+                h.NgayGio < monthEnd &&
+                !(
+   h.TongSoLanNhanVoucher >= 10 &&
+    h.PaymentMethodMask == 1 &&
+    (h.PhanLoai == "Ship" || h.PhanLoai == "Mv" || h.PhanLoai == "Tại Chỗ")
+
+                )
+            )
+            .Select(h => new
+            {
+                Ngay = h.NgayGio.Date,
+                h.ThanhTien
+            })
+            .ToListAsync();
+
+        var doanhThuTheoNgay = hoaDons
+            .GroupBy(x => x.Ngay)
+            .ToDictionary(
+                g => g.Key,
+                g => new
+                {
+                    SoDon = g.Count(),
+                    TongTien = g.Sum(x => x.ThanhTien)
+                });
+
+        var totalDays = (monthEnd - monthStart).Days;
+        var result = new List<DoanhThuThangItemDto>();
+
+        for (int i = 0; i < totalDays; i++)
+        {
+            var day = monthStart.AddDays(i).Date;
+
+            if (doanhThuTheoNgay.TryGetValue(day, out var data))
+            {
+                result.Add(new DoanhThuThangItemDto
+                {
+                    Ngay = day,
+                    SoDon = data.SoDon,
+                    TongTien = data.TongTien
+                });
+            }
+            else
+            {
+                result.Add(new DoanhThuThangItemDto
+                {
+                    Ngay = day,
+                    SoDon = 0,
+                    TongTien = 0
+                });
+            }
+        }
+
+        return result.OrderBy(x => x.Ngay).ToList();
+    }
+
+    //public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
+    //{
+    //    var monthStart = new DateTime(nam, thang, 1);
+    //    var monthEnd = monthStart.AddMonths(1);
+
+    //    var hoaDons = await (
+    //        from h in _context.HoaDons.AsNoTracking()
+    //        join k in _context.KhachHangs.AsNoTracking()
+    //            on h.KhachHangId equals k.Id into kh
+    //        from k in kh.DefaultIfEmpty()
+
+    //        where !h.IsDeleted
+    //              && h.Ngay >= monthStart
+    //              && h.Ngay < monthEnd
+    //              && !(k != null && k.TongLanNhanVoucher >= 1 && h.PaymentMethodMask <= 1 && h.PhanLoai != "App")
+
+    //        select new
+    //        {
+    //            Ngay = h.Ngay.Date,
+    //            h.ThanhTien
+    //        }
+    //    ).ToListAsync();
+
+    //    var doanhThuTheoNgay = hoaDons
+    //        .GroupBy(x => x.Ngay)
+    //        .ToDictionary(
+    //            g => g.Key,
+    //            g => new
+    //            {
+    //                SoDon = g.Count(),
+    //                TongTien = g.Sum(x => x.ThanhTien)
+    //            });
+
+    //    var totalDays = (monthEnd - monthStart).Days;
+    //    var result = new List<DoanhThuThangItemDto>();
+
+    //    for (int i = 0; i < totalDays; i++)
+    //    {
+    //        var day = monthStart.AddDays(i).Date;
+
+    //        if (doanhThuTheoNgay.TryGetValue(day, out var data))
+    //        {
+    //            result.Add(new DoanhThuThangItemDto
+    //            {
+    //                Ngay = day,
+    //                SoDon = data.SoDon,
+    //                TongTien = data.TongTien
+    //            });
+    //        }
+    //        else
+    //        {
+    //            result.Add(new DoanhThuThangItemDto
+    //            {
+    //                Ngay = day,
+    //                SoDon = 0,
+    //                TongTien = 0
+    //            });
+    //        }
+    //    }
+
+    //    return result.OrderBy(x => x.Ngay).ToList();
+    //}
+
+    //public async Task<List<DoanhThuNamItemDto>> GetDoanhThuNamAsync(int nam)
+    //{
+    //    var yearStart = new DateTime(nam, 1, 1);
+    //    var yearEnd = yearStart.AddYears(1);
+
+    //    var hoaDons = await (
+    //        from h in _context.HoaDons.AsNoTracking()
+    //        join k in _context.KhachHangs.AsNoTracking()
+    //            on h.KhachHangId equals k.Id into kh
+    //        from k in kh.DefaultIfEmpty()
+
+    //        where !h.IsDeleted
+    //              && h.Ngay >= yearStart
+    //              && h.Ngay < yearEnd
+    //              && !(k != null && k.TongLanNhanVoucher >= 1 && h.PaymentMethodMask <= 1 && h.PhanLoai != "App")
+
+    //        select new
+    //        {
+    //            Thang = h.Ngay.Month,
+    //            h.ThanhTien
+    //        }
+    //    ).ToListAsync();
+
+    //    var doanhThuTheoThang = hoaDons
+    //        .GroupBy(x => x.Thang)
+    //        .ToDictionary(
+    //            g => g.Key,
+    //            g => new
+    //            {
+    //                SoDon = g.Count(),
+    //                TongTien = g.Sum(x => x.ThanhTien)
+    //            });
+
+    //    var result = new List<DoanhThuNamItemDto>();
+
+    //    for (int thang = 1; thang <= 12; thang++)
+    //    {
+    //        if (doanhThuTheoThang.TryGetValue(thang, out var data))
+    //        {
+    //            result.Add(new DoanhThuNamItemDto
+    //            {
+    //                Thang = thang,
+    //                SoDon = data.SoDon,
+    //                TongTien = data.TongTien
+    //            });
+    //        }
+    //        else
+    //        {
+    //            result.Add(new DoanhThuNamItemDto
+    //            {
+    //                Thang = thang,
+    //                SoDon = 0,
+    //                TongTien = 0
+    //            });
+    //        }
+    //    }
+
+    //    return result.OrderBy(x => x.Thang).ToList();
+    //}
+
+    //public async Task<List<DoanhThuNamItemDto>> GetDoanhThuNamAsync(int nam)
+    //{
+    //    var yearStart = new DateTime(nam, 1, 1);
+    //    var yearEnd = yearStart.AddYears(1);
+
+    //    var hoaDons = await _context.HoaDons
+    //        .AsNoTracking()
+    //        .Where(h => !h.IsDeleted && h.Ngay >= yearStart && h.Ngay < yearEnd)
+    //        .Select(h => new
+    //        {
+    //            h.Id,
+    //            Thang = h.Ngay.Month,
+    //            h.ThanhTien,
+    //            h.PhanLoai
+    //        })
+    //        .ToListAsync();
+
+    //    var hoaDonIds = hoaDons.Select(x => x.Id).ToList();
+
+    //    var thanhToans = await _context.ChiTietHoaDonThanhToans
+    //        .AsNoTracking()
+    //        .Where(t => hoaDonIds.Contains(t.HoaDonId) && !t.IsDeleted)
+    //        .Select(t => new
+    //        {
+    //            t.HoaDonId,
+    //            t.SoTien,
+    //            t.TenPhuongThucThanhToan
+    //        })
+    //        .ToListAsync();
+
+    //    var noLines = await _context.ChiTietHoaDonNos
+    //        .AsNoTracking()
+    //        .Where(n => hoaDonIds.Contains(n.HoaDonId) && !n.IsDeleted)
+    //        .Select(n => new
+    //        {
+    //            n.HoaDonId,
+    //            n.SoTienConLai
+    //        })
+    //        .ToListAsync();
+
+    //    var chiTieus = await _context.ChiTieuHangNgays
+    //        .AsNoTracking()
+    //        .Where(ct => !ct.IsDeleted && ct.Ngay >= yearStart && ct.Ngay < yearEnd)
+    //        .Select(ct => new
+    //        {
+    //            Thang = ct.Ngay.Month,
+    //            ct.ThanhTien
+    //        })
+    //        .ToListAsync();
+
+    //    static bool IsTienMat(string? ten)
+    //    {
+    //        if (string.IsNullOrWhiteSpace(ten)) return false;
+    //        var s = ten.Trim().ToLower();
+    //        return s.Contains("tiền mặt") || s.Contains("tien mat");
+    //    }
+
+    //    var thanhToanLookup = thanhToans
+    //        .GroupBy(x => x.HoaDonId)
+    //        .ToDictionary(g => g.Key, g => g.ToList());
+
+    //    var noLookup = noLines
+    //        .GroupBy(x => x.HoaDonId)
+    //        .ToDictionary(g => g.Key, g => g.Sum(x => x.SoTienConLai));
+
+    //    var result = new List<DoanhThuNamItemDto>();
+
+    //    for (int thang = 1; thang <= 12; thang++)
+    //    {
+    //        var dsHoaDon = hoaDons.Where(x => x.Thang == thang).ToList();
+
+    //        decimal tongDoanhThu = 0;
+    //        decimal tongChuyenKhoan = 0;
+    //        decimal tongTienNo = 0;
+
+    //        foreach (var h in dsHoaDon)
+    //        {
+    //            tongDoanhThu += h.ThanhTien;
+
+    //            if (thanhToanLookup.TryGetValue(h.Id, out var tts))
+    //            {
+    //                tongChuyenKhoan += tts
+    //                    .Where(t => !IsTienMat(t.TenPhuongThucThanhToan))
+    //                    .Sum(t => t.SoTien);
+    //            }
+
+    //            if (noLookup.TryGetValue(h.Id, out var no))
+    //            {
+    //                tongTienNo += no;
+    //            }
+    //        }
+
+    //        var tongChiTieu = chiTieus
+    //            .Where(x => x.Thang == thang)
+    //            .Sum(x => x.ThanhTien);
+
+    //        result.Add(new DoanhThuNamItemDto
+    //        {
+    //            Thang = thang,
+    //            SoDon = dsHoaDon.Count,
+    //            TongTien = tongDoanhThu,
+    //            ChiTieu = tongChiTieu,
+    //            TienChuyển khoản = tongChuyenKhoan,
+    //            TienNo = tongTienNo,
+    //            TongTienMat = tongDoanhThu - tongChuyenKhoan - tongTienNo,
+
+    //            TaiCho = dsHoaDon.Where(x => x.PhanLoai == "Tại Chỗ").Sum(x => x.ThanhTien),
+    //            MuaVe = dsHoaDon.Where(x => x.PhanLoai == "Mv").Sum(x => x.ThanhTien),
+    //            DiShip = dsHoaDon.Where(x => x.PhanLoai == "Ship").Sum(x => x.ThanhTien),
+    //            AppShipping = dsHoaDon.Where(x => x.PhanLoai == "App").Sum(x => x.ThanhTien),
+
+    //            ThuongNha = tongDoanhThu * 0.003m,
+    //            ThuongKhanh = tongDoanhThu * 0.003m
+    //        });
+    //    }
+
+    //    return result;
+    //}
+
     public async Task<List<DoanhThuHoaDonDto>> GetHoaDonKhachHangAsync(Guid khachHangId)
     {
         var list = await _context.HoaDons
@@ -47,6 +416,7 @@ public class DoanhThuService : IDoanhThuService
 
         return chiTiets;
     }
+
     public async Task<DoanhThuNgayDto> GetDoanhThuNgayAsync(DateTime ngay)
     {
         var ngayBatDau = ngay.Date;
@@ -177,7 +547,10 @@ public class DoanhThuService : IDoanhThuService
 
         var tongChiTieu = await _context.ChiTieuHangNgays
             .AsNoTracking()
-            .Where(ct => !ct.IsDeleted && !ct.BillThang && ct.Ngay >= ngayBatDau && ct.Ngay < ngayKetThuc)
+            .Where(ct => !ct.IsDeleted
+            && !ct.BillThang
+            && ct.Ngay >= ngayBatDau
+            && ct.Ngay < ngayKetThuc)
             .SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0;
 
         var viecChuaLam = string.Join(", ",
@@ -211,334 +584,36 @@ public class DoanhThuService : IDoanhThuService
                 .ToList()
         };
     }
-    //public async Task<DoanhThuNgayDto> GetDoanhThuNgayAsync(DateTime ngay)
-    //{
-    //    var ngayBatDau = ngay.Date;
-    //    var ngayKetThuc = ngayBatDau.AddDays(1);
 
-    //    // Lấy toàn bộ hóa đơn trong ngày + các line thanh toán + các line nợ
-    //    var hoaDons = await _context.HoaDons
-    //        .Include(x => x.KhachHang)
-    //        .Include(x => x.ChiTietHoaDonThanhToans)
-    //        .Include(x => x.ChiTietHoaDonNos)
-    //        .AsNoTracking()
-    //        .Where(x => !x.IsDeleted && x.Ngay >= ngayBatDau && x.Ngay < ngayKetThuc)
-    //        .ToListAsync();
-
-    //    // ===== Helper: normalize payment method =====
-    //    static bool IsTienMat(string? tenPhuongThuc)
-    //    {
-    //        if (string.IsNullOrWhiteSpace(tenPhuongThuc)) return false;
-    //        var s = tenPhuongThuc.Trim().ToLower();
-    //        // chấp nhận vài biến thể hay gặp
-    //        return s == "tiền mặt" || s == "tien mat" || s.Contains("tiền mặt") || s.Contains("tien mat");
-    //    }
-
-    //    // ===== Tính tổng & map từng hóa đơn =====
-    //    decimal tongDoanhThu = 0m;
-    //    decimal tongDaThu = 0m;
-    //    decimal tongChuyenKhoan = 0m;
-    //    decimal tongTienMat = 0m;
-    //    decimal tongTienNo = 0m;
-    //    decimal tongConLai = 0m;
-
-    //    var hoaDonDtos = new List<DoanhThuHoaDonDto>();
-
-    //    foreach (var h in hoaDons)
-    //    {
-    //        var thanhToans = (h.ChiTietHoaDonThanhToans ?? new List<ChiTietHoaDonThanhToan>())
-    //            .Where(t => !t.IsDeleted)
-    //            .ToList();
-
-    //        var noLines = (h.ChiTietHoaDonNos ?? new List<ChiTietHoaDonNo>())
-    //            .Where(n => !n.IsDeleted)
-    //            .ToList();
-
-    //        var tienMat = thanhToans
-    //            .Where(t => IsTienMat(t.TenPhuongThucThanhToan))
-    //            .Sum(t => (decimal)t.SoTien);
-
-    //        var tienBank = thanhToans
-    //            .Where(t => !IsTienMat(t.TenPhuongThucThanhToan))
-    //            .Sum(t => (decimal)t.SoTien);
-
-    //        // Nợ còn lại (để tô đỏ)
-    //        var tienNo = noLines.Sum(n => (decimal?)n.SoTienConLai) ?? 0m;
-
-    //        // ConLai lấy từ HoaDon để đúng logic hệ thống (anh đang dùng rồi)
-    //        var conLai = (decimal)h.ConLai;
-    //        if (conLai < 0) conLai = 0;
-
-    //        var tongTien = (decimal)h.ThanhTien;
-    //        if (tongTien < 0) tongTien = 0;
-
-    //        var daThu = tienMat + tienBank;
-    //        var daThanhToan = conLai <= 0;
-
-    //        // Ngày nợ/Ngày trả (nếu entity có NgayGio)
-    //        DateTime? ngayNo = null;
-    //        DateTime? ngayTra = null;
-
-    //        // Nếu entity ChiTietHoaDonNo có NgayGio, lấy cái mới nhất
-    //        // (Nếu tên field khác, anh đổi lại đúng field)
-    //        if (noLines.Count > 0)
-    //        {
-    //            // giả định entity có property NgayGio
-    //            ngayNo = noLines
-    //                .Select(n => (DateTime?)n.NgayGio)
-    //                .OrderByDescending(x => x)
-    //                .FirstOrDefault();
-    //        }
-
-    //        if (thanhToans.Count > 0)
-    //        {
-    //            // giả định entity có property NgayGio
-    //            ngayTra = thanhToans
-    //                .Select(t => (DateTime?)t.NgayGio)
-    //                .OrderByDescending(x => x)
-    //                .FirstOrDefault();
-    //        }
-
-    //        // Cộng tổng
-    //        tongDoanhThu += tongTien;
-    //        tongDaThu += daThu;
-    //        tongChuyenKhoan += tienBank;
-    //        tongTienMat += tienMat;
-    //        tongTienNo += tienNo;
-    //        tongConLai += conLai;
-
-    //        hoaDonDtos.Add(new DoanhThuHoaDonDto
-    //        {
-    //            Id = h.Id,
-    //            IdKhachHang = h.KhachHangId,
-    //            ThongTinHoaDon = h.TenBan,
-    //            TenKhachHangText = h.TenKhachHangText,
-    //            DiaChi = h.DiaChiText,
-    //            DiaChiShip = h.DiaChiText,
-    //            PhanLoai = h.PhanLoai,
-
-    //            NgayHoaDon = h.NgayGio,
-    //            NgayShip = h.NgayShip,
-
-    //            NgayNo = ngayNo,
-    //            NgayTra = ngayTra,
-
-    //            DaThanhToan = daThanhToan,
-    //            BaoDon = h.BaoDon,
-
-    //            TongTien = tongTien,
-    //            DaThu = daThu,
-    //            ConLai = conLai,
-    //            TienBank = tienBank,
-    //            TienMat = tienMat,
-    //            TienNo = tienNo
-    //        });
-    //    }
-
-    //    // Chi tiêu trong ngày
-    //    var tongChiTieu = await _context.ChiTieuHangNgays.AsNoTracking()
-    //        .Where(ct => !ct.IsDeleted && !ct.BillThang && ct.Ngay >= ngayBatDau && ct.Ngay < ngayKetThuc)
-    //        .SumAsync(ct => (decimal?)ct.ThanhTien) ?? 0m;
-
-    //    // Việc chưa làm
-    //    var viecChuaLam = string.Join(", ",
-    //        await _context.CongViecNoiBos
-    //            .AsNoTracking()
-    //            .Where(ct => !ct.DaHoanThanh && !ct.IsDeleted)
-    //            .Select(ct => ct.Ten)
-    //            .ToListAsync()
-    //    );
-
-    //    // DTO trả về
-    //    var dto = new DoanhThuNgayDto
-    //    {
-    //        Ngay = ngayBatDau,
-    //        TongSoDon = hoaDons.Count,
-    //        TongDoanhThu = tongDoanhThu,
-    //        TongDaThu = tongDaThu,
-    //        TongConLai = tongConLai,
-    //        TongChiTieu = tongChiTieu,
-
-    //        TongChuyenKhoan = tongChuyenKhoan,
-    //        TongTienMat = tongTienMat,
-    //        TongTienNo = tongTienNo,
-    //        TongCongNo = tongTienNo,
-
-    //        TaiCho = hoaDons.Where(x => x.PhanLoai == "Tại Chỗ").Sum(x => (decimal)x.ThanhTien),
-    //        MuaVe = hoaDons.Where(x => x.PhanLoai == "Mv").Sum(x => (decimal)x.ThanhTien),
-    //        DiShip = hoaDons.Where(x => x.PhanLoai == "Ship").Sum(x => (decimal)x.ThanhTien),
-    //        AppShipping = hoaDons.Where(x => x.PhanLoai == "App").Sum(x => (decimal)x.ThanhTien),
-
-    //        ViecChuaLam = viecChuaLam,
-    //        HoaDons = hoaDonDtos
-    //            .OrderByDescending(x => x.PhanLoai == "Ship" && x.NgayShip == null)
-    //            .ThenByDescending(x => x.NgayHoaDon)
-    //            .ToList()
-    //    };
-
-    //    return dto;
-    //}
-    public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
-    {
-        var monthStart = new DateTime(nam, thang, 1);
-        var monthEnd = monthStart.AddMonths(1);
-
-        // ===== 1️⃣ HÓA ĐƠN =====
-        var hoaDons = await _context.HoaDons
-            .AsNoTracking()
-            .Where(h => !h.IsDeleted && h.Ngay >= monthStart && h.Ngay < monthEnd)
-            .Select(h => new
-            {
-                h.Id,
-                Ngay = h.Ngay.Date,
-                h.ThanhTien,
-                h.PhanLoai
-            })
-            .ToListAsync();
-
-        if (hoaDons.Count == 0)
-            return new List<DoanhThuThangItemDto>();
-
-        var hoaDonIds = hoaDons.Select(x => x.Id).ToList();
-
-        // ===== 2️⃣ THANH TOÁN =====
-        var thanhToans = await _context.ChiTietHoaDonThanhToans
-            .AsNoTracking()
-            .Where(t => hoaDonIds.Contains(t.HoaDonId) && !t.IsDeleted)
-            .Select(t => new
-            {
-                t.HoaDonId,
-                t.SoTien,
-                t.TenPhuongThucThanhToan
-            })
-            .ToListAsync();
-
-        // ===== 3️⃣ CÔNG NỢ =====
-        var noLines = await _context.ChiTietHoaDonNos
-            .AsNoTracking()
-            .Where(n => hoaDonIds.Contains(n.HoaDonId) && !n.IsDeleted)
-            .Select(n => new
-            {
-                n.HoaDonId,
-                n.SoTienConLai
-            })
-            .ToListAsync();
-
-        // ===== 4️⃣ CHI TIÊU =====
-        var chiTieus = await _context.ChiTieuHangNgays
-            .AsNoTracking()
-            .Where(ct => !ct.IsDeleted && !ct.BillThang && ct.Ngay >= monthStart && ct.Ngay < monthEnd)
-            .Select(ct => new
-            {
-                Ngay = ct.Ngay.Date,
-                ct.ThanhTien
-            })
-            .ToListAsync();
-
-        static bool IsTienMat(string? ten)
-        {
-            if (string.IsNullOrWhiteSpace(ten)) return false;
-            var s = ten.Trim().ToLower();
-            return s.Contains("tiền mặt") || s.Contains("tien mat");
-        }
-
-        // ===== 5️⃣ LOOKUP =====
-        var thanhToanLookup = thanhToans
-            .GroupBy(x => x.HoaDonId)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var noLookup = noLines
-            .GroupBy(x => x.HoaDonId)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.SoTienConLai));
-
-        var chiTieuLookup = chiTieus
-            .GroupBy(x => x.Ngay)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.ThanhTien));
-
-        // ===== 6️⃣ GROUP THEO NGÀY =====
-        var result = hoaDons
-            .GroupBy(h => h.Ngay)
-            .Select(g =>
-            {
-                decimal tongDoanhThu = 0;
-                decimal tongChuyenKhoan = 0;
-                decimal tongTienNo = 0;
-
-                foreach (var h in g)
-                {
-                    tongDoanhThu += h.ThanhTien;
-
-                    if (thanhToanLookup.TryGetValue(h.Id, out var tts))
-                    {
-                        tongChuyenKhoan += tts
-                            .Where(t => !IsTienMat(t.TenPhuongThucThanhToan))
-                            .Sum(t => t.SoTien);
-                    }
-
-                    if (noLookup.TryGetValue(h.Id, out var no))
-                    {
-                        tongTienNo += no;
-                    }
-                }
-
-                chiTieuLookup.TryGetValue(g.Key, out var tongChiTieu);
-
-                return new DoanhThuThangItemDto
-                {
-                    Ngay = g.Key,
-                    SoDon = g.Count(),
-                    TongTien = tongDoanhThu,
-                    ChiTieu = tongChiTieu,
-                    TienBank = tongChuyenKhoan,
-                    TienNo = tongTienNo,
-                    TongTienMat = tongDoanhThu - tongChuyenKhoan - tongTienNo,
-
-                    TaiCho = g.Where(x => x.PhanLoai == "Tại Chỗ").Sum(x => x.ThanhTien),
-                    MuaVe = g.Where(x => x.PhanLoai == "Mv").Sum(x => x.ThanhTien),
-                    DiShip = g.Where(x => x.PhanLoai == "Ship").Sum(x => x.ThanhTien),
-                    AppShipping = g.Where(x => x.PhanLoai == "App").Sum(x => x.ThanhTien),
-
-                    ThuongNha = tongDoanhThu * 0.003m,
-                    ThuongKhanh = tongDoanhThu * 0.003m
-                };
-            })
-            .OrderBy(x => x.Ngay)
-            .ToList();
-
-        return result;
-    }
     //public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
     //{
     //    var monthStart = new DateTime(nam, thang, 1);
     //    var monthEnd = monthStart.AddMonths(1);
 
-    //    // ===== 1️⃣ LẤY HÓA ĐƠN TRONG THÁNG (GỌN) =====
+    //    // ===== 1️⃣ HÓA ĐƠN =====
     //    var hoaDons = await _context.HoaDons
     //        .AsNoTracking()
     //        .Where(h => !h.IsDeleted && h.Ngay >= monthStart && h.Ngay < monthEnd)
-    //        .Select(h => new
+    //        .Select(h => new HoaDonTempDto
     //        {
-    //            h.Id,
-    //            h.Ngay,
-    //            h.ThanhTien,
-    //            h.PhanLoai
+    //            Id = h.Id,
+    //            Ngay = h.Ngay.Date,
+    //            ThanhTien = h.ThanhTien,
+    //            PhanLoai = h.PhanLoai
     //        })
     //        .ToListAsync();
 
-    //    if (hoaDons.Count == 0)
-    //        return new List<DoanhThuThangItemDto>();
-
     //    var hoaDonIds = hoaDons.Select(x => x.Id).ToList();
 
-    //    // ===== 2️⃣ THANH TOÁN (CHUYỂN KHOẢN) =====
+    //    // ===== 2️⃣ THANH TOÁN =====
     //    var thanhToans = await _context.ChiTietHoaDonThanhToans
     //        .AsNoTracking()
     //        .Where(t => hoaDonIds.Contains(t.HoaDonId) && !t.IsDeleted)
-    //        .Select(t => new
+    //        .Select(t => new ThanhToanTempDto
     //        {
-    //            t.HoaDonId,
-    //            t.SoTien,
-    //            t.TenPhuongThucThanhToan
+    //            HoaDonId = t.HoaDonId,
+    //            SoTien = t.SoTien,
+    //            TenPhuongThucThanhToan = t.TenPhuongThucThanhToan
     //        })
     //        .ToListAsync();
 
@@ -546,25 +621,27 @@ public class DoanhThuService : IDoanhThuService
     //    var noLines = await _context.ChiTietHoaDonNos
     //        .AsNoTracking()
     //        .Where(n => hoaDonIds.Contains(n.HoaDonId) && !n.IsDeleted)
-    //        .Select(n => new
+    //        .Select(n => new NoTempDto
     //        {
-    //            n.HoaDonId,
-    //            n.SoTienConLai
+    //            HoaDonId = n.HoaDonId,
+    //            SoTienConLai = n.SoTienConLai
     //        })
     //        .ToListAsync();
 
-    //    // ===== 4️⃣ CHI TIÊU =====
+    //    // ===== 4️⃣ CHI TIÊU (giống Dashboard) =====
     //    var chiTieus = await _context.ChiTieuHangNgays
     //        .AsNoTracking()
-    //        .Where(ct => !ct.IsDeleted && !ct.BillThang && ct.Ngay >= monthStart && ct.Ngay < monthEnd)
+    //        .Where(ct => !ct.IsDeleted
+    //            && ct.Ngay >= monthStart
+    //            && ct.Ngay < monthEnd)
     //        .Select(ct => new
     //        {
-    //            ct.Ngay,
+    //            Ngay = ct.Ngay.Date,
     //            ct.ThanhTien
     //        })
     //        .ToListAsync();
 
-    //    // ===== helper =====
+    //    // ===== 5️⃣ HELPER =====
     //    static bool IsTienMat(string? ten)
     //    {
     //        if (string.IsNullOrWhiteSpace(ten)) return false;
@@ -572,122 +649,81 @@ public class DoanhThuService : IDoanhThuService
     //        return s.Contains("tiền mặt") || s.Contains("tien mat");
     //    }
 
-    //    // ===== 5️⃣ GROUP THEO NGÀY (TRONG RAM) =====
-    //    var result = hoaDons
-    //        .GroupBy(h => h.Ngay.Date)
-    //        .Select(g =>
+    //    // ===== 6️⃣ LOOKUP =====
+    //    var thanhToanLookup = thanhToans
+    //        .GroupBy(x => x.HoaDonId)
+    //        .ToDictionary(g => g.Key, g => g.ToList());
+
+    //    var noLookup = noLines
+    //        .GroupBy(x => x.HoaDonId)
+    //        .ToDictionary(g => g.Key, g => g.Sum(x => x.SoTienConLai));
+
+    //    var chiTieuLookup = chiTieus
+    //        .GroupBy(x => x.Ngay)
+    //        .ToDictionary(g => g.Key, g => g.Sum(x => x.ThanhTien));
+
+    //    var hoaDonLookup = hoaDons
+    //        .GroupBy(x => x.Ngay)
+    //        .ToDictionary(g => g.Key, g => g.ToList());
+
+    //    // ===== 7️⃣ TẠO FULL DANH SÁCH NGÀY =====
+    //    var totalDays = (monthEnd - monthStart).Days;
+    //    var result = new List<DoanhThuThangItemDto>();
+
+    //    for (int i = 0; i < totalDays; i++)
+    //    {
+    //        var day = monthStart.AddDays(i).Date;
+
+    //        if (!hoaDonLookup.TryGetValue(day, out var dsHoaDon))
     //        {
-    //            var idsTrongNgay = g.Select(x => x.Id).ToList();
+    //            dsHoaDon = new List<HoaDonTempDto>();
+    //        }
 
-    //            var tongDoanhThu = g.Sum(x => (decimal)x.ThanhTien);
+    //        decimal tongDoanhThu = 0;
+    //        decimal tongChuyenKhoan = 0;
+    //        decimal tongTienNo = 0;
 
-    //            var tongChuyenKhoan = thanhToans
-    //                .Where(t => idsTrongNgay.Contains(t.HoaDonId) && !IsTienMat(t.TenPhuongThucThanhToan))
-    //                .Sum(t => (decimal)t.SoTien);
-
-    //            var tongTienNo = noLines
-    //                .Where(n => idsTrongNgay.Contains(n.HoaDonId))
-    //                .Sum(n => (decimal?)n.SoTienConLai) ?? 0m;
-
-    //            var tongChiTieu = chiTieus
-    //                .Where(ct => ct.Ngay.Date == g.Key)
-    //                .Sum(ct => (decimal)ct.ThanhTien);
-
-    //            return new DoanhThuThangItemDto
-    //            {
-    //                Ngay = g.Key,
-    //                SoDon = g.Count(),
-    //                TongTien = tongDoanhThu,
-    //                ChiTieu = tongChiTieu,
-    //                TienBank = tongChuyenKhoan,
-    //                TienNo = tongTienNo,
-    //                TongTienMat = tongDoanhThu - tongChuyenKhoan - tongTienNo,
-    //                TaiCho = g.Where(x => x.PhanLoai == "Tại Chỗ").Sum(x => (decimal)x.ThanhTien),
-    //                MuaVe = g.Where(x => x.PhanLoai == "Mv").Sum(x => (decimal)x.ThanhTien),
-    //                DiShip = g.Where(x => x.PhanLoai == "Ship").Sum(x => (decimal)x.ThanhTien),
-    //                AppShipping = g.Where(x => x.PhanLoai == "App").Sum(x => (decimal)x.ThanhTien),
-    //                ThuongNha = tongDoanhThu * 0.003m,
-    //                ThuongKhanh = tongDoanhThu * 0.003m
-    //            };
-    //        })
-    //        .OrderBy(x => x.Ngay)
-    //        .ToList();
-
-    //    return result;
-    //}
-
-    //public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
-    //{
-    //    var monthStart = new DateTime(nam, thang, 1);
-    //    var monthEnd = monthStart.AddMonths(1);
-
-    //    var hoaDons = await _context.HoaDons
-    //        .Include(x => x.KhachHang)
-    //        .AsNoTracking()
-    //        .Where(x => !x.IsDeleted && x.Ngay >= monthStart && x.Ngay < monthEnd)
-    //        .ToListAsync();
-
-    //    var chiTieus = await _context.ChiTieuHangNgays
-    //        .AsNoTracking()
-    //        .Where(ct => !ct.IsDeleted && !ct.BillThang && ct.Ngay >= monthStart && ct.Ngay < monthEnd)
-    //        .ToListAsync();
-
-    //    var hoaDonIds = hoaDons.Select(x => x.Id).ToList();
-
-    //    var thanhToans = await _context.ChiTietHoaDonThanhToans
-    //        .AsNoTracking()
-    //        .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
-    //        .ToListAsync();
-
-    //    var noList = await _context.ChiTietHoaDonNos
-    //        .AsNoTracking()
-    //        .Where(ct => hoaDonIds.Contains(ct.HoaDonId) && !ct.IsDeleted)
-    //        .Select(ct => new { ct.HoaDonId, ct.SoTienConLai })
-    //        .ToListAsync();
-
-    //    var result = hoaDons
-    //        .GroupBy(x => x.Ngay.Date)
-    //        .Select(g =>
+    //        foreach (var h in dsHoaDon)
     //        {
-    //            var idsTrongNgay = g.Select(x => x.Id).ToList();
-    //            var tongDoanhThu = g.Sum(x => x.ThanhTien);
+    //            tongDoanhThu += h.ThanhTien;
 
-    //            var tongChuyenKhoan = thanhToans
-    //                .Where(ct => idsTrongNgay.Contains(ct.HoaDonId) && ct.TenPhuongThucThanhToan.ToLower() != "tiền mặt")
-    //                .Sum(ct => ct.SoTien);
-
-    //            var tongTienNo = noList
-    //                .Where(ct => idsTrongNgay.Contains(ct.HoaDonId))
-    //                .Sum(ct => ct.SoTienConLai);
-
-    //            var tongChiTieu = chiTieus
-    //                .Where(ct => ct.Ngay.Date == g.Key)
-    //                .Sum(ct => ct.ThanhTien);
-
-    //            return new DoanhThuThangItemDto
+    //            if (thanhToanLookup.TryGetValue(h.Id, out var tts))
     //            {
-    //                Ngay = g.Key,
-    //                SoDon = g.Count(),
-    //                TongTien = tongDoanhThu,
-    //                ChiTieu = tongChiTieu,
-    //                TienBank = tongChuyenKhoan,
-    //                TienNo = tongTienNo,
-    //                TongTienMat = tongDoanhThu - tongChiTieu - tongChuyenKhoan - tongTienNo,
-    //                TaiCho = g.Where(x => x.PhanLoai == "Tại Chỗ").Sum(x => x.ThanhTien),
-    //                MuaVe = g.Where(x => x.PhanLoai == "Mv").Sum(x => x.ThanhTien),
-    //                DiShip = g.Where(x => x.PhanLoai == "Ship").Sum(x => x.ThanhTien),
-    //                AppShipping = g.Where(x => x.PhanLoai == "App").Sum(x => x.ThanhTien),
-    //                ThuongNha = tongDoanhThu * 0.003m,
-    //                ThuongKhanh = tongDoanhThu * 0.003m
-    //            };
-    //        })
-    //        .OrderBy(x => x.Ngay)
-    //        .ToList();
+    //                tongChuyenKhoan += tts
+    //                    .Where(t => !IsTienMat(t.TenPhuongThucThanhToan))
+    //                    .Sum(t => t.SoTien);
+    //            }
 
-    //    return result;
+    //            if (noLookup.TryGetValue(h.Id, out var no))
+    //            {
+    //                tongTienNo += no;
+    //            }
+    //        }
+
+    //        chiTieuLookup.TryGetValue(day, out var tongChiTieu);
+
+    //        result.Add(new DoanhThuThangItemDto
+    //        {
+    //            Ngay = day,
+    //            SoDon = dsHoaDon.Count,
+    //            TongTien = tongDoanhThu,
+    //            ChiTieu = tongChiTieu,
+    //            TienBank = tongChuyenKhoan,
+    //            TienNo = tongTienNo,
+    //            TongTienMat = tongDoanhThu - tongChuyenKhoan - tongTienNo,
+
+    //            TaiCho = dsHoaDon.Where(x => x.PhanLoai == "Tại Chỗ").Sum(x => x.ThanhTien),
+    //            MuaVe = dsHoaDon.Where(x => x.PhanLoai == "Mv").Sum(x => x.ThanhTien),
+    //            DiShip = dsHoaDon.Where(x => x.PhanLoai == "Ship").Sum(x => x.ThanhTien),
+    //            AppShipping = dsHoaDon.Where(x => x.PhanLoai == "App").Sum(x => x.ThanhTien),
+
+    //            ThuongNha = tongDoanhThu * 0.003m,
+    //            ThuongKhanh = tongDoanhThu * 0.003m
+    //        });
+    //    }
+
+    //    return result.OrderBy(x => x.Ngay).ToList();
     //}
-
-    // THEO GIỜ trong THÁNG: trả cả SoDon và DoanhThu (để backward-compatible)
     public async Task<List<DoanhThuHourBucketDto>> GetSoDonTheoGioTrongThangAsync(int thang, int nam, int startHour = 6, int endHour = 22)
     {
         if (startHour < 0) startHour = 0;
@@ -746,7 +782,6 @@ public class DoanhThuService : IDoanhThuService
         public decimal ThanhTien { get; set; }
         public decimal ConLai { get; set; }
     }
-
     private class ThanhToanLite
     {
         public Guid HoaDonId { get; set; }
@@ -754,11 +789,47 @@ public class DoanhThuService : IDoanhThuService
         public string? TenPhuongThuc { get; set; }
         public DateTime NgayGio { get; set; }
     }
-
     private class NoLite
     {
         public Guid HoaDonId { get; set; }
         public decimal SoTienConLai { get; set; }
         public DateTime NgayGio { get; set; }
+    }
+
+    public class HoaDonTempDto
+    {
+        public Guid Id { get; set; }
+        public DateTime Ngay { get; set; }
+        public decimal ThanhTien { get; set; }
+        public string? PhanLoai { get; set; }
+    }
+
+    public class ThanhToanTempDto
+    {
+        public Guid HoaDonId { get; set; }
+        public decimal SoTien { get; set; }
+        public string? TenPhuongThucThanhToan { get; set; }
+    }
+
+    public class NoTempDto
+    {
+        public Guid HoaDonId { get; set; }
+        public decimal SoTienConLai { get; set; }
+    }
+    public class HoaDonPaymentMaskView
+    {
+        public Guid Id { get; set; }
+
+        public DateTime NgayGio { get; set; }
+
+        public decimal ThanhTien { get; set; }
+
+        public int TongSoLanNhanVoucher { get; set; }
+
+        public int PaymentMethodMask { get; set; }
+        public string PhanLoai { get; internal set; }
+        public Guid VoucherId { get; internal set; }
+        public DateTime NgayShip { get; internal set; }
+        public DateTime NgayRa { get; internal set; }
     }
 }

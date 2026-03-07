@@ -16,14 +16,5 @@ public interface IChiTietHoaDonNoService
     Task<Result<ChiTietHoaDonNoDto>> RestoreAsync(Guid id);
     Task<List<ChiTietHoaDonNoDto>> GetUpdatedSince(DateTime lastSync);
 
-    Task<PagedResult<ChiTietHoaDonNoDto>> SearchAsync(
-        string? q,
-        Guid? khachHangId,
-        DateTime? from,
-        DateTime? to,
-        bool onlyConNo = true,
-        int page = 1,
-        int pageSize = 50,
-        CancellationToken ct = default
-    );
+
 }

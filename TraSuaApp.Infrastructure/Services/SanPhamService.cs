@@ -12,7 +12,103 @@ namespace TraSuaApp.Infrastructure.Services
         private readonly AppDbContext _context;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["SanPham"];
 
+        public async Task<Result<SanPhamDto>> DeleteAsync(Guid id)
+        {
+            return Result<SanPhamDto>
+         .Failure($"Chức năng tạm thời bị khóa");
+            await using var tx = await _context.Database.BeginTransactionAsync();
 
+            try
+            {
+                var entity = await _context.SanPhams
+                    .Include(x => x.SanPhamBienThes)
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (entity == null || entity.IsDeleted)
+                    return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
+
+                // ============================
+                // 1️⃣ KIỂM TRA ĐÃ PHÁT SINH HOÁ ĐƠN CHƯA
+                // ============================
+
+                var hasInvoice = await _context.ChiTietHoaDons
+                    .AnyAsync(x => x.SanPhamId == id && !x.IsDeleted);
+
+                if (hasInvoice)
+                    return Result<SanPhamDto>.Failure(
+                        $"{_friendlyName} đã phát sinh hoá đơn. Không thể xoá."
+                    );
+
+                var before = ToDto(entity);
+                var now = DateTime.Now;
+
+                // ============================
+                // 2️⃣ SOFT DELETE BIẾN THỂ
+                // ============================
+
+                foreach (var bt in entity.SanPhamBienThes)
+                {
+                    bt.IsDeleted = true;
+                    bt.DeletedAt = now;
+                    bt.LastModified = now;
+                }
+
+                // ============================
+                // 3️⃣ SOFT DELETE CHA
+                // ============================
+
+                entity.IsDeleted = true;
+                entity.DeletedAt = now;
+                entity.LastModified = now;
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return Result<SanPhamDto>
+                    .Success(before, $"Xoá {_friendlyName.ToLower()} thành công.")
+                    .WithId(before.Id)
+                    .WithBefore(before);
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                return Result<SanPhamDto>.Failure($"Lỗi xoá {_friendlyName.ToLower()}: {ex.Message}");
+            }
+        }
+        public async Task<Result<SanPhamDto>> RestoreAsync(Guid id)
+        {
+            var entity = await _context.SanPhams
+                .Include(x => x.SanPhamBienThes)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (entity == null)
+                return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
+
+            if (!entity.IsDeleted)
+                return Result<SanPhamDto>.Failure($"{_friendlyName} này chưa bị xoá.");
+
+            var now = DateTime.Now;
+
+            entity.IsDeleted = false;
+            entity.DeletedAt = null;
+            entity.LastModified = now;
+
+            foreach (var bt in entity.SanPhamBienThes)
+            {
+                bt.IsDeleted = false;
+                bt.DeletedAt = null;
+                bt.LastModified = now;
+            }
+
+            await _context.SaveChangesAsync();
+
+            var after = ToDto(entity);
+
+            return Result<SanPhamDto>
+                .Success(after, $"Khôi phục {_friendlyName.ToLower()} thành công.")
+                .WithId(after.Id)
+                .WithAfter(after);
+        }
         public async Task<List<SanPhamDto>> SearchAsync(string q, int take)
         {
             q = (q ?? string.Empty).Trim();
@@ -348,49 +444,49 @@ namespace TraSuaApp.Infrastructure.Services
 
 
 
-        public async Task<Result<SanPhamDto>> DeleteAsync(Guid id)
-        {
-            var entity = await _context.SanPhams
-                .FirstOrDefaultAsync(x => x.Id == id);
+        //public async Task<Result<SanPhamDto>> DeleteAsync(Guid id)
+        //{
+        //    var entity = await _context.SanPhams
+        //        .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (entity == null || entity.IsDeleted)
-                return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
+        //    if (entity == null || entity.IsDeleted)
+        //        return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-            var before = ToDto(entity);
+        //    var before = ToDto(entity);
 
-            entity.IsDeleted = true;
-            entity.DeletedAt = DateTime.Now;
-            entity.LastModified = DateTime.Now;
+        //    entity.IsDeleted = true;
+        //    entity.DeletedAt = DateTime.Now;
+        //    entity.LastModified = DateTime.Now;
 
-            await _context.SaveChangesAsync();
+        //    await _context.SaveChangesAsync();
 
-            return Result<SanPhamDto>.Success(before, $"Xoá {_friendlyName.ToLower()} thành công.")
-                                     .WithId(before.Id)
-                                     .WithBefore(before);
-        }
+        //    return Result<SanPhamDto>.Success(before, $"Xoá {_friendlyName.ToLower()} thành công.")
+        //                             .WithId(before.Id)
+        //                             .WithBefore(before);
+        //}
 
-        public async Task<Result<SanPhamDto>> RestoreAsync(Guid id)
-        {
-            var entity = await _context.SanPhams
-                .FirstOrDefaultAsync(x => x.Id == id);
+        //public async Task<Result<SanPhamDto>> RestoreAsync(Guid id)
+        //{
+        //    var entity = await _context.SanPhams
+        //        .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (entity == null)
-                return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
+        //    if (entity == null)
+        //        return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-            if (!entity.IsDeleted)
-                return Result<SanPhamDto>.Failure($"{_friendlyName} này chưa bị xoá.");
+        //    if (!entity.IsDeleted)
+        //        return Result<SanPhamDto>.Failure($"{_friendlyName} này chưa bị xoá.");
 
-            entity.IsDeleted = false;
-            entity.DeletedAt = null;
-            entity.LastModified = DateTime.Now;
+        //    entity.IsDeleted = false;
+        //    entity.DeletedAt = null;
+        //    entity.LastModified = DateTime.Now;
 
-            await _context.SaveChangesAsync();
+        //    await _context.SaveChangesAsync();
 
-            var after = ToDto(entity);
-            return Result<SanPhamDto>.Success(after, $"Khôi phục {_friendlyName.ToLower()} thành công.")
-                                     .WithId(after.Id)
-                                     .WithAfter(after);
-        }
+        //    var after = ToDto(entity);
+        //    return Result<SanPhamDto>.Success(after, $"Khôi phục {_friendlyName.ToLower()} thành công.")
+        //                             .WithId(after.Id)
+        //                             .WithAfter(after);
+        //}
 
 
 

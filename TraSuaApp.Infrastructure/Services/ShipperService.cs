@@ -2,8 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Domain.Entities;
-using TraSuaApp.Infrastructure.Guards;
 using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.Shared.Constants;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
@@ -23,8 +23,8 @@ namespace TraSuaApp.Infrastructure.Services
         private HoaDonDto ToDto(HoaDon entity)
         {
             var pays = entity.ChiTietHoaDonThanhToans?.Where(t => !t.IsDeleted).ToList() ?? new List<ChiTietHoaDonThanhToan>();
-            bool coTienMat = pays.Any(t => (t.TenPhuongThucThanhToan ?? "").Contains("Tiền mặt"));
-            bool coChuyenKhoan = pays.Any(t => (t.TenPhuongThucThanhToan ?? "").Contains("Chuyển khoản"));
+            bool coTienMat = pays.Any(t => (t.PhuongThucThanhToanId == AppConstants.TienMatId));
+            bool coChuyenKhoan = pays.Any(t => (t.PhuongThucThanhToanId == AppConstants.ChuyenKhoanId));
 
             var trangThai = HoaDonHelper.ResolveTrangThai(entity.ThanhTien, entity.ConLai, entity.HasDebt, coTienMat, coChuyenKhoan);
 
@@ -54,7 +54,6 @@ namespace TraSuaApp.Infrastructure.Services
                 GhiChuShipper = entity.GhiChuShipper,
                 CreatedAt = entity.CreatedAt,
                 LastModified = entity.LastModified,
-                ConLai = entity.ConLai,
                 TrangThai = trangThai
             };
         }
@@ -148,7 +147,7 @@ namespace TraSuaApp.Infrastructure.Services
         .SumAsync(t => (decimal?)t.SoTien) ?? 0;
 
             decimal conLai = entity.ThanhTien - daThu;
-            entity.GhiChuShipper = $"Tí nữa chuyển khoản: {conLai:N0} đ";
+            entity.GhiChuShipper = $"Tí nữa chuyển khoản";
             entity.LastModified = now;
 
             await _context.SaveChangesAsync();
@@ -201,7 +200,7 @@ namespace TraSuaApp.Infrastructure.Services
             decimal traNoCu = 0;
 
             var pm = await _context.PhuongThucThanhToans
-                .Where(p => !p.IsDeleted && p.Ten == "Tiền mặt")
+                .Where(p => !p.IsDeleted && p.Id == AppConstants.TienMatId)
                 .Select(p => new { p.Id, p.Ten })
                 .FirstOrDefaultAsync();
 
@@ -314,7 +313,7 @@ namespace TraSuaApp.Infrastructure.Services
                 _context.ChiTietHoaDonNos.Add(no);
             }
 
-            entity.GhiChuShipper = $"Ghi nợ: {soTienNo:N0} đ";
+            entity.GhiChuShipper = $"Ghi nợ";
             entity.LastModified = now;
 
             await _context.SaveChangesAsync();
@@ -343,13 +342,13 @@ namespace TraSuaApp.Infrastructure.Services
             if (entity.ChiTietHoaDonThanhToans.Any(t =>
                     !t.IsDeleted
                     && t.GhiChu == "Shipper"
-                    && t.TenPhuongThucThanhToan == "Tiền mặt"))
+                    && t.PhuongThucThanhToanId == AppConstants.TienMatId))
             {
                 return Result<HoaDonDto>.Failure("Shipper đã thu TIỀN MẶT cho đơn này, không thể thu lại.");
             }
 
             // Guard cũ: nếu đã có ghi chú shipper thì không cho thao tác nữa
-            // Nếu đã có ghi chú “chốt đơn” (trừ “Tí nữa chuyển khoản”) thì khóa lại
+            // Nếu đã có ghi chú “chốt đơn” (trừ “Tí nữa Chuyển khoản”) thì khóa lại
             if (IsFinalizedByShipper(entity))
                 return Result<HoaDonDto>.Failure("Đơn này đã được shipper xử lý, không thể thao tác lại.");
             // Nếu đã ghi nợ và còn nợ thì không được dùng Thu tiền mặt
@@ -371,7 +370,7 @@ namespace TraSuaApp.Infrastructure.Services
             if (soTienThu > 0)
             {
                 var pm = await _context.PhuongThucThanhToans
-                    .Where(p => !p.IsDeleted && p.Ten == "Tiền mặt")
+                    .Where(p => !p.IsDeleted && p.Id == AppConstants.TienMatId)
                     .Select(p => new { p.Id, p.Ten })
                     .FirstOrDefaultAsync();
 
@@ -405,13 +404,14 @@ namespace TraSuaApp.Infrastructure.Services
                 _context.ChiTietHoaDonThanhToans.Add(thanhToan);
             }
 
-            entity.GhiChuShipper = $"Tiền mặt: {soTienThu:N0} đ";
+            //entity.GhiChuShipper = $"Tiền mặt: {soTienThu:N0} đ";
+            entity.GhiChuShipper = $"Tiền mặt";
+
             entity.LastModified = now;
 
             await _context.SaveChangesAsync();
             await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
             await _context.SaveChangesAsync();
-            await AuditDebtGuard.CheckAndNotifyAsync(_context, entity.Id, "CreatePayment");
 
             var after = ToDto(entity);
             return Result<HoaDonDto>.Success(after, "Đã thu tiền mặt.")
@@ -428,13 +428,13 @@ namespace TraSuaApp.Infrastructure.Services
             if (entity == null)
                 return Result<HoaDonDto>.Failure("Không tìm thấy hoá đơn.");
 
-            // NEW: Chặn nếu đã có thanh toán CHUYỂN KHOẢN từ shipper cho đơn này
+            // NEW: Chặn nếu đã có thanh toán Chuyển khoản từ shipper cho đơn này
             if (entity.ChiTietHoaDonThanhToans.Any(t =>
                     !t.IsDeleted
                     && t.GhiChu == "Shipper"
-                    && t.TenPhuongThucThanhToan == "Chuyển khoản"))
+                    && t.PhuongThucThanhToanId == AppConstants.TienMatId))
             {
-                return Result<HoaDonDto>.Failure("Shipper đã thu CHUYỂN KHOẢN cho đơn này, không thể thu lại.");
+                return Result<HoaDonDto>.Failure("Shipper đã thu Chuyển khoản cho đơn này, không thể thu lại.");
             }
 
             if (IsFinalizedByShipper(entity))
@@ -457,7 +457,7 @@ namespace TraSuaApp.Infrastructure.Services
             if (soTienThu > 0)
             {
                 var pm = await _context.PhuongThucThanhToans
-                    .Where(p => !p.IsDeleted && p.Ten == "Chuyển khoản")
+                    .Where(p => !p.IsDeleted && p.Id == AppConstants.ChuyenKhoanId)
                     .Select(p => new { p.Id, p.Ten })
                     .FirstOrDefaultAsync();
 
@@ -496,10 +496,9 @@ namespace TraSuaApp.Infrastructure.Services
             await _context.SaveChangesAsync();
             await HoaDonHelper.RecalcConLaiAsync(_context, entity.Id);
             await _context.SaveChangesAsync();
-            await AuditDebtGuard.CheckAndNotifyAsync(_context, entity.Id, "CreatePayment");
 
             var after = ToDto(entity);
-            return Result<HoaDonDto>.Success(after, "Đã thu chuyển khoản.")
+            return Result<HoaDonDto>.Success(after, "Đã thu Chuyển khoản.")
                 .WithId(id).WithBefore(before).WithAfter(after);
         }
 
@@ -509,8 +508,8 @@ namespace TraSuaApp.Infrastructure.Services
             if (string.IsNullOrEmpty(note))
                 return false;
 
-            // “Tí nữa chuyển khoản …” chỉ là ghi chú tạm, KHÔNG tính là đã chốt đơn
-            if (note.StartsWith("Tí nữa chuyển khoản"))
+            // “Tí nữa Chuyển khoản …” chỉ là ghi chú tạm, KHÔNG tính là đã chốt đơn
+            if (note.StartsWith("Chuyển khoản"))
                 return false;
 
             // Các ghi chú khác coi như đã xử lý xong
@@ -538,11 +537,11 @@ namespace TraSuaApp.Infrastructure.Services
                 || t.LoaiThanhToan == "Trả nợ trong ngày");
 
             decimal tienMat = await daThuQ
-                .Where(t => t.TenPhuongThucThanhToan == "Tiền mặt")
+                .Where(t => t.PhuongThucThanhToanId == AppConstants.TienMatId)
                 .SumAsync(t => (decimal?)t.SoTien) ?? 0m;
 
             decimal chuyenKhoan = await daThuQ
-                .Where(t => t.TenPhuongThucThanhToan != "Tiền mặt")
+                .Where(t => t.PhuongThucThanhToanId != AppConstants.TienMatId)
                 .SumAsync(t => (decimal?)t.SoTien) ?? 0m;
 
             var traNoQ = payQ.Where(t => t.LoaiThanhToan == "Trả nợ qua ngày");

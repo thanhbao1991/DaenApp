@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using TraSuaApp.Shared.Constants;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Apis;
@@ -157,32 +158,18 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         }
         private void PhuongThucThanhToanComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (PhuongThucThanhToanComboBox.SelectedIndex == 3)
+            if (Guid.Parse(PhuongThucThanhToanComboBox.SelectedValue.ToString()) == AppConstants.TienMatId)
             {
                 Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["SuccessBrush"], 0.8);
                 SaveButton.Content = "Tiền mặt";
                 SaveButton.Foreground = Brushes.White;
             }
             else
-           if (PhuongThucThanhToanComboBox.SelectedIndex == 2)
-            {
-                Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["WarningBrush"], 0.8);
-                SaveButton.Content = "Chuyển khoản";
-                SaveButton.Foreground = Brushes.Black;
+            if (Guid.Parse(PhuongThucThanhToanComboBox.SelectedValue.ToString()) == AppConstants.ChuyenKhoanId)
 
-            }
-            else
-            if (PhuongThucThanhToanComboBox.SelectedIndex == 1)
             {
                 Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["PrimaryBrush"], 0.8);
-                SaveButton.Content = "Chuyển khoản N";
-                SaveButton.Foreground = Brushes.White;
-            }
-            else
-            if (PhuongThucThanhToanComboBox.SelectedIndex == 0)
-            {
-                Background = MakeBrush((Brush)System.Windows.Application.Current.Resources["DarkBrush"], 0.8);
-                SaveButton.Content = "Chuyển khoản T";
+                SaveButton.Content = "Chuyển khoản";
                 SaveButton.Foreground = Brushes.White;
             }
             SaveButton.Background = this.Background;

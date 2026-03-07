@@ -18,7 +18,103 @@ namespace TraSuaApp.Infrastructure.Services
         {
             _context = context;
         }
+        public async Task<Result<KhachHangDto>> DeleteAsync(Guid id)
+        {
+            return Result<KhachHangDto>
+         .Failure($"Chức năng tạm thời bị khóa");
+            var entity = await _context.KhachHangs
+                .Include(x => x.KhachHangPhones)
+                .Include(x => x.KhachHangAddresses)
+                .FirstOrDefaultAsync(x => x.Id == id);
 
+            if (entity == null || entity.IsDeleted)
+                return Result<KhachHangDto>.Failure($"Không tìm thấy {_friendlyName}.");
+
+            var before = ToDto(entity);
+            var now = DateTime.Now;
+
+            // ==========================
+            // 1️⃣ SOFT DELETE BẢNG CON
+            // ==========================
+
+            foreach (var phone in entity.KhachHangPhones)
+            {
+                phone.IsDeleted = true;
+                phone.DeletedAt = now;
+                phone.LastModified = now;
+            }
+
+            foreach (var addr in entity.KhachHangAddresses)
+            {
+                addr.IsDeleted = true;
+                addr.DeletedAt = now;
+                addr.LastModified = now;
+            }
+
+            // ==========================
+            // 2️⃣ SOFT DELETE CHA
+            // ==========================
+
+            entity.IsDeleted = true;
+            entity.DeletedAt = now;
+            entity.LastModified = now;
+
+            await _context.SaveChangesAsync();
+
+            return Result<KhachHangDto>.Success(before, "Xoá thành công.")
+                .WithId(before.Id)
+                .WithBefore(before);
+        }
+        public async Task<Result<KhachHangDto>> RestoreAsync(Guid id)
+        {
+            var entity = await _context.KhachHangs
+                .IgnoreQueryFilters()
+                .Include(x => x.KhachHangPhones)
+                .Include(x => x.KhachHangAddresses)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (entity == null)
+                return Result<KhachHangDto>.Failure($"Không tìm thấy {_friendlyName}.");
+
+            if (!entity.IsDeleted)
+                return Result<KhachHangDto>.Failure($"{_friendlyName} này chưa bị xoá.");
+
+            var now = DateTime.Now;
+
+            // ==========================
+            // 1️⃣ RESTORE CHA
+            // ==========================
+
+            entity.IsDeleted = false;
+            entity.DeletedAt = null;
+            entity.LastModified = now;
+
+            // ==========================
+            // 2️⃣ RESTORE BẢNG CON
+            // ==========================
+
+            foreach (var phone in entity.KhachHangPhones)
+            {
+                phone.IsDeleted = false;
+                phone.DeletedAt = null;
+                phone.LastModified = now;
+            }
+
+            foreach (var addr in entity.KhachHangAddresses)
+            {
+                addr.IsDeleted = false;
+                addr.DeletedAt = null;
+                addr.LastModified = now;
+            }
+
+            await _context.SaveChangesAsync();
+
+            var after = ToDto(entity);
+
+            return Result<KhachHangDto>.Success(after, "Khôi phục thành công.")
+                .WithId(after.Id)
+                .WithAfter(after);
+        }
         // ================== SEARCH ==================
         public async Task<List<KhachHangDto>> SearchAsync(string q, int take = 30)
         {
@@ -119,6 +215,7 @@ namespace TraSuaApp.Infrastructure.Services
             {
                 Id = entity.Id,
                 Ten = entity.Ten,
+
                 FavoriteMon = entity.FavoriteMon,
                 IsDeleted = entity.IsDeleted,
                 LastModified = entity.LastModified,
@@ -420,53 +517,53 @@ namespace TraSuaApp.Infrastructure.Services
                 .WithAfter(after);
         }
         // ================== DELETE ==================
-        public async Task<Result<KhachHangDto>> DeleteAsync(Guid id)
-        {
-            var entity = await _context.KhachHangs
-                .Include(x => x.KhachHangPhones)
-                .Include(x => x.KhachHangAddresses)
-                .FirstOrDefaultAsync(x => x.Id == id);
+        //public async Task<Result<KhachHangDto>> DeleteAsync(Guid id)
+        //{
+        //    var entity = await _context.KhachHangs
+        //        .Include(x => x.KhachHangPhones)
+        //        .Include(x => x.KhachHangAddresses)
+        //        .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (entity == null || entity.IsDeleted)
-                return Result<KhachHangDto>.Failure($"Không tìm thấy {_friendlyName}.");
+        //    if (entity == null || entity.IsDeleted)
+        //        return Result<KhachHangDto>.Failure($"Không tìm thấy {_friendlyName}.");
 
-            var before = ToDto(entity);
+        //    var before = ToDto(entity);
 
-            entity.IsDeleted = true;
-            entity.DeletedAt = DateTime.Now;
-            entity.LastModified = DateTime.Now;
-            await _context.SaveChangesAsync();
+        //    entity.IsDeleted = true;
+        //    entity.DeletedAt = DateTime.Now;
+        //    entity.LastModified = DateTime.Now;
+        //    await _context.SaveChangesAsync();
 
-            return Result<KhachHangDto>.Success(before, "Xoá thành công.")
-                .WithId(before.Id)
-                .WithBefore(before);
-        }
+        //    return Result<KhachHangDto>.Success(before, "Xoá thành công.")
+        //        .WithId(before.Id)
+        //        .WithBefore(before);
+        //}
 
-        // ================== RESTORE ==================
-        public async Task<Result<KhachHangDto>> RestoreAsync(Guid id)
-        {
-            var entity = await _context.KhachHangs
-                .Include(x => x.KhachHangPhones)
-                .Include(x => x.KhachHangAddresses)
-                .FirstOrDefaultAsync(x => x.Id == id);
+        //// ================== RESTORE ==================
+        //public async Task<Result<KhachHangDto>> RestoreAsync(Guid id)
+        //{
+        //    var entity = await _context.KhachHangs
+        //        .Include(x => x.KhachHangPhones)
+        //        .Include(x => x.KhachHangAddresses)
+        //        .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (entity == null)
-                return Result<KhachHangDto>.Failure($"Không tìm thấy {_friendlyName}.");
+        //    if (entity == null)
+        //        return Result<KhachHangDto>.Failure($"Không tìm thấy {_friendlyName}.");
 
-            if (!entity.IsDeleted)
-                return Result<KhachHangDto>.Failure($"{_friendlyName} này chưa bị xoá.");
+        //    if (!entity.IsDeleted)
+        //        return Result<KhachHangDto>.Failure($"{_friendlyName} này chưa bị xoá.");
 
-            entity.IsDeleted = false;
-            entity.LastModified = DateTime.Now;
-            entity.DeletedAt = null;
+        //    entity.IsDeleted = false;
+        //    entity.LastModified = DateTime.Now;
+        //    entity.DeletedAt = null;
 
-            await _context.SaveChangesAsync();
+        //    await _context.SaveChangesAsync();
 
-            var after = ToDto(entity);
-            return Result<KhachHangDto>.Success(after, "Khôi phục thành công.")
-                .WithId(after.Id)
-                .WithAfter(after);
-        }
+        //    var after = ToDto(entity);
+        //    return Result<KhachHangDto>.Success(after, "Khôi phục thành công.")
+        //        .WithId(after.Id)
+        //        .WithAfter(after);
+        //}
 
         // ================== GET ALL ==================
         public async Task<List<KhachHangDto>> GetAllAsync()

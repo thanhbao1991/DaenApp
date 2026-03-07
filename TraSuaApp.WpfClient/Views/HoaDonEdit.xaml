@@ -680,7 +680,7 @@
                                                             VerticalAlignment="Center"
                                                             FontWeight="Bold"
                                                             Foreground="{StaticResource DangerBrush}"
-                                                            Text="{Binding ThanhTien, StringFormat={}{0:n0} đ}" />
+                                                            Text="{Binding ThanhTien, StringFormat={}{0:N0}}" />
                                                         <Button
                                                             MinWidth="40"
                                                             Click="MoveUpButton_Click"

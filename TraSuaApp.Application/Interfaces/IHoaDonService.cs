@@ -6,7 +6,7 @@ namespace TraSuaApp.Applicationn.Interfaces;
 public interface IHoaDonService
 {
     Task<List<HoaDonDto>> GetAllAsync();
-    Task<List<HoaDonDto>> GetAllAdminAsync();
+    //Task<List<HoaDonDto>> GetAllAdminAsync();
     Task<HoaDonDto?> GetByIdAsync(Guid id);
     Task<Result<HoaDonDto>> CreateAsync(HoaDonDto dto);
     Task<Result<HoaDonDto>> UpdateAsync(Guid id, HoaDonDto dto);

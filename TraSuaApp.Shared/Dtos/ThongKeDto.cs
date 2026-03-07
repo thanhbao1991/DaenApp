@@ -40,7 +40,7 @@
         public List<LabelValueDto> CongNoChiTiet { get; set; } = new();    // Khách + số nợ
         public List<LabelValueDto> TraNoTienChiTiet { get; set; } = new(); // Khách + số trả
         public List<LabelValueDto> TraNoBankChiTiet { get; set; } = new(); // Khách + số trả
-        public List<LabelValueDto> DaThuChiTiet { get; set; } = new();     // Tiền mặt / Chuyển khoản (dùng cho card “Đã thu”)
+        public List<LabelValueDto> DaThuChiTiet { get; set; } = new();     // Tiền mặt / Bank (dùng cho card “Đã thu”)
         public List<LabelValueDto> ChuaThuChiTiet { get; set; } = new(); // 🟟 thêm
 
         // Top bán chạy

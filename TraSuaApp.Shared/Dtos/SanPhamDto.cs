@@ -5,6 +5,28 @@ namespace TraSuaApp.Shared.Dtos;
 
 public class SanPhamDto : DtoBase
 {
+    [NotMapped]
+    public string GiaHienThi
+    {
+        get
+        {
+            if (BienThe == null || BienThe.Count == 0)
+                return string.Empty;
+
+            var prices = BienThe
+                .Select(x => x.GiaBan)
+                .OrderBy(x => x)
+                .ToList();
+
+            var min = prices.First();
+            var max = prices.Last();
+
+            if (min == max)
+                return min.ToString("N0");
+
+            return $"{min:N0} - {max:N0}";
+        }
+    }
     public override string ApiRoute => "SanPham";
     public string? TenKhongVietTat { get; set; }
 
@@ -52,7 +74,13 @@ public class SanPhamDto : DtoBase
         $"{TenNhomSanPham?.ToLower() ?? ""} " +
         StringHelper.MyNormalizeText(TenNhomSanPham ?? "") + " " +
         StringHelper.MyNormalizeText((TenNhomSanPham ?? "").Replace(" ", "")) + " " +
-        StringHelper.GetShortName(TenNhomSanPham ?? "");
+        StringHelper.GetShortName(TenNhomSanPham ?? "") +
+
+       $"{VietTat?.ToLower() ?? ""} " +
+        StringHelper.MyNormalizeText(VietTat ?? "") + " " +
+        StringHelper.MyNormalizeText((VietTat ?? "").Replace(" ", "")) + " " +
+        StringHelper.GetShortName(VietTat ?? "");
+
 }
 
 

@@ -40,7 +40,10 @@ public class AppShippingHelperText
     private readonly string orderPageUrl = "https://store.shippershipping.com/#/store/order";
     private readonly string xemChiTietRow1XPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[3]/div[3]/table/tbody/tr[1]/td[5]/div/div[1]/a/span";
     private readonly string chiTietPopupXPath = "//*[@id=\"app\"]/div/div[2]/section/div/div[6]/div";
-
+    private string GetXemChiTietRowXPath(int rowIndex)
+    {
+        return $"//*[@id='app']//table/tbody/tr[{rowIndex}]/td[5]//a/span";
+    }
     // ⚠️ Constructor
     public AppShippingHelperText(string username, string password,
                                  List<SanPhamDto> sanPhamList,
@@ -150,7 +153,8 @@ public class AppShippingHelperText
             // nếu không thấy nút "xem chi tiết" -> có thể session hỏng, thử reset nếu còn lượt
             try
             {
-                wait.Until(d => d.FindElements(By.XPath(xemChiTietRow1XPath)).Count > 0);
+
+                wait.Until(d => d.FindElements(By.XPath(GetXemChiTietRowXPath(1))).Count > 0);
             }
             catch
             {
@@ -219,7 +223,7 @@ public class AppShippingHelperText
             {
                 try
                 {
-                    var el = d.FindElement(By.XPath(xemChiTietRow1XPath));
+                    var el = d.FindElement(By.XPath(GetXemChiTietRowXPath(1)));
                     return (el.Displayed && el.Enabled) ? el : null;
                 }
                 catch

@@ -93,7 +93,7 @@ namespace TraSuaApp.WpfClient.Views
             ChiTieuHangNgayDataGrid.ItemsSource = sourceList;
 
             tongTien = sourceList.Sum(x => x.ThanhTien);
-            TongTienChiTieuHangNgayTextBlock.Header = $"{tongTien:N0} đ";
+            TongTienChiTieuHangNgayTextBlock.Header = $"{tongTien/1000:N0}k";
         }
 
         private void SearchChiTieuHangNgayTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -117,6 +117,25 @@ namespace TraSuaApp.WpfClient.Views
 
             }
         }
+        private async void AddChiTieuHangNgayButtonN_Click(object sender, RoutedEventArgs e)
+        {
+            var owner = Window.GetWindow(this);
+            var window = new ChiTieuHangNgayEditN()
+            {
+                Width = owner?.ActualWidth ?? 1200,
+                Height = owner?.ActualHeight ?? 800,
+                Owner = owner,
+            };
+
+            if (window.ShowDialog() == true)
+            {
+                await ReloadAfterHoaDonChangeAsync(reloadChiTieu: true);
+
+            }
+        }
+
+
+
         private async void ChiTieuHangNgayDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (ChiTieuHangNgayDataGrid.SelectedItem is not ChiTieuHangNgayDto selected)
@@ -188,21 +207,5 @@ namespace TraSuaApp.WpfClient.Views
             await ReloadUI();
         }
 
-        private async void AddChiTieuHangNgayButtonN_Click(object sender, RoutedEventArgs e)
-        {
-            var owner = Window.GetWindow(this);
-            var window = new ChiTieuHangNgayEditN()
-            {
-                Width = owner?.ActualWidth ?? 1200,
-                Height = owner?.ActualHeight ?? 800,
-                Owner = owner,
-            };
-
-            if (window.ShowDialog() == true)
-            {
-                await ReloadAfterHoaDonChangeAsync(reloadChiTieu: true);
-
-            }
-        }
     }
 }

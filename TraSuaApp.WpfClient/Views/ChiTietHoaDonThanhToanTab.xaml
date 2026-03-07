@@ -2,7 +2,8 @@
     x:Class="TraSuaApp.WpfClient.Views.ChiTietHoaDonThanhToanTab"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:fa="clr-namespace:FontAwesome.Sharp;assembly=FontAwesome.Sharp">
+    xmlns:fa="clr-namespace:FontAwesome.Sharp;assembly=FontAwesome.Sharp"
+    PreviewKeyDown="UserControl_PreviewKeyDown">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -24,7 +25,10 @@
                     TextChanged="SearchChiTietHoaDonThanhToanTextBox_TextChanged" />
             </StackPanel>
             <!--  ⬇️ NÚT TÌM NHANH KHÔI PHỤC  -->
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <StackPanel
+                x:Name="TimKiemNhanhStackPanel"
+                DockPanel.Dock="Right"
+                Orientation="Horizontal">
                 <Button
                     Click="TimKiemNhanhThanhToanButton_Click"
                     Content="Tiền mặt hôm nay"
@@ -36,7 +40,7 @@
                     Content="Chuyển khoản hôm nay"
                     Foreground="White"
                     Style="{StaticResource SuaButtonStyle}"
-                    Tag="chuyển khoản trong ngày" />
+                    Tag="Chuyển khoản trong ngày" />
                 <Button
                     Click="TimKiemNhanhThanhToanButton_Click"
                     Content="Trả nợ hôm nay"
@@ -73,68 +77,52 @@
             </DataGrid.RowStyle>
             <DataGrid.Columns>
                 <DataGridTextColumn
-                    Width="60"
+                    Width="Auto"
                     Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
-                <DataGridTextColumn
-                    Width="110"
+                <!--<DataGridTextColumn
+                    Width="Auto"
                     Binding="{Binding Ngay, StringFormat=dd-MM-yyyy}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
-                    Header="Ngày" />
+                    Header="Ngày" />-->
                 <DataGridTextColumn
-                    Width="90"
+                    Width="Auto"
                     Binding="{Binding NgayGio, StringFormat=HH:mm}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Giờ" />
                 <DataGridTextColumn
-                    Width="*"
+                    Width="Auto"
                     Binding="{Binding Ten}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Tên" />
-                <DataGridTextColumn
-                    Width="160"
-                    Binding="{Binding LoaiThanhToan}"
-                    ElementStyle="{StaticResource LeftTextCellStyle}"
-                    Header="Phân loại" />
-                <DataGridTextColumn
-                    Width="160"
-                    Binding="{Binding TenPhuongThucThanhToan}"
-                    ElementStyle="{StaticResource CenterTextCellStyle}"
-                    Header="Phương thức" />
+
 
                 <!--  Số tiền: Template + tô màu theo rule gốc  -->
                 <DataGridTemplateColumn
                     x:Name="TongTienThanhToanTextBlock"
-                    Width="160"
+                    Width="Auto"
                     Header="Thành tiền">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock
-                                Padding="0,0,8,0"
+                                Height="32"
+                                Padding="8,8,8,0"
                                 HorizontalAlignment="Right"
-                                VerticalAlignment="Stretch"
+                                VerticalAlignment="Center"
                                 FontWeight="SemiBold"
-                                Text="{Binding SoTien, StringFormat={}{0:N0} đ}">
+                                Text="{Binding SoTien, StringFormat={}{0:N0}}">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Background" Value="{x:Null}" />
                                         <Style.Triggers>
-                                            <!--  Trả nợ qua ngày => nhấn mạnh  -->
-                                            <!--<DataTrigger Binding="{Binding LoaiThanhToan}" Value="Trả nợ qua ngày">
+                                            <DataTrigger Binding="{Binding LoaiThanhToan}" Value="Trả nợ qua ngày">
+                                                <Setter Property="Foreground" Value="{StaticResource DangerForeground}" />
                                                 <Setter Property="Background" Value="{StaticResource DangerBrush}" />
                                             </DataTrigger>
-                                            -->
-                                            <!--  Phương thức  -->
-                                            <!--
-                                            <DataTrigger Binding="{Binding TenPhuongThucThanhToan}" Value="Tiền mặt">
-                                                <Setter Property="Background" Value="{StaticResource SuccessBrush}" />
-                                            </DataTrigger>-->
                                             <DataTrigger Binding="{Binding TenPhuongThucThanhToan}" Value="Chuyển khoản">
-                                                <Setter Property="Background" Value="{StaticResource WarningBrush}" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding TenPhuongThucThanhToan}" Value="Banking Nhã">
-                                                <Setter Property="Background" Value="Gold" />
+                                                <Setter Property="Foreground" Value="{StaticResource PrimaryForeground}" />
+                                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -143,15 +131,23 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-
-
+                <!--<DataGridTextColumn
+                    Width="Auto"
+                    Binding="{Binding TenPhuongThucThanhToan}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="Phương thức" />-->
+                <!--<DataGridTextColumn
+                    Width="Auto"
+                    Binding="{Binding LoaiThanhToan}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Phân loại" />
                 <DataGridTextColumn
-                    Width="2*"
+                    Width="*"
                     Binding="{Binding GhiChu}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
-                    Header="Ghi chú" />
+                    Header="Ghi chú" />-->
                 <!--  Nút xoá (ẩn như thường lệ)  -->
-                <DataGridTemplateColumn Width="80">
+                <DataGridTemplateColumn Width="Auto">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Button

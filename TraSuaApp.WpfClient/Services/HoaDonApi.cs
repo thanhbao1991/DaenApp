@@ -11,25 +11,12 @@ public class HoaDonApi : BaseApi, IHoaDonApi
 
     public HoaDonApi() : base(TuDien._tableFriendlyNames["HoaDon"]) { }
 
+
+
     public async Task<Result<List<HoaDonDto>>> GetAllAsync()
     {
-        var url = BASE_URL; // /api/HoaDon
-
-        var username = Properties.Settings.Default.TaiKhoan;
-
-        if (!string.IsNullOrWhiteSpace(username) &&
-            username.Equals("admin", StringComparison.OrdinalIgnoreCase))
-        {
-            url = $"{BASE_URL}/for-admin";
-        }
-
-        return await GetAsync<List<HoaDonDto>>(url);
+        return await GetAsync<List<HoaDonDto>>(BASE_URL);
     }
-
-    //public async Task<Result<List<HoaDonDto>>> GetAllAsync()
-    //{
-    //    return await GetAsync<List<HoaDonDto>>(BASE_URL);
-    //}
 
     public async Task<Result<HoaDonDto>> GetByIdAsync(Guid id)
     {

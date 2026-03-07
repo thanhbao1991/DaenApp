@@ -50,17 +50,17 @@
 
             <DataGrid.Columns>
                 <DataGridTextColumn
-                    Width="60"
+                    Width="Auto"
                     Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
                 <DataGridTextColumn
-                    Width="110"
+                    Width="Auto"
                     Binding="{Binding NgayGio, StringFormat=dd-MM-yyyy}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Ngày" />
                 <DataGridTextColumn
-                    Width="90"
+                    Width="Auto"
                     Binding="{Binding NgayGio, StringFormat=HH:mm}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Giờ" />
@@ -87,12 +87,12 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTextColumn
-                    Width="160"
+                    Width="Auto"
                     Binding="{Binding NgayCanhBao, StringFormat=\{0:dd/MM/yyyy HH:mm\}}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Ngày cảnh báo" />
                 <DataGridTextColumn
-                    Width="160"
+                    Width="Auto"
                     Binding="{Binding XNgayCanhBao}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Sau X ngày cảnh báo" />

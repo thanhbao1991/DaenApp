@@ -170,7 +170,7 @@
                     FontSize="14"
                     FontWeight="Bold"
                     Foreground="#C62828"
-                    Text="{Binding TongTien, StringFormat={}{0:N0} đ}" />
+                    Text="{Binding TongTien, StringFormat={}{0:N0}}" />
             </StackPanel>
             <Button
                 Click="Save_Click"

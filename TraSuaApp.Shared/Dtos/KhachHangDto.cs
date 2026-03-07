@@ -26,6 +26,7 @@ public class KhachHangDto : DtoBase
     $"{StringHelper.MyNormalizeText(DienThoai ?? "")}";
 
     public string? FavoriteMon { get; set; }
+    public int TongLanNhanVoucher { get; set; }
 
     // 🟟 Danh sách địa chỉ
 

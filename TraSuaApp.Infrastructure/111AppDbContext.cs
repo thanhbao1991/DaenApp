@@ -4,6 +4,7 @@ using TraSuaApp.Domain.Entities;
 using TraSuaApp.Domain.Interfaces;
 using TraSuaApp.Infrastructure.Repositories;
 using TraSuaApp.Shared.Config;
+using static TraSuaApp.Infrastructure.Services.DoanhThuService;
 
 namespace TraSuaApp.Infrastructure;
 
@@ -16,6 +17,7 @@ public partial class AppDbContext : DbContext, IAppDbContext
         => new EfRepository<T>(this);
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    public DbSet<HoaDonPaymentMaskView> vHoaDonPaymentMasks { get; set; }
 
     public virtual DbSet<NguyenLieuTransaction> NguyenLieuTransactions { get; set; }
     public virtual DbSet<NguyenLieuBanHang> NguyenLieuBanHangs { get; set; }
@@ -55,6 +57,9 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<HoaDonPaymentMaskView>()
+        .HasNoKey()
+        .ToView("vHoaDonPaymentMask");
         // ======================
         // ChiTietHoaDonEntity
         // ======================

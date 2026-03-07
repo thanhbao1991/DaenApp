@@ -163,6 +163,7 @@ namespace TraSuaApp.Api.Controllers
                 .Select(x => new ChiTieuHangNgayDto
                 {
                     Id = x.Id,
+                    BillThang = x.BillThang,
                     Ten = x.Ten,
                     DonGia = x.DonGia,
                     SoLuong = x.SoLuong,

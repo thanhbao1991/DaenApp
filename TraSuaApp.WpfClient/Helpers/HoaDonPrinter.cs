@@ -17,13 +17,18 @@ namespace TraSuaApp.WpfClient.Helpers
     public static class HoaDonPrinter
     {
         // ====== CẤU HÌNH CỐ ĐỊNH ======
-        private const string BANK_BIN = "970415";                 // VietinBank (tham khảo cho link)
+        private const string BANK_BIN = "970415";          // VietinBank
         private const string BANK_NAME = "VIETINBANK";
-        private const string ACCOUNT_NO = "0889664007";
-        private const string ACCOUNT_NAME = "TRAN THI HUYEN TRANG";
-        // CDN keys ưu tiên cho VietinBank:
-        private static readonly string[] _bankKeys = new[] { "ICB", "vietinbank", BANK_BIN };
+        private const string ACCOUNT_NO = "107886435897";
+        private const string ACCOUNT_NAME = "BAO THANH";
 
+        // CDN keys ưu tiên cho VietinBank
+        private static readonly string[] _bankKeys = new[]
+        {
+    "ICB",          // mã VietinBank trên VietQR
+    "vietinbank",
+    BANK_BIN
+};
         // ===== Build full bill (text) =====
         private static string BuildContent(HoaDonDto hoaDon)
         {
@@ -158,7 +163,7 @@ namespace TraSuaApp.WpfClient.Helpers
                 var vi = CultureInfo.GetCultureInfo("vi-VN");
                 var sb = new StringBuilder(content);
                 sb.AppendLine("---------------------------");
-                sb.AppendLine("THÔNG TIN CHUYỂN KHOẢN:");
+                sb.AppendLine("THÔNG TIN Bank:");
                 sb.AppendLine($"{BANK_NAME} - {ACCOUNT_NO}");
                 if (!string.IsNullOrWhiteSpace(accountName ?? ACCOUNT_NAME)) sb.AppendLine(accountName ?? ACCOUNT_NAME);
                 sb.AppendLine($"Số tiền: {amount.ToString("#,0₫", vi)}");
@@ -355,7 +360,7 @@ namespace TraSuaApp.WpfClient.Helpers
         private static string BuildVietQrCdnUrl(string bankKey, decimal amount, string addInfo, string? accountName = ACCOUNT_NAME)
         {
             long vnd = (long)Math.Round(amount, 0, MidpointRounding.AwayFromZero);
-            string url = $"https://img.vietqr.io/image/{bankKey}-{ACCOUNT_NO}-qr_only.png" +
+            string url = $"https://img.vietqr.io/image/{bankKey}-{ACCOUNT_NO}-compact2.png" +
                          $"?amount={vnd}&addInfo={Uri.EscapeDataString(addInfo)}&logo=false";
             if (!string.IsNullOrWhiteSpace(accountName))
                 url += $"&accountName={Uri.EscapeDataString(accountName!)}";
@@ -395,13 +400,10 @@ namespace TraSuaApp.WpfClient.Helpers
 
         private static string GetTenKhach(HoaDonDto hd)
             => !string.IsNullOrWhiteSpace(hd.TenKhachHangText) ? hd.TenKhachHangText : "KHACH";
-
-        // Nội dung: "<ten> thanh toan <so-tien> (HDxxxxxx)"
+        // Nội dung: "<TENKHACH> (HDxxxxxx)"
         private static string BuildAddInfo(string ten, decimal amount, string maHoaDon)
         {
-            var vi = CultureInfo.GetCultureInfo("vi-VN");
-            string soTien = amount.ToString("#,0", vi); // không kèm đơn vị
-            string raw = $"{ten} thanh toan {soTien} ({maHoaDon})";
+            string raw = $"{ten} ({maHoaDon})";
             return ToAsciiNoDiacritics(raw, upper: true);
         }
         private static string ToAsciiNoDiacritics(string? s, bool upper = true)

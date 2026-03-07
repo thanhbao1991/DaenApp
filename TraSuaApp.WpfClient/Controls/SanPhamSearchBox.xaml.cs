@@ -37,7 +37,7 @@ namespace TraSuaApp.WpfClient.Controls
             SelectedSanPham = sp;
             SelectedBienThe = bt;
             SearchTextBox.Text = bt != null
-                ? $"{sp.Ten} - {bt.TenBienThe} - {bt.GiaBan:n0} đ"
+                ? $"{sp.Ten} - {bt.TenBienThe} - {bt.GiaBan/1000:N0}k"
                 : sp.Ten;
         }
 
@@ -149,7 +149,7 @@ namespace TraSuaApp.WpfClient.Controls
             SelectedBienThe = bt;
 
             SearchTextBox.Text = bt != null
-                ? $"{sp.Ten} - {bt.TenBienThe} - {bt.GiaBan:n0} đ"
+                ? $"{sp.Ten} - {bt.TenBienThe} - {bt.GiaBan/1000:N0}k"
                 : sp.Ten;
 
             SearchTextBox.CaretIndex = SearchTextBox.Text.Length;

@@ -114,6 +114,9 @@ public class NguyenLieuService : INguyenLieuService
 
     public async Task<Result<NguyenLieuDto>> DeleteAsync(Guid id)
     {
+        return Result<NguyenLieuDto>
+         .Failure($"Chức năng tạm thời bị khóa");
+
         var entity = await _context.NguyenLieus
             .FirstOrDefaultAsync(x => x.Id == id);
 

@@ -69,20 +69,6 @@ public class ChiTietHoaDonNoController : BaseApiController
         return Result<List<ChiTietHoaDonNoDto>>.Success(list);
     }
 
-    // ✅ API mới: tìm kiếm + phân trang
-    [HttpGet("search")]
-    public async Task<ActionResult<Result<PagedResult<ChiTietHoaDonNoDto>>>> Search(
-        [FromQuery] string? q,
-        [FromQuery] Guid? khachHangId,
-        [FromQuery] DateTime? from,
-        [FromQuery] DateTime? to,
-        [FromQuery] bool onlyConNo = true,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50)
-    {
-        var rs = await _service.SearchAsync(q, khachHangId, from, to, onlyConNo, page, pageSize, HttpContext.RequestAborted);
-        return Result<PagedResult<ChiTietHoaDonNoDto>>.Success(rs);
-    }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Result<ChiTietHoaDonNoDto>>> GetById(Guid id)

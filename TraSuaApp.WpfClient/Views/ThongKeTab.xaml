@@ -162,32 +162,12 @@
 
                         <Border Padding="6" Background="LightGreen">
                             <DockPanel>
-                                <TextBlock Foreground="Black" Text="- Banking" />
+                                <TextBlock Foreground="Black" Text="- Chuyển khoản" />
                                 <TextBlock
                                     HorizontalAlignment="Right"
                                     DockPanel.Dock="Right"
                                     Foreground="Black"
                                     Text="{Binding DaThu_CK_Chung, StringFormat=N0}" />
-                            </DockPanel>
-                        </Border>
-                        <Border Padding="6" Background="LightGreen">
-                            <DockPanel>
-                                <TextBlock Foreground="Black" Text="- Banking Nhã" />
-                                <TextBlock
-                                    HorizontalAlignment="Right"
-                                    DockPanel.Dock="Right"
-                                    Foreground="Black"
-                                    Text="{Binding DaThu_CK_Nha, StringFormat=N0}" />
-                            </DockPanel>
-                        </Border>
-                        <Border Padding="6" Background="LightGreen">
-                            <DockPanel>
-                                <TextBlock Foreground="Black" Text="- Banking Ty" />
-                                <TextBlock
-                                    HorizontalAlignment="Right"
-                                    DockPanel.Dock="Right"
-                                    Foreground="Black"
-                                    Text="{Binding DaThu_CK_Ty, StringFormat=N0}" />
                             </DockPanel>
                         </Border>
 

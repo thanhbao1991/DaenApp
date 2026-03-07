@@ -202,7 +202,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
             Model.NgungBan = NgungBanCheck.IsChecked == true;
             Model.TichDiem = TichDiemCheck.IsChecked == true;
             Model.NhomSanPhamId = ComboNhom.SelectedValue is Guid id ? id : Guid.Empty;
-
+            DieuChinhGiaSizeL();
             Result<SanPhamDto> result;
             if (Model.Id == Guid.Empty)
                 result = await _api.CreateAsync(Model);
@@ -221,6 +221,32 @@ namespace TraSuaApp.WpfClient.SettingsViews
             Close();
         }
 
+        private void DieuChinhGiaSizeL()
+        {
+            if (_variants == null || _variants.Count < 2)
+                return;
+
+            // tìm size chuẩn (M hoặc Chuẩn)
+            var sizeChuan = _variants
+                .FirstOrDefault(x =>
+                    x.TenBienThe.Trim().ToLower().Contains("chuẩn") ||
+                    x.TenBienThe.Trim().ToLower() == "m");
+
+            // tìm size L
+            var sizeL = _variants
+                .FirstOrDefault(x =>
+                    x.TenBienThe.Trim().ToLower() == "l" ||
+                    x.TenBienThe.Trim().ToLower().Contains("size l"));
+
+            if (sizeChuan == null || sizeL == null)
+                return;
+
+            // nếu bằng nhau thì set lại = chuẩn + 5000
+            if (sizeChuan.GiaBan == sizeL.GiaBan)
+            {
+                sizeL.GiaBan = sizeChuan.GiaBan + 5000;
+            }
+        }
         private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 
         private void VariantListBoxItem_Click(object sender, MouseButtonEventArgs e)

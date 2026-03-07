@@ -31,10 +31,14 @@ public static class TTSHelper
             { "Cf", "Cà Phê" },
             { "Cafe", "Cà Phê" },
             { "TCĐĐ", "Trân Châu Đường Đen" },
+            { "TCDĐ", "Trân Châu Đường Đen" },
             { "TCT", "Trân Châu Trắng" },
             { "TS", "Trà Sữa" },
             { "S/MV", "" },
             { "Olong", "Ô Long" },
+            { "Ko", "Không" },
+            { "#", "," },
+
         };
 
         foreach (var kv in replacements)
@@ -64,8 +68,8 @@ public static class TTSHelper
         Directory.CreateDirectory(folder);
 
         string safeFileName = ReplaceInvalidFileNameChars(text);
-        if (safeFileName.Length > 50) // tránh tên file quá dài
-            safeFileName = safeFileName[..50];
+        if (safeFileName.Length > 255) // tránh tên file quá dài
+            safeFileName = safeFileName[..255];
 
         string filePath = Path.Combine(folder, safeFileName + ".mp3");
 

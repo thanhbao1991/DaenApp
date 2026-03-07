@@ -161,7 +161,7 @@ namespace TraSuaApp.WpfClient.Views
             FillStackPanel(TraNoTienStackPanel, "Trả nợ tiền", dto.TraNoTien,
                 dto.TraNoTienChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());
 
-            FillStackPanel(TraNoBankStackPanel, "Trả nợ bank", dto.TraNoBank,
+            FillStackPanel(TraNoBankStackPanel, "Trả nợ chuyển khoản", dto.TraNoBank,
                 dto.TraNoBankChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());
 
             FillStackPanel(DaThuStackPanel, "Đã thu", dto.DaThu,

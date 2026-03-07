@@ -1,0 +1,56 @@
+﻿<UserControl
+    x:Class="TraSuaApp.WpfClient.Views.DoanhThuThangTab"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  🟟 Header chọn tháng  -->
+        <StackPanel
+            Margin="0,0,0,10"
+            HorizontalAlignment="Left"
+            Orientation="Horizontal">
+            <Button
+                Width="120"
+                Margin="5"
+                Click="PrevMonth_Click"
+                Content="← Tháng trước" />
+
+            <TextBlock
+                Margin="10,0"
+                VerticalAlignment="Center"
+                FontSize="16"
+                FontWeight="Bold"
+                Text="{Binding ThangNamText}" />
+
+            <Button
+                Width="120"
+                Margin="5"
+                Click="NextMonth_Click"
+                Content="Tháng sau →" />
+        </StackPanel>
+
+        <!--  🟟 Bảng dữ liệu  -->
+        <DataGrid
+            x:Name="Datagrid"
+            Grid.Row="2"
+            AutoGenerateColumns="False"
+            CanUserAddRows="False"
+            IsReadOnly="True"
+            ItemsSource="{Binding DoanhThuTheoNgay}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Ngay, StringFormat=dd/MM}" Header="Ngày" />
+                <DataGridTextColumn Binding="{Binding SoDon}" Header="Số Đơn" />
+                <DataGridTextColumn Binding="{Binding TongTien, StringFormat=N0}" Header="Doanh Thu" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

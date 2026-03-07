@@ -60,7 +60,7 @@ public class ShipperController : BaseApiController
         return result;
     }
 
-    // 🟟 Thu chuyển khoản
+    // 🟟 Thu Bank
     [HttpPost("shipperf4/{id}")]
     [AllowAnonymous]
     public async Task<ActionResult<Result<HoaDonDto>>> ThuChuyenKhoan(Guid id)

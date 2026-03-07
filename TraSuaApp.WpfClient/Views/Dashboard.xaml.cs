@@ -11,6 +11,9 @@ namespace TraSuaApp.WpfClient.Views
 {
     public partial class Dashboard : Window, INotifyPropertyChanged
     {
+        public static bool IsThanhToanHidden = true;
+        public static HashSet<Guid> VisibleHoaDonIds = new();
+        public static HashSet<Guid> HoaDonDaCoThanhToanIds = new();
         // ====== Constants / Keys (tránh magic string) ======
         private const string TAB_TAG_HOADON = "HoaDon";
         private const string TAB_TAG_THONGKE = "ThongKe";
@@ -50,6 +53,11 @@ namespace TraSuaApp.WpfClient.Views
         public Dashboard()
         {
             InitializeComponent();
+
+            foreach (TabItem tab in TabControl.Items)
+                if (tab.ToolTip.ToString() == "-")
+                    tab.Visibility = Visibility.Collapsed;
+
 
             DataContext = this;
             Loaded += Dashboard_Loaded;
@@ -362,6 +370,13 @@ namespace TraSuaApp.WpfClient.Views
         // ====== Chuyển Tab: map rõ ràng + freshness override cho Hoá đơn ======
         private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            foreach (TabItem tab in TabControl.Items)
+                if (tab.ToolTip.ToString() == "-")
+                    tab.Visibility = Visibility.Collapsed;
+            IsThanhToanHidden = true;
+            //HoaDonTabControl.ApplyHoaDonFilter();
+            //ChiTietHoaDonThanhToanTabControl.ApplyFilter();
+
             if (!ReferenceEquals(e.OriginalSource, sender)) return;
             if (sender is not System.Windows.Controls.TabControl) return;
 
@@ -450,6 +465,30 @@ namespace TraSuaApp.WpfClient.Views
         // ====== Hotkeys: forward xuống Tab con ======
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (Keyboard.Modifiers == (ModifierKeys.Control)
+         && e.Key == Key.Down)
+            {
+                //foreach (TabItem t in TabControl.Items)
+                //    if (t.ToolTip.ToString() == "-")
+                //        t.Visibility = Visibility.Visible;
+                IsThanhToanHidden = false;
+                HoaDonTabControl.ApplyHoaDonFilter();
+                e.Handled = true;
+                return;
+            }
+            else
+            if (Keyboard.Modifiers == (ModifierKeys.Control)
+         && e.Key == Key.Up)
+            {
+
+                //foreach (TabItem t in TabControl.Items)
+                //    if (t.ToolTip.ToString() == "-")
+                //        t.Visibility = Visibility.Collapsed;
+                IsThanhToanHidden = true;
+                HoaDonTabControl.ApplyHoaDonFilter();
+                e.Handled = true;
+                return;
+            }
             // Nếu đang gõ trong TextBox: cho nhập bình thường, chỉ giữ hotkey
             if (Keyboard.FocusedElement is TextBox)
             {
@@ -459,6 +498,8 @@ namespace TraSuaApp.WpfClient.Views
                     e.Key == Key.Escape || e.Key == Key.Delete;                 // nếu bạn cần
 
                 if (!isHotkey) return; // không chặn ký tự gõ
+
+
             }
 
             if (TabControl.SelectedItem is not TabItem tab) return;
@@ -480,6 +521,9 @@ namespace TraSuaApp.WpfClient.Views
                 if (e.Key == Key.F1 || e.Key == Key.F4 || e.Key == Key.F5)
                     e.Handled = true;
             }
+
+            // 🟟 Dev hotkey: Ctrl + Shift + Enter
+
         }
 
         // ====== Helper tạo DTO trả nợ (giữ nguyên) ======

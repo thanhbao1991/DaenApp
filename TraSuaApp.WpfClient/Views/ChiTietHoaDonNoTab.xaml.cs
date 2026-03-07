@@ -15,8 +15,6 @@ namespace TraSuaApp.WpfClient.Views
     {
         private const string METHOD_TIENMAT = "TienMat";
         private const string METHOD_CK_CHUNG = "ChuyenKhoan";
-        private const string METHOD_CK_NHA = "ChuyenKhoanNha";
-        private const string METHOD_CK_TY = "ChuyenKhoanTy";
 
         // ====== Constants / Fields ======
         private static readonly Guid PT_TienMat = Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C");
@@ -74,7 +72,7 @@ namespace TraSuaApp.WpfClient.Views
 
             int stt = 1; foreach (var item in sourceList) item.Stt = stt++;
             ChiTietHoaDonNoDataGrid.ItemsSource = sourceList;
-            TongTienChiTietHoaDonNoTextBlock.Header = $"{sourceList.Sum(x => x.SoTienConLai):N0} đ";
+            TongTienChiTietHoaDonNoTextBlock.Header = $"{sourceList.Sum(x => x.SoTienConLai) / 1000:N0}k";
         }
 
         private void SearchChiTietHoaDonNoTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -84,6 +82,7 @@ namespace TraSuaApp.WpfClient.Views
 
         private async void ChiTietHoaDonNoDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            return;
             if (ChiTietHoaDonNoDataGrid.SelectedItem is not ChiTietHoaDonNoDto selected) return;
 
             var now = DateTime.Now;
@@ -173,17 +172,17 @@ namespace TraSuaApp.WpfClient.Views
 
         private void TimKiemNhanhCongNoButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button bt)
-            {
-                var tag = bt.Tag?.ToString();
-                if (tag == "hôm nay")
-                    SearchChiTietHoaDonNoTextBox.Text = DateTime.Today.ToString("dd-MM-yyyy");
-                else if (tag == "hôm qua")
-                    SearchChiTietHoaDonNoTextBox.Text = DateTime.Today.AddDays(-1).ToString("dd-MM-yyyy");
-            }
+            //if (sender is Button bt)
+            //{
+            //    var tag = bt.Tag?.ToString();
+            //    if (tag == "hôm nay")
+            //        SearchChiTietHoaDonNoTextBox.Text = DateTime.Today.ToString("dd-MM-yyyy");
+            //    else if (tag == "hôm qua")
+            //        SearchChiTietHoaDonNoTextBox.Text = DateTime.Today.AddDays(-1).ToString("dd-MM-yyyy");
+            //}
         }
 
-        // ========= NÚT TRÊN MỖI DÒNG: THU TIỀN MẶT / CHUYỂN KHOẢN =========
+        // ========= NÚT TRÊN MỖI DÒNG: THU TIỀN MẶT / Bank =========
         private async void TienMatRowButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button bt && bt.DataContext is ChiTietHoaDonNoDto item)
@@ -244,8 +243,6 @@ namespace TraSuaApp.WpfClient.Views
                     PhuongThucThanhToanId = method switch
                     {
                         METHOD_TIENMAT => PT_TienMat,
-                        METHOD_CK_NHA => PM_ChuyenKhoanNha,
-                        METHOD_CK_TY => PM_ChuyenKhoanTy,
                         _ => PT_ChuyenKhoan // mặc định CK chung
                     },
 
@@ -298,30 +295,7 @@ namespace TraSuaApp.WpfClient.Views
             bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
             await PayItemAsync(item, "ChuyenKhoan", thuNgay, null); // không có nút hàng để gắn spinner
         }
-        private async void F5aButton_Click(object sender, RoutedEventArgs e)
-        {
-            var item = SelectedNo;
-            if (item == null)
-            {
-                NotiHelper.Show("Vui lòng chọn công nợ!");
-                return;
-            }
 
-            bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
-            await PayItemAsync(item, METHOD_CK_NHA, thuNgay, null);
-        }
-        private async void F6aButton_Click(object sender, RoutedEventArgs e)
-        {
-            var item = SelectedNo;
-            if (item == null)
-            {
-                NotiHelper.Show("Vui lòng chọn công nợ!");
-                return;
-            }
-
-            bool thuNgay = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
-            await PayItemAsync(item, METHOD_CK_TY, thuNgay, null);
-        }
 
         public void HandleHotkey(Key key)
         {
@@ -335,13 +309,6 @@ namespace TraSuaApp.WpfClient.Views
                     F4aButton_Click(this, new RoutedEventArgs());
                     break;
 
-                case Key.F5:
-                    F5aButton_Click(this, new RoutedEventArgs());
-                    break;
-
-                case Key.F6:
-                    F6aButton_Click(this, new RoutedEventArgs());
-                    break;
             }
         }
     }

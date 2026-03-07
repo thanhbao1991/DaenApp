@@ -23,12 +23,26 @@ namespace TraSuaApp.WpfClient
                 pb.SelectAll();
         }
 
+        public static void KillAllChromeDriver()
+        {
+            var processes = Process.GetProcessesByName("chromedriver");
+
+            foreach (var process in processes)
+            {
+                try
+                {
+                    process.Kill();
+                    process.WaitForExit();
+                }
+                catch { }
+            }
+        }
         protected override void OnStartup(StartupEventArgs e)
         {
             //    FileViewerWindow fileViewerWindow = new FileViewerWindow();
             //       fileViewerWindow.ShowDialog();
 
-
+            KillAllChromeDriver();
 
             const string mutexName = "TraSuaApp_WpfClient_OnlyOneInstance";
             _mutex = new Mutex(true, mutexName, out bool isNewInstance);

@@ -87,30 +87,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
                             else
                                 TTSHelper.DownloadAndPlayGoogleTTSAsync("Bàn " + hoaDon.TenBan);
 
-                            //if (hoaDon != null && hoaDon.NguoiShip == "Khánh" && hoaDon.GhiChuShipper != null)
-                            //{
-                            //    var note = hoaDon.GhiChuShipper.ToLower();
-                            //    if (note.StartsWith("chuyển khoản"))
-                            //    {
-                            //        AudioHelper.Play("chuyen-khoan.mp3");
-                            //        //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                            //    }
-                            //    else if (note.StartsWith("ghi nợ"))
-                            //    {
-                            //        AudioHelper.Play("ghi-no.mp3");
-                            //        //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                            //    }
-                            //    else if (note.StartsWith("tí nữa chuyển khoản"))
-                            //    {
-                            //        AudioHelper.Play("chuyen-khoan-sau.mp3");
-                            //        //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                            //    }
-                            //    else if (note.Contains("trả nợ"))
-                            //    {
-                            //        AudioHelper.Play("tra-no.mp3");
-                            //        //NotiHelper.ShowSilent($"{hoaDon.TenKhachHangText} {hoaDon.GhiChuShipper}");
-                            //    }
-                            //}
+
                         }
                     }
                 });
@@ -158,17 +135,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
             // =========================
             var url = $"/api/{_entityName}";
 
-            // 🟟 RULE ĐẶC BIỆT CHO HÓA ĐƠN
-            if (_entityName.Equals("HoaDon", StringComparison.OrdinalIgnoreCase))
-            {
-                var username = Properties.Settings.Default.TaiKhoan;
 
-                if (!string.IsNullOrWhiteSpace(username) &&
-                    username.Equals("admin", StringComparison.OrdinalIgnoreCase))
-                {
-                    url = "/api/HoaDon/for-admin";
-                }
-            }
 
             // =========================
             // 🟟 CALL API

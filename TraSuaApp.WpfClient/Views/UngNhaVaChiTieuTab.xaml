@@ -74,7 +74,7 @@
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Ngày" />
                 <DataGridTextColumn
-                    Width="*"
+                    Width="Auto"
                     Binding="{Binding Ten}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Tên" />
@@ -84,7 +84,11 @@
                     Binding="{Binding ThanhTien, StringFormat=N0}"
                     ElementStyle="{StaticResource RightTextCellStyle}"
                     Header="Thành tiền" />
-
+                <DataGridCheckBoxColumn
+                    Width="Auto"
+                    Binding="{Binding BillThang}"
+                    ElementStyle="{StaticResource DataGridCheckBoxElementStyle}"
+                    Header="Bill Tháng" />
                 <DataGridTextColumn
                     Width="2*"
                     Binding="{Binding GhiChu}"

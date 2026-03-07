@@ -1,5 +1,22 @@
 ﻿namespace TraSuaApp.Shared.Dtos;
+public class DoanhThuNamItemDto
+{
+    public int Thang { get; set; }
+    public int SoDon { get; set; }
+    public decimal TongTien { get; set; }
+    public decimal ChiTieu { get; set; }
+    public decimal TienBank { get; set; }
+    public decimal TienNo { get; set; }
+    public decimal TongTienMat { get; set; }
 
+    public decimal TaiCho { get; set; }
+    public decimal MuaVe { get; set; }
+    public decimal DiShip { get; set; }
+    public decimal AppShipping { get; set; }
+
+    public decimal ThuongNha { get; set; }
+    public decimal ThuongKhanh { get; set; }
+}
 public class DoanhThuHoaDonDto
 {
     public Guid Id { get; set; }

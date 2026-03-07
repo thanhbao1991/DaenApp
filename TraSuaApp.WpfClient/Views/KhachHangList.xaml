@@ -79,13 +79,11 @@
             MouseDoubleClick="KhachHangDataGrid_MouseDoubleClick">
             <DataGrid.Columns>
                 <DataGridTextColumn
-                    Width="50"
                     Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
 
                 <DataGridTextColumn
-                    Width="Auto"
                     Binding="{Binding Ten}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Tên khách hàng" />
@@ -97,7 +95,6 @@
                     Header="Điện thoại (mặc định)" />
 
                 <DataGridTextColumn
-                    Width="Auto"
                     Binding="{Binding DiaChi}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Địa chỉ (mặc định)" />
@@ -112,7 +109,7 @@
                     Width="Auto"
                     Binding="{Binding DuocNhanVoucher}"
                     ElementStyle="{StaticResource DataGridCheckBoxElementStyle}"
-                    Header="Được nhận voucher" />
+                    Header="Voucher?" />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

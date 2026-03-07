@@ -68,43 +68,36 @@
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
                 <DataGridTextColumn
-                    Width="110"
                     Binding="{Binding Ngay, StringFormat=dd-MM-yyyy}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Ngày" />
-                <DataGridTextColumn
-                    Width="90"
+                <!--<DataGridTextColumn
                     Binding="{Binding NgayGio, StringFormat=HH:mm}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
-                    Header="Giờ" />
+                    Header="Giờ" />-->
                 <DataGridTextColumn
-                    Width="*"
                     Binding="{Binding Ten}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Tên" />
                 <DataGridTextColumn
-                    Width="90"
                     Binding="{Binding SoLuong}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="SL" />
                 <DataGridTextColumn
-                    Width="120"
                     Binding="{Binding DonGia, StringFormat={}{0:N0}}"
                     ElementStyle="{StaticResource RightTextCellStyle}"
                     Header="Đơn giá" />
                 <DataGridTextColumn
                     x:Name="TongTienChiTieuHangNgayTextBlock"
-                    Width="160"
-                    Binding="{Binding ThanhTien, StringFormat={}{0:N0} đ}"
+                    Binding="{Binding ThanhTien, StringFormat={}{0:N0}}"
                     ElementStyle="{StaticResource RightTextCellStyle}"
                     Header="Thành tiền" />
                 <DataGridCheckBoxColumn
-                    Width="Auto"
                     Binding="{Binding BillThang}"
                     ElementStyle="{StaticResource DataGridCheckBoxElementStyle}"
                     Header="Bill Tháng" />
                 <DataGridTextColumn
-                    Width="2*"
+                    Width="*"
                     Binding="{Binding GhiChu}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Ghi chú" />

@@ -23,7 +23,7 @@
                     Margin="8,0,0,0"
                     TextChanged="SearchChiTietHoaDonNoTextBox_TextChanged" />
             </StackPanel>
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <!--<StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                 <Button
                     Click="TimKiemNhanhCongNoButton_Click"
                     Content="Công nợ hôm nay"
@@ -36,7 +36,7 @@
                     Foreground="White"
                     Style="{StaticResource ThemButtonStyle}"
                     Tag="hôm qua" />
-            </StackPanel>
+            </StackPanel>-->
         </DockPanel>
 
         <DataGrid
@@ -55,29 +55,24 @@
 
             <DataGrid.Columns>
                 <DataGridTextColumn
-                    Width="60"
                     Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
                 <DataGridTextColumn
-                    Width="110"
                     Binding="{Binding Ngay, StringFormat=dd-MM-yyyy}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Ngày" />
                 <DataGridTextColumn
-                    Width="90"
                     Binding="{Binding NgayGio, StringFormat=HH:mm}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Giờ" />
                 <DataGridTextColumn
-                    Width="*"
                     Binding="{Binding Ten}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Tên" />
                 <DataGridTextColumn
                     x:Name="TongTienChiTietHoaDonNoTextBlock"
-                    Width="140"
-                    Binding="{Binding SoTienConLai, StringFormat={}{0:N0} đ}"
+                    Binding="{Binding SoTienConLai, StringFormat={}{0:N0}}"
                     ElementStyle="{StaticResource RightTextCellStyle}"
                     Header="Còn lại" />
 
@@ -120,7 +115,7 @@
                                         <TextBlock
                                             Margin="6,0,0,0"
                                             Foreground="{StaticResource PrimaryBrush}"
-                                            Text="Bank" />
+                                            Text="Chuyển khoản" />
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
@@ -130,13 +125,13 @@
 
 
                 <DataGridTextColumn
-                    Width="2*"
+                    Width="*"
                     Binding="{Binding GhiChu}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Ghi chú" />
 
                 <!--  Cột nút Xoá  -->
-                <DataGridTemplateColumn Width="80">
+                <DataGridTemplateColumn Width="Auto">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Button

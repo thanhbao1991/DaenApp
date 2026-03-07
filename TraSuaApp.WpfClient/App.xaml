@@ -536,16 +536,21 @@
 
         <!--  DataGrid cell text styles  -->
         <Style x:Key="CenterTextCellStyle" TargetType="TextBlock">
+            <Setter Property="Width" Value="Auto" />
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Padding" Value="16,8,16,8" />
         </Style>
         <Style x:Key="LeftTextCellStyle" TargetType="TextBlock">
+            <Setter Property="Width" Value="Auto" />
+
             <Setter Property="HorizontalAlignment" Value="Left" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Padding" Value="16,8,16,8" />
         </Style>
         <Style x:Key="RightTextCellStyle" TargetType="TextBlock">
+            <Setter Property="Width" Value="Auto" />
+
             <Setter Property="HorizontalAlignment" Value="Right" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Padding" Value="16,8,16,8" />

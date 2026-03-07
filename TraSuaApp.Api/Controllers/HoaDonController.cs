@@ -47,12 +47,6 @@ public class HoaDonController : BaseApiController
         return Result<List<HoaDonDto>>.Success(list);
     }
 
-    [HttpGet("for-admin")]
-    public async Task<ActionResult<Result<List<HoaDonDto>>>> GetAllAdmin()
-    {
-        var list = await _service.GetAllAdminAsync();
-        return Result<List<HoaDonDto>>.Success(list);
-    }
     [HttpGet("{id}")]
     public async Task<ActionResult<Result<HoaDonDto>>> GetById(Guid id)
     {

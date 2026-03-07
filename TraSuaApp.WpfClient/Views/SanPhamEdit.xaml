@@ -101,12 +101,13 @@
                                             Text="{Binding GiaBan, StringFormat=N0, UpdateSourceTrigger=PropertyChanged}" />
 
                                         <!--  Mặc định  -->
+                                        <!--
                                         <CheckBox
                                             Grid.Column="2"
                                             VerticalAlignment="Center"
                                             Click="MacDinhCheckBox_Click"
                                             Content=" Mặc định"
-                                            IsChecked="{Binding MacDinh}" />
+                                            IsChecked="{Binding MacDinh}" />-->
 
                                         <!--  Xóa  -->
                                         <Button
