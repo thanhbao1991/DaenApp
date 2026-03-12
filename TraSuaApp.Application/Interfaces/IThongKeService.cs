@@ -4,7 +4,14 @@ namespace TraSuaApp.Applicationn.Interfaces
 {
     public interface IThongKeService
     {
-        Task<ThongKeNgayDto> TinhNgayAsync(DateTime ngay);
-        Task<ThongKeNgayDto> TinhNgay_AnShipKhanhAsync(DateTime ngay);
+        Task<ThongKeChiTieuDto> TinhChiTieuNgayAsync(DateTime ngay);
+
+        Task<ThongKeCongNoDto> TinhCongNoNgayAsync(DateTime ngay);
+
+        Task<ThongKeThanhToanDto> TinhThanhToanNgayAsync(DateTime ngay);
+
+        Task<ThongKeDoanhThuNgayDto> TinhDoanhThuNgayAsync(DateTime ngay);
+
     }
 }
+

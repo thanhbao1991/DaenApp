@@ -11,11 +11,12 @@ public class DoanhThuService : IDoanhThuService
 
     public async Task<List<DoanhThuNamItemDto>> GetDoanhThuNamAsync(int nam)
     {
+        return null;
         var yearStart = new DateTime(nam, 1, 1);
         var yearEnd = yearStart.AddYears(1);
 
         var hoaDons = await (
-            from h in _context.vHoaDonPaymentMasks.AsNoTracking()
+            from h in _context.HoaDons.AsNoTracking()
 
 
             where
@@ -23,8 +24,7 @@ public class DoanhThuService : IDoanhThuService
                   && h.NgayGio < yearEnd
                   && !(
 
-                   h.TongSoLanNhanVoucher >= 10 &&
-    h.PaymentMethodMask == 1 &&
+
     (h.PhanLoai == "Ship" || h.PhanLoai == "Mv" || h.PhanLoai == "Tại Chỗ")
 
                   )
@@ -74,17 +74,17 @@ public class DoanhThuService : IDoanhThuService
     }
     public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
     {
+        return null;
         var monthStart = new DateTime(nam, thang, 1);
         var monthEnd = monthStart.AddMonths(1);
 
-        var hoaDons = await _context.vHoaDonPaymentMasks
+        var hoaDons = await _context.HoaDons
             .AsNoTracking()
             .Where(h =>
                 h.NgayGio >= monthStart &&
                 h.NgayGio < monthEnd &&
                 !(
-   h.TongSoLanNhanVoucher >= 10 &&
-    h.PaymentMethodMask == 1 &&
+
     (h.PhanLoai == "Ship" || h.PhanLoai == "Mv" || h.PhanLoai == "Tại Chỗ")
 
                 )
@@ -389,7 +389,7 @@ public class DoanhThuService : IDoanhThuService
                 ThongTinHoaDon = h.PhanLoai,
                 TenKhachHangText = h.TenKhachHangText,
                 TongTien = h.ThanhTien,
-                ConLai = h.ConLai
+                // -1111        ConLai = h.ConLai
             })
             .Where(h => h.ConLai > 0)
             .OrderByDescending(h => h.NgayHoaDon)
@@ -436,9 +436,8 @@ public class DoanhThuService : IDoanhThuService
                 TenBan = h.TenBan,
                 NgayGio = h.NgayGio,
                 NgayShip = h.NgayShip,
-                BaoDon = h.BaoDon,
                 ThanhTien = h.ThanhTien,
-                ConLai = h.ConLai
+                // -1111      ConLai = h.ConLai
             })
             .ToListAsync();
 

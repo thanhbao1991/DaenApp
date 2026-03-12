@@ -7,6 +7,7 @@
 
         public static readonly Guid ChuyenKhoanId = Guid.Parse("2CF9A88F-3BC0-4D4B-940D-F8FFA4AFFA02");
         public static readonly Guid TienMatId = Guid.Parse("0121FC04-0469-4908-8B9A-7002F860FB5C");
+        public static readonly Guid VoucherIdMuaHo = Guid.Parse("5285C39D-B68B-4CF4-AD24-FA7A3CDE8732");
 
         public static string? TaiCho = "Tại chỗ";
         public static string? MuaVe = "MV";

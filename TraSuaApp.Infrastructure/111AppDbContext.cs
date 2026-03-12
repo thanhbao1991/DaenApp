@@ -17,7 +17,6 @@ public partial class AppDbContext : DbContext, IAppDbContext
         => new EfRepository<T>(this);
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-    public DbSet<HoaDonPaymentMaskView> vHoaDonPaymentMasks { get; set; }
     public DbSet<HoaDonNoDto> HoaDonNos { get; set; }
 
     public virtual DbSet<NguyenLieuTransaction> NguyenLieuTransactions { get; set; }

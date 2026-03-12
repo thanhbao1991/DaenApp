@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <None Remove="chromedriver.exe" />
+    <None Remove="Images\khanh.jpg" />
+    <None Remove="Images\nha.jpg" />
     <None Remove="Images\viettin007.jpg" />
     <None Remove="Resources\chuyen-khoan-sau.mp3" />
     <None Remove="Resources\chuyen-khoan.mp3" />
@@ -77,6 +79,18 @@
     <Content Include="Resources\tien-mat.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\nha.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\khanh.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
   <ItemGroup>

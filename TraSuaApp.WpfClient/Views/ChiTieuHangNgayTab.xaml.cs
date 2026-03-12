@@ -93,7 +93,7 @@ namespace TraSuaApp.WpfClient.Views
             ChiTieuHangNgayDataGrid.ItemsSource = sourceList;
 
             tongTien = sourceList.Sum(x => x.ThanhTien);
-            TongTienChiTieuHangNgayTextBlock.Header = $"{tongTien / 1000:N0}k";
+            TongTienChiTieuHangNgayTextBlock.Header = $"{tongTien :N0}";
         }
 
         private void SearchChiTieuHangNgayTextBox_TextChanged(object sender, TextChangedEventArgs e)

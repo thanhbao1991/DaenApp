@@ -31,34 +31,41 @@
                 Orientation="Horizontal">
                 <Button
                     Click="TimKiemNhanhThanhToanButton_Click"
-                    Content="Tiền mặt hôm nay"
-                    Foreground="White"
-                    Style="{StaticResource ThemButtonStyle}"
-                    Tag="thanh toán tiền mặt trong ngày" />
-                <Button
-                    Click="TimKiemNhanhThanhToanButton_Click"
-                    Content="Chuyển khoản hôm nay"
-                    Foreground="White"
-                    Style="{StaticResource SuaButtonStyle}"
-                    Tag="Chuyển khoản trong ngày" />
-                <Button
-                    Click="TimKiemNhanhThanhToanButton_Click"
-                    Content="Trả nợ hôm nay"
+                    Content="Tiền mặt Nhã"
                     Foreground="White"
                     Style="{StaticResource XoaButtonStyle}"
-                    Tag="qua ngày" />
+                    Tag="tiền mặt thanh toán thanh toán" />
+
                 <Button
                     Click="TimKiemNhanhThanhToanButton_Click"
-                    Content="Tiền mặt Shipper"
-                    Foreground="White"
-                    Style="{StaticResource TaiLaiButtonStyle}"
-                    Tag="shipper tiền mặt trong ngày" />
-                <Button
-                    Click="TimKiemNhanhThanhToanButton_Click"
-                    Content="Trả nợ Shipper"
+                    Content="Trả nợ Nhã"
                     Foreground="White"
                     Style="{StaticResource ThemButtonStyle}"
-                    Tag="shipper tiền mặt qua ngày" />
+                    Tag="tiền mặt trả nợ qua ngày thanh toán" />
+                <Button
+                    Click="TimKiemNhanhThanhToanButton_Click"
+                    Content="Chuyển khoản"
+                    Foreground="White"
+                    Style="{StaticResource XoaButtonStyle}"
+                    Tag="chuyển khoản thanh toán thanh toán" />
+                <Button
+                    Click="TimKiemNhanhThanhToanButton_Click"
+                    Content="Chuyển khoản nợ"
+                    Foreground="White"
+                    Style="{StaticResource ThemButtonStyle}"
+                    Tag="chuyển khoản trả nợ qua ngày" />
+                <Button
+                    Click="TimKiemNhanhThanhToanButton_Click"
+                    Content="Tiền mặt Khánh"
+                    Foreground="White"
+                    Style="{StaticResource TaiLaiButtonStyle}"
+                    Tag="tiền mặt trong ngày shipper" />
+                <Button
+                    Click="TimKiemNhanhThanhToanButton_Click"
+                    Content="Trả nợ Khánh"
+                    Foreground="White"
+                    Style="{StaticResource ThemButtonStyle}"
+                    Tag="tiền mặt trả nợ qua ngày shipper" />
             </StackPanel>
 
         </DockPanel>
@@ -81,11 +88,11 @@
                     Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
-                <!--<DataGridTextColumn
+                <DataGridTextColumn
                     Width="Auto"
-                    Binding="{Binding Ngay, StringFormat=dd-MM-yyyy}"
+                    Binding="{Binding NgayGio, StringFormat=dd-MM-yyyy}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
-                    Header="Ngày" />-->
+                    Header="Ngày" />
                 <DataGridTextColumn
                     Width="Auto"
                     Binding="{Binding NgayGio, StringFormat=HH:mm}"
@@ -135,8 +142,8 @@
                     Width="Auto"
                     Binding="{Binding TenPhuongThucThanhToan}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
-                    Header="Phương thức" />-->
-                <!--<DataGridTextColumn
+                    Header="Phương thức" />
+                <DataGridTextColumn
                     Width="Auto"
                     Binding="{Binding LoaiThanhToan}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"

@@ -87,10 +87,7 @@ namespace TraSuaApp.WpfClient.Views
             {
                 Today = DateTime.Today;
                 UpdateCongViecBadge();
-
                 AppProviders.CongViecNoiBos.ItemsChanged += (_, __) => UpdateCongViecBadge();
-
-                await BindAllProviders();
 
                 await AppProviders.ReloadAllAsync();
 
@@ -123,31 +120,31 @@ namespace TraSuaApp.WpfClient.Views
         }
         private async Task BindAllProviders()
         {
-            RegisterProvider("HoaDons",
-                () => AppProviders.HoaDons.OnChanged += _providerHandlers["HoaDons"],
-                () => HoaDonTabControl?.ReloadHoaDonUI());
+            //RegisterProvider("HoaDons",
+            //    () => AppProviders.HoaDons.OnChanged += _providerHandlers["HoaDons"],
+            //    () => HoaDonTabControl?.ReloadUI());
 
-            RegisterProvider("CongViecNoiBos",
-                () => AppProviders.CongViecNoiBos.OnChanged += _providerHandlers["CongViecNoiBos"],
-                UpdateCongViecBadge);
+            //RegisterProvider("CongViecNoiBos",
+            //    () => AppProviders.CongViecNoiBos.OnChanged += _providerHandlers["CongViecNoiBos"],
+            //    UpdateCongViecBadge);
 
 
 
-            RegisterProvider("ChiTietHoaDonThanhToans",
-                () => AppProviders.ChiTietHoaDonThanhToans.OnChanged += _providerHandlers["ChiTietHoaDonThanhToans"],
-                () =>
-                {
-                    ChiTietHoaDonThanhToanTabControl.Today = Today;
-                    ChiTietHoaDonThanhToanTabControl.ReloadUI();
-                });
+            //RegisterProvider("ChiTietHoaDonThanhToans",
+            //    () => AppProviders.ChiTietHoaDonThanhToans.OnChanged += _providerHandlers["ChiTietHoaDonThanhToans"],
+            //    () =>
+            //    {
+            //        ChiTietHoaDonThanhToanTabControl.Today = Today;
+            //        ChiTietHoaDonThanhToanTabControl.ReloadUI();
+            //    });
 
-            RegisterProvider("ChiTieuHangNgays",
-                () => AppProviders.ChiTieuHangNgays.OnChanged += _providerHandlers["ChiTieuHangNgays"],
-                () =>
-                {
-                    ChiTieuHangNgayTabControl.Today = Today;
-                    ChiTieuHangNgayTabControl.ReloadUI();
-                });
+            //RegisterProvider("ChiTieuHangNgays",
+            //    () => AppProviders.ChiTieuHangNgays.OnChanged += _providerHandlers["ChiTieuHangNgays"],
+            //    () =>
+            //    {
+            //        ChiTieuHangNgayTabControl.Today = Today;
+            //        ChiTieuHangNgayTabControl.ReloadUI();
+            //    });
 
             await Task.CompletedTask;
         }
@@ -401,7 +398,7 @@ namespace TraSuaApp.WpfClient.Views
                     await ExecuteWithFreshnessAsync(
                         key: PROV_HOADONS,
                         reloadAsync: AppProviders.HoaDons.ReloadAsync,
-                        reloadUi: () => HoaDonTabControl?.ReloadHoaDonUI(),
+                        reloadUi: () => HoaDonTabControl?.ReloadUI(),
                         friendlyNameForToast: "HĐ",
                         freshnessOverride: TimeSpan.FromSeconds(20) // nhạy hơn cho Hoá đơn
                     );
@@ -469,7 +466,7 @@ namespace TraSuaApp.WpfClient.Views
                 //    if (t.ToolTip.ToString() == "-")
                 //        t.Visibility = Visibility.Visible;
                 IsThanhToanHidden = false;
-                HoaDonTabControl.ApplyHoaDonFilter();
+                // HoaDonTabControl.ApplyFilter();
                 e.Handled = true;
                 return;
             }
@@ -482,8 +479,8 @@ namespace TraSuaApp.WpfClient.Views
                 //    if (t.ToolTip.ToString() == "-")
                 //        t.Visibility = Visibility.Collapsed;
                 IsThanhToanHidden = true;
-                HoaDonTabControl.ApplyHoaDonFilter();
-                e.Handled = true;
+                //         HoaDonTabControl.ApplyFilter();
+                //  e.Handled = true;
                 return;
             }
             // Nếu đang gõ trong TextBox: cho nhập bình thường, chỉ giữ hotkey

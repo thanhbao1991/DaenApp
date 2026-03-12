@@ -1,4 +1,235 @@
-﻿using System.IO;
+﻿//using System.IO;
+//using System.Net;
+//using System.Net.Http;
+//using System.Text.RegularExpressions;
+//using System.Windows;
+//using System.Windows.Media;
+//using System.Windows.Threading;
+
+//public static class TTSHelper
+//{
+//    private static readonly Queue<string> _queue = new();
+//    private static readonly object _lock = new();
+
+//    private static bool _isPlaying = false;
+//    private static MediaPlayer? _currentPlayer;
+
+//    private static Dispatcher UiDispatcher
+//        => Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+
+//    private static string NormalizeTenSanPham(string input)
+//    {
+//        if (string.IsNullOrWhiteSpace(input))
+//            return input ?? string.Empty;
+
+//        // thay ký tự đặc biệt trước
+//        input = input.Replace("#", ",");
+//        input = input.Replace("+", " thêm ");
+
+//        var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+//    {
+//        { "Cf", "Cà Phê" },
+//        { "Cafe", "Cà Phê" },
+//        { "TCĐĐ", "Trân Châu Đường Đen" },
+//        { "TCDĐ", "Trân Châu Đường Đen" },
+//        { "TCT", "Trân Châu Trắng" },
+//        { "TS", "Trà Sữa" },
+//        { "S/MV", "" },
+//        { "Olong", "Ô Long" },
+//        { "Ko", "Không" }
+//    };
+
+//        foreach (var kv in replacements)
+//        {
+//            input = Regex.Replace(
+//                input,
+//                $@"\b{Regex.Escape(kv.Key)}\b",
+//                kv.Value,
+//                RegexOptions.IgnoreCase
+//            );
+//        }
+
+//        // chuẩn hóa khoảng trắng
+//        input = Regex.Replace(input, @"\s+", " ");
+
+//        // chuẩn hóa dấu phẩy
+//        input = Regex.Replace(input, @"\s*,\s*", ", ");
+
+//        return input.Trim();
+//    }
+
+//    public static async Task DownloadAndPlayGoogleTTSAsync(string text)
+//    {
+//        if (string.IsNullOrWhiteSpace(text)) return;
+//        text = NormalizeTenSanPham(text);
+
+//        string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Audio-Files");
+//        Directory.CreateDirectory(folder);
+
+//        string safeFileName = ReplaceInvalidFileNameChars(text);
+//        if (safeFileName.Length > 250) // tránh tên file quá dài
+//            safeFileName = safeFileName[..250];
+
+//        string filePath = Path.Combine(folder, safeFileName + ".mp3");
+
+//        if (!File.Exists(filePath))
+//        {
+//            string encodedText = WebUtility.UrlEncode(text);
+//            string url = $"https://translate.google.com/translate_tts?ie=UTF-8&q={encodedText}&tl=vi&client=tw-ob";
+
+//            try
+//            {
+//                using var client = new HttpClient();
+//                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+//                byte[] audioBytes = await client.GetByteArrayAsync(url);
+//                await File.WriteAllBytesAsync(filePath, audioBytes);
+//            }
+//            catch (Exception ex)
+//            {
+//                MessageBox.Show("Error downloading audio:\n" + ex.Message,
+//                                "Download Failed",
+//                                MessageBoxButton.OK,
+//                                MessageBoxImage.Error);
+//                return;
+//            }
+//        }
+
+//        bool shouldStart = false;
+
+//        // Đưa file vào queue, quyết định có cần start phát không
+//        lock (_lock)
+//        {
+//            _queue.Enqueue(filePath);
+//            if (!_isPlaying)
+//            {
+//                _isPlaying = true;
+//                shouldStart = true;
+//            }
+//        }
+
+//        if (shouldStart)
+//        {
+//            // Bắt đầu phát file đầu tiên trên UI thread
+//            StartNextOnUi();
+//        }
+//    }
+
+//    private static void StartNextOnUi()
+//    {
+//        UiDispatcher.BeginInvoke((Action)PlayNextCore, DispatcherPriority.Background);
+//    }
+
+//    private static void PlayNextCore()
+//    {
+//        string? nextFile = null;
+
+//        lock (_lock)
+//        {
+//            if (_queue.Count == 0)
+//            {
+//                _isPlaying = false;
+//                return;
+//            }
+
+//            nextFile = _queue.Dequeue();
+//        }
+
+//        try
+//        {
+//            // Dọn player cũ nếu có
+//            _currentPlayer?.Stop();
+//            _currentPlayer?.Close();
+//        }
+//        catch { }
+
+//        // Tạo player mới cho file này
+//        var player = new MediaPlayer();
+//        _currentPlayer = player;
+
+//        player.Volume = 1.0;
+
+//        player.MediaEnded += (s, e) =>
+//        {
+//            try
+//            {
+//                player.Stop();
+//                player.Close();
+//            }
+//            catch { }
+
+//            StartNextOnUi();
+//        };
+
+//        player.MediaFailed += (s, e) =>
+//        {
+//            try
+//            {
+//                player.Stop();
+//                player.Close();
+//            }
+//            catch { }
+
+//            StartNextOnUi();
+//        };
+
+//        try
+//        {
+//            player.Open(new Uri(nextFile!, UriKind.Absolute));
+//            player.Position = TimeSpan.Zero;
+//            player.Play();
+//        }
+//        catch (Exception ex)
+//        {
+//            System.Diagnostics.Debug.WriteLine("TTS play error: " + ex.Message);
+//            // Nếu lỗi thì thử phát file tiếp theo
+//            StartNextOnUi();
+//        }
+//    }
+
+//    public static void Stop()
+//    {
+//        lock (_lock)
+//        {
+//            _queue.Clear();
+//            _isPlaying = false;
+//        }
+
+//        UiDispatcher.BeginInvoke((Action)(() =>
+//        {
+//            try
+//            {
+//                _currentPlayer?.Stop();
+//                _currentPlayer?.Close();
+//                _currentPlayer = null;
+//            }
+//            catch { }
+//        }));
+//    }
+
+//    private static string ReplaceInvalidFileNameChars(string input)
+//    {
+//        foreach (char c in Path.GetInvalidFileNameChars())
+//            input = input.Replace(c, ' ');
+//        return input.Trim();
+//    }
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -8,25 +239,19 @@ using System.Windows.Threading;
 
 public static class TTSHelper
 {
-    // Hàng đợi các file cần phát
     private static readonly Queue<string> _queue = new();
     private static readonly object _lock = new();
 
-    // Cờ đang phát và player hiện tại
-    private static bool _isPlaying = false;
+    private static readonly HttpClient _http = new();
+
+    private static bool _isPlaying;
     private static MediaPlayer? _currentPlayer;
 
-    // Lấy Dispatcher UI (của WPF App)
-    private static Dispatcher UiDispatcher
-        => Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+    private static Dispatcher UiDispatcher =>
+        Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
 
-    // --- NORMALIZE TÊN SẢN PHẨM ---------------------------------
-    private static string NormalizeTenSanPham(string input)
-    {
-        if (string.IsNullOrWhiteSpace(input))
-            return input ?? string.Empty;
-
-        var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, string> _replacements =
+        new(StringComparer.OrdinalIgnoreCase)
         {
             { "Cf", "Cà Phê" },
             { "Cafe", "Cà Phê" },
@@ -36,94 +261,124 @@ public static class TTSHelper
             { "TS", "Trà Sữa" },
             { "S/MV", "" },
             { "Olong", "Ô Long" },
-            { "Ko", "Không" },
-            { "#", "," },
-
+            { "Ko", "Không" }
         };
 
-        foreach (var kv in replacements)
+    // ================= NORMALIZE =================
+    private static string NormalizeTenSanPham(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return string.Empty;
+
+        input = input
+            .Replace("#", ",")
+            .Replace("+", " thêm ");
+
+        foreach (var kv in _replacements)
         {
-            // Thay thế theo dạng từ nguyên vẹn, không phân biệt hoa/thường
             input = Regex.Replace(
                 input,
                 $@"\b{Regex.Escape(kv.Key)}\b",
                 kv.Value,
-                RegexOptions.IgnoreCase
-            );
+                RegexOptions.IgnoreCase);
         }
 
-        return input;
+        input = Regex.Replace(input, @"\s+", " ");
+        input = Regex.Replace(input, @"\s*,\s*", ", ");
+
+        return input.Trim();
     }
 
-    // Alias tiện gọi: TTSHelper.Speak("xin chào");
-    public static Task Speak(string text) => DownloadAndPlayGoogleTTSAsync(text);
+    // ================= PUBLIC =================
+    public static Task Speak(string text) =>
+        DownloadAndPlayGoogleTTSAsync(text);
 
-    // --- DOWNLOAD + ENQUEUE -------------------------------------
     public static async Task DownloadAndPlayGoogleTTSAsync(string text)
     {
-        if (string.IsNullOrWhiteSpace(text)) return;
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
         text = NormalizeTenSanPham(text);
 
-        string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Audio-Files");
+        string folder = Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory,
+            "Audio-Files");
+
         Directory.CreateDirectory(folder);
 
-        string safeFileName = ReplaceInvalidFileNameChars(text);
-        if (safeFileName.Length > 255) // tránh tên file quá dài
-            safeFileName = safeFileName[..255];
+        string safeName = ReplaceInvalidFileNameChars(text);
 
-        string filePath = Path.Combine(folder, safeFileName + ".mp3");
+        if (safeName.Length > 250)
+            safeName = safeName[..250];
+
+        string filePath = Path.Combine(folder, safeName + ".mp3");
 
         if (!File.Exists(filePath))
         {
-            string encodedText = WebUtility.UrlEncode(text);
-            string url = $"https://translate.google.com/translate_tts?ie=UTF-8&q={encodedText}&tl=vi&client=tw-ob";
-
             try
             {
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
-                byte[] audioBytes = await client.GetByteArrayAsync(url);
-                await File.WriteAllBytesAsync(filePath, audioBytes);
+                await DownloadAudio(text, filePath);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error downloading audio:\n" + ex.Message,
-                                "Download Failed",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error);
+                MessageBox.Show(
+                    "Error downloading audio:\n" + ex.Message,
+                    "Download Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
                 return;
             }
         }
 
-        bool shouldStart = false;
+        Enqueue(filePath);
+    }
 
-        // Đưa file vào queue, quyết định có cần start phát không
+    // ================= DOWNLOAD =================
+    private static async Task DownloadAudio(string text, string filePath)
+    {
+        string encoded = WebUtility.UrlEncode(text);
+
+        string url =
+            $"https://translate.google.com/translate_tts?ie=UTF-8&q={encoded}&tl=vi&client=tw-ob";
+
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
+
+        byte[] audio = await _http.GetByteArrayAsync(url);
+
+        await File.WriteAllBytesAsync(filePath, audio);
+    }
+
+    // ================= QUEUE =================
+    private static void Enqueue(string file)
+    {
+        bool start = false;
+
         lock (_lock)
         {
-            _queue.Enqueue(filePath);
+            _queue.Enqueue(file);
+
             if (!_isPlaying)
             {
                 _isPlaying = true;
-                shouldStart = true;
+                start = true;
             }
         }
 
-        if (shouldStart)
-        {
-            // Bắt đầu phát file đầu tiên trên UI thread
+        if (start)
             StartNextOnUi();
-        }
     }
 
-    // --- PLAYBACK PIPELINE --------------------------------------
     private static void StartNextOnUi()
     {
-        UiDispatcher.BeginInvoke((Action)PlayNextCore, DispatcherPriority.Background);
+        UiDispatcher.BeginInvoke(
+            (Action)PlayNextCore,
+            DispatcherPriority.Background);
     }
 
+    // ================= PLAYER =================
     private static void PlayNextCore()
     {
-        string? nextFile = null;
+        string? file;
 
         lock (_lock)
         {
@@ -133,62 +388,49 @@ public static class TTSHelper
                 return;
             }
 
-            nextFile = _queue.Dequeue();
+            file = _queue.Dequeue();
         }
 
         try
         {
-            // Dọn player cũ nếu có
             _currentPlayer?.Stop();
             _currentPlayer?.Close();
         }
         catch { }
 
-        // Tạo player mới cho file này
         var player = new MediaPlayer();
         _currentPlayer = player;
 
         player.Volume = 1.0;
 
-        player.MediaEnded += (s, e) =>
-        {
-            try
-            {
-                player.Stop();
-                player.Close();
-            }
-            catch { }
-
-            StartNextOnUi();
-        };
-
-        player.MediaFailed += (s, e) =>
-        {
-            try
-            {
-                player.Stop();
-                player.Close();
-            }
-            catch { }
-
-            StartNextOnUi();
-        };
+        player.MediaEnded += (_, _) => FinishPlayer(player);
+        player.MediaFailed += (_, _) => FinishPlayer(player);
 
         try
         {
-            player.Open(new Uri(nextFile!, UriKind.Absolute));
+            player.Open(new Uri(file!, UriKind.Absolute));
             player.Position = TimeSpan.Zero;
             player.Play();
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine("TTS play error: " + ex.Message);
-            // Nếu lỗi thì thử phát file tiếp theo
             StartNextOnUi();
         }
     }
 
-    // --- STOP ----------------------------------------------------
+    private static void FinishPlayer(MediaPlayer player)
+    {
+        try
+        {
+            player.Stop();
+            player.Close();
+        }
+        catch { }
+
+        StartNextOnUi();
+    }
+
+    // ================= STOP =================
     public static void Stop()
     {
         lock (_lock)
@@ -197,7 +439,7 @@ public static class TTSHelper
             _isPlaying = false;
         }
 
-        UiDispatcher.BeginInvoke((Action)(() =>
+        UiDispatcher.BeginInvoke(() =>
         {
             try
             {
@@ -206,14 +448,15 @@ public static class TTSHelper
                 _currentPlayer = null;
             }
             catch { }
-        }));
+        });
     }
 
-    // --- UTILS ---------------------------------------------------
+    // ================= UTILS =================
     private static string ReplaceInvalidFileNameChars(string input)
     {
         foreach (char c in Path.GetInvalidFileNameChars())
             input = input.Replace(c, ' ');
+
         return input.Trim();
     }
 }

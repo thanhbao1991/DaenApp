@@ -12,8 +12,8 @@ namespace TraSuaAppWeb.Pages
     {
         private readonly IHttpClientFactory _clientFactory;
 
-        public List<ChiTietHoaDonNoDto> Items { get; set; } = new();
-        public decimal TotalConLai => Items.Sum(x => x.SoTienConLai);
+        public List<HoaDonNoDto> Items { get; set; } = new();
+        public decimal TotalConLai => Items.Sum(x => x.ConLai);
 
         public ChiTietHoaDonNoTabModel(IHttpClientFactory factory)
         {
@@ -24,7 +24,7 @@ namespace TraSuaAppWeb.Pages
         public async Task OnGetAsync()
         {
             var client = _clientFactory.CreateClient("Api");
-            var res = await client.GetFromJsonAsync<Result<List<ChiTietHoaDonNoDto>>>("/api/ChiTietHoaDonNo");
+            var res = await client.GetFromJsonAsync<Result<List<HoaDonNoDto>>>("/api/ChiTietHoaDonNo");
             if (res?.IsSuccess == true && res.Data != null)
                 Items = res.Data!;
         }

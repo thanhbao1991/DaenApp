@@ -234,6 +234,7 @@ public class BaseDataProvider<T> where T : DtoBase, new()
         return null;
     }
 
+
     private void OnSignalReceived(T item)
     {
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
@@ -241,15 +242,8 @@ public class BaseDataProvider<T> where T : DtoBase, new()
             var existing = Items.FirstOrDefault(x => x.Id == item.Id);
             if (existing != null)
             {
-                if (existing is HoaDonDto hoaDon && item is HoaDonDto newHoaDon)
-                {
-                    hoaDon.CopyFrom(newHoaDon); // giữ nguyên reference
-                }
-                else
-                {
-                    var index = Items.IndexOf(existing);
-                    Items[index] = item;
-                }
+                var index = Items.IndexOf(existing);
+                Items[index] = item;
             }
             else
             {
@@ -259,7 +253,6 @@ public class BaseDataProvider<T> where T : DtoBase, new()
             OnChanged?.Invoke();
         });
     }
-
     // ========== Fallback khi mất kết nối (giữ nguyên) ==========
     private void StartFallbackTimer()
     {

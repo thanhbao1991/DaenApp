@@ -120,14 +120,14 @@
                     foreach (var item in Model.Items)
                     {
                         <tr data-id="@item.Id"
-                            data-remaining="@item.SoTienConLai"
-                            data-name="@item.Ten"
+                            data-remaining="@item.ConLai"
+                            data-name="@item.TenKhachHangText"
                             data-note="@item.GhiChu">
                             <td class="text-center">@stt</td>
-                            <td class="text-center">@item.Ngay.ToString("dd-MM-yyyy")</td>
-                            <td class="text-center">@item.NgayGio.ToString("HH:mm")</td>
-                            <td>@item.Ten</td>
-                            <td class="text-end fw-bold text-danger">@item.SoTienConLai.ToString("N0")</td>
+                            <td class="text-center">@item.NgayGio.Value.ToString("dd-MM-yyyy")</td>
+                            <td class="text-center">@item.NgayGio.Value.ToString("HH:mm")</td>
+                            <td>@item.TenKhachHangText</td>
+                            <td class="text-end fw-bold text-danger">@item.ConLai.ToString("N0")</td>
                             <td>@item.GhiChu</td>
                             <td class="text-center">
                                 <button class="btn btn-sm btn-success me-1 pay-btn"
@@ -156,19 +156,19 @@
             {
                 <div class="debt-card"
                      data-id="@item.Id"
-                     data-remaining="@item.SoTienConLai"
-                     data-name="@item.Ten"
+                     data-remaining="@item.ConLai"
+                     data-name="@item.TenKhachHangText"
                      data-note="@item.GhiChu">
                     <div class="title-line">
-                        <div class="name">@item.Ten</div>
+                        <div class="name">@item.TenKhachHangText</div>
                         <div class="meta">
-                            @item.Ngay.ToString("dd-MM-yyyy") • @item.NgayGio.ToString("HH:mm")
+                            @item.NgayGio.Value.ToString("dd-MM-yyyy") • @item.NgayGio.Value.ToString("HH:mm")
                         </div>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="meta">Còn lại</div>
-                        <div class="amount">@item.SoTienConLai.ToString("N0") đ</div>
+                        <div class="amount">@item.ConLai.ToString("N0") đ</div>
                     </div>
 
                     @if (!string.IsNullOrWhiteSpace(item.GhiChu))

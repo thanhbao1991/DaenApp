@@ -5,6 +5,7 @@ namespace TraSuaApp.Applicationn.Interfaces;
 
 public interface IChiTietHoaDonThanhToanService
 {
+    Task<Result<bool>> DeleteByHoaDonAsync(Guid hoaDonId);
     Task<List<ChiTietHoaDonThanhToanDto>> GetAllAsync();
     Task<ChiTietHoaDonThanhToanDto?> GetByIdAsync(Guid id);
     Task<Result<ChiTietHoaDonThanhToanDto>> CreateAsync(ChiTietHoaDonThanhToanDto dto);

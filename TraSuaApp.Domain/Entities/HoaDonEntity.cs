@@ -4,14 +4,10 @@ namespace TraSuaApp.Domain.Entities;
 
 public partial class HoaDon
 {
-    public decimal ConLai { get; set; }
-    public DateTime? NgayHen { get; set; }
+    public DateTime? NgayNo { get; set; }
+
     public Guid Id { get; set; }
     [DefaultValue(false)]
-    public bool UuTien { get; set; }
-    [DefaultValue(false)]
-    public bool BaoDon { get; set; }
-    public bool HasDebt { get; set; }
 
     public DateTime? NgayShip { get; set; }
     public DateTime? NgayRa { get; set; }
@@ -48,7 +44,6 @@ public partial class HoaDon
 
     public string TenBan { get; set; } = null!;
 
-    public int OldId { get; set; }
 
     public string? PhanLoai { get; set; }
 

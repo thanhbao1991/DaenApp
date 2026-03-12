@@ -1,8 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.Views
@@ -12,204 +10,240 @@ namespace TraSuaApp.WpfClient.Views
         private readonly ThongKeApi _api = new ThongKeApi();
         private DateTime _currentDate = DateTime.Today;
 
+        public decimal TienMatNha { get; private set; }
+        public decimal ChiTieuNgay { get; private set; }
+
         public ThongKeTab()
         {
             InitializeComponent();
             _ = LoadAsync(_currentDate);
         }
 
+        // navigation
         private async void PrevButton_Click(object sender, RoutedEventArgs e)
         {
             _currentDate = _currentDate.AddDays(-1);
-            await LoadAsync(_currentDate);
+            _ = LoadAsync(_currentDate);
         }
 
         private async void NextButton_Click(object sender, RoutedEventArgs e)
         {
             _currentDate = _currentDate.AddDays(1);
-            await LoadAsync(_currentDate);
+            _ = LoadAsync(_currentDate);
         }
 
         public async void ReloadToday()
         {
             _currentDate = DateTime.Today;
-            await LoadAsync(_currentDate);
+            _ = LoadAsync(_currentDate);
         }
 
-        private async System.Threading.Tasks.Task LoadAsync(DateTime date)
+        // main loader (keeps your original signature)
+        private async Task LoadAsync(DateTime date)
         {
-            DateTextBlock.Text = date.ToString("dd/MM/yyyy");
-            var username = Properties.Settings.Default.TaiKhoan;
+            try
+            {
+                DateTextBlock.Text = date.ToString("dd/MM/yyyy");
 
-            Result<ThongKeNgayDto>? result;
+                // placeholders while loading
+                TongChiTieuTextBlock.Text = "?";
+                TongCongNoTextBlock.Text = "?";
+                TongThanhToanTextBlock.Text = "?";
+                TongDoanhThuTextBlock.Text = "?";
 
-            //if (!string.IsNullOrWhiteSpace(username) &&
-            //    username.Equals("admin", StringComparison.OrdinalIgnoreCase))
-            //{
-            //    // 🟟 admin → số sạch (ẩn ship Khánh)
-            //    result = await _api.GetByDate_AnShipKhanhAsync(date);
-            //}
-            //else
-            //{
-            // user thường → thống kê đầy đủ
-            result = await _api.GetByDateAsync(date);
-            //}
+                // clear panels
+                ChiTieuNgayStackPanel.Children.Clear();
+                ChiTieuThangStackPanel.Children.Clear();
+                CongNoNgayStackPanel.Children.Clear();
+                TienMatStackPanel.Children.Clear();
+                ChuyenKhoanStackPanel.Children.Clear();
+                DoanhThuNgayStackPanel.Children.Clear();
 
-            if (result?.Data == null) return;
+                await Task.WhenAll(
+                    LoadChiTieuAsync(date),
+                    LoadCongNoAsync(date),
+                    LoadThanhToanAsync(date),
+                    LoadDoanhThuAsync(date)
+                );
+                // separator
+                ChuyenKhoanStackPanel.Children.Add(new Separator
+                {
+                    Margin = new Thickness(0, 4, 0, 4)
+                });
+                AddRow(ChuyenKhoanStackPanel, "KIỂM TIỀN", TienMatNha - ChiTieuNgay, ColorFromHex("#0b61d6"));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        // ------------------- loaders -------------------
+
+        private async Task LoadChiTieuAsync(DateTime date)
+        {
+            var result = await _api.GetByDateAsync(date);
+
+            if (result?.Data == null)
+                return;
 
             var dto = result.Data;
 
-            // ✅ Bind toàn bộ DTO cho XAML (bên trái cố định)
-            this.DataContext = dto;
+            // Tổng chi tiêu (header card)
+            TongChiTieuTextBlock.Text = dto.TongChiTieu.ToString("N0");
 
-            // ===== Top sản phẩm bán chạy (Card thay DataGrid) =====
-            TopSanPhamStackPanel.Children.Clear();
-            TopSanPhamStackPanel.Children.Add(new TextBlock
-            {
-                Text = "Top sản phẩm bán chạy",
-                FontSize = 16,
-                FontWeight = FontWeights.Bold,
-                Foreground = Brushes.White,
-                Margin = new Thickness(0, 0, 0, 10)
-            });
+            // ----- Chi tiêu ngày -----
+            ChiTieuNgayStackPanel.Children.Clear();
 
-            foreach (var sp in dto.TopSanPhams
-                .OrderByDescending(x => x.DoanhThu)
-                .ThenByDescending(x => x.SoLuong))
-            {
-                var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) });
+            // Tổng ngày
+            AddRow(
+                ChiTieuNgayStackPanel,
+                "CHI TIÊU NGÀY",
+                dto.ChiTieuNgay,
+                ColorFromHex("#DC2626"));
 
-                grid.Children.Add(new TextBlock
-                {
-                    Text = sp.TenSanPham,
-                    FontSize = 14,
-                    Foreground = Brushes.White,
-                    Margin = new Thickness(0, 0, 8, 0)
-                });
-
-                var slText = new TextBlock
-                {
-                    Text = $"{sp.SoLuong:N0}",
-                    FontSize = 14,
-                    Foreground = Brushes.White,
-                    HorizontalAlignment = HorizontalAlignment.Right
-                };
-                Grid.SetColumn(slText, 1);
-                grid.Children.Add(slText);
-
-                TopSanPhamStackPanel.Children.Add(grid);
+            // danh sách chi tiết
+            foreach (var it in dto.DanhSachChiTieuNgay)
+                AddRow(
+                    ChiTieuNgayStackPanel,
+                    it.Ten,
+                    it.SoTien,
+                    ColorFromHex("#B91C1C"));
 
 
 
+            // ----- Chi tiêu tháng -----
+            ChiTieuThangStackPanel.Children.Clear();
 
+            // Tổng tháng
+            AddRow(
+                ChiTieuThangStackPanel,
+                "CHI TIÊU THÁNG",
+                dto.ChiTieuThang,
+                ColorFromHex("#DC2626"));
 
-            }
+            foreach (var it in dto.DanhSachChiTieuThang)
+                AddRow(
+                    ChiTieuThangStackPanel,
+                    it.Ten,
+                    it.SoTien,
+                    ColorFromHex("#B91C1C"));
 
-
-
-
-            // ===== Top sản phẩm bán chạy (Card thay DataGrid) =====
-            SoLuongNguyenLieuBanHangStackPanel.Children.Clear();
-            SoLuongNguyenLieuBanHangStackPanel.Children.Add(new TextBlock
-            {
-                Text = "Tồn Kho",
-                FontSize = 16,
-                FontWeight = FontWeights.Bold,
-                Foreground = Brushes.White,
-                Margin = new Thickness(0, 0, 0, 10)
-            });
-
-            foreach (var sp2 in dto.SoLuongNguyenLieuBanHangs
-                )
-            {
-                var grid2 = new Grid { Margin = new Thickness(0, 2, 0, 2) };
-                grid2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                grid2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) });
-
-                grid2.Children.Add(new TextBlock
-                {
-                    Text = sp2.TenNguyenLieu,
-                    FontSize = 14,
-                    Foreground = Brushes.White,
-                    Margin = new Thickness(0, 0, 8, 0)
-                });
-
-                var slText2 = new TextBlock
-                {
-                    Text = $"{sp2.SoLuong:N0}",
-                    FontSize = 14,
-                    Foreground = Brushes.White,
-                    HorizontalAlignment = HorizontalAlignment.Right
-                };
-                Grid.SetColumn(slText2, 1);
-                grid2.Children.Add(slText2);
-
-                SoLuongNguyenLieuBanHangStackPanel.Children.Add(grid2);
-            }
-            // ===== Các card chi tiết bên phải (vẫn dynamic) =====
-            FillStackPanel(DoanhThuStackPanel, "Doanh thu", dto.DoanhThu,
-            dto.DoanhThuChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());
-
-            FillStackPanel(ChiTieuStackPanel, "Chi tiêu", dto.ChiTieu,
-                dto.ChiTieuChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());
-
-            FillStackPanel(CongNoStackPanel, "Công nợ", dto.CongNo,
-                dto.CongNoChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());
-
-            FillStackPanel(TraNoTienStackPanel, "Trả nợ tiền", dto.TraNoTien,
-                dto.TraNoTienChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());
-
-            FillStackPanel(TraNoBankStackPanel, "Trả nợ chuyển khoản", dto.TraNoBank,
-                dto.TraNoBankChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());
-
-            FillStackPanel(DaThuStackPanel, "Đã thu", dto.DaThu,
-                dto.DaThuChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());
-
-            FillStackPanel(ChuaThuStackPanel, "Chưa thu", dto.ChuaThu,
-                dto.ChuaThuChiTiet.Select(x => (x.Ten, x.GiaTri)).ToArray());
+            ChiTieuNgay = dto.ChiTieuNgay;
         }
 
-        private void FillStackPanel(StackPanel panel, string title, decimal tong, params (string Ten, decimal GiaTri)[] details)
+        private async Task LoadCongNoAsync(DateTime date)
         {
-            panel.Children.Clear();
-            panel.Children.Add(new TextBlock
+            var result = await _api.GetCongNoByDateAsync(date);
+
+            if (result?.Data == null)
+                return;
+
+            var dto = result.Data;
+
+            // Tổng công nợ
+            TongCongNoTextBlock.Text = dto.TongCongNoNgay.ToString("N0");
+
+            // Danh sách công nợ trong ngày
+            CongNoNgayStackPanel.Children.Clear();
+            foreach (var x in dto.DanhSachCongNoNgay)
+                AddRow(CongNoNgayStackPanel, x.TenKhachHang, x.SoTienNo, ColorFromHex("#974A05"));
+        }
+
+        private async Task LoadThanhToanAsync(DateTime date)
+        {
+            var result = await _api.GetThanhToanByDateAsync(date);
+
+            if (result?.Data == null)
+                return;
+
+            var dto = result.Data;
+
+            TongThanhToanTextBlock.Text = (dto.TongTienMat + dto.TongChuyenKhoan).ToString("N0");
+
+            // Tiền mặt (danh sách chi tiết)
+            TienMatStackPanel.Children.Clear();
+            foreach (var it in dto.DanhSachTienMat)
+                AddRow(TienMatStackPanel, it.Ten, it.SoTien, ColorFromHex("#0b61d6"));
+
+            // Chuyển khoản (tổng)
+            ChuyenKhoanStackPanel.Children.Clear();
+            if (dto.TongChuyenKhoan > 0)
+                AddRow(ChuyenKhoanStackPanel, "Chuyển khoản", dto.TongChuyenKhoan, ColorFromHex("#0b61d6"));
+
+            TienMatNha = dto.DanhSachTienMat[0].SoTien;
+        }
+
+        private async Task LoadDoanhThuAsync(DateTime date)
+        {
+            var result = await _api.GetDoanhThuNgayAsync(date);
+
+            if (result?.Data == null)
+                return;
+
+            var dto = result.Data;
+
+            TongDoanhThuTextBlock.Text = dto.TongDoanhThu.ToString("N0");
+
+            DoanhThuNgayStackPanel.Children.Clear();
+            foreach (var it in dto.DanhSach)
+                AddRow(DoanhThuNgayStackPanel, it.Ten, it.DoanhThu, ColorFromHex("#0f5132"));
+        }
+
+        // ------------------- helpers -------------------
+        private void AddRow(StackPanel panel, string name, decimal value, Color amountColor)
+        {
+            var rowBorder = new Border();
+            try
             {
-                Text = $"{title}\n{tong:N0}",
-                FontSize = 20,
-                FontWeight = FontWeights.Bold,
-                TextAlignment = TextAlignment.Center,
-                Margin = new Thickness(0, 0, 0, 10)
-            });
-
-            if (details == null) return;
-
-            foreach (var (ten, giaTri) in details)
-            {
-                var grid = new Grid { Margin = new Thickness(0, 2, 0, 2), SnapsToDevicePixels = true };
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
-
-                grid.Children.Add(new TextBlock
+                // Apply row style from XAML if available (hover effect)
+                if (TryFindResource("RowBorderStyle") is Style rowStyle)
+                    rowBorder.Style = rowStyle;
+                else
                 {
-                    Text = ten,
-                    FontSize = 14,
-                    Margin = new Thickness(0, 0, 8, 0)
-                });
-
-                var valueText = new TextBlock
-                {
-                    Text = $"{giaTri:N0}",
-                    FontSize = 14,
-                    Margin = new Thickness(0, 0, 4, 0),
-                    HorizontalAlignment = HorizontalAlignment.Right
-                };
-                Grid.SetColumn(valueText, 1);
-                grid.Children.Add(valueText);
-
-                panel.Children.Add(grid);
+                    rowBorder.Padding = new Thickness(6);
+                    rowBorder.Margin = new Thickness(0, 4, 0, 4);
+                }
             }
+            catch
+            {
+                rowBorder.Padding = new Thickness(6);
+                rowBorder.Margin = new Thickness(0, 4, 0, 4);
+            }
+
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var nameTb = new TextBlock
+            {
+                Text = name,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#334155")),
+                FontSize = 13,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            var valTb = new TextBlock
+            {
+                Text = value.ToString("N0"),
+                FontWeight = FontWeights.SemiBold,
+                Foreground = new SolidColorBrush(amountColor),
+                FontSize = 13,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            Grid.SetColumn(valTb, 1);
+            grid.Children.Add(nameTb);
+            grid.Children.Add(valTb);
+
+            rowBorder.Child = grid;
+            panel.Children.Add(rowBorder);
+        }
+
+        private static Color ColorFromHex(string hex)
+        {
+            return (Color)ColorConverter.ConvertFromString(hex);
         }
     }
 }

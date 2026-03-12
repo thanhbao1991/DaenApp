@@ -71,12 +71,12 @@
                     Header="STT" />
 
                 <DataGridTextColumn
-                    Binding="{Binding NgayGio, StringFormat={}{0:dd-MM-yyyy}}"
+                    Binding="{Binding NgayNo, StringFormat={}{0:dd-MM-yyyy}}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Ngày" />
 
                 <DataGridTextColumn
-                    Binding="{Binding NgayGio, StringFormat={}{0:HH:mm}}"
+                    Binding="{Binding NgayNo, StringFormat={}{0:HH:mm}}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="Giờ" />
 

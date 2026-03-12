@@ -1,13 +1,11 @@
-﻿
-
-
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Domain.Entities;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Shared.Services;
 
 namespace TraSuaApp.Infrastructure.Services;
 
@@ -21,16 +19,14 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         _context = context;
     }
 
+
+
+
+
+
+
     private static string GetGhiChu(decimal soTien, decimal soTienConLai)
         => soTien == soTienConLai ? "Thanh toán đủ" : "Thanh toán thiếu";
-
-    private async Task SaveAndRecalcAsync(Guid hoaDonId)
-    {
-        await _context.SaveChangesAsync();
-        await HoaDonHelper.RecalcConLaiAsync(_context, hoaDonId);
-        await _context.SaveChangesAsync();
-    }
-
     private static Expression<Func<ChiTietHoaDonThanhToan, ChiTietHoaDonThanhToanDto>> SelectDto()
     {
         return t => new ChiTietHoaDonThanhToanDto
@@ -106,9 +102,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         };
 
         _context.ChiTietHoaDonThanhToans.Add(entity);
-
-        //     await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -dto.SoTien);
-        await SaveAndRecalcAsync(entity.HoaDonId);
+        await _context.SaveChangesAsync();
 
         var after = await _context.ChiTietHoaDonThanhToans
             .AsNoTracking()
@@ -116,13 +110,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             .Select(SelectDto())
             .FirstAsync();
 
-        //if (entity.ChiTietHoaDonNoId != null)
-        //{
-        //    await DiscordService.SendAsync(
-        //        DiscordEventType.TraNo,
-        //        $"{entity.SoTien:N0}đ {dto.Ten}"
-        //    );
-        //}
+
 
         return Result<ChiTietHoaDonThanhToanDto>
             .Success(after, $"Đã thêm {_friendlyName.ToLower()} thành công.")
@@ -180,10 +168,6 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         //     await NoHelper.UpdateSoTienConLaiAsync(_context, oldNoId, oldSoTien);
         //   await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -dto.SoTien);
 
-        await SaveAndRecalcAsync(entity.HoaDonId);
-
-        if (oldHoaDonId != entity.HoaDonId)
-            await HoaDonHelper.RecalcConLaiAsync(_context, oldHoaDonId);
 
         var after = await _context.ChiTietHoaDonThanhToans
             .AsNoTracking()
@@ -220,8 +204,6 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.DeletedAt = DateTime.Now;
         entity.LastModified = DateTime.Now;
 
-        //   await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, entity.SoTien);
-        await SaveAndRecalcAsync(entity.HoaDonId);
 
         return Result<ChiTietHoaDonThanhToanDto>
             .Success(before, $"Xoá {_friendlyName.ToLower()} thành công.")
@@ -242,8 +224,6 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.DeletedAt = null;
         entity.LastModified = DateTime.Now;
 
-        //    await NoHelper.UpdateSoTienConLaiAsync(_context, entity.ChiTietHoaDonNoId, -entity.SoTien);
-        await SaveAndRecalcAsync(entity.HoaDonId);
 
         var after = await _context.ChiTietHoaDonThanhToans
             .AsNoTracking()
@@ -287,4 +267,50 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             .Select(SelectDto())
             .ToListAsync();
     }
+
+
+
+
+
+
+
+
+
+
+
+
+    public async Task<Result<bool>> DeleteByHoaDonAsync(Guid hoaDonId)
+    {
+        var list = await _context.ChiTietHoaDonThanhToans
+            .Include(x => x.KhachHang)
+            .Where(x => x.HoaDonId == hoaDonId && !x.IsDeleted)
+            .ToListAsync();
+
+        if (!list.Any())
+            return Result<bool>.Success(true, "Không có thanh toán để xoá.");
+
+        var now = DateTime.Now;
+
+        foreach (var item in list)
+        {
+            item.IsDeleted = true;
+            item.DeletedAt = now;
+            item.LastModified = now;
+        }
+
+
+        // Gửi discord
+        foreach (var item in list)
+        {
+            var ten = item.KhachHang?.Ten ?? "Khách lẻ";
+
+            await DiscordService.SendAsync(
+                DiscordEventType.ThanhToan,
+                $"Rollback thanh toán {ten}"
+            );
+        }
+
+        return Result<bool>.Success(true, "Đã xoá toàn bộ thanh toán của hóa đơn.");
+    }
+
 }

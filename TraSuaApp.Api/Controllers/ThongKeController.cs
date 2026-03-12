@@ -14,20 +14,44 @@ namespace TraSuaApp.Api.Controllers
         private readonly IThongKeService _service;
         public ThongKeController(IThongKeService service) => _service = service;
 
-        [HttpGet("ngay/an-ship-khanh")]
-        public async Task<ActionResult<Result<ThongKeNgayDto>>> GetThongKeNgay_AnShipKhanh(
-    int ngay, int thang, int nam)
+
+        [HttpGet("chi-tieu-ngay")]
+        public async Task<ActionResult<Result<ThongKeChiTieuDto>>> GetThongKeChiTieuNgay(int ngay, int thang, int nam)
         {
             var date = new DateTime(nam, thang, ngay);
-            var dto = await _service.TinhNgay_AnShipKhanhAsync(date);
-            return Result<ThongKeNgayDto>.Success(dto);
+            var dto = await _service.TinhChiTieuNgayAsync(date);
+            return Result<ThongKeChiTieuDto>.Success(dto);
         }
-        [HttpGet("ngay")]
-        public async Task<ActionResult<Result<ThongKeNgayDto>>> GetThongKeNgay(int ngay, int thang, int nam)
+
+        [HttpGet("cong-no-ngay")]
+        public async Task<ActionResult<Result<ThongKeCongNoDto>>> GetThongKeCongNoNgay(int ngay, int thang, int nam)
         {
             var date = new DateTime(nam, thang, ngay);
-            var dto = await _service.TinhNgayAsync(date);
-            return Result<ThongKeNgayDto>.Success(dto);
+            var dto = await _service.TinhCongNoNgayAsync(date);
+            return Result<ThongKeCongNoDto>.Success(dto);
+        }
+
+        [HttpGet("thanh-toan-ngay")]
+        public async Task<ActionResult<Result<ThongKeThanhToanDto>>> GetThanhToanNgay(int ngay, int thang, int nam)
+        {
+            var date = new DateTime(nam, thang, ngay);
+
+            var dto = await _service.TinhThanhToanNgayAsync(date);
+
+            return Result<ThongKeThanhToanDto>.Success(dto);
+        }
+
+        [HttpGet("doanh-thu-ngay")]
+        public async Task<ActionResult<Result<ThongKeDoanhThuNgayDto>>> GetDoanhThuNgay(
+            int ngay,
+            int thang,
+            int nam)
+        {
+            var date = new DateTime(nam, thang, ngay);
+
+            var dto = await _service.TinhDoanhThuNgayAsync(date);
+
+            return Result<ThongKeDoanhThuNgayDto>.Success(dto);
         }
     }
 }

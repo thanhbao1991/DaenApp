@@ -82,7 +82,7 @@ namespace TraSuaApp.WpfClient.Views
             ChiTietHoaDonNoDataGrid.ItemsSource = list;
 
             TongTienChiTietHoaDonNoTextBlock.Header =
-                $"{list.Sum(x => x.ConLai) / 1000:N0}k";
+                $"{list.Sum(x => x.ConLai):N0}";
         }
 
         // ================================
@@ -158,7 +158,7 @@ namespace TraSuaApp.WpfClient.Views
                 {
                     Ngay = now.Date,
                     NgayGio = now,
-                    HoaDonId = item.HoaDonId,
+                    HoaDonId = item.Id,
                     KhachHangId = item.KhachHangId,
                     Ten = item.TenKhachHangText,
                     PhuongThucThanhToanId = methodId,

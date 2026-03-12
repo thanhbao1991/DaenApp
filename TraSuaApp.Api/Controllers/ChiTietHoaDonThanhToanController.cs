@@ -161,4 +161,25 @@ public class ChiTietHoaDonThanhToanController : BaseApiController
         var list = await _service.GetUpdatedSince(lastSync);
         return Result<List<ChiTietHoaDonThanhToanDto>>.Success(list);
     }
+
+
+
+
+
+
+
+
+
+
+
+    [HttpDelete("byHoaDon/{hoaDonId}")]
+    public async Task<IActionResult> DeleteByHoaDon(Guid hoaDonId)
+    {
+        var result = await _service.DeleteByHoaDonAsync(hoaDonId);
+
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
 }

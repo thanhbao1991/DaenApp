@@ -48,13 +48,15 @@ namespace TraSuaApp.WpfClient.Views
 
             _fullChiTietHoaDonThanhToanList = await UiListHelper.BuildListAsync(
                 AppProviders.ChiTietHoaDonThanhToans.Items.Where(x => !x.IsDeleted),
-                snap => snap.Where(x => x.Ngay == todayLocal)
+                snap => snap
+                .Where(x => x.Ngay == todayLocal)
                             //.OrderByDescending(x => x.NgayGio)
                             .ToList()
             );
 
             ApplyFilter();
         }
+
         public void ApplyFilter()
         {
             string keyword = (SearchChiTietHoaDonThanhToanTextBox.Text ?? string.Empty)
@@ -65,25 +67,20 @@ namespace TraSuaApp.WpfClient.Views
 
             TimKiemNhanhStackPanel.Visibility = Visibility.Visible;
 
-
-            // 2️⃣ Lọc theo từ khoá
+            // 1️⃣ Lọc theo chuỗi
             if (!string.IsNullOrWhiteSpace(keyword))
             {
-                keyword = StringHelper.MyNormalizeText(keyword);
-
-                var keywords = keyword
-                    .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Select(k => k.ToLower())
-                    .ToList();
+                keyword = StringHelper.MyNormalizeText(keyword).ToLower();
 
                 query = query.Where(x =>
                 {
-                    var text = (x.TimKiem ?? "").ToLower();
-                    return keywords.All(k => text.Contains(k));
+                    var text = StringHelper.MyNormalizeText(x.TimKiem ?? "").ToLower();
+                    return text.Contains(keyword);
                 });
             }
 
             var sourceList = query.ToList();
+
             // 🔥 Lưu lại hóa đơn còn hiển thị
             Dashboard.VisibleHoaDonIds = sourceList
                 .Select(x => x.HoaDonId)
@@ -93,29 +90,21 @@ namespace TraSuaApp.WpfClient.Views
             Dashboard.HoaDonDaCoThanhToanIds = _fullChiTietHoaDonThanhToanList
                 .Select(x => x.HoaDonId)
                 .ToHashSet();
-            // 3️⃣ Đánh lại STT
+
+            // 2️⃣ Đánh lại STT
             int stt = 1;
             foreach (var item in sourceList)
             {
                 item.Stt = stt++;
-                //if (item.PhuongThucThanhToanId == AppConstants.TienMatId) item.TenPhuongThucThanhToan = string.Empty;
-                //if (item.LoaiThanhToan == "Trong ngày") item.LoaiThanhToan = string.Empty;
-                //if (item.GhiChu == "Thanh toán đủ") item.GhiChu = string.Empty;
-                //if (item.GhiChu == "Shipper") item.GhiChu = string.Empty;
-
             }
 
-            // 4️⃣ Bind UI
+            // 3️⃣ Bind UI
             ChiTietHoaDonThanhToanDataGrid.ItemsSource = sourceList;
 
-            // 5️⃣ Tính tổng tiền
+            // 4️⃣ Tính tổng tiền
             decimal tongTien = sourceList.Sum(x => x.SoTien);
-            TongTienThanhToanTextBlock.Header = $"{tongTien / 1000:N0}k";
-
-            // 6️⃣ Lấy danh sách hóa đơn còn hiển thị
-
+            TongTienThanhToanTextBlock.Header = $"{tongTien:N0}";
         }
-
         private void SearchChiTietHoaDonThanhToanTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _debouncer.Debounce("ChiTietHoaDonThanhToan", 300, ApplyFilter);

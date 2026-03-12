@@ -115,7 +115,7 @@ namespace TraSuaApp.WpfClient.Views
                             Items.Add(item);
                         }
 
-                        TongTienTextBlock.Header = $"{Items.Sum(x => x.ThanhTien) / 1000:N0}k";
+                        TongTienTextBlock.Header = $"{Items.Sum(x => x.ThanhTien) :N0}";
                     }
                     else
                         TongTienTextBlock.Header = "0 đ";

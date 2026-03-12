@@ -788,7 +788,12 @@
             </Grid>
             <!--  Nút và lỗi  -->
             <StackPanel Grid.Row="2">
-                <TextBlock x:Name="ErrorTextBlock" Style="{StaticResource ErrorTextBlock}" />
+                <TextBlock
+                    x:Name="ErrorTextBlock"
+                    HorizontalAlignment="Center"
+                    FontSize="{StaticResource FontSizeLarge}"
+                    FontWeight="Bold"
+                    Style="{StaticResource ErrorTextBlock}" />
                 <Grid>
 
                     <Button

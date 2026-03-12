@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Linq.Expressions;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Infrastructure;
-using TraSuaApp.Infrastructure.Services; // 🟟 thêm
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
 
@@ -12,37 +12,11 @@ namespace TraSuaApp.Api.Controllers
     public class DashboardController : ControllerBase
     {
         private readonly AppDbContext _db;
-
         public DashboardController(AppDbContext db)
         {
             _db = db;
         }
 
-
-        [HttpGet("get-cong-no")]
-        public async Task<ActionResult<Result<List<HoaDonNoDto>>>> GetCongNo()
-        {
-            var query = await _db.HoaDonNos
-                .AsNoTracking()
-                .Where(x => x.ThanhTien > x.DaThu && x.NgayNo != null)
-                .OrderByDescending(x => x.NgayNo)
-                .Select(x => new HoaDonNoDto
-                {
-                    Id = x.Id,
-                    HoaDonId = x.Id,
-                    TenKhachHangText = x.TenKhachHangText,
-                    GhiChu = x.GhiChu,
-                    NgayNo = x.NgayNo,
-                    NgayGio = x.NgayGio,
-                    ThanhTien = x.ThanhTien,
-                    DaThu = x.DaThu,
-                    ConLai = x.ConLai,
-                    KhachHangId = x.KhachHangId
-                })
-                .ToListAsync();
-
-            return Result<List<HoaDonNoDto>>.Success(query);
-        }
         // ===== 🟟 XẾP HẠNG SẢN PHẨM (lọc theo năm) =====
         [HttpGet("xephang-sanpham")]
         public async Task<ActionResult<Result<List<SanPhamXepHangDto>>>> GetXepHangSanPham([FromQuery] int? year = null)
@@ -135,40 +109,40 @@ namespace TraSuaApp.Api.Controllers
 
         //hoadonedit
         [HttpGet("thongtin-khachhang/{khachHangId}")]
-        public async Task<ActionResult<KhachHangFavoriteDto>> GetThongTinKhachHang(Guid khachHangId)
-        {
-            if (khachHangId == Guid.Empty) return BadRequest("KhachHangId không hợp lệ.");
+        //public async Task<ActionResult<KhachHangFavoriteDto>> GetThongTinKhachHang(Guid khachHangId)
+        //{
+        //    if (khachHangId == Guid.Empty) return BadRequest("KhachHangId không hợp lệ.");
 
-            var kh = await _db.KhachHangs.AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == khachHangId, HttpContext.RequestAborted);
-            if (kh == null) return NotFound("Không tìm thấy khách hàng.");
+        //    var kh = await _db.KhachHangs.AsNoTracking()
+        //        .FirstOrDefaultAsync(x => x.Id == khachHangId, HttpContext.RequestAborted);
+        //    if (kh == null) return NotFound("Không tìm thấy khách hàng.");
 
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
-            // cts.CancelAfter(TimeSpan.FromSeconds(8)); // ✅ giới hạn tối đa phần loyalty
+        //    using var cts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
+        //    // cts.CancelAfter(TimeSpan.FromSeconds(8)); // ✅ giới hạn tối đa phần loyalty
 
-            var (diemThangNay, diemThangTruoc) =
-                await LoyaltyService.TinhDiemThangAsync(_db, khachHangId, DateTime.Now, kh.DuocNhanVoucher, cts.Token);
+        //    var (diemThangNay, diemThangTruoc) =
+        //        await LoyaltyService.TinhDiemThangAsync(_db, khachHangId, DateTime.Now, kh.DuocNhanVoucher, cts.Token);
 
-            var tongNo = -1;
-            var donKhac = await LoyaltyService.TinhTongDonKhacDangGiaoAsync(_db, khachHangId, null, cts.Token);
+        //    var tongNo = -1;
+        //    var donKhac = await LoyaltyService.TinhTongDonKhacDangGiaoAsync(_db, khachHangId, null, cts.Token);
 
-            bool daNhanVoucher = kh.DuocNhanVoucher
-                ? await LoyaltyService.DaNhanVoucherTrongThangAsync(_db, khachHangId, DateTime.Now, cts.Token)
-                : false;
+        //    bool daNhanVoucher = kh.DuocNhanVoucher
+        //        ? await LoyaltyService.DaNhanVoucherTrongThangAsync(_db, khachHangId, DateTime.Now, cts.Token)
+        //        : false;
 
-            return new KhachHangFavoriteDto
-            {
-                KhachHangId = kh.Id,
-                DuocNhanVoucher = kh.DuocNhanVoucher,
-                DaNhanVoucher = daNhanVoucher,
-                DiemThangNay = diemThangNay,
-                DiemThangTruoc = diemThangTruoc,
-                TongNo = tongNo,
-                DonKhac = donKhac,
-                MonYeuThich = kh.FavoriteMon
-            };
-        }
-        // ===== 🟟 CHI TIÊU THEO NGUYÊN LIỆU =====
+        //    return new KhachHangFavoriteDto
+        //    {
+        //        KhachHangId = kh.Id,
+        //        DuocNhanVoucher = kh.DuocNhanVoucher,
+        //        DaNhanVoucher = daNhanVoucher,
+        //        DiemThangNay = diemThangNay,
+        //        DiemThangTruoc = diemThangTruoc,
+        //        TongNo = tongNo,
+        //        DonKhac = donKhac,
+        //        MonYeuThich = kh.FavoriteMon
+        //    };
+        //}
+        //// ===== 🟟 CHI TIÊU THEO NGUYÊN LIỆU =====
         [HttpGet("chitieubynguyenlieuid")]
         public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> GetChiTieuByNguyenLieuId(
             [FromQuery] int offset = 0,
@@ -252,5 +226,98 @@ namespace TraSuaApp.Api.Controllers
             var end = start.AddMonths(1);
             return (start, end);
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        private static readonly Expression<Func<HoaDonNoDto, HoaDonNoDto>> SelectHoaDonNoDto =
+    x => new HoaDonNoDto
+    {
+        Id = x.Id,
+        TenKhachHangText = x.TenKhachHangText ?? "",
+        GhiChu = x.GhiChu ?? "",
+        GhiChuShipper = x.GhiChuShipper ?? "",
+        NguoiShip = x.NguoiShip ?? "",
+        PhanLoai = x.PhanLoai ?? "",
+        NgayNo = x.NgayNo,
+        NgayGio = x.NgayGio,
+        NgayShip = x.NgayShip,
+        ThanhTien = x.ThanhTien,
+        DaThu = x.DaThu,
+        ConLai = x.ConLai,
+        KhachHangId = x.KhachHangId,
+        VoucherId = x.VoucherId,
+    };
+
+        [HttpGet("get-cong-no")]
+        public async Task<ActionResult<Result<List<HoaDonNoDto>>>> GetCongNo()
+        {
+            try
+            {
+                var query = await _db.HoaDonNos
+                    .AsNoTracking()
+                    .Where(x =>
+                        x.NgayNo != null &&
+                        x.ThanhTien > x.DaThu
+                    )
+                    .OrderByDescending(x => x.NgayNo)
+                    .Select(SelectHoaDonNoDto)
+                    .ToListAsync();
+
+                return Result<List<HoaDonNoDto>>.Success(query);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, Result<List<HoaDonNoDto>>.Failure(ex.ToString()));
+            }
+        }
+
+        [HttpGet("get-hoa-don")]
+        public async Task<ActionResult<Result<List<HoaDonNoDto>>>> GetHoaDon()
+        {
+            try
+            {
+                var today = DateTime.Today;
+                var tomorrow = today.AddDays(1);
+
+                var baseQuery = _db.HoaDonNos.AsNoTracking();
+
+                var todayQuery = baseQuery
+                    .Where(x =>
+                        x.NgayGio >= today &&
+                        x.NgayGio < tomorrow
+                    );
+
+                var oldQuery = baseQuery
+                    .Where(x =>
+                        x.NgayGio < today &&
+                        x.ThanhTien > x.DaThu &&
+                        x.NgayNo == null
+                    );
+
+                var query = await todayQuery
+                    .Union(oldQuery)
+                    .OrderByDescending(x => x.NgayGio)
+                    .Select(SelectHoaDonNoDto)
+                    .ToListAsync();
+
+                return Result<List<HoaDonNoDto>>.Success(query);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, Result<List<HoaDonNoDto>>.Failure(ex.ToString()));
+            }
+        }
+
     }
 }

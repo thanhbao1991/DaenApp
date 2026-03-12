@@ -9,21 +9,32 @@
             decimal stars = diem / LoyaltyHelper.DiemMoiSao;
             int fullStars = (int)Math.Floor(stars);
 
-            string starIcons;
+            string starIcons = fullStars < 1 ? "☆" : $"{fullStars}★";
 
-            // Chưa đủ 1 sao đầy
-            if (fullStars < 1)
-            {
-                starIcons = "☆";
-            }
-            // Từ 1 sao đầy trở lên → luôn thu gọn
-            else
-            {
-                starIcons = $"{fullStars}★";
-            }
-
-            return $"\t{diem / 100} ({starIcons})";
+            return $"{diem / 100:N1} ({starIcons})";
         }
+        //public static string GetStarText(decimal diem)
+        //{
+        //    if (diem < 0) return string.Empty;
+
+        //    decimal stars = diem / LoyaltyHelper.DiemMoiSao;
+        //    int fullStars = (int)Math.Floor(stars);
+
+        //    string starIcons;
+
+        //    // Chưa đủ 1 sao đầy
+        //    if (fullStars < 1)
+        //    {
+        //        starIcons = "☆";
+        //    }
+        //    // Từ 1 sao đầy trở lên → luôn thu gọn
+        //    else
+        //    {
+        //        starIcons = $"{fullStars}★";
+        //    }
+
+        //    return $"\t{diem / 100} ({starIcons})";
+        //}
 
 
         //public static string GetStarText(decimal diem)
