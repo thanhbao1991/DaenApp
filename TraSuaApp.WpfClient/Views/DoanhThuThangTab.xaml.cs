@@ -94,5 +94,26 @@ namespace TraSuaApp.WpfClient.Views
 
             await LoadData();
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
 }

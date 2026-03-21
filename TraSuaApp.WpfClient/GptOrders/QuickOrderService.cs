@@ -128,7 +128,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 {
                     Id = Guid.Empty,
                     Ngay = DateTime.Now.Date,
-                    CreatedAt = DateTime.Now,
+
                     LastModified = DateTime.Now,
                     ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(),
                     ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>(),
@@ -153,7 +153,7 @@ namespace TraSuaApp.WpfClient.AiOrdering
             {
                 Id = Guid.Empty,
                 Ngay = DateTime.Now.Date,
-                CreatedAt = DateTime.Now,
+
                 LastModified = DateTime.Now,
                 ChiTietHoaDons = chiTiets,
                 ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>(),

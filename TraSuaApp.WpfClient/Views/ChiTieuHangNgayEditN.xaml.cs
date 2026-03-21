@@ -192,7 +192,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     Ngay = _editingItem?.Ngay ?? (NgayDatePicker.SelectedDate ?? DateTime.Today),
                     NgayGio = _editingItem?.NgayGio ?? DateTime.Now,
                     LastModified = _editingItem?.LastModified ?? DateTime.Now,
-                    CreatedAt = _editingItem?.CreatedAt ?? DateTime.Now
+
                 };
 
                 var res = await _api.UpdateAsync(row.Id, dto);

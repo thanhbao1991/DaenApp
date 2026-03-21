@@ -21,7 +21,7 @@ public class ChiTietHoaDonPoint
 
     public Guid KhachHangId { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public DateTime? DeletedAt { get; set; }
 

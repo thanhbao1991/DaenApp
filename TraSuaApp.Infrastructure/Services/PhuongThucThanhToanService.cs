@@ -25,7 +25,7 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
         Id = e.Id,
         Ten = e.Ten,
         DangSuDung = e.DangSuDung,
-        CreatedAt = e.CreatedAt,
+
         LastModified = e.LastModified,
         DeletedAt = e.DeletedAt,
         IsDeleted = e.IsDeleted
@@ -75,7 +75,6 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
             Id = Guid.NewGuid(),
             Ten = dto.Ten.Trim(),
             DangSuDung = dto.DangSuDung,
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false,
         };
@@ -98,8 +97,8 @@ public class PhuongThucThanhToanService : IPhuongThucThanhToanService
         if (entity == null)
             return Result<PhuongThucThanhToanDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<PhuongThucThanhToanDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        //   return Result<PhuongThucThanhToanDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         bool daTonTai = await _context.PhuongThucThanhToans
             .AnyAsync(x => x.Id != id &&

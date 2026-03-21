@@ -212,5 +212,62 @@ namespace TraSuaApp.Infrastructure.Services
                 DanhSach = danhSach
             };
         }
+
+        public async Task<ThongKeTraNoNgayDto> TinhTraNoNgayAsync(DateTime ngay)
+        {
+            var start = ngay.Date;
+            var end = start.AddDays(1);
+
+            var data = await _db.ChiTietHoaDonThanhToans
+                .AsNoTracking()
+                .Where(x =>
+                    !x.IsDeleted &&
+                    x.LoaiThanhToan == "Trả nợ qua ngày" &&
+                    x.PhuongThucThanhToanId == AppConstants.TienMatId &&
+                    x.NgayGio >= start &&
+                    x.NgayGio < end)
+                .Select(x => new
+                {
+                    Ten = x.HoaDon.TenKhachHangText ?? "(khách)",
+                    x.GhiChu,
+                    x.SoTien
+                })
+                .ToListAsync();
+
+            // ===== trả nợ tại quán =====
+            var taiQuan = data
+                .Where(x => x.GhiChu != "Shipper")
+                .GroupBy(x => x.Ten)
+                .Select(g => new KhachTraNoItemDto
+                {
+                    TenKhachHang = g.Key,
+                    SoTien = g.Sum(x => x.SoTien)
+                })
+                .OrderByDescending(x => x.SoTien)
+                .ToList();
+
+            // ===== trả nợ qua shipper =====
+            var shipper = data
+                .Where(x => x.GhiChu == "Shipper")
+                .GroupBy(x => x.Ten)
+                .Select(g => new KhachTraNoItemDto
+                {
+                    TenKhachHang = g.Key,
+                    SoTien = g.Sum(x => x.SoTien)
+                })
+                .OrderByDescending(x => x.SoTien)
+                .ToList();
+
+            return new ThongKeTraNoNgayDto
+            {
+                TongTraNoTaiQuan = taiQuan.Sum(x => x.SoTien),
+                TongTraNoShipper = shipper.Sum(x => x.SoTien),
+
+                TraNoTaiQuan = taiQuan,
+                TraNoShipper = shipper
+            };
+        }
+
+
     }
 }

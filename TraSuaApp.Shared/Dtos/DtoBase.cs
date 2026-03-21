@@ -4,7 +4,6 @@ public abstract class DtoBase
 {
     public Guid Id { get; set; }
 
-    public DateTime CreatedAt { get; set; }
     public DateTime? LastModified { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }

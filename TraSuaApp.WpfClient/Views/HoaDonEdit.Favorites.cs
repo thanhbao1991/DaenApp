@@ -29,7 +29,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     var btn = new Button
                     {
                         Content = name,
-                        Tag = sp.Id
+                        Tag = sp.Id,
+                        Style = FindResource("AddButtonStyle") as Style
                     };
 
                     btn.Click += FavoriteChip_Click;
@@ -59,13 +60,32 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 SoLuong = 1
             };
 
-            ct.DonGia = bt.GiaBan;
+            decimal donGia = bt.GiaBan;
+
+            if (Model.KhachHangId != null
+                && !string.Equals(Model.PhanLoai, "App", StringComparison.OrdinalIgnoreCase))
+            {
+                var customGia = AppProviders.KhachHangGiaBans.Items
+                    .FirstOrDefault(x =>
+                        x.KhachHangId == Model.KhachHangId.Value &&
+                        x.SanPhamBienTheId == bt.Id &&
+                        !x.IsDeleted);
+
+                if (customGia != null)
+                {
+                    donGia = customGia.GiaBan;
+                }
+            }
+
+            ct.DonGia = donGia;
 
             AttachLineWatcher(ct);
 
             Model.ChiTietHoaDons.Add(ct);
 
             UpdateTotals();
+
+            SaveButton.Focus();
         }
     }
 }

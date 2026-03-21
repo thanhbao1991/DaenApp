@@ -29,7 +29,7 @@ public class VoucherService : IVoucherService
             NgayBatDau = entity.NgayBatDau,
             NgayKetThuc = entity.NgayKetThuc,
             DangSuDung = entity.DangSuDung,
-            CreatedAt = entity.CreatedAt,
+
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
@@ -74,7 +74,6 @@ public class VoucherService : IVoucherService
             NgayBatDau = dto.NgayBatDau,
             NgayKetThuc = dto.NgayKetThuc,
             DangSuDung = dto.DangSuDung,
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false,
         };
@@ -96,8 +95,8 @@ public class VoucherService : IVoucherService
         if (entity == null)
             return Result<VoucherDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<VoucherDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        //return Result<VoucherDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         bool daTonTai = await _context.Vouchers
             .AnyAsync(x => x.Id != id &&

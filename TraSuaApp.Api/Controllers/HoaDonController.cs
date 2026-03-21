@@ -6,7 +6,6 @@ using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.Shared.Services;
 
 namespace TraSuaApp.Api.Controllers;
 
@@ -37,9 +36,7 @@ public class HoaDonController : BaseApiController
         {
             await _hub.Clients.All.SendAsync("EntityChanged", "HoaDon", action, id.ToString(), ConnectionId ?? "");
         }
-        DiscordService.SendAsync(DiscordEventType.Admin, action);
     }
-
 
     [HttpGet]
     public async Task<ActionResult<Result<List<HoaDonDto>>>> GetAll()
@@ -48,15 +45,6 @@ public class HoaDonController : BaseApiController
         return Result<List<HoaDonDto>>.Success(list);
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Result<HoaDonDto>>> GetById(Guid id)
-    {
-        var dto = await _service.GetByIdAsync(id);
-        if (dto == null)
-            return Result<HoaDonDto>.Failure($"Không tìm thấy {_friendlyName}.");
-
-        return Result<HoaDonDto>.Success(dto);
-    }
 
     [HttpPost]
     public async Task<ActionResult<Result<HoaDonDto>>> Create(HoaDonDto dto)
@@ -118,4 +106,90 @@ public class HoaDonController : BaseApiController
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Result<HoaDonDto>>> GetById(Guid id)
+    {
+        var dto = await _service.GetByIdAsync(id);
+        if (dto == null)
+            return Result<HoaDonDto>.Failure($"Không tìm thấy {_friendlyName}.");
+
+        return Result<HoaDonDto>.Success(dto);
+    }
+
+    [HttpGet("get-khach-hang-info/{khachHangId}")]
+    public async Task<ActionResult<Result<KhachHangInfoDto>>> GetKhachHangInfo(Guid khachHangId)
+    {
+        var info = await _service.GetKhachHangInfoAsync(khachHangId);
+
+        if (info == null)
+            return Result<KhachHangInfoDto>.Failure("Không tìm thấy khách hàng.");
+
+        return Result<KhachHangInfoDto>.Success(info);
+    }
+
+    [HttpPut("{id}/esc")]
+    public async Task<ActionResult<Result<HoaDonNoDto>>> UpdateEscSingle(Guid id, HoaDonDto dto)
+    {
+        var result = await _service.UpdateEscSingleAsync(id, dto);
+        if (result.IsSuccess)
+            await NotifyClients("updatedEsc", id);
+
+        return result;
+    }
+    [HttpPut("{id}/rollback")]
+    public async Task<ActionResult<Result<HoaDonNoDto>>> UpdateRollBackSingle(Guid id, HoaDonDto dto)
+    {
+        var result = await _service.UpdateRollBackSingleAsync(id, dto);
+        if (result.IsSuccess)
+            await NotifyClients("updatedRollBack", id);
+
+        return result;
+    }
+    [HttpPut("{id}/print")]
+    public async Task<ActionResult<Result<HoaDonNoDto>>> UpdatePrintSingle(Guid id, HoaDonDto dto)
+    {
+        var result = await _service.UpdatePrintSingleAsync(id, dto);
+        if (result.IsSuccess)
+            await NotifyClients("updatedPrint", id);
+
+        return result;
+    }
+    [HttpPut("{id}/f12")]
+    public async Task<ActionResult<Result<HoaDonNoDto>>> Updatef12Single(Guid id, HoaDonDto dto)
+    {
+        var result = await _service.UpdateF12SingleAsync(id, dto);
+        if (result.IsSuccess)
+            await NotifyClients("updatedf12", id);
+
+        return result;
+    }
+    [HttpPut("{id}/f1f4")]
+    public async Task<ActionResult<Result<HoaDonNoDto>>> Updatef1f4Single(Guid id, ChiTietHoaDonThanhToanDto dto)
+    {
+        var result = await _service.UpdateF1F4SingleAsync(id, dto);
+        if (result.IsSuccess)
+            await NotifyClients("updatedf1f4", id);
+
+        return result;
+    }
 }

@@ -2,7 +2,6 @@
 using System.Net.Http.Json;
 using System.Windows;
 using TraSuaApp.Shared.Config;
-using TraSuaApp.WpfClient;
 using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.Hubs;
@@ -11,14 +10,12 @@ public static class AppProviders
 {
     public static string? CurrentConnectionId { get; private set; }
 
-    // Providers
     public static NguyenLieuTransactionDataProvider? NguyenLieuTransactions { get; private set; }
     public static LocationDataProvider? Locations { get; private set; }
     public static TuDienTraCuuDataProvider? TuDienTraCuus { get; private set; }
     public static NguyenLieuBanHangDataProvider? NguyenLieuBanHangs { get; private set; }
     public static CongThucDataProvider? CongThucs { get; private set; }
     public static SuDungNguyenLieuDataProvider? SuDungNguyenLieus { get; private set; }
-
     public static VoucherDataProvider? Vouchers { get; private set; }
     public static SanPhamDataProvider? SanPhams { get; private set; }
     public static SanPhamDataProvider? SanPhamBienThes { get; private set; }
@@ -30,7 +27,6 @@ public static class AppProviders
     public static PhuongThucThanhToanDataProvider? PhuongThucThanhToans { get; private set; }
     public static KhachHangGiaBanDataProvider? KhachHangGiaBans { get; private set; }
     public static CongViecNoiBoDataProvider? CongViecNoiBos { get; private set; }
-    //public static ChiTietHoaDonNoDataProvider? ChiTietHoaDonNos { get; private set; }
     public static ChiTietHoaDonThanhToanDataProvider? ChiTietHoaDonThanhToans { get; private set; }
     public static ChiTieuHangNgayDataProvider? ChiTieuHangNgays { get; private set; }
     public static NguyenLieuDataProvider? NguyenLieus { get; private set; }
@@ -40,9 +36,9 @@ public static class AppProviders
     private static SignalRClient? _signalR;
     private static bool _created;
 
-    // =======================
-    //  QUICK ORDER HELPER
-    // =======================
+    // 🟟 danh sách provider để dispatch signal
+    private static List<object> _providers = new();
+
     public static void BuildQuickOrderMenu()
     {
         var items = SanPhams?.Items?
@@ -53,14 +49,10 @@ public static class AppProviders
         QuickOrderMenu = string.Join("\n", items);
     }
 
-    // =======================
-    //  ON-DEMAND RELOAD ALL (nếu cần)
-    // =======================
     public static async Task ReloadAllAsync()
     {
         if (HoaDons != null) await HoaDons.ReloadAsync();
         if (ChiTietHoaDonThanhToans != null) await ChiTietHoaDonThanhToans.ReloadAsync();
-        //if (ChiTietHoaDonNos != null) await ChiTietHoaDonNos.ReloadAsync();
         if (ChiTieuHangNgays != null) await ChiTieuHangNgays.ReloadAsync();
         if (CongViecNoiBos != null) await CongViecNoiBos.ReloadAsync();
         if (Toppings != null) await Toppings.ReloadAsync();
@@ -82,21 +74,12 @@ public static class AppProviders
         }
     }
 
-    // =======================
-    //  DASHBOARD SUMMARY
-    // =======================
     public static async Task<DashboardDto?> GetDashboardAsync()
     {
         var response = await ApiClient.GetAsync("/api/dashboard/homnay");
         return await response.Content.ReadFromJsonAsync<DashboardDto>();
     }
 
-    // =====================================================
-    //  NEW: KHỞI TẠO TỐI THIỂU (KHÔNG LOAD DỮ LIỆU)
-    //  - Kết nối SignalR
-    //  - Tạo instance providers
-    //  - Gắn sự kiện connect/disconnect
-    // =====================================================
     public static async Task EnsureCreatedAsync()
     {
         if (_created) return;
@@ -106,31 +89,28 @@ public static class AppProviders
 
         try
         {
-            await _signalR.ConnectAsync(); // nhẹ, không gọi API data
+            await _signalR.ConnectAsync();
         }
-        catch
-        {
-            // im lặng – UI có thể hiển thị toast riêng nếu muốn
-        }
+        catch { }
 
         CurrentConnectionId = await _signalR.GetConnectionId();
         ApiClient.ConnectionId = CurrentConnectionId;
 
+        // ================================
+        // 🟟 CONNECTION EVENTS
+        // ================================
         _signalR.OnDisconnected(() =>
         {
             SystemSounds.Hand.Play();
 
-            App.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.Invoke(() =>
             {
                 var existing = Application.Current.Windows
                     .OfType<TraSuaApp.WpfClient.Views.NotiWindow>()
                     .FirstOrDefault();
 
                 if (existing == null)
-                {
-                    var win = new TraSuaApp.WpfClient.Views.NotiWindow();
-                    win.Show();
-                }
+                    new TraSuaApp.WpfClient.Views.NotiWindow().Show();
                 else
                 {
                     existing.Topmost = true;
@@ -143,16 +123,19 @@ public static class AppProviders
         {
             SystemSounds.Asterisk.Play();
 
-            App.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.Invoke(() =>
             {
                 var existing = Application.Current.Windows
                     .OfType<TraSuaApp.WpfClient.Views.NotiWindow>()
                     .FirstOrDefault();
+
                 existing?.Close();
             });
         });
 
-        // Chỉ TẠO INSTANCE provider (KHÔNG gọi InitializeAsync hay Reload)
+        // ================================
+        // 🟟 INIT PROVIDERS
+        // ================================
         KhachHangs = new KhachHangDataProvider(_signalR);
         NhomSanPhams = new NhomSanPhamDataProvider(_signalR);
         Toppings = new ToppingDataProvider(_signalR);
@@ -171,24 +154,89 @@ public static class AppProviders
         Locations = new LocationDataProvider(_signalR);
         KhachHangGiaBans = new KhachHangGiaBanDataProvider(_signalR);
         CongViecNoiBos = new CongViecNoiBoDataProvider(_signalR);
-        //ChiTietHoaDonNos = new ChiTietHoaDonNoDataProvider(_signalR);
         ChiTietHoaDonThanhToans = new ChiTietHoaDonThanhToanDataProvider(_signalR);
         NguyenLieus = new NguyenLieuDataProvider(_signalR);
         ChiTieuHangNgays = new ChiTieuHangNgayDataProvider(_signalR);
 
+        // 🟟 REGISTER LIST
+        _providers = new List<object>
+        {
+            KhachHangs, NhomSanPhams, Toppings, TaiKhoans,
+            SanPhams, SanPhamBienThes, Vouchers, HoaDons,
+            PhuongThucThanhToans, TuDienTraCuus, NguyenLieuBanHangs,
+            CongThucs, SuDungNguyenLieus, Locations,
+            KhachHangGiaBans, CongViecNoiBos,
+            ChiTietHoaDonThanhToans, NguyenLieus, ChiTieuHangNgays
+        };
+
+        // ================================
+        // 🟟 SIGNAL DISPATCH (CHUẨN)
+        // ================================
+        _signalR.Subscribe("EntityChanged", async (string entityName, string action, string id, string senderConnectionId) =>
+        {
+            // 🟟 bỏ qua chính mình
+            if (!string.IsNullOrWhiteSpace(senderConnectionId) &&
+                senderConnectionId == CurrentConnectionId)
+                return;
+
+            foreach (var provider in _providers)
+            {
+                if (provider == null) continue;
+
+                var type = provider.GetType();
+                var entityProp = type.GetProperty("EntityName");
+                var handleMethod = type.GetMethod("HandleSignalAsync");
+
+                if (entityProp == null || handleMethod == null) continue;
+
+                var entity = entityProp.GetValue(provider)?.ToString();
+
+                if (string.Equals(entity, entityName, StringComparison.OrdinalIgnoreCase))
+                {
+                    await (Task)handleMethod.Invoke(provider, new object[] { action, id });
+                    break;
+                }
+            }
+            // ================================
+            // 🟟 PUSH RIÊNG CHO UI HÓA ĐƠN
+            // ================================
+            if (entityName.Equals("HoaDon", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Guid.TryParse(id, out var guid))
+                {
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        var dashboard = Application.Current.Windows
+                            .OfType<TraSuaApp.WpfClient.Views.Dashboard>()
+                            .FirstOrDefault();
+
+                        dashboard?.HoaDonTabControl?.HandleHoaDonSignal(guid);
+                    });
+                }
+            }
+            // ================================
+            // 🟟 TTS (giữ nguyên)
+            // ================================
+            if (entityName.Equals("HoaDon", StringComparison.OrdinalIgnoreCase))
+            {
+                var hoaDon = HoaDons?.Items.FirstOrDefault(x => x.Id.ToString() == id);
+
+                if (hoaDon != null && action == "updatedEsc")
+                {
+                    TTSHelper.DownloadAndPlayGoogleTTSAsync(
+                        $"Đi ship {hoaDon.DiaChiText} {((long)hoaDon.ThanhTien)} đồng"
+                    );
+                }
+            }
+        });
+
         _created = true;
     }
 
-    // =====================================================================
-    //  FULL INIT (để tương thích code cũ): tạo + tải dữ liệu ban đầu (nếu cần)
-    //  -> Login chỉ token: GỌI EnsureCreatedAsync() thôi.
-    //  -> Khi cần prefetch: gọi InitializeAsync() như cũ.
-    // =====================================================================
     public static async Task InitializeAsync()
     {
-        await EnsureCreatedAsync(); // đảm bảo đã có signalR + providers
+        await EnsureCreatedAsync();
 
-        // 🟟 load ban đầu (có thể gọi sau này theo on-demand)
         await Task.WhenAll(
            KhachHangs!.InitializeAsync(),
            NhomSanPhams!.InitializeAsync(),
@@ -206,7 +254,6 @@ public static class AppProviders
            Locations!.InitializeAsync(),
            KhachHangGiaBans!.InitializeAsync(),
            CongViecNoiBos!.InitializeAsync(),
-           //ChiTietHoaDonNos!.InitializeAsync(),
            ChiTietHoaDonThanhToans!.InitializeAsync(),
            NguyenLieus!.InitializeAsync(),
            ChiTieuHangNgays!.InitializeAsync()

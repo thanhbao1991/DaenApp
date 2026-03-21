@@ -122,7 +122,7 @@ namespace TraSuaApp.WpfClient.AdminViews
                 if (result?.IsSuccess == true)
                     AppProviders.PhuongThucThanhToans.Remove(selected.Id);
                 else
-                    throw new Exception(result?.Message ?? "Không thể xoá.");
+                     NotiHelper.ShowError( result?.Message ?? "Không thể xoá.");
             }
             catch (Exception ex)
             {

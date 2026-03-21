@@ -22,7 +22,6 @@ namespace TraSuaApp.WpfClient.Views
 
         private const string PROV_HOADONS = "HoaDons";
         private const string PROV_CONG_VIEC = "CongViecNoiBos";
-        private const string PROV_CTHD_NO = "ChiTietHoaDonNos";
         private const string PROV_CTHD_TT = "ChiTietHoaDonThanhToans";
         private const string PROV_CHITIEU = "ChiTieuHangNgays";
 
@@ -30,12 +29,6 @@ namespace TraSuaApp.WpfClient.Views
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-        // ====== Freshness cache cho các provider ======
-        private readonly Dictionary<string, DateTime> _lastProviderReload = new();
-        private readonly TimeSpan _freshnessWindow = TimeSpan.FromSeconds(60);
-
-        // Chặn reload chồng lấn theo từng key
-        private readonly Dictionary<string, SemaphoreSlim> _reloadGates = new();
 
         // Lưu handler để hủy đăng ký khi đóng cửa sổ (tránh memory leak)
         private readonly Dictionary<string, Action> _providerHandlers = new();
@@ -46,8 +39,6 @@ namespace TraSuaApp.WpfClient.Views
             get => _today;
             set { _today = value; OnPropertyChanged(nameof(Today)); }
         }
-
-
 
         public Dashboard()
         {
@@ -86,6 +77,7 @@ namespace TraSuaApp.WpfClient.Views
             try
             {
                 Today = DateTime.Today;
+                await BindAllProviders();
                 UpdateCongViecBadge();
                 AppProviders.CongViecNoiBos.ItemsChanged += (_, __) => UpdateCongViecBadge();
 
@@ -94,7 +86,7 @@ namespace TraSuaApp.WpfClient.Views
                 // 🟟 DELAY INIT: APP SHIPPING 60s sau khi vào Dashboard
                 _ = Task.Run(async () =>
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(60));
+                    await Task.Delay(TimeSpan.FromSeconds(15));
                     try
                     {
                         // thay bằng tài khoản shipping thực tế
@@ -105,11 +97,7 @@ namespace TraSuaApp.WpfClient.Views
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(
-                            "Không khởi tạo được AppShippingHelper: " + ex.Message,
-                            "Lỗi Shipping",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error);
+
                     }
                 });
             }
@@ -120,31 +108,32 @@ namespace TraSuaApp.WpfClient.Views
         }
         private async Task BindAllProviders()
         {
-            //RegisterProvider("HoaDons",
-            //    () => AppProviders.HoaDons.OnChanged += _providerHandlers["HoaDons"],
-            //    () => HoaDonTabControl?.ReloadUI());
+            RegisterProvider("HoaDons",
+     () => AppProviders.HoaDons.OnChanged += _providerHandlers["HoaDons"],
+     () => HoaDonTabControl?.RefreshVisibleItemsOnly()
+ );
 
-            //RegisterProvider("CongViecNoiBos",
-            //    () => AppProviders.CongViecNoiBos.OnChanged += _providerHandlers["CongViecNoiBos"],
-            //    UpdateCongViecBadge);
+            RegisterProvider("CongViecNoiBos",
+                () => AppProviders.CongViecNoiBos.OnChanged += _providerHandlers["CongViecNoiBos"],
+                UpdateCongViecBadge);
 
 
 
-            //RegisterProvider("ChiTietHoaDonThanhToans",
-            //    () => AppProviders.ChiTietHoaDonThanhToans.OnChanged += _providerHandlers["ChiTietHoaDonThanhToans"],
-            //    () =>
-            //    {
-            //        ChiTietHoaDonThanhToanTabControl.Today = Today;
-            //        ChiTietHoaDonThanhToanTabControl.ReloadUI();
-            //    });
+            RegisterProvider("ChiTietHoaDonThanhToans",
+                () => AppProviders.ChiTietHoaDonThanhToans.OnChanged += _providerHandlers["ChiTietHoaDonThanhToans"],
+                () =>
+                {
+                    ChiTietHoaDonThanhToanTabControl.Today = Today;
+                    ChiTietHoaDonThanhToanTabControl.ReloadUI();
+                });
 
-            //RegisterProvider("ChiTieuHangNgays",
-            //    () => AppProviders.ChiTieuHangNgays.OnChanged += _providerHandlers["ChiTieuHangNgays"],
-            //    () =>
-            //    {
-            //        ChiTieuHangNgayTabControl.Today = Today;
-            //        ChiTieuHangNgayTabControl.ReloadUI();
-            //    });
+            RegisterProvider("ChiTieuHangNgays",
+                () => AppProviders.ChiTieuHangNgays.OnChanged += _providerHandlers["ChiTieuHangNgays"],
+                () =>
+                {
+                    ChiTieuHangNgayTabControl.Today = Today;
+                    ChiTieuHangNgayTabControl.ReloadUI();
+                });
 
             await Task.CompletedTask;
         }
@@ -191,58 +180,6 @@ namespace TraSuaApp.WpfClient.Views
             }
         }
 
-        // ====== Freshness helper (có gate + override thời gian) ======
-        private async Task ExecuteWithFreshnessAsync(
-            string key,
-            Func<Task> reloadAsync,
-            Action reloadUi,
-            string friendlyNameForToast = "",
-            TimeSpan? freshnessOverride = null)
-        {
-            var window = freshnessOverride ?? _freshnessWindow;
-
-            var now = DateTime.UtcNow;
-            bool needReload = !_lastProviderReload.TryGetValue(key, out var last) || (now - last) > window;
-
-            // Gate theo key để tránh reload chồng
-            if (!_reloadGates.TryGetValue(key, out var gate))
-                _reloadGates[key] = gate = new SemaphoreSlim(1, 1);
-
-            await gate.WaitAsync();
-            try
-            {
-                if (needReload)
-                {
-                    if (!string.IsNullOrWhiteSpace(friendlyNameForToast))
-                        NotiHelper.ShowWarn($"Đang cập nhật {friendlyNameForToast.ToLower()}…");
-
-                    try
-                    {
-                        await WithBusy(async () =>
-                        {
-                            await reloadAsync();
-                            _lastProviderReload[key] = DateTime.UtcNow;
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        NotiHelper.ShowError($"Lỗi tải {friendlyNameForToast.ToLower()}: {ex.Message}");
-                    }
-                }
-            }
-            finally
-            {
-                gate.Release();
-            }
-
-            // Dù có reload hay không, vẫn refresh UI từ cache hiện có (trên UI thread)
-            if (!Dispatcher.CheckAccess())
-                Dispatcher.Invoke(reloadUi);
-            else
-                reloadUi();
-        }
-
-        // ====== Subscribe tất cả providers 1 lần gọn gàng (đảm bảo UI thread) ======
 
         // ====== Menu động (Admin/Hóa đơn/Settings) ======
         private void GenerateMenu(string loai, MenuItem m)
@@ -395,54 +332,27 @@ namespace TraSuaApp.WpfClient.Views
             {
                 [TAB_TAG_HOADON] = async () =>
                 {
-                    await ExecuteWithFreshnessAsync(
-                        key: PROV_HOADONS,
-                        reloadAsync: AppProviders.HoaDons.ReloadAsync,
-                        reloadUi: () => HoaDonTabControl?.ReloadUI(),
-                        friendlyNameForToast: "HĐ",
-                        freshnessOverride: TimeSpan.FromSeconds(20) // nhạy hơn cho Hoá đơn
-                    );
+                    HoaDonTabControl?.RefreshVisibleItemsOnly();
+                    await Task.CompletedTask;
                 },
 
                 [TAB_TAG_CHITIEU] = async () =>
                 {
-                    await ExecuteWithFreshnessAsync(
-                        key: PROV_CHITIEU,
-                        reloadAsync: AppProviders.ChiTieuHangNgays.ReloadAsync,
-                        reloadUi: () =>
-                        {
-                            if (ChiTieuHangNgayTabControl != null)
-                            {
-                                ChiTieuHangNgayTabControl.Today = Today;
-                                ChiTieuHangNgayTabControl.ReloadUI();
-                            }
-                        },
-                        friendlyNameForToast: "Chi tiêu hằng ngày");
+                    if (ChiTieuHangNgayTabControl != null)
+                    {
+                        ChiTieuHangNgayTabControl.Today = Today;
+                        ChiTieuHangNgayTabControl.ReloadUI();
+                    }
+                    await Task.CompletedTask;
                 },
-
-                [TAB_TAG_CTHD_NO] = async () =>
-                {
-                    //await ExecuteWithFreshnessAsync(
-                    //    key: PROV_CTHD_NO,
-                    //    reloadAsync: AppProviders.ChiTietHoaDonNos.ReloadAsync,
-                    //    reloadUi: () => ChiTietHoaDonNoTabControl?.ReloadUI(),
-                    //    friendlyNameForToast: "Chi tiết HĐ nợ");
-                },
-
                 [TAB_TAG_CTHD_TT] = async () =>
                 {
-                    await ExecuteWithFreshnessAsync(
-                        key: PROV_CTHD_TT,
-                        reloadAsync: AppProviders.ChiTietHoaDonThanhToans.ReloadAsync,
-                        reloadUi: () =>
-                        {
-                            if (ChiTietHoaDonThanhToanTabControl != null)
-                            {
-                                ChiTietHoaDonThanhToanTabControl.Today = Today;
-                                ChiTietHoaDonThanhToanTabControl.ReloadUI();
-                            }
-                        },
-                        friendlyNameForToast: "Chi tiết HĐ thanh toán");
+                    if (ChiTietHoaDonThanhToanTabControl != null)
+                    {
+                        ChiTietHoaDonThanhToanTabControl.Today = Today;
+                        ChiTietHoaDonThanhToanTabControl.ReloadUI();
+                    }
+                    await Task.CompletedTask;
                 },
             };
 
@@ -459,14 +369,20 @@ namespace TraSuaApp.WpfClient.Views
         // ====== Hotkeys: forward xuống Tab con ======
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.F5)
+            {
+                _ = ForceReloadCurrentTabAsync();
+                e.Handled = true;
+                return;
+            }
             if (Keyboard.Modifiers == (ModifierKeys.Control)
          && e.Key == Key.Down)
             {
-                //foreach (TabItem t in TabControl.Items)
-                //    if (t.ToolTip.ToString() == "-")
-                //        t.Visibility = Visibility.Visible;
+                foreach (TabItem t in TabControl.Items)
+                    if (t.ToolTip.ToString() == "-")
+                        t.Visibility = Visibility.Visible;
                 IsThanhToanHidden = false;
-                // HoaDonTabControl.ApplyFilter();
+                HoaDonTabControl.ReloadAndRestoreSelectionAsync();
                 e.Handled = true;
                 return;
             }
@@ -475,11 +391,11 @@ namespace TraSuaApp.WpfClient.Views
          && e.Key == Key.Up)
             {
 
-                //foreach (TabItem t in TabControl.Items)
-                //    if (t.ToolTip.ToString() == "-")
-                //        t.Visibility = Visibility.Collapsed;
+                foreach (TabItem t in TabControl.Items)
+                    if (t.ToolTip.ToString() == "-")
+                        t.Visibility = Visibility.Collapsed;
                 IsThanhToanHidden = true;
-                //         HoaDonTabControl.ApplyFilter();
+                HoaDonTabControl.ReloadAndRestoreSelectionAsync();
                 //  e.Handled = true;
                 return;
             }
@@ -519,29 +435,41 @@ namespace TraSuaApp.WpfClient.Views
             // 🟟 Dev hotkey: Ctrl + Shift + Enter
 
         }
+        private async Task ForceReloadCurrentTabAsync()
+        {
+            if (TabControl.SelectedItem is not TabItem tab) return;
 
-        // ====== Helper tạo DTO trả nợ (giữ nguyên) ======
-        //private ChiTietHoaDonThanhToanDto TaoDtoTraNo(ChiTietHoaDonNoDto selected, Guid phuongThucId)
-        //{
-        //    var now = DateTime.Now;
+            string? tag = tab.Tag?.ToString();
 
-        //    return new ChiTietHoaDonThanhToanDto
-        //    {
-        //        Ngay = now.Date,
-        //        NgayGio = now,
-        //        HoaDonId = selected.HoaDonId,
-        //        KhachHangId = selected.KhachHangId,
-        //        Ten = $"{selected.Ten}",
-        //        PhuongThucThanhToanId = phuongThucId,
-        //        LoaiThanhToan = selected.Ngay == now.Date ? "Trả nợ trong ngày" : "Trả nợ qua ngày",
-        //        GhiChu = selected.GhiChu,
-        //        SoTien = selected.SoTienConLai,
-        //    };
-        //}
+            switch (tag)
+            {
+                case TAB_TAG_HOADON:
+                    await WithBusy(async () =>
+                    {
+                        await AppProviders.HoaDons.ReloadAsync();
+                        await HoaDonTabControl.ReloadAndRestoreSelectionAsync();
+                    });
+                    break;
 
-        // ====== Đóng cửa sổ: dọn dẹp ======
+                case TAB_TAG_CTHD_TT:
+                    await WithBusy(async () =>
+                    {
+                        await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
+                        ChiTietHoaDonThanhToanTabControl.ReloadUI();
+                    });
+                    break;
 
-        // ====== Reports Launcher ======
+                case TAB_TAG_CHITIEU:
+                    await WithBusy(async () =>
+                    {
+                        await AppProviders.ChiTieuHangNgays.ReloadAsync();
+                        ChiTieuHangNgayTabControl.ReloadUI();
+                    });
+                    break;
+            }
+
+        }
+
         private readonly Dictionary<string, Func<UserControl>> _reportFactories = new()
         {
             ["UngNha"] = () => new ChiTieuTab(true),

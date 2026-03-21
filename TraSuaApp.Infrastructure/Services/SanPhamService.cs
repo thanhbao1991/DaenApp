@@ -136,10 +136,9 @@ namespace TraSuaApp.Infrastructure.Services
                     ThuTu = entity.ThuTu,
                     NgungBan = entity.NgungBan,
                     TichDiem = entity.TichDiem,
-                    OldId = entity.OldId,
                     NhomSanPhamId = entity.NhomSanPhamId,
                     TenNhomSanPham = entity.NhomSanPham != null ? entity.NhomSanPham.Ten : null,
-                    CreatedAt = entity.CreatedAt,
+
                     LastModified = entity.LastModified,
                     DeletedAt = entity.DeletedAt,
                     IsDeleted = entity.IsDeleted,
@@ -176,10 +175,9 @@ namespace TraSuaApp.Infrastructure.Services
                 ThuTu = entity.ThuTu,
                 NgungBan = entity.NgungBan,
                 TichDiem = entity.TichDiem,
-                OldId = entity.OldId,
                 NhomSanPhamId = entity.NhomSanPhamId,
                 TenNhomSanPham = entity.NhomSanPham?.Ten,
-                CreatedAt = entity.CreatedAt,
+
                 LastModified = entity.LastModified,
                 DeletedAt = entity.DeletedAt,
                 IsDeleted = entity.IsDeleted,
@@ -205,8 +203,8 @@ namespace TraSuaApp.Infrastructure.Services
             if (entity == null)
                 //  return Result<SanPhamDto>.Failure("Không tìm thấy hóa đơn.");
                 return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
-            if (dto.LastModified < entity.LastModified)
-                return Result<SanPhamDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+            //if (dto.LastModified < entity.LastModified)
+            //    return Result<SanPhamDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
             var now = DateTime.Now;
             var before = ToDto(entity);
@@ -243,9 +241,7 @@ namespace TraSuaApp.Infrastructure.Services
                 ThuTu = dto.ThuTu,
                 NgungBan = dto.NgungBan,
                 TichDiem = dto.TichDiem,
-                OldId = dto.OldId,
                 NhomSanPhamId = dto.NhomSanPhamId,
-                CreatedAt = DateTime.Now,
                 LastModified = DateTime.Now,
                 IsDeleted = false,
                 SanPhamBienThes = dto.BienThe.Select(b => new SanPhamBienThe
@@ -281,8 +277,8 @@ namespace TraSuaApp.Infrastructure.Services
             if (entity == null)
                 return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-            if (dto.LastModified < entity.LastModified)
-                return Result<SanPhamDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+            //if (dto.LastModified < entity.LastModified)
+            //  return Result < SanPhamDto >//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
             var before = ToDto(entity);
 
@@ -343,7 +339,6 @@ namespace TraSuaApp.Infrastructure.Services
                     TenBienThe = b.TenBienThe,
                     GiaBan = b.GiaBan,
                     MacDinh = b.MacDinh,
-                    CreatedAt = DateTime.Now,
                     LastModified = DateTime.Now
                 });
             }
@@ -370,8 +365,8 @@ namespace TraSuaApp.Infrastructure.Services
         //    if (entity == null)
         //        return Result<SanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        //    if (dto.LastModified < entity.LastModified)
-        //        return Result<SanPhamDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //    //if (dto.LastModified < entity.LastModified)
+        //        return Result<SanPhamDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         //    var before = ToDto(entity);
 
@@ -506,10 +501,8 @@ namespace TraSuaApp.Infrastructure.Services
                     ThuTu = entity.ThuTu,
                     NgungBan = entity.NgungBan,
                     TichDiem = entity.TichDiem,
-                    OldId = entity.OldId,
                     NhomSanPhamId = entity.NhomSanPhamId,
                     TenNhomSanPham = entity.NhomSanPham != null ? entity.NhomSanPham.Ten : null,
-                    CreatedAt = entity.CreatedAt,
                     LastModified = entity.LastModified,
                     DeletedAt = entity.DeletedAt,
                     IsDeleted = entity.IsDeleted,
@@ -540,10 +533,9 @@ namespace TraSuaApp.Infrastructure.Services
                     ThuTu = entity.ThuTu,
                     NgungBan = entity.NgungBan,
                     TichDiem = entity.TichDiem,
-                    OldId = entity.OldId,
                     NhomSanPhamId = entity.NhomSanPhamId,
                     TenNhomSanPham = entity.NhomSanPham != null ? entity.NhomSanPham.Ten : null,
-                    CreatedAt = entity.CreatedAt,
+
                     LastModified = entity.LastModified,
                     DeletedAt = entity.DeletedAt,
                     IsDeleted = entity.IsDeleted,
@@ -575,10 +567,9 @@ namespace TraSuaApp.Infrastructure.Services
                     ThuTu = entity.ThuTu,
                     NgungBan = entity.NgungBan,
                     TichDiem = entity.TichDiem,
-                    OldId = entity.OldId,
                     NhomSanPhamId = entity.NhomSanPhamId,
                     TenNhomSanPham = entity.NhomSanPham != null ? entity.NhomSanPham.Ten : null,
-                    CreatedAt = entity.CreatedAt,
+
                     LastModified = entity.LastModified,
                     DeletedAt = entity.DeletedAt,
                     IsDeleted = entity.IsDeleted,

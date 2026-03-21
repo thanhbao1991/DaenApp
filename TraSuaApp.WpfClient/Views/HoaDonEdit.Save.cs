@@ -82,7 +82,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                         {
                             Id = Guid.NewGuid(),
                             Ten = tenKhach,
-                            CreatedAt = DateTime.Now,
+                            
                             LastModified = DateTime.Now,
                             Addresses = new List<KhachHangAddressDto>(),
                             Phones = new List<KhachHangPhoneDto>()

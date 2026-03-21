@@ -21,7 +21,7 @@ namespace TraSuaApp.WpfClient.Views
             var currentYear = DateTime.Now.Year;
 
             var years = new List<int>();
-            for (int i = currentYear - 5; i <= currentYear + 0; i++)
+            for (int i = currentYear - 1; i <= currentYear + 0; i++)
                 years.Add(i);
 
             cmbNam.ItemsSource = years;

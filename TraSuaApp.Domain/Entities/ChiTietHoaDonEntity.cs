@@ -15,7 +15,7 @@ public partial class ChiTietHoaDonEntity
     public Guid SanPhamBienTheId { get; set; }
     public Guid? SanPhamId { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+
 
     public DateTime? DeletedAt { get; set; }
 
@@ -34,7 +34,6 @@ public partial class ChiTietHoaDonEntity
 
     public string? NoteText { get; set; }
 
-    public int OldId { get; set; }
 
     public virtual HoaDon HoaDon { get; set; } = null!;
 

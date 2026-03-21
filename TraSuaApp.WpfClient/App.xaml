@@ -8,8 +8,6 @@
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
     Exit="Application_Exit">
     <Application.Resources>
-
-
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <conveter:RowStyleMultiConverter x:Key="RowStyleMultiConverter" />
         <conveter:NullOrEmptyOrDefaultToVisibilityConverter x:Key="NullOrEmptyOrDefaultToVisibilityConverter" />
@@ -138,9 +136,8 @@
         <Style BasedOn="{StaticResource BaseInputStyle}" TargetType="PasswordBox">
             <Setter Property="Background" Value="{StaticResource LightBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource Gray400Brush}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
-
         <!--  DatePicker  -->
         <Style TargetType="DatePicker">
             <Setter Property="Height" Value="32" />

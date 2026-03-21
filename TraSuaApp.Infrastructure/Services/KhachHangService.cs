@@ -135,13 +135,13 @@ namespace TraSuaApp.Infrastructure.Services
                     Ent = x,
                     Phones = x.KhachHangPhones
                                 .OrderByDescending(p => p.IsDefault)
-                                .ThenBy(p => p.CreatedAt)
+                                .ThenBy(p => p.LastModified)
                                 .Select(p => p.SoDienThoai)
                                 .Take(3)
                                 .ToList(),
                     Addrs = x.KhachHangAddresses
                                 .OrderByDescending(a => a.IsDefault)
-                                .ThenBy(a => a.CreatedAt)
+                                .ThenBy(a => a.LastModified)
                                 .Select(a => a.DiaChi)
                                 .Take(3)
                                 .ToList()
@@ -153,7 +153,7 @@ namespace TraSuaApp.Infrastructure.Services
                 Id = r.Ent.Id,
                 Ten = r.Ent.Ten,
                 FavoriteMon = r.Ent.FavoriteMon,
-                CreatedAt = r.Ent.CreatedAt,
+
                 LastModified = r.Ent.LastModified,
                 ThuTu = r.Ent.ThuTu,
                 DuocNhanVoucher = r.Ent.DuocNhanVoucher,
@@ -171,8 +171,8 @@ namespace TraSuaApp.Infrastructure.Services
             if (entity == null)
                 return Result<KhachHangDto>.Failure("Không tìm thấy sản phẩm.");
 
-            if (dto.LastModified < entity.LastModified)
-                return Result<KhachHangDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+            //if (dto.LastModified < entity.LastModified)
+            //   return Result<KhachHangDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
             var now = DateTime.Now;
             var before = ToDto(entity);
@@ -219,7 +219,7 @@ namespace TraSuaApp.Infrastructure.Services
                 FavoriteMon = entity.FavoriteMon,
                 IsDeleted = entity.IsDeleted,
                 LastModified = entity.LastModified,
-                CreatedAt = entity.CreatedAt,
+
                 DeletedAt = entity.DeletedAt,
                 ThuTu = entity.ThuTu,
                 DuocNhanVoucher = entity.DuocNhanVoucher,
@@ -332,10 +332,8 @@ namespace TraSuaApp.Infrastructure.Services
                 Id = Guid.NewGuid(),
                 Ten = dto.Ten,
                 FavoriteMon = dto.FavoriteMon,
-                OldId = dto.OldId,
                 IsDeleted = false,
                 LastModified = now,
-                CreatedAt = now,
                 ThuTu = 0,
                 DuocNhanVoucher = dto.DuocNhanVoucher,
                 // TimKiem sẽ gán SAU khi normalize để không bị strip
@@ -385,8 +383,8 @@ namespace TraSuaApp.Infrastructure.Services
             if (entity == null)
                 return Result<KhachHangDto>.Failure($"Không tìm thấy {_friendlyName}.");
 
-            if (dto.LastModified < entity.LastModified)
-                return Result<KhachHangDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+            //if (dto.LastModified < entity.LastModified)
+            //return Result < KhachHangDto >//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
             var validation = ValidateAndNormalize(dto);
             if (!validation.IsSuccess)
@@ -436,7 +434,6 @@ namespace TraSuaApp.Infrastructure.Services
 
             // Cập nhật các trường đơn
             entity.Ten = dto.Ten;
-            entity.FavoriteMon = dto.FavoriteMon;
             entity.LastModified = now;
             entity.DuocNhanVoucher = dto.DuocNhanVoucher;
 
@@ -579,7 +576,7 @@ namespace TraSuaApp.Infrastructure.Services
                     FavoriteMon = x.FavoriteMon,
                     IsDeleted = x.IsDeleted,
                     LastModified = x.LastModified,
-                    CreatedAt = x.CreatedAt,
+
                     DeletedAt = x.DeletedAt,
                     ThuTu = x.ThuTu,
                     DuocNhanVoucher = x.DuocNhanVoucher,
@@ -665,7 +662,7 @@ namespace TraSuaApp.Infrastructure.Services
                     FavoriteMon = entity.FavoriteMon,
                     IsDeleted = entity.IsDeleted,
                     LastModified = entity.LastModified,
-                    CreatedAt = entity.CreatedAt,
+
                     DeletedAt = entity.DeletedAt,
                     ThuTu = entity.ThuTu,
                     DuocNhanVoucher = entity.DuocNhanVoucher,
@@ -704,7 +701,7 @@ namespace TraSuaApp.Infrastructure.Services
                     FavoriteMon = entity.FavoriteMon,
                     IsDeleted = entity.IsDeleted,
                     LastModified = entity.LastModified,
-                    CreatedAt = entity.CreatedAt,
+
                     DeletedAt = entity.DeletedAt,
                     DuocNhanVoucher = entity.DuocNhanVoucher,
                     Phones = entity.KhachHangPhones

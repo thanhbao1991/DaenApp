@@ -16,8 +16,6 @@ namespace TraSuaApp.Api.Controllers
         {
             _db = db;
         }
-
-        // ===== 🟟 XẾP HẠNG SẢN PHẨM (lọc theo năm) =====
         [HttpGet("xephang-sanpham")]
         public async Task<ActionResult<Result<List<SanPhamXepHangDto>>>> GetXepHangSanPham([FromQuery] int? year = null)
         {
@@ -42,8 +40,6 @@ namespace TraSuaApp.Api.Controllers
 
             return Result<List<SanPhamXepHangDto>>.Success(query);
         }
-
-        // ===== 🟟 XẾP HẠNG KHÁCH HÀNG (tính ở Hóa Đơn.ThanhTien, lọc theo năm) =====
         [HttpGet("xephang-khachhang")]
         public async Task<ActionResult<Result<List<KhachHangXepHangDto>>>> GetXepHangKhachHang([FromQuery] int? year = null)
         {
@@ -70,8 +66,6 @@ namespace TraSuaApp.Api.Controllers
 
             return Result<List<KhachHangXepHangDto>>.Success(list);
         }
-
-        // Dashboard 
         [HttpGet("lichsu-khachhang/{khachHangId}")]
         public async Task<ActionResult<DashboardDto>> GetLichSuKhachHang(Guid khachHangId)
         {
@@ -83,7 +77,7 @@ namespace TraSuaApp.Api.Controllers
                 join h in _db.HoaDons.AsNoTracking() on ct.HoaDonId equals h.Id
                 where h.KhachHangId == khachHangId
                       && !h.IsDeleted
-                orderby h.NgayGio descending, ct.CreatedAt descending
+                orderby h.NgayGio descending, ct.LastModified descending
                 select new ChiTietHoaDonDto
                 {
                     Id = ct.Id,
@@ -94,7 +88,7 @@ namespace TraSuaApp.Api.Controllers
                     HoaDonId = ct.HoaDonId,
                     NoteText = ct.NoteText,
                     ToppingText = ct.ToppingText,
-                    CreatedAt = ct.CreatedAt,
+
                     DeletedAt = ct.DeletedAt,
                     IsDeleted = ct.IsDeleted,
                     LastModified = ct.LastModified,
@@ -107,135 +101,6 @@ namespace TraSuaApp.Api.Controllers
             return new DashboardDto { History = history };
         }
 
-        //hoadonedit
-        [HttpGet("thongtin-khachhang/{khachHangId}")]
-        //public async Task<ActionResult<KhachHangFavoriteDto>> GetThongTinKhachHang(Guid khachHangId)
-        //{
-        //    if (khachHangId == Guid.Empty) return BadRequest("KhachHangId không hợp lệ.");
-
-        //    var kh = await _db.KhachHangs.AsNoTracking()
-        //        .FirstOrDefaultAsync(x => x.Id == khachHangId, HttpContext.RequestAborted);
-        //    if (kh == null) return NotFound("Không tìm thấy khách hàng.");
-
-        //    using var cts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
-        //    // cts.CancelAfter(TimeSpan.FromSeconds(8)); // ✅ giới hạn tối đa phần loyalty
-
-        //    var (diemThangNay, diemThangTruoc) =
-        //        await LoyaltyService.TinhDiemThangAsync(_db, khachHangId, DateTime.Now, kh.DuocNhanVoucher, cts.Token);
-
-        //    var tongNo = -1;
-        //    var donKhac = await LoyaltyService.TinhTongDonKhacDangGiaoAsync(_db, khachHangId, null, cts.Token);
-
-        //    bool daNhanVoucher = kh.DuocNhanVoucher
-        //        ? await LoyaltyService.DaNhanVoucherTrongThangAsync(_db, khachHangId, DateTime.Now, cts.Token)
-        //        : false;
-
-        //    return new KhachHangFavoriteDto
-        //    {
-        //        KhachHangId = kh.Id,
-        //        DuocNhanVoucher = kh.DuocNhanVoucher,
-        //        DaNhanVoucher = daNhanVoucher,
-        //        DiemThangNay = diemThangNay,
-        //        DiemThangTruoc = diemThangTruoc,
-        //        TongNo = tongNo,
-        //        DonKhac = donKhac,
-        //        MonYeuThich = kh.FavoriteMon
-        //    };
-        //}
-        //// ===== 🟟 CHI TIÊU THEO NGUYÊN LIỆU =====
-        [HttpGet("chitieubynguyenlieuid")]
-        public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> GetChiTieuByNguyenLieuId(
-            [FromQuery] int offset = 0,
-            [FromQuery] Guid? nguyenLieuId = null)
-        {
-            var (start, end) = GetMonthRange(offset);
-
-            var query = _db.ChiTieuHangNgays
-                .AsNoTracking()
-                .Where(x => !x.IsDeleted && x.Ngay >= start && x.Ngay < end);
-
-            if (nguyenLieuId != null && nguyenLieuId != Guid.Empty)
-                query = query.Where(x => x.NguyenLieuId == nguyenLieuId);
-
-            var list = await query
-                .OrderByDescending(x => x.Ngay)
-                .Select(x => new ChiTieuHangNgayDto
-                {
-                    Id = x.Id,
-                    BillThang = x.BillThang,
-                    Ten = x.Ten,
-                    DonGia = x.DonGia,
-                    SoLuong = x.SoLuong,
-                    GhiChu = x.GhiChu,
-                    ThanhTien = x.ThanhTien,
-                    Ngay = x.Ngay,
-                    NgayGio = x.NgayGio,
-                    NguyenLieuId = x.NguyenLieuId,
-                    CreatedAt = x.CreatedAt,
-                    LastModified = x.LastModified,
-                    DeletedAt = x.DeletedAt,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToListAsync();
-
-            return Result<List<ChiTieuHangNgayDto>>.Success(list);
-        }
-
-        // ===== 🟟 VOUCHER =====
-        [HttpGet("voucher")]
-        public async Task<ActionResult<Result<List<VoucherChiTraDto>>>> GetVoucherByOffset(
-            [FromQuery] int offset = 0,
-            [FromQuery] Guid? voucherId = null)
-        {
-            var (start, end) = GetMonthRange(offset);
-
-            var query = from v in _db.ChiTietHoaDonVouchers.AsNoTracking()
-                        where !v.IsDeleted && v.CreatedAt >= start && v.CreatedAt < end
-                        join h0 in _db.HoaDons.AsNoTracking() on v.HoaDonId equals h0.Id into hj
-                        from h in hj.DefaultIfEmpty()
-                        join k0 in _db.KhachHangs.AsNoTracking() on h.KhachHangId equals k0.Id into kj
-                        from k in kj.DefaultIfEmpty()
-                        select new { v, h, k };
-
-            if (voucherId != null && voucherId != Guid.Empty)
-                query = query.Where(x => x.v.VoucherId == voucherId);
-
-            var list = await query
-                .OrderByDescending(x => x.v.CreatedAt)
-                .Select(x => new VoucherChiTraDto
-                {
-                    Id = x.v.Id,
-                    Ngay = x.v.CreatedAt,
-                    TenVoucher = x.v.TenVoucher ?? "",
-                    GiaTriApDung = x.v.GiaTriApDung,
-                    HoaDonId = x.v.HoaDonId,
-                    VoucherId = x.v.VoucherId,
-                    TenKhachHang = (x.h.TenKhachHangText ?? x.k.Ten) ?? ""
-                })
-                .ToListAsync();
-
-            return Result<List<VoucherChiTraDto>>.Success(list);
-        }
-
-        // ===== Helper =====
-        private static (DateTime start, DateTime end) GetMonthRange(int offset)
-        {
-            var today = DateTime.Today;
-            var first = new DateTime(today.Year, today.Month, 1);
-            var start = first.AddMonths(offset);
-            var end = start.AddMonths(1);
-            return (start, end);
-        }
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -247,11 +112,14 @@ namespace TraSuaApp.Api.Controllers
         TenKhachHangText = x.TenKhachHangText ?? "",
         GhiChu = x.GhiChu ?? "",
         GhiChuShipper = x.GhiChuShipper ?? "",
+        IsBank = x.IsBank,
         NguoiShip = x.NguoiShip ?? "",
         PhanLoai = x.PhanLoai ?? "",
         NgayNo = x.NgayNo,
         NgayGio = x.NgayGio,
         NgayShip = x.NgayShip,
+        NgayIn = x.NgayIn,
+        LastModified = x.LastModified,
         ThanhTien = x.ThanhTien,
         DaThu = x.DaThu,
         ConLai = x.ConLai,
@@ -285,39 +153,124 @@ namespace TraSuaApp.Api.Controllers
         [HttpGet("get-hoa-don")]
         public async Task<ActionResult<Result<List<HoaDonNoDto>>>> GetHoaDon()
         {
-            try
-            {
-                var today = DateTime.Today;
-                var tomorrow = today.AddDays(1);
 
-                var baseQuery = _db.HoaDonNos.AsNoTracking();
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
 
-                var todayQuery = baseQuery
-                    .Where(x =>
-                        x.NgayGio >= today &&
-                        x.NgayGio < tomorrow
-                    );
+            var baseQuery = _db.HoaDonNos.AsNoTracking();
 
-                var oldQuery = baseQuery
-                    .Where(x =>
-                        x.NgayGio < today &&
-                        x.ThanhTien > x.DaThu &&
-                        x.NgayNo == null
-                    );
+            var todayQuery = baseQuery
+                .Where(x =>
+                    x.NgayGio >= today &&
+                    x.NgayGio < tomorrow
+                );
 
-                var query = await todayQuery
-                    .Union(oldQuery)
-                    .OrderByDescending(x => x.NgayGio)
-                    .Select(SelectHoaDonNoDto)
-                    .ToListAsync();
+            var oldQuery = baseQuery
+                .Where(x =>
+                    x.NgayGio < today &&
+                    x.ThanhTien > x.DaThu &&
+                    x.NgayNo == null
+                );
 
-                return Result<List<HoaDonNoDto>>.Success(query);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, Result<List<HoaDonNoDto>>.Failure(ex.ToString()));
-            }
+            var query = await todayQuery
+                .Union(oldQuery)
+                .OrderByDescending(x => x.NgayGio)
+                .Select(SelectHoaDonNoDto)
+                .ToListAsync();
+
+            return Result<List<HoaDonNoDto>>.Success(query);
+
         }
 
+        [HttpGet("get-khach-hang-info/{khachHangId}")]
+        public async Task<ActionResult<KhachHangInfoDto>> GetKhachHangInÌnfo(Guid khachHangId)
+        {
+            if (khachHangId == Guid.Empty)
+                return BadRequest("KhachHangId không hợp lệ.");
+
+            var now = DateTime.Now;
+
+            var kh = await _db.KhachHangs
+                .AsNoTracking()
+                .Where(x => x.Id == khachHangId)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.DuocNhanVoucher,
+                    x.FavoriteMon
+                })
+                .FirstOrDefaultAsync(HttpContext.RequestAborted);
+
+            if (kh == null)
+                return NotFound("Không tìm thấy khách hàng.");
+
+            int diemThangNay = -1;
+            int diemThangTruoc = -1;
+
+            if (kh.DuocNhanVoucher)
+            {
+                var firstDayCurrent = new DateTime(now.Year, now.Month, 1);
+                var firstDayPrev = firstDayCurrent.AddMonths(-1);
+                var firstDayNext = firstDayCurrent.AddMonths(1);
+
+                var agg = await _db.ChiTietHoaDonPoints
+                    .AsNoTracking()
+                    .Where(p =>
+                        !p.IsDeleted &&
+                        p.KhachHangId == khachHangId &&
+                        p.Ngay >= firstDayPrev &&
+                        p.Ngay < firstDayNext)
+                    .GroupBy(p => p.Ngay >= firstDayCurrent ? 1 : 0)
+                    .Select(g => new
+                    {
+                        IsCurrent = g.Key == 1,
+                        Sum = g.Sum(p => (int?)p.DiemThayDoi) ?? 0
+                    })
+                    .ToListAsync(HttpContext.RequestAborted);
+
+                diemThangNay = agg.Where(x => x.IsCurrent).Select(x => x.Sum).FirstOrDefault();
+                diemThangTruoc = agg.Where(x => !x.IsCurrent).Select(x => x.Sum).FirstOrDefault();
+            }
+
+            var firstDayCurrent2 = new DateTime(now.Year, now.Month, 1);
+            var firstDayNext2 = firstDayCurrent2.AddMonths(1);
+
+            bool daNhanVoucher = await (
+                from v in _db.ChiTietHoaDonVouchers.AsNoTracking()
+                join hd in _db.HoaDons.AsNoTracking() on v.HoaDonId equals hd.Id
+                where hd.KhachHangId == khachHangId
+                      && !hd.IsDeleted
+                      && !v.IsDeleted
+                      && v.LastModified >= firstDayCurrent2
+                      && v.LastModified < firstDayNext2
+                select v.Id
+            ).AnyAsync(HttpContext.RequestAborted);
+
+            var tongNo = await _db.HoaDonNos
+                .Where(x =>
+                    x.KhachHangId == khachHangId &&
+                    x.NgayNo != null &&
+                    x.ConLai > 0)
+                .SumAsync(x => (decimal?)x.ConLai, HttpContext.RequestAborted) ?? 0;
+
+            var donKhac = await _db.HoaDonNos
+                .Where(x =>
+                    x.KhachHangId == khachHangId &&
+                    x.ConLai > 0 &&
+                    x.NgayNo == null)
+                .SumAsync(x => (decimal?)x.ConLai, HttpContext.RequestAborted) ?? 0;
+
+            return new KhachHangInfoDto
+            {
+                KhachHangId = kh.Id,
+                DuocNhanVoucher = kh.DuocNhanVoucher,
+                DaNhanVoucher = daNhanVoucher,
+                DiemThangNay = diemThangNay,
+                DiemThangTruoc = diemThangTruoc,
+                TongNo = tongNo,
+                DonKhac = donKhac,
+                MonYeuThich = kh.FavoriteMon
+            };
+        }
     }
 }

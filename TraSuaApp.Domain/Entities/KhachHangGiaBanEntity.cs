@@ -13,7 +13,7 @@ public partial class KhachHangGiaBan
     public virtual SanPhamBienThe SanPhamBienThe { get; set; } = null!;
 
 
-    public DateTime CreatedAt { get; set; }
+    
     public DateTime? DeletedAt { get; set; }
 
     public bool IsDeleted { get; set; }

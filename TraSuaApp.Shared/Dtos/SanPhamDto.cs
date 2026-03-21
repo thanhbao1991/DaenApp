@@ -37,8 +37,6 @@ public class SanPhamDto : DtoBase
     public bool NgungBan { get; set; }
     public Guid? NhomSanPhamId { get; set; }
     public string? TenNhomSanPham { get; set; }
-    [NotMapped]
-    public int OldId { get; set; }
 
     [NotMapped]
     public string[] TimKiemTokens

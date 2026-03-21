@@ -4,7 +4,7 @@ public partial class ChiTietHoaDonThanhToan
 {
     public Guid Id { get; set; }
 
-    public string LoaiThanhToan { get; set; }
+    public string? LoaiThanhToan { get; set; }
     public string? GhiChu { get; set; }
 
     public string TenPhuongThucThanhToan { get; set; }
@@ -18,7 +18,7 @@ public partial class ChiTietHoaDonThanhToan
 
     public Guid PhuongThucThanhToanId { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+
 
     public DateTime? DeletedAt { get; set; }
 

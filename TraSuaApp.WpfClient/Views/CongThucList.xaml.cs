@@ -262,7 +262,7 @@ namespace TraSuaApp.WpfClient.AdminViews
                 }
                 else
                 {
-                    throw new Exception(result?.Message ?? "Không thể xoá.");
+                    NotiHelper.ShowError(result?.Message ?? "Không thể xoá.");
                 }
             }
             catch (Exception ex)
@@ -384,7 +384,7 @@ namespace TraSuaApp.WpfClient.AdminViews
                 }
                 else
                 {
-                    throw new Exception(result?.Message ?? "Không thể xoá.");
+                    NotiHelper.ShowError(result?.Message ?? "Không thể xoá.");
                 }
             }
             catch (Exception ex)

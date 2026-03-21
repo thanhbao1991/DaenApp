@@ -12,7 +12,7 @@ public partial class ChiTietHoaDonTopping
 
     public Guid ToppingId { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public DateTime? DeletedAt { get; set; }
 

@@ -7,8 +7,6 @@ public partial class NguyenLieu
     public Guid Id { get; set; }
 
     public string Ten { get; set; } = null!;
-    public int OldId { get; set; }
-
     public string? DonViTinh { get; set; }
 
 
@@ -16,7 +14,7 @@ public partial class NguyenLieu
 
     public bool DangSuDung { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public DateTime? DeletedAt { get; set; }
 

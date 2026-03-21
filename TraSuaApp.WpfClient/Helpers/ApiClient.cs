@@ -89,7 +89,9 @@ namespace TraSuaApp.WpfClient.Helpers
             }
 
             var msg = await response.Content.ReadAsStringAsync();
+            NotiHelper.ShowError($"{msg}");
             throw new Exception($"{msg}");
+
         }
 
         public static Task<HttpResponseMessage> GetAsync(string uri, bool includeToken = true)

@@ -17,7 +17,7 @@ public partial class NguyenLieuBanHang
     [Column(TypeName = "decimal(18,2)")]
     public decimal TonKho { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public DateTime? DeletedAt { get; set; }
 

@@ -11,7 +11,7 @@ public partial class ChiTietTuyChinhMon
 
     public Guid TuyChinhMonId { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public DateTime? DeletedAt { get; set; }
 

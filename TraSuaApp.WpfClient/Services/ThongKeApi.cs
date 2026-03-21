@@ -27,5 +27,13 @@ namespace TraSuaApp.WpfClient.Services
 
             return GetAsync<ThongKeDoanhThuNgayDto>(url);
         }
+
+        public Task<Result<ThongKeTraNoNgayDto>> GetTraNoNgayAsync(DateTime date)
+        {
+            var url =
+                $"{BASE_URL}/tra-no-ngay?ngay={date.Day}&thang={date.Month}&nam={date.Year}";
+
+            return GetAsync<ThongKeTraNoNgayDto>(url);
+        }
     }
 }

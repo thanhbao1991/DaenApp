@@ -12,6 +12,7 @@ namespace TraSuaApp.Applicationn.Interfaces
 
         Task<ThongKeDoanhThuNgayDto> TinhDoanhThuNgayAsync(DateTime ngay);
 
+        Task<ThongKeTraNoNgayDto> TinhTraNoNgayAsync(DateTime ngay);
     }
 }
 

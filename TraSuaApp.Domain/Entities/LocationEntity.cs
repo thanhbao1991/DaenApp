@@ -11,7 +11,7 @@ public partial class Location
     public decimal? MoneyDistance { get; set; }
     public string? Matrix { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
     public DateTime? LastUsedAt { get; set; }
     public DateTime? LastModified { get; set; }
     public bool IsDeleted { get; set; }

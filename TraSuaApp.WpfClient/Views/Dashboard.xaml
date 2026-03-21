@@ -52,7 +52,7 @@
                 <TabItem
                     Header="Thống kê"
                     Tag="ThongKe"
-                    ToolTip="+"
+                    ToolTip="-"
                     ToolTipService.IsEnabled="False">
                     <views:ThongKeTab />
                 </TabItem>
@@ -66,21 +66,21 @@
                 <TabItem
                     Header="Thanh toán "
                     Tag="ChiTietHoaDonThanhToan"
-                    ToolTip="+"
+                    ToolTip="-"
                     ToolTipService.IsEnabled="False">
                     <views:ChiTietHoaDonThanhToanTab x:Name="ChiTietHoaDonThanhToanTabControl" />
                 </TabItem>
                 <TabItem
                     Header="Công nợ "
                     Tag="ChiTietHoaDonNo"
-                    ToolTip="+"
+                    ToolTip="-"
                     ToolTipService.IsEnabled="False">
                     <views:ChiTietHoaDonNoTab x:Name="ChiTietHoaDonNoTabControl" />
                 </TabItem>
                 <TabItem
                     Header="Chi tiêu "
                     Tag="ChiTieuHangNgay"
-                    ToolTip="+"
+                    ToolTip="-"
                     ToolTipService.IsEnabled="False">
                     <views:ChiTieuHangNgayTab x:Name="ChiTieuHangNgayTabControl" />
                 </TabItem>
@@ -136,7 +136,7 @@
                 <TabItem
                     x:Name="ReportsTab"
                     Tag="ReportsLauncher"
-                    ToolTip="+"
+                    ToolTip="-"
                     ToolTipService.IsEnabled="False">
                     <TabItem.Header>
                         <!--  Click vào header để mở ContextMenu  -->

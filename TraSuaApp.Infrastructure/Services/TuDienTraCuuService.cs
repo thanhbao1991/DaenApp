@@ -25,7 +25,7 @@ public class TuDienTraCuuService : ITuDienTraCuuService
             TenPhienDich = entity.TenPhienDich,
             DangSuDung = entity.DangSuDung,
 
-            CreatedAt = entity.CreatedAt,
+
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
@@ -66,7 +66,6 @@ public class TuDienTraCuuService : ITuDienTraCuuService
             TenPhienDich = dto.TenPhienDich.Trim(),
             DangSuDung = dto.DangSuDung,
 
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false,
         };
@@ -88,8 +87,8 @@ public class TuDienTraCuuService : ITuDienTraCuuService
         if (entity == null)
             return Result<TuDienTraCuuDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<TuDienTraCuuDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        //   return Result<TuDienTraCuuDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         bool daTonTai = await _context.TuDienTraCuus
             .AnyAsync(x => x.Id != id &&

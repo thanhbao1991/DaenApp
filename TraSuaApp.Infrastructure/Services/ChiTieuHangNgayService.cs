@@ -53,7 +53,6 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
                     NgayGio = dto.NgayGio ?? now,
                     BillThang = dto.BillThang,
 
-                    CreatedAt = now,
                     LastModified = now,
                     IsDeleted = false
                 };
@@ -102,7 +101,7 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
             NguyenLieuId = e.NguyenLieuId,
             BillThang = e.BillThang,
 
-            CreatedAt = e.CreatedAt,
+
             LastModified = e.LastModified,
             DeletedAt = e.DeletedAt,
             IsDeleted = e.IsDeleted
@@ -154,7 +153,6 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
     //        DonGia = newEntity.DonGia,
     //        GhiChu = $"Điều chỉnh từ ChiTieuHangNgay: {newEntity.Ten}",
     //        ChiTieuHangNgayId = newEntity.Id,
-    //        CreatedAt = now,
     //        LastModified = now,
     //        IsDeleted = false
     //    });
@@ -194,7 +192,6 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
             SoLuong = delta,
             DonGia = donGia,
             GhiChu = "Điều chỉnh từ ChiTieuHangNgay",
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false
         });
@@ -214,7 +211,7 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
                 !x.IsDeleted &&
                 x.Ngay >= fromDate)
             .OrderByDescending(x => x.Ngay)
-            .ThenByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.LastModified)
             .Select(x => new ChiTieuHangNgayDto
             {
                 Id = x.Id,
@@ -231,7 +228,7 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
                 NguyenLieuId = x.NguyenLieuId,
                 BillThang = x.BillThang,
 
-                CreatedAt = x.CreatedAt,
+
                 LastModified = x.LastModified,
                 DeletedAt = x.DeletedAt,
                 IsDeleted = x.IsDeleted
@@ -254,8 +251,8 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
         if (entity == null)
             return Result<ChiTieuHangNgayDto>.Failure("Không tìm thấy chi tiêu.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<ChiTieuHangNgayDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác.");
+        //if (dto.LastModified < entity.LastModified)
+        //  return Result<ChiTieuHangNgayDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác.");
 
         var now = DateTime.Now;
 
@@ -337,7 +334,6 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
             BillThang = dto.BillThang,
             Ngay = dto.Ngay,
             NgayGio = dto.NgayGio == default ? now : dto.NgayGio,
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false
         };
@@ -356,87 +352,6 @@ public class ChiTieuHangNgayService : IChiTieuHangNgayService
         return Result<ChiTieuHangNgayDto>.Success(ToDto(entity), "Đã thêm chi tiêu.")
             .WithId(entity.Id);
     }
-    //public async Task<Result<ChiTieuHangNgayDto>> UpdateAsync(Guid id, ChiTieuHangNgayDto dto)
-    //{
-    //    var entity = await _context.ChiTieuHangNgays
-    //        .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-
-    //    if (entity == null)
-    //        return Result<ChiTieuHangNgayDto>.Failure("Không tìm thấy chi tiêu.");
-
-    //    if (dto.LastModified < entity.LastModified)
-    //        return Result<ChiTieuHangNgayDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác.");
-
-    //    var now = DateTime.Now;
-
-    //    var oldNguyenLieuId = entity.NguyenLieuId;
-    //    var oldSoLuong = entity.SoLuong;
-    //    var oldDonGia = entity.DonGia;
-
-    //    var isChangeNguyenLieu = dto.NguyenLieuId != oldNguyenLieuId;
-
-    //    // ========================
-    //    // 1️⃣ Nếu đổi nguyên liệu
-    //    // ========================
-    //    if (isChangeNguyenLieu)
-    //    {
-    //        // Hoàn kho nguyên liệu cũ
-    //        // hoàn kho cũ
-    //        await ApplyTonKhoDeltaAsync(oldId, -oldSoLuong, oldDonGia, now);
-
-    //        // nhập kho mới
-    //        await ApplyTonKhoDeltaAsync(newId, newSoLuong, newDonGia, now);
-    //    }
-
-    //    // ========================
-    //    // 2️⃣ Cập nhật entity
-    //    // ========================
-    //    entity.NguyenLieuId = dto.NguyenLieuId; // ⚠ QUAN TRỌNG
-    //    entity.SoLuong = dto.SoLuong;
-    //    entity.DonGia = dto.DonGia;
-    //    entity.ThanhTien = dto.ThanhTien > 0
-    //        ? dto.ThanhTien
-    //        : dto.SoLuong * dto.DonGia;
-    //    entity.GhiChu = dto.GhiChu;
-    //    entity.BillThang = dto.BillThang;
-    //    entity.LastModified = now;
-
-    //    // ========================
-    //    // 3️⃣ Nhập kho nguyên liệu mới
-    //    // ========================
-    //    if (isChangeNguyenLieu)
-    //    {
-    //        await ApplyTonKhoDeltaAsync(
-    //            oldEntity: new ChiTieuHangNgay
-    //            {
-    //                NguyenLieuId = entity.NguyenLieuId,
-    //                SoLuong = 0,
-    //                DonGia = entity.DonGia
-    //            },
-    //            newEntity: entity,
-    //            now: now
-    //        );
-    //    }
-    //    else
-    //    {
-    //        // Nếu không đổi nguyên liệu → tính delta bình thường
-    //        await ApplyTonKhoDeltaAsync(
-    //            oldEntity: new ChiTieuHangNgay
-    //            {
-    //                NguyenLieuId = oldNguyenLieuId,
-    //                SoLuong = oldSoLuong,
-    //                DonGia = oldDonGia
-    //            },
-    //            newEntity: entity,
-    //            now: now
-    //        );
-    //    }
-
-    //    await _context.SaveChangesAsync();
-
-    //    return Result<ChiTieuHangNgayDto>.Success(ToDto(entity), "Đã cập nhật chi tiêu.")
-    //        .WithId(id);
-    //}
 
     public async Task<Result<ChiTieuHangNgayDto>> DeleteAsync(Guid id)
     {

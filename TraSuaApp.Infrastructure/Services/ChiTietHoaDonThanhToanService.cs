@@ -56,7 +56,7 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             //    || (t.HoaDon.PhanLoai == AppConstants.MuaVe && t.HoaDon.KhachHangId != null)
             //    )
             //),
-            CreatedAt = t.CreatedAt,
+
             DeletedAt = t.DeletedAt,
             IsDeleted = t.IsDeleted,
             LastModified = t.LastModified
@@ -88,15 +88,11 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         {
             Id = Guid.NewGuid(),
             SoTien = dto.SoTien,
-            LoaiThanhToan = dto.LoaiThanhToan,
-            NgayGio = dto.NgayGio == default ? now : dto.NgayGio,
-            Ngay = dto.Ngay == default ? now.Date : dto.Ngay,
             HoaDonId = dto.HoaDonId,
             KhachHangId = dto.KhachHangId,
             PhuongThucThanhToanId = dto.PhuongThucThanhToanId,
             TenPhuongThucThanhToan = dto.TenPhuongThucThanhToan,
             GhiChu = GetGhiChu(dto.SoTien, soTienConLai),
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false
         };
@@ -127,9 +123,9 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             return Result<ChiTietHoaDonThanhToanDto>
                 .Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<ChiTietHoaDonThanhToanDto>
-                .Failure("Dữ liệu đã được cập nhật ở nơi khác.");
+        //if (dto.LastModified < entity.LastModified)
+        // return Result < ChiTietHoaDonThanhToanDto >
+        //.Failure("Dữ liệu đã được cập nhật ở nơi khác.");
 
         var hoaDon = await _context.HoaDons.FindAsync(dto.HoaDonId);
         if (hoaDon == null)

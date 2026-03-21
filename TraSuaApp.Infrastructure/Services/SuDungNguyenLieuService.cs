@@ -30,7 +30,7 @@ public class SuDungNguyenLieuService : ISuDungNguyenLieuService
             NguyenLieuId = entity.NguyenLieuId,
             SoLuong = entity.SoLuong,
 
-            CreatedAt = entity.CreatedAt,
+
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
@@ -56,7 +56,7 @@ public class SuDungNguyenLieuService : ISuDungNguyenLieuService
         var list = await BaseQuery()
             .AsNoTracking()
             .Where(x => !x.IsDeleted)
-            .OrderByDescending(x => x.LastModified ?? x.CreatedAt)
+            .OrderByDescending(x => x.LastModified)
             .ToListAsync();
 
         return list.Select(ToDto).ToList();
@@ -94,7 +94,6 @@ public class SuDungNguyenLieuService : ISuDungNguyenLieuService
             NguyenLieuId = dto.NguyenLieuId,
             SoLuong = dto.SoLuong,
 
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false
         };
@@ -119,8 +118,8 @@ public class SuDungNguyenLieuService : ISuDungNguyenLieuService
         if (entity == null)
             return Result<SuDungNguyenLieuDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<SuDungNguyenLieuDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        //return Result<SuDungNguyenLieuDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         if (dto.CongThucId == Guid.Empty || dto.NguyenLieuId == Guid.Empty)
             return Result<SuDungNguyenLieuDto>.Failure("Vui lòng chọn công thức và nguyên liệu.");

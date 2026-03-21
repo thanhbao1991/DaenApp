@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Shared.Dtos;
 
@@ -8,133 +9,6 @@ public class DoanhThuService : IDoanhThuService
 {
     private readonly AppDbContext _context;
     public DoanhThuService(AppDbContext context) => _context = context;
-
-    public async Task<List<DoanhThuNamItemDto>> GetDoanhThuNamAsync(int nam)
-    {
-        return null;
-        var yearStart = new DateTime(nam, 1, 1);
-        var yearEnd = yearStart.AddYears(1);
-
-        var hoaDons = await (
-            from h in _context.HoaDons.AsNoTracking()
-
-
-            where
-                   h.NgayGio >= yearStart
-                  && h.NgayGio < yearEnd
-                  && !(
-
-
-    (h.PhanLoai == "Ship" || h.PhanLoai == "Mv" || h.PhanLoai == "Tại Chỗ")
-
-                  )
-
-            select new
-            {
-                Thang = h.NgayGio.Month,
-                h.ThanhTien
-            }
-        ).ToListAsync();
-
-        var doanhThuTheoThang = hoaDons
-            .GroupBy(x => x.Thang)
-            .ToDictionary(
-                g => g.Key,
-                g => new
-                {
-                    SoDon = g.Count(),
-                    TongTien = g.Sum(x => x.ThanhTien)
-                });
-
-        var result = new List<DoanhThuNamItemDto>();
-
-        for (int thang = 1; thang <= 12; thang++)
-        {
-            if (doanhThuTheoThang.TryGetValue(thang, out var data))
-            {
-                result.Add(new DoanhThuNamItemDto
-                {
-                    Thang = thang,
-                    SoDon = data.SoDon,
-                    TongTien = data.TongTien
-                });
-            }
-            else
-            {
-                result.Add(new DoanhThuNamItemDto
-                {
-                    Thang = thang,
-                    SoDon = 0,
-                    TongTien = 0
-                });
-            }
-        }
-
-        return result.OrderBy(x => x.Thang).ToList();
-    }
-    public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
-    {
-        return null;
-        var monthStart = new DateTime(nam, thang, 1);
-        var monthEnd = monthStart.AddMonths(1);
-
-        var hoaDons = await _context.HoaDons
-            .AsNoTracking()
-            .Where(h =>
-                h.NgayGio >= monthStart &&
-                h.NgayGio < monthEnd &&
-                !(
-
-    (h.PhanLoai == "Ship" || h.PhanLoai == "Mv" || h.PhanLoai == "Tại Chỗ")
-
-                )
-            )
-            .Select(h => new
-            {
-                Ngay = h.NgayGio.Date,
-                h.ThanhTien
-            })
-            .ToListAsync();
-
-        var doanhThuTheoNgay = hoaDons
-            .GroupBy(x => x.Ngay)
-            .ToDictionary(
-                g => g.Key,
-                g => new
-                {
-                    SoDon = g.Count(),
-                    TongTien = g.Sum(x => x.ThanhTien)
-                });
-
-        var totalDays = (monthEnd - monthStart).Days;
-        var result = new List<DoanhThuThangItemDto>();
-
-        for (int i = 0; i < totalDays; i++)
-        {
-            var day = monthStart.AddDays(i).Date;
-
-            if (doanhThuTheoNgay.TryGetValue(day, out var data))
-            {
-                result.Add(new DoanhThuThangItemDto
-                {
-                    Ngay = day,
-                    SoDon = data.SoDon,
-                    TongTien = data.TongTien
-                });
-            }
-            else
-            {
-                result.Add(new DoanhThuThangItemDto
-                {
-                    Ngay = day,
-                    SoDon = 0,
-                    TongTien = 0
-                });
-            }
-        }
-
-        return result.OrderBy(x => x.Ngay).ToList();
-    }
 
     //public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
     //{
@@ -377,7 +251,6 @@ public class DoanhThuService : IDoanhThuService
 
     //    return result;
     //}
-
     public async Task<List<DoanhThuHoaDonDto>> GetHoaDonKhachHangAsync(Guid khachHangId)
     {
         var list = await _context.HoaDons
@@ -397,7 +270,6 @@ public class DoanhThuService : IDoanhThuService
 
         return list;
     }
-
     public async Task<List<DoanhThuChiTietHoaDonDto>> GetChiTietHoaDonAsync(Guid hoaDonId)
     {
         var chiTiets = await _context.ChiTietHoaDons
@@ -416,7 +288,6 @@ public class DoanhThuService : IDoanhThuService
 
         return chiTiets;
     }
-
     public async Task<DoanhThuNgayDto> GetDoanhThuNgayAsync(DateTime ngay)
     {
         var ngayBatDau = ngay.Date;
@@ -430,7 +301,7 @@ public class DoanhThuService : IDoanhThuService
             {
                 Id = h.Id,
                 KhachHangId = h.KhachHangId,
-                TenKhachHangText = h.TenKhachHangText,
+                TenKhachHangText = string.IsNullOrEmpty(h.TenKhachHangText) ? h.TenBan : h.TenKhachHangText,
                 DiaChiText = h.DiaChiText,
                 PhanLoai = h.PhanLoai,
                 TenBan = h.TenBan,
@@ -583,7 +454,6 @@ public class DoanhThuService : IDoanhThuService
                 .ToList()
         };
     }
-
     //public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
     //{
     //    var monthStart = new DateTime(nam, thang, 1);
@@ -794,7 +664,6 @@ public class DoanhThuService : IDoanhThuService
         public decimal SoTienConLai { get; set; }
         public DateTime NgayGio { get; set; }
     }
-
     public class HoaDonTempDto
     {
         public Guid Id { get; set; }
@@ -802,33 +671,145 @@ public class DoanhThuService : IDoanhThuService
         public decimal ThanhTien { get; set; }
         public string? PhanLoai { get; set; }
     }
-
     public class ThanhToanTempDto
     {
         public Guid HoaDonId { get; set; }
         public decimal SoTien { get; set; }
         public string? TenPhuongThucThanhToan { get; set; }
     }
-
     public class NoTempDto
     {
         public Guid HoaDonId { get; set; }
         public decimal SoTienConLai { get; set; }
     }
-    public class HoaDonPaymentMaskView
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public static Expression<Func<HoaDonNoDto, bool>> DoanhThuFillter(DateTime now)
     {
-        public Guid Id { get; set; }
+        var oneHourAgo = now.AddHours(-1);
 
-        public DateTime NgayGio { get; set; }
-
-        public decimal ThanhTien { get; set; }
-
-        public int TongSoLanNhanVoucher { get; set; }
-
-        public int PaymentMethodMask { get; set; }
-        public string PhanLoai { get; internal set; }
-        public Guid VoucherId { get; internal set; }
-        public DateTime NgayShip { get; internal set; }
-        public DateTime NgayRa { get; internal set; }
+        return h =>
+            h.PhanLoai == "App"
+            || (h.NgayNo != null && h.IsBank == true)
+            || h.NgayGio >= oneHourAgo
+            || h.IsBank == true
+            || h.NgayIn != null
+            || (h.IsBank == false && h.NgayGio.Value.Second % 59 == 0);
     }
+    public async Task<List<DoanhThuThangItemDto>> GetDoanhThuThangAsync(int thang, int nam)
+    {
+        var monthStart = new DateTime(nam, thang, 1);
+        var monthEnd = monthStart.AddMonths(1);
+        var now = DateTime.Now;
+
+        var data = await _context.HoaDonNos
+            .AsNoTracking()
+            .Where(h =>
+                h.NgayGio >= monthStart &&
+                h.NgayGio < monthEnd
+            )
+            .Where(DoanhThuFillter(now))
+            .GroupBy(h => h.NgayGio.Value.Date)
+            .Select(g => new
+            {
+                Ngay = g.Key,
+                SoDon = g.Count(),
+                TongTien = g.Sum(x => x.ThanhTien)
+            })
+            .ToListAsync();
+
+        var dict = data.ToDictionary(x => x.Ngay);
+
+        var result = new List<DoanhThuThangItemDto>();
+        var totalDays = (monthEnd - monthStart).Days;
+
+        for (int i = 0; i < totalDays; i++)
+        {
+            var day = monthStart.AddDays(i).Date;
+
+            if (dict.TryGetValue(day, out var d))
+            {
+                result.Add(new DoanhThuThangItemDto
+                {
+                    Ngay = day,
+                    SoDon = d.SoDon,
+                    TongTien = d.TongTien
+                });
+            }
+            else
+            {
+                result.Add(new DoanhThuThangItemDto
+                {
+                    Ngay = day,
+                    SoDon = 0,
+                    TongTien = 0
+                });
+            }
+        }
+
+        return result.OrderBy(x => x.Ngay).ToList();
+    }
+    public async Task<List<DoanhThuNamItemDto>> GetDoanhThuNamAsync(int nam)
+    {
+        var yearStart = new DateTime(nam, 1, 1);
+        var yearEnd = yearStart.AddYears(1);
+        var now = DateTime.Now;
+
+        var data = await _context.HoaDonNos
+            .AsNoTracking()
+            .Where(h =>
+                h.NgayGio >= yearStart &&
+                h.NgayGio < yearEnd
+            )
+            .Where(DoanhThuFillter(now))
+            .GroupBy(h => h.NgayGio.Value.Month)
+            .Select(g => new
+            {
+                Thang = g.Key,
+                SoDon = g.Count(),
+                TongTien = g.Sum(x => x.ThanhTien)
+            })
+            .ToListAsync();
+
+        var dict = data.ToDictionary(x => x.Thang);
+
+        var result = new List<DoanhThuNamItemDto>();
+
+        for (int thang = 1; thang <= 12; thang++)
+        {
+            if (dict.TryGetValue(thang, out var d))
+            {
+                result.Add(new DoanhThuNamItemDto
+                {
+                    Thang = thang,
+                    SoDon = d.SoDon,
+                    TongTien = d.TongTien
+                });
+            }
+            else
+            {
+                result.Add(new DoanhThuNamItemDto
+                {
+                    Thang = thang,
+                    SoDon = 0,
+                    TongTien = 0
+                });
+            }
+        }
+
+        return result.OrderBy(x => x.Thang).ToList();
+    }
+
 }

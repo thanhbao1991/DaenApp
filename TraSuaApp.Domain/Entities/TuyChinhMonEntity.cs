@@ -11,7 +11,7 @@ public partial class TuyChinhMon
 
     public bool ChoPhepChonNhieuGiaTri { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public DateTime? DeletedAt { get; set; }
 

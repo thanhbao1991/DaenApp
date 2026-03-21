@@ -14,7 +14,7 @@ public partial class Voucher
 
     public bool DangSuDung { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public DateTime? DeletedAt { get; set; }
 
@@ -28,7 +28,6 @@ public partial class Voucher
 
     public int? SoLanSuDungToiDa { get; set; }
 
-    public int OldId { get; set; }
 
     public virtual ICollection<ChiTietHoaDonVoucher> ChiTietHoaDonVouchers { get; set; } = new List<ChiTietHoaDonVoucher>();
 }

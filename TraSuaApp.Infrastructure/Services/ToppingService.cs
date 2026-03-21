@@ -25,7 +25,7 @@ public class ToppingService : IToppingService
             Ten = entity.Ten,
             Gia = entity.Gia,
             NgungBan = entity.NgungBan,
-            CreatedAt = entity.CreatedAt,
+
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
@@ -72,7 +72,6 @@ public class ToppingService : IToppingService
             Ten = dto.Ten.Trim(),
             Gia = dto.Gia,
             NgungBan = dto.NgungBan,
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false,
             NhomSanPhams = nhoms
@@ -96,8 +95,8 @@ public class ToppingService : IToppingService
         if (entity == null)
             return Result<ToppingDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<ToppingDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        //   return Result<ToppingDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         bool daTonTai = await _context.Toppings
             .AnyAsync(x => x.Id != id &&

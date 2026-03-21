@@ -20,9 +20,8 @@ public partial class SanPham
 
     public bool TichDiem { get; set; }
 
-    public int OldId { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public DateTime? DeletedAt { get; set; }
 

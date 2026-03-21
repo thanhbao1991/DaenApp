@@ -30,7 +30,7 @@ public class CongThucService : ICongThucService
             TenSanPham = entity.SanPhamBienThe?.SanPham?.Ten,
             TenBienThe = entity.SanPhamBienThe?.TenBienThe,
 
-            CreatedAt = entity.CreatedAt,
+
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted
@@ -82,7 +82,6 @@ public class CongThucService : ICongThucService
             Ten = dto.Ten?.Trim(),
             Loai = dto.Loai?.Trim(),
             IsDefault = dto.IsDefault,
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false
         };
@@ -128,8 +127,8 @@ public class CongThucService : ICongThucService
         if (entity == null)
             return Result<CongThucDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<CongThucDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        //return Result < CongThucDto >//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         bool daTonTai = await _context.CongThucs
             .AnyAsync(x =>

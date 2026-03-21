@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -206,7 +205,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 var ct = new ChiTietHoaDonDto
                 {
                     Id = Guid.NewGuid(),
-                    CreatedAt = DateTime.Now,
+
                     LastModified = DateTime.Now,
                     SanPhamIdBienThe = bienThe.Id,
                     TenSanPham = sanPham.Ten,
@@ -268,44 +267,52 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
                 try
                 {
-                    var response = await ApiClient.GetAsync($"/api/Dashboard/thongtin-khachhang/{kh.Id}");
-                    var info = await response.Content.ReadFromJsonAsync<KhachHangFavoriteDto>();
-
-                    if (info != null)
+                    var result = await _api.GetKhachHangInfoAsync(kh.Id);
+                    if (result.IsSuccess == true && result.Data != null)
                     {
+                        var info = result.Data;
+
                         Model.DiemThangNay = info.DiemThangNay;
                         Model.DiemThangTruoc = info.DiemThangTruoc;
                         Model.TongNoKhachHang = info.TongNo;
                         Model.DaNhanVoucher = info.DaNhanVoucher;
 
                         CongNoTextBlock.Text = info.TongNo.ToString("N0");
-                        if (info.TongNo > 0) MessageBox.Show($"Công nợ: {CongNoTextBlock.Text}");
-                        DiemThangNayTextBlock.Text = StarHelper.GetStarText(Model.DiemThangNay);
-                        DiemThangTruocTextBlock.Text = StarHelper.GetStarText(Model.DiemThangTruoc);
+                        DonKhacTextBlock.Text = info.DonKhac.ToString("N0");
+
+                        if (info.TongNo > 0)
+                            MessageBox.Show($"Công nợ: {CongNoTextBlock.Text}");
+
+                        if (info.DonKhac > 0)
+                            MessageBox.Show($"Đơn khác: {DonKhacTextBlock.Text}");
+
+                        DiemThangNayTextBlock.Text = StarHelper.GetStarText(info.DiemThangNay);
+                        DiemThangTruocTextBlock.Text = StarHelper.GetStarText(info.DiemThangTruoc);
 
                         if (info.DuocNhanVoucher && !info.DaNhanVoucher)
                         {
-                            int saoDayTruoc = LoyaltyHelper.TinhSoSaoDay(Model.DiemThangTruoc);
-                            int giaTriVoucher = LoyaltyHelper.TinhGiaTriVoucher(Model.DiemThangTruoc);
+                            int saoDayTruoc = LoyaltyHelper.TinhSoSaoDay(info.DiemThangTruoc);
+                            int giaTriVoucher = LoyaltyHelper.TinhGiaTriVoucher(info.DiemThangTruoc);
 
                             if (saoDayTruoc > 0 && giaTriVoucher > 0)
                             {
                                 var blink = (Storyboard)FindResource("BlinkAnimation");
-                                Storyboard.SetTarget(blink, DiemThangTruocGroupBox);
+                                Storyboard.SetTarget(blink, DiemGroupBox);
                                 blink.Begin();
-                                MessageBox.Show($"Voucher {giaTriVoucher.ToString("N0")}");
+
+                                MessageBox.Show($"Voucher {giaTriVoucher:N0}");
                             }
                         }
 
                         // Gợi ý món yêu thích
-                        // SuggestFavoriteIntoSearchBoxByName(info.MonYeuThich);
-                        RenderFavoriteChipsFromText(info?.MonYeuThich);
+                        RenderFavoriteChipsFromText(info.MonYeuThich);
+
                         UpdateTotals();
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine("Lỗi tải món hay order nhất: " + ex.Message);
+                    Debug.WriteLine("Lỗi tải thông tin khách hàng: " + ex.Message);
                 }
 
                 // Cập nhật giá riêng cho các dòng đã có
@@ -835,7 +842,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             }
         }
 
-        private void DiemThangTruocTextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+        private void DiemGroupBox_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (Model.DiemThangTruoc == -1)
             {

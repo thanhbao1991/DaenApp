@@ -158,7 +158,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
                 }
                 else
                 {
-                    throw new Exception(result?.Message ?? $"Không thể xoá {_friendlyName}.");
+                    NotiHelper.ShowError(result?.Message ?? $"Không thể xoá {_friendlyName}.");
                 }
             }
             catch (Exception ex)

@@ -11,7 +11,7 @@
 
         public Guid CongThucId { get; set; }
 
-        public DateTime CreatedAt { get; set; }
+        
         public DateTime? DeletedAt { get; set; }
         public bool IsDeleted { get; set; }
         public DateTime? LastModified { get; set; }

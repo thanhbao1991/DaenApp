@@ -7,35 +7,37 @@
     UseLayoutRounding="True">
 
     <UserControl.Resources>
-        <!--  strong headers  -->
-        <SolidColorBrush x:Key="GreenHeader" Color="#34C759" />
-        <SolidColorBrush x:Key="BlueHeader" Color="#007AFF" />
-        <SolidColorBrush x:Key="OrangeHeader" Color="#FF9500" />
-        <SolidColorBrush x:Key="RedHeader" Color="#FF3B30" />
 
-        <!--  body tints (slightly stronger than before for readability)  -->
-        <SolidColorBrush x:Key="GreenTint" Color="#DFF8E8" />
-        <SolidColorBrush x:Key="BlueTint" Color="#E6F0FF" />
-        <SolidColorBrush x:Key="OrangeTint" Color="#FFF6E6" />
-        <SolidColorBrush x:Key="RedTint" Color="#FFF2F2" />
+        <!--  HEADER COLORS  -->
+        <SolidColorBrush x:Key="GreenHeader" Color="#22C55E" />
+        <SolidColorBrush x:Key="BlueHeader" Color="#3B82F6" />
+        <SolidColorBrush x:Key="OrangeHeader" Color="#F59E0B" />
+        <SolidColorBrush x:Key="RedHeader" Color="#EF4444" />
 
-        <!--  common  -->
+        <!--  BODY TINT  -->
+        <SolidColorBrush x:Key="GreenTint" Color="#ECFDF5" />
+        <SolidColorBrush x:Key="BlueTint" Color="#EFF6FF" />
+        <SolidColorBrush x:Key="OrangeTint" Color="#FFFBEB" />
+        <SolidColorBrush x:Key="RedTint" Color="#FEF2F2" />
+
+        <!--  CARD STYLE  -->
         <Style x:Key="CardBase" TargetType="Border">
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Margin" Value="8" />
-            <Setter Property="BorderBrush" Value="#E6E9EE" />
+            <Setter Property="BorderBrush" Value="#E5E7EB" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Background" Value="White" />
             <Setter Property="Effect">
                 <Setter.Value>
                     <DropShadowEffect
                         BlurRadius="14"
-                        Opacity="0.12"
-                        ShadowDepth="0" />
+                        Opacity="0.06"
+                        ShadowDepth="1" />
                 </Setter.Value>
             </Setter>
         </Style>
 
+        <!--  HEADER TEXT  -->
         <Style x:Key="CardHeaderText" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="White" />
@@ -43,116 +45,95 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
+        <!--  AMOUNT  -->
         <Style x:Key="AmountText" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="22" />
+            <Setter Property="FontSize" Value="20" />
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
-        <!--  row border style with hover  -->
+        <!--  ICON BUTTON  -->
+        <Style x:Key="IconCircleButton" TargetType="Button">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#E2E8F0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F1F5F9" />
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#E2E8F0" />
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--  ROW STYLE  -->
         <Style x:Key="RowBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="#00FFFFFF" />
-            <!--  transparent base  -->
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="6" />
             <Setter Property="Margin" Value="2,4" />
-            <Setter Property="SnapsToDevicePixels" Value="True" />
-            <Setter Property="Cursor" Value="Arrow" />
+            <Setter Property="Background" Value="Transparent" />
+
             <Style.Triggers>
+
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FFFFFFFF" />
+                    <Setter Property="Background" Value="#F8FAFC" />
                     <Setter Property="BorderBrush" Value="#E2E8F0" />
                     <Setter Property="BorderThickness" Value="1" />
-                    <Setter Property="Cursor" Value="Hand" />
                 </Trigger>
+
             </Style.Triggers>
+
+        </Style>
+
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="Foreground" Value="#0F172A" />
         </Style>
 
     </UserControl.Resources>
 
-    <Grid Margin="12">
-        <UniformGrid Columns="4">
 
-            <!--  DOANH THU  -->
-            <Border Style="{StaticResource CardBase}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="56" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
+    <ScrollViewer
+        Padding="12"
+        HorizontalScrollBarVisibility="Disabled"
+        VerticalScrollBarVisibility="Auto">
 
-                    <Border
-                        Grid.Row="0"
-                        Background="{StaticResource GreenHeader}"
-                        CornerRadius="10,10,0,0">
-                        <DockPanel Margin="12,8">
-                            <TextBlock
-                                DockPanel.Dock="Left"
-                                Style="{StaticResource CardHeaderText}"
-                                Text="Doanh thu" />
-                            <TextBlock
-                                x:Name="TongDoanhThuTextBlock"
-                                DockPanel.Dock="Right"
-                                Foreground="White"
-                                Style="{StaticResource AmountText}" />
-                        </DockPanel>
-                    </Border>
+        <WrapPanel
+            Name="CardsWrapPanel"
+            ItemWidth="300"
+            Orientation="Horizontal">
 
-                    <Border
-                        Grid.Row="1"
-                        Background="{StaticResource GreenTint}"
-                        CornerRadius="0,0,10,10">
-                        <StackPanel Margin="12">
-                            <!--  inner white panel to make text high-contrast  -->
-                            <Border
-                                Padding="10"
-                                Background="#FFFFFFFF"
-                                CornerRadius="8"
-                                Opacity="0.95">
-                                <StackPanel>
-                                    <StackPanel x:Name="DoanhThuNgayStackPanel" />
-                                </StackPanel>
-                            </Border>
-
-                            <StackPanel
-                                Margin="0,12,0,0"
-                                HorizontalAlignment="Center"
-                                Orientation="Horizontal">
-                                <Button
-                                    x:Name="PrevButton"
-                                    Width="30"
-                                    Height="30"
-                                    Click="PrevButton_Click">
-                                    ◀
-                                </Button>
-                                <Border
-                                    Margin="8,0"
-                                    Padding="6"
-                                    Background="#F1F5F9"
-                                    CornerRadius="6">
-                                    <TextBlock
-                                        x:Name="DateTextBlock"
-                                        FontWeight="Bold"
-                                        Foreground="#334155" />
-                                </Border>
-                                <Button
-                                    x:Name="NextButton"
-                                    Width="30"
-                                    Height="30"
-                                    Click="NextButton_Click">
-                                    ▶
-                                </Button>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </Grid>
-            </Border>
 
             <!--  THANH TOÁN  -->
-            <Border Style="{StaticResource CardBase}">
+            <Border Width="300" Style="{StaticResource CardBase}">
+
                 <Grid>
+
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="56" />
+                        <RowDefinition Height="48" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
@@ -160,45 +141,151 @@
                         Grid.Row="0"
                         Background="{StaticResource BlueHeader}"
                         CornerRadius="10,10,0,0">
+
                         <DockPanel Margin="12,8">
+
                             <TextBlock
                                 DockPanel.Dock="Left"
                                 Style="{StaticResource CardHeaderText}"
                                 Text="Thanh toán" />
+
                             <TextBlock
                                 x:Name="TongThanhToanTextBlock"
                                 DockPanel.Dock="Right"
                                 Foreground="White"
-                                Style="{StaticResource AmountText}"
-                                />
+                                Style="{StaticResource AmountText}" />
+
                         </DockPanel>
+
                     </Border>
 
                     <Border
                         Grid.Row="1"
                         Background="{StaticResource BlueTint}"
                         CornerRadius="0,0,10,10">
+
                         <StackPanel Margin="12">
+
                             <Border
                                 Padding="10"
-                                Background="#FFFFFFFF"
-                                CornerRadius="8"
-                                Opacity="0.95">
+                                Background="White"
+                                CornerRadius="8">
+
                                 <StackPanel>
+
                                     <StackPanel x:Name="TienMatStackPanel" />
                                     <StackPanel x:Name="ChuyenKhoanStackPanel" />
+
                                 </StackPanel>
+
                             </Border>
+
                         </StackPanel>
+
                     </Border>
+
                 </Grid>
+
             </Border>
 
-            <!--  CÔNG NỢ  -->
-            <Border Style="{StaticResource CardBase}">
+
+            <!--  DOANH THU  -->
+            <Border Width="300" Style="{StaticResource CardBase}">
+
                 <Grid>
+
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="56" />
+                        <RowDefinition Height="48" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border
+                        Grid.Row="0"
+                        Background="{StaticResource GreenHeader}"
+                        CornerRadius="10,10,0,0">
+
+                        <DockPanel Margin="12,8">
+
+                            <TextBlock
+                                DockPanel.Dock="Left"
+                                Style="{StaticResource CardHeaderText}"
+                                Text="Doanh thu" />
+
+                            <TextBlock
+                                x:Name="TongDoanhThuTextBlock"
+                                DockPanel.Dock="Right"
+                                Foreground="White"
+                                Style="{StaticResource AmountText}" />
+
+                        </DockPanel>
+
+                    </Border>
+
+                    <Border
+                        Grid.Row="1"
+                        Background="{StaticResource GreenTint}"
+                        CornerRadius="0,0,10,10">
+
+                        <StackPanel Margin="12">
+
+                            <Border
+                                Padding="10"
+                                Background="White"
+                                CornerRadius="8">
+
+                                <StackPanel>
+                                    <StackPanel x:Name="DoanhThuNgayStackPanel" />
+                                </StackPanel>
+
+                            </Border>
+
+                            <StackPanel
+                                Margin="0,12,0,0"
+                                HorizontalAlignment="Center"
+                                Orientation="Horizontal">
+
+                                <Button
+                                    x:Name="PrevButton"
+                                    Click="PrevButton_Click"
+                                    Style="{StaticResource IconCircleButton}">
+                                    <TextBlock FontSize="14">◀</TextBlock>
+                                </Button>
+
+                                <Border
+                                    Margin="8,0"
+                                    Padding="6"
+                                    Background="#F1F5F9"
+                                    CornerRadius="6">
+
+                                    <TextBlock x:Name="DateTextBlock" FontWeight="Bold" />
+
+                                </Border>
+
+                                <Button
+                                    x:Name="NextButton"
+                                    Click="NextButton_Click"
+                                    Style="{StaticResource IconCircleButton}">
+                                    <TextBlock FontSize="14">▶</TextBlock>
+                                </Button>
+
+                            </StackPanel>
+
+                        </StackPanel>
+
+                    </Border>
+
+                </Grid>
+
+            </Border>
+
+
+            <!--  CÔNG NỢ  -->
+            <Border Width="300" Style="{StaticResource CardBase}">
+
+                <Grid>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="48" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
@@ -206,43 +293,124 @@
                         Grid.Row="0"
                         Background="{StaticResource OrangeHeader}"
                         CornerRadius="10,10,0,0">
+
                         <DockPanel Margin="12,8">
+
                             <TextBlock
                                 DockPanel.Dock="Left"
                                 Style="{StaticResource CardHeaderText}"
                                 Text="Công nợ" />
+
                             <TextBlock
                                 x:Name="TongCongNoTextBlock"
                                 DockPanel.Dock="Right"
                                 Foreground="White"
                                 Style="{StaticResource AmountText}" />
+
                         </DockPanel>
+
                     </Border>
 
                     <Border
                         Grid.Row="1"
                         Background="{StaticResource OrangeTint}"
                         CornerRadius="0,0,10,10">
+
                         <StackPanel Margin="12">
+
                             <Border
                                 Padding="10"
-                                Background="#FFFFFFFF"
-                                CornerRadius="8"
-                                Opacity="0.95">
+                                Background="White"
+                                CornerRadius="8">
+
                                 <StackPanel>
                                     <StackPanel x:Name="CongNoNgayStackPanel" />
                                 </StackPanel>
+
                             </Border>
+
                         </StackPanel>
+
                     </Border>
+
                 </Grid>
+
             </Border>
 
-            <!--  CHI TIÊU  -->
-            <Border Style="{StaticResource CardBase}">
+
+
+            <!--  KHÁCH TRẢ NỢ  -->
+            <Border Width="300" Style="{StaticResource CardBase}">
+
                 <Grid>
+
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="56" />
+                        <RowDefinition Height="48" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border
+                        Grid.Row="0"
+                        Background="#8B5CF6"
+                        CornerRadius="10,10,0,0">
+
+                        <DockPanel Margin="12,8">
+
+                            <TextBlock
+                                DockPanel.Dock="Left"
+                                Style="{StaticResource CardHeaderText}"
+                                Text="Khách trả nợ" />
+
+                            <TextBlock
+                                x:Name="TongTraNoTextBlock"
+                                DockPanel.Dock="Right"
+                                Foreground="White"
+                                Style="{StaticResource AmountText}" />
+
+                        </DockPanel>
+
+                    </Border>
+
+                    <Border
+                        Grid.Row="1"
+                        Background="#F5F3FF"
+                        CornerRadius="0,0,10,10">
+
+                        <StackPanel Margin="12">
+
+                            <Border
+                                Padding="10"
+                                Background="White"
+                                CornerRadius="8">
+
+                                <StackPanel>
+
+                                    <StackPanel x:Name="TraNoTaiQuanStackPanel" />
+
+                                    <Separator Margin="0,6" />
+
+                                    <StackPanel x:Name="TraNoShipperStackPanel" />
+
+                                </StackPanel>
+
+                            </Border>
+
+                        </StackPanel>
+
+                    </Border>
+
+                </Grid>
+
+            </Border>
+
+
+            <!--  CHI TIÊU  -->
+            <Border Width="300" Style="{StaticResource CardBase}">
+
+                <Grid>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="48" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
@@ -250,40 +418,59 @@
                         Grid.Row="0"
                         Background="{StaticResource RedHeader}"
                         CornerRadius="10,10,0,0">
+
                         <DockPanel Margin="12,8">
+
                             <TextBlock
                                 DockPanel.Dock="Left"
                                 Style="{StaticResource CardHeaderText}"
                                 Text="Chi tiêu" />
+
                             <TextBlock
                                 x:Name="TongChiTieuTextBlock"
                                 DockPanel.Dock="Right"
                                 Foreground="White"
                                 Style="{StaticResource AmountText}" />
+
                         </DockPanel>
+
                     </Border>
 
                     <Border
                         Grid.Row="1"
                         Background="{StaticResource RedTint}"
                         CornerRadius="0,0,10,10">
+
                         <StackPanel Margin="12">
+
                             <Border
                                 Padding="10"
-                                Background="#FFFFFFFF"
-                                CornerRadius="8"
-                                Opacity="0.95">
+                                Background="White"
+                                CornerRadius="8">
+
                                 <StackPanel>
+
                                     <StackPanel x:Name="ChiTieuNgayStackPanel" />
+
                                     <Separator Margin="0,8" />
+
                                     <StackPanel x:Name="ChiTieuThangStackPanel" />
+
                                 </StackPanel>
+
                             </Border>
+
                         </StackPanel>
+
                     </Border>
+
                 </Grid>
+
             </Border>
 
-        </UniformGrid>
-    </Grid>
+
+        </WrapPanel>
+
+    </ScrollViewer>
+
 </UserControl>

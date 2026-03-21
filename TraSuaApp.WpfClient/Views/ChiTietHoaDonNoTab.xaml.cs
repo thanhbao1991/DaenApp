@@ -4,6 +4,7 @@ using System.Windows.Input;
 using TraSuaApp.Shared.Constants;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
+using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
 using TraSuaApp.WpfClient.Services;
@@ -14,6 +15,7 @@ namespace TraSuaApp.WpfClient.Views
     {
         private readonly DebounceManager _debouncer = new();
         private readonly DashboardApi _api = new();
+        private readonly HoaDonApi _hoaDonApi = new();
 
         private List<HoaDonNoDto> _items = new();
 
@@ -33,7 +35,6 @@ namespace TraSuaApp.WpfClient.Views
         // ================================
         // LOAD DATA
         // ================================
-
         public async Task ReloadUI()
         {
             try
@@ -57,7 +58,6 @@ namespace TraSuaApp.WpfClient.Views
         // ================================
         // SEARCH
         // ================================
-
         private void SearchChiTietHoaDonNoTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _debouncer.Debounce("CongNoSearch", 300, ApplyFilter);
@@ -72,7 +72,7 @@ namespace TraSuaApp.WpfClient.Views
             List<HoaDonNoDto> list = string.IsNullOrWhiteSpace(keyword)
                 ? _items
                 : _items
-                    .Where(x => x.TimKiem.ToLower().Contains(keyword))
+                    .Where(x => x.TimKiem.ToLower().Contains(keyword.ToLower()))
                     .ToList();
 
             int stt = 1;
@@ -86,29 +86,8 @@ namespace TraSuaApp.WpfClient.Views
         }
 
         // ================================
-        // QUICK FILTER
+        // ROW BUTTONS
         // ================================
-
-        private void TimKiemNhanhCongNoButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button bt)
-            {
-                var tag = bt.Tag?.ToString();
-
-                if (tag == "hôm nay")
-                    SearchChiTietHoaDonNoTextBox.Text =
-                        DateTime.Today.ToString("dd-MM-yyyy");
-
-                else if (tag == "hôm qua")
-                    SearchChiTietHoaDonNoTextBox.Text =
-                        DateTime.Today.AddDays(-1).ToString("dd-MM-yyyy");
-            }
-        }
-
-        // ================================
-        // PAY FROM ROW
-        // ================================
-
         private async void TienMatRowButton_Click(object sender, RoutedEventArgs e)
         {
             await PayFromRow(sender, AppConstants.TienMatId);
@@ -125,124 +104,200 @@ namespace TraSuaApp.WpfClient.Views
             {
                 bool quickPay = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
 
-                await PayItemAsync(item, methodId, quickPay, bt);
+                bt.IsEnabled = false;
+
+                await ThanhToanNoAsync(item, methodId, quickPay);
+
+                bt.IsEnabled = true;
             }
         }
 
         // ================================
-        // PAY LOGIC
+        // CORE PAYMENT LOGIC
         // ================================
-
-        private async Task PayItemAsync(
-       HoaDonNoDto item,
-       Guid methodId,
-       bool quickPay,
-       Button? btn = null)
+        private async Task ThanhToanNoAsync(
+            HoaDonNoDto item,
+            Guid phuongThucId,
+            bool quickPay = false)
         {
-            if (item.ConLai == 0)
+            if (item == null)
+                return;
+
+            if (item.ConLai <= 0)
             {
                 NotiHelper.Show("Công nợ đã thu đủ!");
                 return;
             }
 
-            IDisposable? busy = null;
+            var now = DateTime.Now;
 
-            try
+            DateTime ngay;
+            DateTime ngayGio;
+
+            if (item.NgayGio.HasValue && now.Date > item.NgayGio.Value.Date)
             {
-                var owner = Window.GetWindow(this);
-                var now = DateTime.Now;
+                ngayGio = item.NgayGio.Value.Date.AddDays(1).AddSeconds(-1);
+                ngay = ngayGio.Date;
+            }
+            else
+            {
+                ngayGio = now;
+                ngay = now.Date;
+            }
 
-                busy = BusyUI.Scope(this, btn, "Đang mở form...");
+            decimal soTien;
 
+            // ==============================
+            // QUICK PAY (CTRL)
+            // ==============================
+            if (quickPay)
+            {
+                soTien = item.ConLai;
+            }
+            else
+            {
                 var dto = new ChiTietHoaDonThanhToanDto
                 {
-                    Ngay = now.Date,
-                    NgayGio = now,
                     HoaDonId = item.Id,
                     KhachHangId = item.KhachHangId,
                     Ten = item.TenKhachHangText,
-                    PhuongThucThanhToanId = methodId,
-                    LoaiThanhToan =
-                        item.NgayNo?.Date == now.Date
-                        ? "Trả nợ trong ngày"
-                        : "Trả nợ qua ngày",
-                    GhiChu = item.GhiChu,
-                    SoTien = item.ConLai
+                    SoTien = item.ConLai,
+                    PhuongThucThanhToanId = phuongThucId,
                 };
 
-                busy.Dispose();
-                busy = null;
+                var owner = Window.GetWindow(this);
 
-                var win = new ChiTietHoaDonThanhToanEdit(dto)
+                var form = new ChiTietHoaDonThanhToanEdit(dto)
                 {
                     Owner = owner,
                     Width = owner?.ActualWidth ?? 1200,
                     Height = owner?.ActualHeight ?? 800
                 };
 
-                win.PhuongThucThanhToanComboBox.IsEnabled = false;
+                form.PhuongThucThanhToanComboBox.IsEnabled = false;
 
-                // ===============================
-                // CTRL = THU NHANH
-                // ===============================
+                if (form.ShowDialog() != true)
+                    return;
 
-                if (quickPay)
-                {
-                    win.QuickSubmit = true;
-                    win.WindowStartupLocation = WindowStartupLocation.Manual;
-                    win.Left = -10000;
-                    win.Top = -10000;
-                    win.ShowInTaskbar = false;
-                }
+                soTien = form.Model.SoTien;
 
-                if (win.ShowDialog() == true)
-                {
-                    await ReloadAfterPay();
-                }
+                if (soTien <= 0)
+                    return;
+
+                if (soTien > item.ConLai)
+                    soTien = item.ConLai;
             }
-            catch (Exception ex)
+
+            // ==============================
+            // BACKUP
+            // ==============================
+            var oldConLai = item.ConLai;
+            var oldDaThu = item.DaThu;
+            var oldLastModified = item.LastModified;
+
+            // ==============================
+            // OPTIMISTIC UI
+            // ==============================
+            item.DaThu += soTien;
+            item.ConLai = item.ThanhTien - item.DaThu;
+
+            if (item.ConLai <= 0)
             {
-                NotiHelper.Show($"Lỗi: {ex.Message}");
+                _items = _items.Where(x => x.Id != item.Id).ToList();
+                ChiTietHoaDonNoDataGrid.SelectedItem = null;
             }
-            finally
+
+            ApplyFilter();
+
+            var lastModified = item.LastModified;
+
+            // ==============================
+            // CALL API
+            // ==============================
+            _ = Task.Run(async () =>
             {
-                busy?.Dispose();
-            }
+                try
+                {
+                    var newDto = new ChiTietHoaDonThanhToanDto
+                    {
+                        LastModified = lastModified,
+                        HoaDonId = item.Id,
+                        KhachHangId = item.KhachHangId,
+                        Ten = item.TenKhachHangText,
+                        TenPhuongThucThanhToan = quickPay
+                            ? (phuongThucId == AppConstants.TienMatId ? "Tiền mặt" : "Chuyển khoản")
+                            : "",
+                        SoTien = soTien,
+                        PhuongThucThanhToanId = phuongThucId,
+                    };
+
+                    var r = await _hoaDonApi.UpdateF1F4SingleAsync(item.Id, newDto);
+
+                    if (!r.IsSuccess)
+                        NotiHelper.ShowError(r.Message);
+
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        if (r.Data != null)
+                        {
+                            item.DaThu = r.Data.DaThu;
+                            item.ConLai = r.Data.ConLai;
+                            item.LastModified = r.Data.LastModified;
+
+                            if (item.ConLai <= 0)
+                            {
+                                _items = _items.Where(x => x.Id != item.Id).ToList();
+                                ChiTietHoaDonNoDataGrid.SelectedItem = null;
+                            }
+
+                            ApplyFilter();
+                        }
+                    });
+                }
+                catch
+                {
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        item.ConLai = oldConLai;
+                        item.DaThu = oldDaThu;
+                        item.LastModified = oldLastModified;
+
+                        if (!_items.Any(x => x.Id == item.Id))
+                        {
+                            _items.Add(item);
+                        }
+
+                        ApplyFilter();
+
+                        NotiHelper.ShowError("Thanh toán thất bại!");
+                    });
+                }
+            });
         }
-        // ================================
-        // RELOAD AFTER PAY
-        // ================================
-
-        private async Task ReloadAfterPay()
-        {
-            await AppProviders.HoaDons.ReloadAsync();
-            await AppProviders.ChiTietHoaDonThanhToans.ReloadAsync();
-
-            await ReloadUI();
-        }
 
         // ================================
-        // HOTKEYS
+        // HOTKEY
         // ================================
-
         public async void HandleHotkey(Key key)
         {
             var item = SelectedNo;
 
             if (item == null)
             {
-                NotiHelper.Show("Vui lòng chọn công nợ!");
+                //NotiHelper.Show("Vui lòng chọn công nợ!");
                 return;
             }
+
+            bool quickPay = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
 
             switch (key)
             {
                 case Key.F1:
-                    await PayItemAsync(item, AppConstants.TienMatId, false);
+                    await ThanhToanNoAsync(item, AppConstants.TienMatId, quickPay);
                     break;
 
                 case Key.F4:
-                    await PayItemAsync(item, AppConstants.ChuyenKhoanId, false);
+                    await ThanhToanNoAsync(item, AppConstants.ChuyenKhoanId, quickPay);
                     break;
             }
         }

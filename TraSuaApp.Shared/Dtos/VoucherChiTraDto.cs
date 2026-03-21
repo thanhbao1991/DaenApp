@@ -4,7 +4,7 @@
     public class VoucherChiTraDto
     {
         public Guid Id { get; set; }
-        public DateTime Ngay { get; set; }           // map từ CreatedAt
+        public DateTime Ngay { get; set; }
         public string TenVoucher { get; set; } = "";
         public decimal GiaTriApDung { get; set; }
         public Guid? HoaDonId { get; set; }

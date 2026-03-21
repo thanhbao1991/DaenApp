@@ -14,7 +14,7 @@ public class CongViecNoiBoDto : DtoBase
     public int? XNgayCanhBao { get; set; }
 
     // ✅ Metadata đồng bộ với Entity
-    public DateTime CreatedAt { get; set; }
+    
     public DateTime? DeletedAt { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? LastModified { get; set; }

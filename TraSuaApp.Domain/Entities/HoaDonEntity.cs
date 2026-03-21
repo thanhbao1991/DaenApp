@@ -10,11 +10,11 @@ public partial class HoaDon
     [DefaultValue(false)]
 
     public DateTime? NgayShip { get; set; }
-    public DateTime? NgayRa { get; set; }
+    public DateTime? NgayIn { get; set; }
     public string? GhiChu { get; set; }
     public string? NguoiShip { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public decimal TongTien { get; set; }
 
@@ -62,4 +62,13 @@ public partial class HoaDon
     public virtual ICollection<ChiTietHoaDonEntity> ChiTietHoaDons { get; set; } = new List<ChiTietHoaDonEntity>();
 
     public virtual KhachHang? KhachHang { get; set; }
+
+
+
+
+
+
+
+
+
 }

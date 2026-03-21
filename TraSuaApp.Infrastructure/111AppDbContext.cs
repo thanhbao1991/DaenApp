@@ -4,7 +4,7 @@ using TraSuaApp.Domain.Entities;
 using TraSuaApp.Domain.Interfaces;
 using TraSuaApp.Infrastructure.Repositories;
 using TraSuaApp.Shared.Config;
-using static TraSuaApp.Infrastructure.Services.DoanhThuService;
+using TraSuaApp.Shared.Dtos;
 
 namespace TraSuaApp.Infrastructure;
 
@@ -56,11 +56,6 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<HoaDonPaymentMaskView>()
-        .HasNoKey()
-        .ToView("vHoaDonPaymentMask");
-        // ======================
-        // ChiTietHoaDonEntity
         // ======================
         modelBuilder.Entity<ChiTietHoaDonEntity>(entity =>
         {

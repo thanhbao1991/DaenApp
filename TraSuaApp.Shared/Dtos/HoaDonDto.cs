@@ -21,7 +21,7 @@ public class HoaDonDto : DtoBase
     public int DiemThangTruoc { get; set; }
     public DateTime? NgayShip { get; set; }
     public string? NguoiShip { get; set; }
-    public DateTime? NgayRa { get; set; }
+    public DateTime? NgayIn { get; set; }
     public string? PhanLoai { get; set; }
     public override string ApiRoute => "HoaDon";
     public DateTime Ngay { get; set; }

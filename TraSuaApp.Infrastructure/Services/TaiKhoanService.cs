@@ -28,7 +28,7 @@ public class TaiKhoanService : ITaiKhoanService
             VaiTro = entity.VaiTro,
             MatKhau = null, // ❌ không bao giờ trả mật khẩu
 
-            CreatedAt = entity.CreatedAt,
+
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
@@ -71,7 +71,6 @@ public class TaiKhoanService : ITaiKhoanService
             VaiTro = dto.VaiTro,
             MatKhau = PasswordHelper.HashPassword(dto.MatKhau ?? ""),
 
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false,
         };
@@ -93,8 +92,8 @@ public class TaiKhoanService : ITaiKhoanService
         if (entity == null)
             return Result<TaiKhoanDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<TaiKhoanDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        // return Result<TaiKhoanDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         bool daTonTai = await _context.TaiKhoans
             .AnyAsync(x => x.Id != id &&

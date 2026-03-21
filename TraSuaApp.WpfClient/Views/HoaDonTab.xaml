@@ -4,30 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:fa="clr-namespace:FontAwesome.Sharp;assembly=FontAwesome.Sharp">
     <UserControl.Resources>
-        <Style x:Key="WaitingShipButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="26" />
-            <Setter Property="Height" Value="26" />
-            <Setter Property="Margin" Value="2" />
-            <Setter Property="Visibility" Value="Collapsed" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="#2D7DF6" CornerRadius="16">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <MultiDataTrigger>
-                    <MultiDataTrigger.Conditions>
-                        <Condition Binding="{Binding PhanLoai}" Value="Ship" />
-                        <Condition Binding="{Binding ChuaCoShipper}" Value="True" />
-                    </MultiDataTrigger.Conditions>
-                    <Setter Property="Visibility" Value="Visible" />
-                </MultiDataTrigger>
-            </Style.Triggers>
-        </Style>
         <Style x:Key="RoundAvatarStyle" TargetType="Image">
             <Setter Property="Width" Value="26" />
             <Setter Property="Height" Value="26" />
@@ -183,34 +159,44 @@
                 SelectionUnit="FullRow"
                 VirtualizingPanel.IsVirtualizing="True"
                 VirtualizingPanel.ScrollUnit="Pixel"
-                VirtualizingPanel.VirtualizationMode="Recycling"
+                VirtualizingPanel.VirtualizationMode="Standard"
                 Visibility="Visible">
                 <DataGrid.Columns>
                     <DataGridTextColumn
                         Binding="{Binding Stt}"
                         ElementStyle="{StaticResource CenterTextCellStyle}"
-                        Header="STT" />
+                        Header="STT"
+                        Visibility="Collapsed" />
+
                     <DataGridTextColumn
                         Width="Auto"
                         Binding="{Binding NgayGio, StringFormat=HH:mm}"
                         ElementStyle="{StaticResource RightTextCellStyle}"
                         Header="" />
-                    <DataGridTemplateColumn Width="Auto">
+                    <DataGridTextColumn Width=" 60" Binding="{Binding WaitingTime}">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style BasedOn="{StaticResource CenterTextCellStyle}" TargetType="TextBlock">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="FontWeight" Value="Regular" />
+                                <Setter Property="Foreground" Value="Black" />
+                                <Setter Property="FontSize" Value="8" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding WaitingTime}" Value="Mới">
+                                        <Setter Property="Foreground" Value="{StaticResource PrimaryForeground}" />
+                                        <Setter Property="Background" Value="{StaticResource DangerBrush}" />
+                                    </DataTrigger>
+
+                                </Style.Triggers>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTemplateColumn>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel
                                     Height="32"
                                     HorizontalAlignment="Center"
                                     Orientation="Horizontal">
-                                    <!--  waiting time  -->
-                                    <Button Click="RowEsc_Click" Style="{StaticResource WaitingShipButtonStyle}">
-                                        <TextBlock
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            FontWeight="Bold"
-                                            Foreground="White"
-                                            Text="{Binding WaitingMinutes}" />
-                                    </Button>
                                     <!--  Khánh  -->
                                     <Image Source="/Images/khanh.jpg">
                                         <Image.Style>
@@ -264,8 +250,8 @@
                                         <Setter Property="FontWeight" Value="Bold" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding SortOrder}" Value="4">
-                                        <Setter Property="Foreground" Value="{StaticResource SuccessForeground}" />
-                                        <Setter Property="Background" Value="{StaticResource SuccessBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource WarningForeground}" />
+                                        <Setter Property="Background" Value="LightGreen" />
                                         <Setter Property="FontWeight" Value="Bold" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding SortOrder}" Value="3">
@@ -293,12 +279,7 @@
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
-                    <DataGridTextColumn
-                        Width="Auto"
-                        Binding="{Binding WaitingMinutes}"
-                        ElementStyle="{StaticResource LeftTextCellStyle}"
-                        Header="WaitingMinutes"
-                        Visibility="Collapsed" />
+
                     <DataGridTextColumn
                         Width="Auto"
                         Binding="{Binding SortOrder}"
@@ -318,10 +299,28 @@
                         Header="NguoiShip"
                         Visibility="Collapsed" />
                     <DataGridTextColumn
-                        Width="100"
+                        Width="80"
                         Binding="{Binding GhiChuShipper}"
-                        ElementStyle="{StaticResource LeftTextCellStyle}"
-                        Header="Khánh" />
+                        FontSize="8">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style BasedOn="{StaticResource CenterTextCellStyle}" TargetType="TextBlock">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="FontWeight" Value="Regular" />
+                                <Setter Property="Foreground" Value="Black" />
+                                <Setter Property="FontSize" Value="8" />
+                                <!--<Style.Triggers>
+                                    <DataTrigger Binding="{Binding GhiChuShipper}" Value="Tí nữa chuyển khoản">
+                                        <Setter Property="Foreground" Value="{StaticResource PrimaryForeground}" />
+                                        <Setter Property="Background" Value="{StaticResource DangerBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsBank}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource PrimaryForeground}" />
+                                        <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>-->
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                     <DataGridTextColumn
                         x:Name="ThanhTienColumn"
                         Width="Auto"
@@ -347,7 +346,12 @@
                         ElementStyle="{StaticResource RightTextCellStyle}"
                         Header="Ghi nợ"
                         Visibility="Collapsed" />
-                    <!--  ⬇️ HAI NÚT THU TIỀN NGAY SAU CỘT "Còn lại"  -->
+                    <DataGridTextColumn
+                        Width="Auto"
+                        Binding="{Binding IsBank}"
+                        ElementStyle="{StaticResource RightTextCellStyle}"
+                        Visibility="Collapsed" />
+
                     <DataGridTemplateColumn Width="40">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -370,7 +374,6 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-
                 </DataGrid.Columns>
             </DataGrid>
             <Grid
@@ -736,7 +739,7 @@
                         Margin="5"
                         Click="F12Button_Click"
                         Style="{StaticResource XoaButtonStyle}"
-                        Visibility="Visible">
+                        Visibility="Collapsed">
                         <StackPanel Orientation="Horizontal">
                             <fa:IconImage
                                 Width="16"

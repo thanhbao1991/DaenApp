@@ -30,7 +30,7 @@ public class KhachHangGiaBanService : IKhachHangGiaBanService
             TenSanPham = entity.SanPhamBienThe?.SanPham?.Ten,
             TenBienThe = entity.SanPhamBienThe?.TenBienThe,
 
-            CreatedAt = entity.CreatedAt,
+
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
@@ -68,7 +68,6 @@ public class KhachHangGiaBanService : IKhachHangGiaBanService
             KhachHangId = dto.KhachHangId,
             SanPhamBienTheId = dto.SanPhamBienTheId,
             GiaBan = dto.GiaBan,
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false,
         };
@@ -98,8 +97,8 @@ public class KhachHangGiaBanService : IKhachHangGiaBanService
         if (entity == null)
             return Result<KhachHangGiaBanDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<KhachHangGiaBanDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        // return Result<KhachHangGiaBanDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         var before = ToDto(entity);
 

@@ -8,7 +8,7 @@ public class ChiTietHoaDonThanhToanDto : DtoBase
 
     public bool IsToday => Ngay == DateTime.Today;
 
-    public string LoaiThanhToan { get; set; }
+    public string? LoaiThanhToan { get; set; }
 
 
     public decimal SoTien { get; set; }

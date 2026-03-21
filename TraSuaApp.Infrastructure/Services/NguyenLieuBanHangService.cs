@@ -27,7 +27,7 @@ public class NguyenLieuBanHangService : INguyenLieuBanHangService
             DonViTinh = entity.DonViTinh,
             TonKho = entity.TonKho,
 
-            CreatedAt = entity.CreatedAt,
+
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
@@ -75,7 +75,6 @@ public class NguyenLieuBanHangService : INguyenLieuBanHangService
             DonViTinh = dto.DonViTinh,
             TonKho = tonKho,
 
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false,
         };
@@ -96,7 +95,6 @@ public class NguyenLieuBanHangService : INguyenLieuBanHangService
                 GhiChu = "Khởi tạo tồn kho khi tạo nguyên liệu bán hàng",
                 HoaDonId = null,
                 ChiTieuHangNgayId = null,
-                CreatedAt = now,
                 LastModified = now,
                 IsDeleted = false
             });
@@ -118,8 +116,8 @@ public class NguyenLieuBanHangService : INguyenLieuBanHangService
         if (entity == null)
             return Result<NguyenLieuBanHangDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<NguyenLieuBanHangDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        // return Result<NguyenLieuBanHangDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         bool daTonTai = await _context.NguyenLieuBanHangs
             .AnyAsync(x => x.Id != id &&
@@ -163,7 +161,6 @@ public class NguyenLieuBanHangService : INguyenLieuBanHangService
                 GhiChu = "Điều chỉnh tồn kho thủ công từ NguyenLieuBanHangEdit",
                 HoaDonId = null,
                 ChiTieuHangNgayId = null,
-                CreatedAt = now,
                 LastModified = now,
                 IsDeleted = false
             });

@@ -31,7 +31,7 @@ public class LocationService : ILocationService
         MoneyDistance = e.MoneyDistance,
         Matrix = e.Matrix,
         // meta
-        CreatedAt = e.CreatedAt,
+
         LastModified = e.LastModified,
         DeletedAt = e.DeletedAt,
         IsDeleted = e.IsDeleted
@@ -46,7 +46,7 @@ public class LocationService : ILocationService
 
             var list = await _context.Locations.AsNoTracking()
                 .Where(x => !x.IsDeleted)
-                .OrderByDescending(x => x.LastModified ?? x.CreatedAt)
+                .OrderByDescending(x => x.LastModified)
                 .Select(x => ToDto(x))
                 .ToListAsync();
 
@@ -117,7 +117,6 @@ public class LocationService : ILocationService
             DistanceKm = dto.DistanceKm,
             MoneyDistance = dto.MoneyDistance,
             Matrix = dto.Matrix?.Trim(),
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false
         };
@@ -140,8 +139,8 @@ public class LocationService : ILocationService
         if (entity == null)
             return Result<LocationDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<LocationDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        //return Result<LocationDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         // Gán toàn bộ trường nội dung
         entity.StartAddress = (dto.StartAddress ?? string.Empty).Trim();

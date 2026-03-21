@@ -27,23 +27,6 @@
                     TextChanged="SearchChiTietHoaDonNoTextBox_TextChanged" />
             </StackPanel>
 
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-
-                <Button
-                    Click="TimKiemNhanhCongNoButton_Click"
-                    Content="Công nợ hôm nay"
-                    Foreground="White"
-                    Style="{StaticResource ThemButtonStyle}"
-                    Tag="hôm nay" />
-
-                <Button
-                    Click="TimKiemNhanhCongNoButton_Click"
-                    Content="Công nợ hôm qua"
-                    Foreground="White"
-                    Style="{StaticResource ThemButtonStyle}"
-                    Tag="hôm qua" />
-            </StackPanel>
-
         </DockPanel>
 
         <!--  ================= DataGrid =================  -->

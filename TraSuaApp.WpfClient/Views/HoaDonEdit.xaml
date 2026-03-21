@@ -194,39 +194,32 @@
                                 IsEditable="True"
                                 SelectedValuePath="Id" />
                         </GroupBox>
-                        <GroupBox>
+                        <GroupBox x:Name="DiemGroupBox" MouseDown="DiemGroupBox_MouseDown">
                             <GroupBox.Header>
                                 <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                                     <fa:IconBlock
                                         Margin="0,0,5,0"
                                         Foreground="{StaticResource DangerBrush}"
                                         Icon="Star" />
-                                    <TextBlock VerticalAlignment="Center" Text="Điểm tháng này" />
+                                    <TextBlock VerticalAlignment="Center" Text="Điểm tháng trước - này" />
                                 </StackPanel>
                             </GroupBox.Header>
-                            <TextBlock
-                                x:Name="DiemThangNayTextBlock"
-                                HorizontalAlignment="Left"
-                                FontWeight="Medium" />
-                        </GroupBox>
-
-                        <GroupBox
-                            x:Name="DiemThangTruocGroupBox"
-                            Foreground="{StaticResource PrimaryBrush}"
-                            MouseDown="DiemThangTruocTextBlock_MouseDown">
-                            <GroupBox.Header>
-                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
-                                    <fa:IconBlock
-                                        Margin="0,0,5,0"
-                                        Foreground="{StaticResource DangerBrush}"
-                                        Icon="Star" />
-                                    <TextBlock VerticalAlignment="Center" Text="Điểm tháng trước" />
-                                </StackPanel>
-                            </GroupBox.Header>
-                            <TextBlock
-                                x:Name="DiemThangTruocTextBlock"
-                                HorizontalAlignment="Left"
-                                FontWeight="Medium" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="DiemThangTruocTextBlock" TextDecorations="Strikethrough" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    HorizontalAlignment="Center"
+                                    Text="-" />
+                                <TextBlock
+                                    x:Name="DiemThangNayTextBlock"
+                                    Grid.Column="2"
+                                    FontWeight="Medium" />
+                            </Grid>
                         </GroupBox>
                         <GroupBox>
                             <GroupBox.Header>
@@ -272,6 +265,7 @@
                                     <RowDefinition />
                                     <RowDefinition />
                                     <RowDefinition />
+                                    <RowDefinition />
                                 </Grid.RowDefinitions>
                                 <TextBlock Padding="4" Text="Tổng tiền: " />
                                 <TextBlock
@@ -310,6 +304,20 @@
                                 <TextBlock
                                     x:Name="CongNoTextBlock"
                                     Grid.Row="3"
+                                    Grid.Column="1"
+                                    Padding="4"
+                                    FontWeight="Medium"
+                                    Foreground="{StaticResource DangerBrush}"
+                                    TextAlignment="Right" />
+                                <TextBlock
+                                    Grid.Row="4"
+                                    Padding="4"
+                                    FontWeight="Medium"
+                                    Foreground="{StaticResource DangerBrush}"
+                                    Text="Đơn khác: " />
+                                <TextBlock
+                                    x:Name="DonKhacTextBlock"
+                                    Grid.Row="4"
                                     Grid.Column="1"
                                     Padding="4"
                                     FontWeight="Medium"

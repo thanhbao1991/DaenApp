@@ -129,7 +129,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
                 if (result?.IsSuccess == true)
                     AppProviders.KhachHangGiaBans.Remove(selected.Id);
                 else
-                    throw new Exception(result?.Message ?? "Không thể xoá.");
+                    NotiHelper.ShowError(result?.Message ?? "Không thể xoá.");
             }
             catch (Exception ex)
             {

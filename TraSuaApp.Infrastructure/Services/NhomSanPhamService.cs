@@ -25,7 +25,7 @@ public class NhomSanPhamService : INhomSanPhamService
             Ten = entity.Ten,
             LastModified = entity.LastModified,
             IsDeleted = entity.IsDeleted,
-            CreatedAt = entity.CreatedAt,
+
             DeletedAt = entity.DeletedAt
         };
     }
@@ -62,7 +62,6 @@ public class NhomSanPhamService : INhomSanPhamService
             Id = Guid.NewGuid(),
             Ten = dto.Ten.Trim(),
             LastModified = now,
-            CreatedAt = now,
             IsDeleted = false
         };
 
@@ -83,8 +82,8 @@ public class NhomSanPhamService : INhomSanPhamService
         if (entity == null)
             return Result<NhomSanPhamDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<NhomSanPhamDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        //return Result<NhomSanPhamDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         bool daTonTai = await _context.NhomSanPhams
             .AnyAsync(x => x.Id != id &&

@@ -20,7 +20,7 @@ public partial class ChiTieuHangNgay
     public DateTime Ngay { get; set; }
     public DateTime NgayGio { get; set; }
     public Guid NguyenLieuId { get; set; }
-    public DateTime CreatedAt { get; set; }
+    
     public DateTime? DeletedAt { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? LastModified { get; set; }

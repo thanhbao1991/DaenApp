@@ -30,7 +30,7 @@ public partial class NguyenLieuTransaction
     public Guid? ChiTieuHangNgayId { get; set; }
     public Guid? HoaDonId { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     // ✅ nullable cho soft-delete
     public DateTime? DeletedAt { get; set; }

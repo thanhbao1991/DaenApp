@@ -3,8 +3,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Đăng nhập"
-    Width="400"
-    Height="330"
+    Width="700"
+    Height="420"
     AllowsTransparency="True"
     Background="Transparent"
     FontSize="{StaticResource FontSizeNormal}"
@@ -16,116 +16,172 @@
 
     <Border
         Background="{StaticResource LightBrush}"
-        BorderBrush="#CCC"
+        BorderBrush="#DDD"
         BorderThickness="1"
-        CornerRadius="8"
+        CornerRadius="10"
         MouseLeftButtonDown="Border_MouseLeftButtonDown">
 
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="40" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
 
-            <!--  Thanh tiêu đề  -->
-            <Border
-                Grid.Row="0"
-                Background="{StaticResource PrimaryBrush}"
-                CornerRadius="8,8,0,0">
-                <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!--  LEFT PANEL  -->
+            <Border Background="{StaticResource PrimaryBrush}" CornerRadius="10,0,0,10">
+
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+
                     <TextBlock
-                        Margin="10,0,0,0"
-                        VerticalAlignment="Center"
-                        FontSize="16"
+                        FontSize="28"
                         FontWeight="Bold"
                         Foreground="{StaticResource LightBrush}"
-                        Text="Đăng nhập" />
+                        Text="TraSuaApp" />
+
+                    <TextBlock
+                        Margin="0,10,0,0"
+                        Foreground="{StaticResource LightBrush}"
+                        Text="POS quản lý trà sữa" />
+
                     <TextBlock
                         x:Name="sv"
+                        Margin="0,20,0,0"
                         HorizontalAlignment="Center"
                         Foreground="{StaticResource LightBrush}" />
-                    <Button
-                        Width="32"
-                        Height="32"
-                        Margin="0,0,5,0"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Center"
-                        Background="Transparent"
-                        BorderBrush="{x:Null}"
-                        Click="CloseButton_Click"
-                        Content="✖"
-                        Cursor="Hand"
-                        Foreground="{StaticResource LightBrush}" />
-                </Grid>
+
+                </StackPanel>
+
             </Border>
 
-            <!--  Form đăng nhập  -->
-            <StackPanel Grid.Row="1" Margin="20">
-                <GroupBox Margin="0,0,0,5" Header="Tên đăng nhập">
 
 
-                    <TextBox x:Name="UsernameTextBox" Margin="0,0,0,10" />
+            <!--  RIGHT PANEL  -->
+            <Grid Grid.Column="1" Margin="40">
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+
+                <!--  CLOSE  -->
+                <Button
+                    Grid.Row="0"
+                    Width="30"
+                    Height="30"
+                    HorizontalAlignment="Right"
+                    Background="Transparent"
+                    BorderBrush="{x:Null}"
+                    Click="CloseButton_Click"
+                    Content="✖"
+                    Cursor="Hand" />
+
+
+                <!--  TITLE  -->
+                <TextBlock
+                    Grid.Row="1"
+                    Margin="0,10,0,20"
+                    FontSize="22"
+                    FontWeight="Bold"
+                    Text="Đăng nhập" />
+
+
+                <!--  USERNAME  -->
+                <GroupBox
+                    Grid.Row="2"
+                    Margin="0,0,0,10"
+                    Header="Tên đăng nhập">
+
+                    <TextBox x:Name="UsernameTextBox" Height="28" />
                 </GroupBox>
 
-                <GroupBox Margin="0,0,0,5" Header="Mật khẩu">
-                    <PasswordBox x:Name="PasswordBox" BorderThickness="0" />
+
+                <!--  PASSWORD  -->
+                <GroupBox
+                    Grid.Row="3"
+                    Margin="0,0,0,10"
+                    Header="Mật khẩu">
+
+                    <PasswordBox x:Name="PasswordBox" Height="28" />
                 </GroupBox>
 
-                <!--  Group Tuỳ chọn  -->
-                <GroupBox Margin="0,20,0,0" BorderThickness="0">
-                    <StackPanel Orientation="Horizontal">
-                        <!--  Lưu đăng nhập  -->
-                        <CheckBox
-                            x:Name="RememberMeCheckBox"
-                            Margin="0,0,15,0"
-                            VerticalAlignment="Center"
-                            Checked="RememberMeCheckBox_Checked"
-                            Unchecked="RememberMeCheckBox_Unchecked">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Lưu đăng nhập" />
-                            </StackPanel>
-                        </CheckBox>
 
-                        <!--  Tự động đăng nhập  -->
-                        <CheckBox x:Name="AutoLoginCheckBox" VerticalAlignment="Center">
-                            <CheckBox.Style>
-                                <Style TargetType="CheckBox">
-                                    <Setter Property="Foreground" Value="{StaticResource DarkBrush}" />
-                                    <Style.Triggers>
-                                        <Trigger Property="IsEnabled" Value="False">
-                                            <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </CheckBox.Style>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Tự động đăng nhập" />
-                            </StackPanel>
-                        </CheckBox>
-                    </StackPanel>
-                </GroupBox>
+                <!--  OPTIONS  -->
+                <StackPanel
+                    Grid.Row="4"
+                    Margin="0,5,0,10"
+                    Orientation="Horizontal">
 
+                    <CheckBox
+                        x:Name="RememberMeCheckBox"
+                        Margin="0,0,20,0"
+                        VerticalAlignment="Center"
+                        Checked="RememberMeCheckBox_Checked"
+                        Content="Lưu đăng nhập"
+                        Unchecked="RememberMeCheckBox_Unchecked" />
+
+                    <CheckBox
+                        x:Name="AutoLoginCheckBox"
+                        VerticalAlignment="Center"
+                        Content="Tự động đăng nhập">
+
+                        <CheckBox.Style>
+                            <Style TargetType="CheckBox">
+                                <Setter Property="Foreground" Value="{StaticResource DarkBrush}" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </CheckBox.Style>
+
+                    </CheckBox>
+
+                </StackPanel>
+
+
+                <!--  LOGIN BUTTON  -->
                 <Button
                     x:Name="LoginButton"
-                    Margin="0,20,0,0"
+                    Grid.Row="5"
+                    Height="36"
+                    Margin="0,5,0,10"
                     Click="LoginButton_Click"
                     Content="Đăng nhập"
                     Style="{StaticResource AddButtonStyle}" />
 
+
+                <!--  PROGRESS  -->
                 <ProgressBar
                     x:Name="LoginProgressBar"
+                    Grid.Row="6"
                     Height="8"
-                    Margin="0,10,0,0"
+                    Margin="0,0,0,6"
                     IsIndeterminate="True"
                     Visibility="Collapsed" />
+
+
+                <!--  ERROR  -->
                 <TextBlock
                     x:Name="ErrorTextBlock"
-                    FontSize="8"
+                    Grid.Row="7"
+                    FontSize="10"
                     Foreground="{StaticResource DangerBrush}"
                     Style="{StaticResource ErrorTextBlock}"
                     TextWrapping="Wrap"
                     Visibility="{Binding Text, Converter={StaticResource NullOrEmptyOrDefaultToVisibilityConverter}}" />
-            </StackPanel>
+
+            </Grid>
+
         </Grid>
+
     </Border>
+
 </Window>

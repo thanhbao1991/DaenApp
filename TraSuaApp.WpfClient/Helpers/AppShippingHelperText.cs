@@ -1037,7 +1037,7 @@ internal static class AppShippingHelperFactory
 
     public static Task<AppShippingHelperText> GetAsync()
     {
-        if (_instanceTask == null) throw new Exception("App Shopping chưa sẵn sàng.");
+        if (_instanceTask == null) NotiHelper.ShowError("App Shopping chưa sẵn sàng.");
         return _instanceTask;
     }
 
@@ -1052,7 +1052,7 @@ internal static class AppShippingHelperFactory
         await AppProviders.EnsureCreatedAsync();
 
         if (AppProviders.SanPhams == null || AppProviders.Toppings == null)
-            throw new Exception("Providers chưa sẵn sàng.");
+            NotiHelper.ShowError("Providers chưa sẵn sàng.");
 
         await Task.WhenAll(
             AppProviders.SanPhams.InitializeAsync(),

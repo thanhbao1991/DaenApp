@@ -54,6 +54,11 @@ namespace TraSuaApp.Shared.Dtos
         public List<ThanhToanItemDto> DanhSachTienMat { get; set; } = new();
     }
 
+
+}
+
+namespace TraSuaApp.Shared.Dtos
+{
     public class DoanhThuTheoLoaiItemDto
     {
         public string Ten { get; set; } = "";
@@ -64,5 +69,23 @@ namespace TraSuaApp.Shared.Dtos
     {
         public decimal TongDoanhThu { get; set; }
         public List<DoanhThuTheoLoaiItemDto> DanhSach { get; set; } = new();
+    }
+}
+
+namespace TraSuaApp.Shared.Dtos
+{
+    public class KhachTraNoItemDto
+    {
+        public string TenKhachHang { get; set; } = "";
+        public decimal SoTien { get; set; }
+    }
+
+    public class ThongKeTraNoNgayDto
+    {
+        public decimal TongTraNoTaiQuan { get; set; }
+        public decimal TongTraNoShipper { get; set; }
+
+        public List<KhachTraNoItemDto> TraNoTaiQuan { get; set; } = new();
+        public List<KhachTraNoItemDto> TraNoShipper { get; set; } = new();
     }
 }

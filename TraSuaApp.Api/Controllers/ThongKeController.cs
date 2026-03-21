@@ -42,10 +42,7 @@ namespace TraSuaApp.Api.Controllers
         }
 
         [HttpGet("doanh-thu-ngay")]
-        public async Task<ActionResult<Result<ThongKeDoanhThuNgayDto>>> GetDoanhThuNgay(
-            int ngay,
-            int thang,
-            int nam)
+        public async Task<ActionResult<Result<ThongKeDoanhThuNgayDto>>> GetDoanhThuNgay(int ngay, int thang, int nam)
         {
             var date = new DateTime(nam, thang, ngay);
 
@@ -53,5 +50,19 @@ namespace TraSuaApp.Api.Controllers
 
             return Result<ThongKeDoanhThuNgayDto>.Success(dto);
         }
+
+        [HttpGet("tra-no-ngay")]
+        public async Task<ActionResult<Result<ThongKeTraNoNgayDto>>> GetTraNoNgay(
+        int ngay,
+        int thang,
+        int nam)
+        {
+            var date = new DateTime(nam, thang, ngay);
+
+            var dto = await _service.TinhTraNoNgayAsync(date);
+
+            return Result<ThongKeTraNoNgayDto>.Success(dto);
+        }
+
     }
 }

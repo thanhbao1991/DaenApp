@@ -15,11 +15,9 @@ public partial class KhachHang
 
     public DateTime? LastModified { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+
 
     public DateTime? DeletedAt { get; set; }
-
-    public int? OldId { get; set; }
 
     public virtual ICollection<ChiTietHoaDonPoint> ChiTietHoaDonPoints { get; set; } = new List<ChiTietHoaDonPoint>();
 

@@ -7,24 +7,31 @@
 
 <style>
     /* === Borderless groups for CreatePlus (scoped) === */
-/* #InvoicePlus .card { border: 0; box-shadow: none; }
-#InvoicePlus .card-header { border-bottom: 0; }
-#InvoicePlus .list-group-item { border: 0; }
- */
-/* Làm mềm các “ô viền” nhỏ bên trong (loyalty/tổng nợ) thay vì khung đậm */
-#InvoicePlus .card .border { border-color: rgba(0,0,0,.08) !important; }
+    /* #InvoicePlus .card { border: 0; box-shadow: none; }
+    #InvoicePlus .card-header { border-bottom: 0; }
+    #InvoicePlus .list-group-item { border: 0; }
+     */
+    /* Làm mềm các “ô viền” nhỏ bên trong (loyalty/tổng nợ) thay vì khung đậm */
+    #InvoicePlus .card .border {
+        border-color: rgba(0,0,0,.08) !important;
+    }
 
-/* Giữ bảng tổng tiền rõ ràng nhưng nhẹ mắt hơn */
-#InvoicePlus .table.table-bordered,
-#InvoicePlus .table.table-bordered > :not(caption) > * > * {
-  border-color: rgba(0,0,0,.12);
-}
+    /* Giữ bảng tổng tiền rõ ràng nhưng nhẹ mắt hơn */
+    #InvoicePlus .table.table-bordered,
+    #InvoicePlus .table.table-bordered > :not(caption) > * > * {
+        border-color: rgba(0,0,0,.12);
+    }
 
-/* Cửa sổ gợi ý (portal) đã mảnh; thêm chút radius cho dịu hơn */
-#InvoicePlus .portal-list { border-color: rgba(0,0,0,.08); border-radius: 10px; }
+    /* Cửa sổ gợi ý (portal) đã mảnh; thêm chút radius cho dịu hơn */
+    #InvoicePlus .portal-list {
+        border-color: rgba(0,0,0,.08);
+        border-radius: 10px;
+    }
 
-/* Khoảng cách giữa các nhóm nhìn thoáng hơn */
-#InvoicePlus .card { margin-bottom: .6rem; }
+    /* Khoảng cách giữa các nhóm nhìn thoáng hơn */
+    #InvoicePlus .card {
+        margin-bottom: .6rem;
+    }
 
     .busy-mask {
         position: fixed;
@@ -63,39 +70,35 @@
             display: block;
             animation: toastpop .18s ease-out;
         }
+
     @@keyframes toastpop {
-        from
+        from {
+            opacity: .6;
+            transform: translate(-50%,-40%)
+        }
 
-    {
-        opacity: .6;
-        transform: translate(-50%,-40%)
-    }
-
-    to {
-        opacity: 1;
-        transform: translate(-50%,-50%)
-    }
-
+        to {
+            opacity: 1;
+            transform: translate(-50%,-50%)
+        }
     }
 
     .pulse {
         animation: pulse .55s ease-out;
     }
+
     @@keyframes pulse {
-        0%
+        0% {
+            transform: scale(1)
+        }
 
-    {
-        transform: scale(1)
-    }
+        50% {
+            transform: scale(1.14)
+        }
 
-    50% {
-        transform: scale(1.14)
-    }
-
-    100% {
-        transform: scale(1)
-    }
-
+        100% {
+            transform: scale(1)
+        }
     }
 
     @@keyframes blink {
@@ -274,32 +277,7 @@
                     </div>
                 </div>
             </div>
-            <div id="LoyaltyPanel" class="row g-2 mt-2 d-none">
-                <!-- Ô gộp: bên trái tháng này, bên phải tháng trước -->
-                <div class="col-12 col-md-8">
-                    <div class="border rounded p-2 d-flex justify-content-between align-items-center">
-                        <div class="me-3">
-                            <div class="small text-muted">Điểm tháng này</div>
-                            <div class="fw-bold"><span id="DiemThangNay">0</span></div>
-                        </div>
-                        <div class="text-end">
-                            <div class="small text-muted">Điểm tháng trước</div>
-                            <div class="fw-bold">
-                                <span id="DiemThangTruoc">0</span>
-                                <span id="VoucherBlink" class="badge bg-warning text-dark d-none">Có voucher!</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Tổng nợ giữ riêng -->
-                <div class="col-12 col-md-4">
-                    <div class="border rounded p-2">
-                        <div class="small text-muted">Tổng nợ</div>
-                        <div id="TongNo" class="fw-bold text-danger">0</div>
-                    </div>
-                </div>
-            </div>
             <!-- Gợi ý theo khách: chỉ nút, không hiển thị số lượng -->
             <div id="FavoriteWrap" class="small mt-2 text-muted d-none">
                 <span id="FavoriteMon" class="fw-semibold"></span>
@@ -370,7 +348,6 @@
             <i class="fa fa-floppy-disk"></i> Lưu hoá đơn
         </button>
         <div class="text-center small">
-            <div id="CountdownText" class="text-muted">Tự lưu sau: 05:00</div>
             <div id="FormError" class="text-danger mt-1"></div>
             <div id="SaveHint" class="text-success mt-1"></div>
         </div>
@@ -390,11 +367,6 @@
                 <button class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-2">
-                    <label class="form-label mb-1">Biến thể</label>
-                    <select id="ModalBienThe" class="form-select"></select>
-                </div>
-
                 <div class="mb-2">
                     <label class="form-label mb-1">Ghi chú thường dùng</label>
                     <div id="ModalNotes" class="d-flex flex-wrap gap-1"></div>
@@ -435,953 +407,927 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script>
-        /* ========================== HELPERS ========================== */
-        const fmt = n => (n||0).toLocaleString('vi-VN');
-        const parseMoney = s => { const x=(s||'').toString().replace(/[^\d]/g,''); return x?parseInt(x):0; }
-        const el = id => document.getElementById(id);
-        const showBusy = on => el('BusyMask').style.display = on? 'block':'none';
-        const noAccent = (s='') => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase();
-        const debounce=(fn,ms=220)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
-        const normalize=(s='')=>noAccent((s||'').trim()).replace(/\s+/g,' ');
-        const tokenize =(s='')=>normalize(s).split(' ').filter(Boolean);
-        const makeSearchKeys=raw=>{const nx=normalize(raw);const tokens=nx.split(' ').filter(Boolean);return{tokens,initials:tokens.map(t=>t[0]).join(''),compact:nx.replace(/\s+/g,'')}};
-        function scoreByTokens(tokens, hay, minHit=100){ if(!tokens.length||!hay?.length) return 0; let score=0; for(const q of tokens){let hit=0; for(const t of hay){ if(t===q){hit=500;break;} else if(t.startsWith(q)) hit=Math.max(hit,300); else if(t.includes(q)) hit=Math.max(hit,100);} if(hit<minHit) return 0; score+=hit;} return score;}
-        const round1000=(x,mode='nearest')=>{ if(!x) return 0; if(mode==='down') return Math.floor(x/1000)*1000; if(mode==='up') return Math.ceil(x/1000)*1000; return Math.round(x/1000)*1000; };
+                /* ========================== HELPERS ========================== */
+                const fmt = n => (n||0).toLocaleString('vi-VN');
+                const parseMoney = s => { const x=(s||'').toString().replace(/[^\d]/g,''); return x?parseInt(x):0; }
+                const el = id => document.getElementById(id);
+                const showBusy = on => el('BusyMask').style.display = on? 'block':'none';
+                const noAccent = (s='') => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase();
+                const debounce=(fn,ms=220)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
+                const normalize=(s='')=>noAccent((s||'').trim()).replace(/\s+/g,' ');
+                const tokenize =(s='')=>normalize(s).split(' ').filter(Boolean);
+                const makeSearchKeys=raw=>{const nx=normalize(raw);const tokens=nx.split(' ').filter(Boolean);return{tokens,initials:tokens.map(t=>t[0]).join(''),compact:nx.replace(/\s+/g,'')}};
+                function scoreByTokens(tokens, hay, minHit=100){ if(!tokens.length||!hay?.length) return 0; let score=0; for(const q of tokens){let hit=0; for(const t of hay){ if(t===q){hit=500;break;} else if(t.startsWith(q)) hit=Math.max(hit,300); else if(t.includes(q)) hit=Math.max(hit,100);} if(hit<minHit) return 0; score+=hit;} return score;}
+                const round1000=(x,mode='nearest')=>{ if(!x) return 0; if(mode==='down') return Math.floor(x/1000)*1000; if(mode==='up') return Math.ceil(x/1000)*1000; return Math.round(x/1000)*1000; };
 
-        /* ========================== LOYALTY (giống WPF) ========================== */
-        const DIEM_MOI_SAO = 3000;                // LoyaltyHelper.DiemMoiSao
-        const GIA_TRI_VOUCHER_MOI_SAO = 10000;    // LoyaltyHelper.GiaTriVoucherMoiSao
+                /* ========================== STATE ========================== */
+                let khId=null, khProfile={addresses:[], phones:[]};
+                const lines=[]; // {idSanPham,idBienThe,tenSanPham,tenBienThe,soLuong,donGia,note,toppings:[],topTotal:0}
+                let modalIdx=-1;
+                let unsaved=true;
+                let KH_CACHE=null, SP_CACHE=null, GB_CACHE=null, VOUCHER_CACHE=null;
+                let GB_INDEX=null;
+                let congNoCurrent=0;
+                // minimal loyaltyState kept for possible later logic (but panel removed)
+                let loyaltyState = { duocNhan:false, daNhan:false, diemNay:0, diemTruoc:0 };
 
-        function tinhSoSaoDay(diem){
-          if (diem < 0) return 0;
-          return Math.floor(diem / DIEM_MOI_SAO);
-        }
-        function tinhGiaTriVoucher(diem){
-          return tinhSoSaoDay(diem) * GIA_TRI_VOUCHER_MOI_SAO;
-        }
-        // StarHelper.GetStarText phiên bản JS
-        function starText(diem){
-          if (diem < 0) return '';
-          const stars = diem / DIEM_MOI_SAO;
-          const full = Math.floor(stars);
-          const half = (stars - full) >= 0.5;
-          let icons = '';
-          if (diem < DIEM_MOI_SAO) {
-            icons = '☆';
-          } else {
-            icons = '★'.repeat(full);
-            if (half) icons += '☆';
-          }
-          const display = Math.floor(diem / 100); // giữ nguyên /100 như WPF đang hiển thị
-          return `${display} (${icons})`;
-        }
+                       const COMMON_NOTES = [
+        "Không đường",
+        "Không đá",
+        "Ít ngọt",
+        "Ít đá",
+        "Ngọt",
+        "Vừa đá",
+        "Nhiều ngọt",
+        "Nhiều đá",
+        "Đường riêng",
+        "Đá riêng",
+        "Đắng",
+        "Chua",
+        "Chỉ TCĐĐ",
+        "Chỉ TCOL",
+        "Chỉ TCT",
+        "Không trà",
+        "Trà đá",
+        "Trà nóng",
+        "Size L",
+        "Sài gòn"
+        ];
 
-        /* ========================== STATE ========================== */
-        let khId=null, khProfile={addresses:[], phones:[]};
-        const lines=[]; // {idSanPham,idBienThe,tenSanPham,tenBienThe,soLuong,donGia,note,toppings:[],topTotal:0}
-        let modalIdx=-1;
-        let secondsLeft=300, autosaveTimer=null, unsaved=true;
-        let KH_CACHE=null, SP_CACHE=null, GB_CACHE=null, VOUCHER_CACHE=null;
-        let GB_INDEX=null;
-        let congNoCurrent=0;
-        // Loyalty state từ server
-        let loyaltyState = { duocNhan:false, daNhan:false, diemNay:0, diemTruoc:0 };
+                /* ========================== AUTOSAVE REMOVED ==========================
+                   Removed the previous startAutosave() timer & countdown.
+                   touchChanged() still marks unsaved=true but no timer runs.
+                ===================================================================== */
+                function touchChanged(){ unsaved = true; }
 
-        const COMMON_NOTES=["Ít đá","Không đá","Ít ngọt","Không đường","Thêm đường","Ít trân châu","Nhiều kem cheese"];
+                // keep beforeunload so user is warned if they try to leave with unsaved changes
+                window.addEventListener('beforeunload',e=>{ if(unsaved && lines.length>0){ e.preventDefault(); e.returnValue=''; } });
 
-        /* ========================== AUTOSAVE ========================== */
-        function startAutosave(){ clearInterval(autosaveTimer); secondsLeft=300;
-          autosaveTimer=setInterval(()=>{ secondsLeft--; el('CountdownText').innerText=`Tự lưu sau: ${String(Math.floor(secondsLeft/60)).padStart(2,'0')}:${String(secondsLeft%60).padStart(2,'0')}`; if(secondsLeft<=0){ clearInterval(autosaveTimer); if(unsaved) saveInvoice(true);} },1000);
-        }
-        function touchChanged(){ unsaved=true; startAutosave(); }
-        window.addEventListener('beforeunload',e=>{ if(unsaved && lines.length>0){ e.preventDefault(); e.returnValue=''; } });
+                /* ========================== CACHE ========================== */
+                const TTL_MIN=10, nowSec=()=>Math.floor(Date.now()/1000);
+                function cacheGet(k){ try{const j=JSON.parse(localStorage.getItem(k)||'{}'); if(!j.data||!j.exp||j.exp<nowSec())return null; return j.data;}catch{return null;} }
+                function cacheSet(k,d){ localStorage.setItem(k, JSON.stringify({data:d,exp:nowSec()+TTL_MIN*60})); }
 
-        /* ========================== CACHE ========================== */
-        const TTL_MIN=10, nowSec=()=>Math.floor(Date.now()/1000);
-        function cacheGet(k){ try{const j=JSON.parse(localStorage.getItem(k)||'{}'); if(!j.data||!j.exp||j.exp<nowSec())return null; return j.data;}catch{return null;} }
-        function cacheSet(k,d){ localStorage.setItem(k, JSON.stringify({data:d,exp:nowSec()+TTL_MIN*60})); }
+                /* ========================== PRELOAD ========================== */
+                async function preloadKH(){ if(KH_CACHE) return KH_CACHE; if(Array.isArray(window.__KH_INIT)){ KH_CACHE=window.__KH_INIT; cacheSet('KH_CACHE',KH_CACHE); return KH_CACHE;} KH_CACHE=cacheGet('KH_CACHE')||[]; return KH_CACHE; }
+                async function preloadSP(){ if(SP_CACHE) return SP_CACHE; if(Array.isArray(window.__SP_INIT)){ SP_CACHE=window.__SP_INIT; cacheSet('SP_CACHE',SP_CACHE); return SP_CACHE;} SP_CACHE=cacheGet('SP_CACHE')||[]; return SP_CACHE; }
+                async function preloadGB(){ if(GB_CACHE) return GB_CACHE; if(Array.isArray(window.__GB_INIT)){ GB_CACHE=window.__GB_INIT; cacheSet('GB_CACHE',GB_CACHE); return GB_CACHE;} GB_CACHE=cacheGet('GB_CACHE')||[]; return GB_CACHE; }
+                async function preloadVoucher(){ if(VOUCHER_CACHE) return VOUCHER_CACHE; if(Array.isArray(window.__VOUCHER_INIT)){ VOUCHER_CACHE=window.__VOUCHER_INIT; cacheSet('VOUCHER_CACHE',VOUCHER_CACHE); return VOUCHER_CACHE;} VOUCHER_CACHE=cacheGet('VOUCHER_CACHE')||[]; return VOUCHER_CACHE; }
 
-        /* ========================== PRELOAD ========================== */
-        async function preloadKH(){ if(KH_CACHE) return KH_CACHE; if(Array.isArray(window.__KH_INIT)){ KH_CACHE=window.__KH_INIT; cacheSet('KH_CACHE',KH_CACHE); return KH_CACHE;} KH_CACHE=cacheGet('KH_CACHE')||[]; return KH_CACHE; }
-        async function preloadSP(){ if(SP_CACHE) return SP_CACHE; if(Array.isArray(window.__SP_INIT)){ SP_CACHE=window.__SP_INIT; cacheSet('SP_CACHE',SP_CACHE); return SP_CACHE;} SP_CACHE=cacheGet('SP_CACHE')||[]; return SP_CACHE; }
-        async function preloadGB(){ if(GB_CACHE) return GB_CACHE; if(Array.isArray(window.__GB_INIT)){ GB_CACHE=window.__GB_INIT; cacheSet('GB_CACHE',GB_CACHE); return GB_CACHE;} GB_CACHE=cacheGet('GB_CACHE')||[]; return GB_CACHE; }
-        async function preloadVoucher(){ if(VOUCHER_CACHE) return VOUCHER_CACHE; if(Array.isArray(window.__VOUCHER_INIT)){ VOUCHER_CACHE=window.__VOUCHER_INIT; cacheSet('VOUCHER_CACHE',VOUCHER_CACHE); return VOUCHER_CACHE;} VOUCHER_CACHE=cacheGet('VOUCHER_CACHE')||[]; return VOUCHER_CACHE; }
+                /* ========================== INDEXERS ========================== */
+                function buildKHIndex(list){ for(const k of list){ const ten=k.ten??k.Ten??''; const sdt=(k.Phones?.[0]?.SoDienThoai || k.phones?.[0]?.soDienThoai || k.soDienThoai || k.SoDienThoai || '')+''; const keys=makeSearchKeys(ten);
+                  k._nxTen=normalize(ten); k._nxSdt=(sdt||'').toLowerCase(); k._tokens=keys.tokens; k._initials=keys.initials; k._compact=keys.compact; k._order=typeof k.ThuTu==='number'?k.ThuTu:0; } return list; }
+                function buildSPIndex(list){ for(const sp of list){ const ten=sp.ten??sp.Ten??''; const keys=makeSearchKeys(ten); sp._nxTen=normalize(ten);
+                  const btTokens=(sp.BienThe||sp.bienThe||[]).map(bt=>bt.tenBienThe||bt.TenBienThe||'').flatMap(tokenize);
+                  sp._tokens=[...new Set([...keys.tokens, ...btTokens])]; sp._initials=keys.initials; sp._compact=keys.compact;
+                  sp._sold=typeof sp.DaBan==='number'?sp.DaBan:0;
+                  sp._bts=(sp.BienThe||sp.bienThe||[]).map(bt=>({Id:bt.Id??bt.id,TenBienThe:bt.TenBienThe??bt.tenBienThe??'Size Chuẩn',GiaBan:bt.GiaBan??bt.giaBan??0})).sort((a,b)=>a.GiaBan-b.GiaBan);
+                  sp._firstBt=sp._bts[0]||{Id:sp.id||sp.Id, TenBienThe:'Size Chuẩn', GiaBan:sp.giaBan||0};
+                  sp._id=sp.id??sp.Id; sp._ten=ten; } return list; }
+                function buildGBIndex(list){ const byKh={}; for(const r of list){ const kh=r.KhachHangId||r.khachHangId; if(!kh) continue; if(!byKh[kh]) byKh[kh]={byBt:{},bySp:{}}; const btId=r.SanPhamBienTheId||r.sanPhamBienTheId||null; const spId=r.SanPhamId||r.sanPhamId||null; const gia=r.GiaBan||r.giaBan||0; if(btId) byKh[kh].byBt[btId]=gia; else if(spId) byKh[kh].bySp[spId]=gia; } GB_INDEX=byKh; return GB_INDEX; }
 
-        /* ========================== INDEXERS ========================== */
-        function buildKHIndex(list){ for(const k of list){ const ten=k.ten??k.Ten??''; const sdt=(k.Phones?.[0]?.SoDienThoai || k.phones?.[0]?.soDienThoai || k.soDienThoai || k.SoDienThoai || '')+''; const keys=makeSearchKeys(ten);
-          k._nxTen=normalize(ten); k._nxSdt=(sdt||'').toLowerCase(); k._tokens=keys.tokens; k._initials=keys.initials; k._compact=keys.compact; k._order=typeof k.ThuTu==='number'?k.ThuTu:0; } return list; }
-        function buildSPIndex(list){ for(const sp of list){ const ten=sp.ten??sp.Ten??''; const keys=makeSearchKeys(ten); sp._nxTen=normalize(ten);
-          const btTokens=(sp.BienThe||sp.bienThe||[]).map(bt=>bt.tenBienThe||bt.TenBienThe||'').flatMap(tokenize);
-          sp._tokens=[...new Set([...keys.tokens, ...btTokens])]; sp._initials=keys.initials; sp._compact=keys.compact;
-          sp._sold=typeof sp.DaBan==='number'?sp.DaBan:0;
-          sp._bts=(sp.BienThe||sp.bienThe||[]).map(bt=>({Id:bt.Id??bt.id,TenBienThe:bt.TenBienThe??bt.tenBienThe??'Size Chuẩn',GiaBan:bt.GiaBan??bt.giaBan??0})).sort((a,b)=>a.GiaBan-b.GiaBan);
-          sp._firstBt=sp._bts[0]||{Id:sp.id||sp.Id, TenBienThe:'Size Chuẩn', GiaBan:sp.giaBan||0};
-          sp._id=sp.id??sp.Id; sp._ten=ten; } return list; }
-        function buildGBIndex(list){ const byKh={}; for(const r of list){ const kh=r.KhachHangId||r.khachHangId; if(!kh) continue; if(!byKh[kh]) byKh[kh]={byBt:{},bySp:{}}; const btId=r.SanPhamBienTheId||r.sanPhamBienTheId||null; const spId=r.SanPhamId||r.sanPhamId||null; const gia=r.GiaBan||r.giaBan||0; if(btId) byKh[kh].byBt[btId]=gia; else if(spId) byKh[kh].bySp[spId]=gia; } GB_INDEX=byKh; return GB_INDEX; }
+                /* ========================== COUNT WPF (loại nhóm SP) ========================== */
+                const WPF_EXCLUDED_GROUPS=new Set(["thuoc la","nuoc lon","an vat"]);
+                function getSpByIdStrict(id){ return (SP_CACHE||[]).find(x=>(x.Id||x.id)===id)||null; }
+                function getGroupNameForSp(sp){ return (sp?.TenNhomSanPham ?? sp?.tenNhomSanPham ?? sp?.NhomSanPham?.Ten ?? sp?.Nhom?.Ten ?? sp?.Category?.Name ?? "").toString(); }
+                function isExcludedLineWpf(ln){ const sp=getSpByIdStrict(ln.idSanPham); if(!sp) return false; const g=getGroupNameForSp(sp); const gNorm=noAccent(g).trim(); return WPF_EXCLUDED_GROUPS.has(gNorm); }
+                function updateMonCountBadgeWpf(){ let count=0; for(const ln of lines){ if(isExcludedLineWpf(ln)) continue; count+=(ln.soLuong||0);} el('TongSo').innerText=`${count} món`; }
 
-        /* ========================== COUNT WPF (loại nhóm SP) ========================== */
-        const WPF_EXCLUDED_GROUPS=new Set(["thuoc la","nuoc lon","an vat"]);
-        function getSpByIdStrict(id){ return (SP_CACHE||[]).find(x=>(x.Id||x.id)===id)||null; }
-        function getGroupNameForSp(sp){ return (sp?.TenNhomSanPham ?? sp?.tenNhomSanPham ?? sp?.NhomSanPham?.Ten ?? sp?.Nhom?.Ten ?? sp?.Category?.Name ?? "").toString(); }
-        function isExcludedLineWpf(ln){ const sp=getSpByIdStrict(ln.idSanPham); if(!sp) return false; const g=getGroupNameForSp(sp); const gNorm=noAccent(g).trim(); return WPF_EXCLUDED_GROUPS.has(gNorm); }
-        function updateMonCountBadgeWpf(){ let count=0; for(const ln of lines){ if(isExcludedLineWpf(ln)) continue; count+=(ln.soLuong||0);} el('TongSo').innerText=`${count} món`; }
+                /* ========================== PORTAL ========================== */
+                const _portal=document.createElement('div'); _portal.className='portal-list list-group small'; document.body.appendChild(_portal);
+                let _portalOwner=null;
+                function portalHide(){ _portal.classList.remove('show'); _portalOwner=null; _portal.innerHTML=''; }
+                 function portalShowFor(input, items, renderItem, onPick){
+                  _portalOwner = input;
+                  _portal.innerHTML = '';
 
-        /* ========================== PORTAL ========================== */
-        const _portal=document.createElement('div'); _portal.className='portal-list list-group small'; document.body.appendChild(_portal);
-        let _portalOwner=null;
-        function portalHide(){ _portal.classList.remove('show'); _portalOwner=null; _portal.innerHTML=''; }
-         function portalShowFor(input, items, renderItem, onPick){
-          _portalOwner = input;
-          _portal.innerHTML = '';
+                  if (!items || !items.length){
+                    const d = document.createElement('div');
+                    d.className = 'portal-item text-muted';
+                    d.textContent = 'Không có dữ liệu phù hợp';
+                    _portal.appendChild(d);
+                  } else {
+                    items.forEach(it => {
+                      const row = document.createElement('div');
+                      row.className = 'portal-item list-group-item-action';
+                      row.innerHTML = renderItem(it);
 
-          if (!items || !items.length){
-            const d = document.createElement('div');
-            d.className = 'portal-item text-muted';
-            d.textContent = 'Không có dữ liệu phù hợp';
-            _portal.appendChild(d);
-          } else {
-            items.forEach(it => {
-              const row = document.createElement('div');
-              row.className = 'portal-item list-group-item-action';
-              row.innerHTML = renderItem(it);
+                      const pick = e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onPick(it);
+                        portalHide();
+                      };
+                      row.addEventListener('mousedown', pick);
+                      row.addEventListener('touchstart', pick, { passive: false });
 
-              const pick = e => {
-                e.preventDefault();
-                e.stopPropagation();
-                onPick(it);
-                portalHide();
-              };
-              row.addEventListener('mousedown', pick);
-              row.addEventListener('touchstart', pick, { passive: false });
+                      _portal.appendChild(row);
+                    });
+                  }
 
-              _portal.appendChild(row);
-            });
-          }
+                  // === Đặt vị trí theo visualViewport (iOS) hoặc scroll (trình duyệt khác) ===
+                  const rc = input.getBoundingClientRect();
+                  const vv = window.visualViewport;
+                  const vp = {
+                    x: vv ? vv.offsetLeft : window.scrollX,
+                    y: vv ? vv.offsetTop  : window.scrollY,
+                    w: vv ? vv.width      : window.innerWidth,
+                    h: vv ? vv.height     : window.innerHeight
+                  };
 
-          // === Đặt vị trí theo visualViewport (iOS) hoặc scroll (trình duyệt khác) ===
-          const rc = input.getBoundingClientRect();
-          const vv = window.visualViewport;
-          const vp = {
-            x: vv ? vv.offsetLeft : window.scrollX,
-            y: vv ? vv.offsetTop  : window.scrollY,
-            w: vv ? vv.width      : window.innerWidth,
-            h: vv ? vv.height     : window.innerHeight
-          };
+                  _portal.style.width = rc.width + 'px';
 
-          _portal.style.width = rc.width + 'px';
+                  // chiều cao ước lượng của list (tối đa 40% chiều cao viewport)
+                  const approx = Math.min(_portal.scrollHeight || 240, Math.round(vp.h * 0.4));
 
-          // chiều cao ước lượng của list (tối đa 40% chiều cao viewport)
-          const approx = Math.min(_portal.scrollHeight || 240, Math.round(vp.h * 0.4));
+                  // mặc định: đặt dưới ô gõ
+                  let top  = vp.y + rc.bottom + 6;
+                  let left = vp.x + Math.max(8, Math.min(rc.left, vp.w - rc.width - 8));
 
-          // mặc định: đặt dưới ô gõ
-          let top  = vp.y + rc.bottom + 6;
-          let left = vp.x + Math.max(8, Math.min(rc.left, vp.w - rc.width - 8));
+                  // nếu không đủ chỗ phía dưới, lật lên phía trên ô gõ
+                  if (top + approx > vp.y + vp.h - 8) {
+                    top = vp.y + Math.max(8, rc.top - approx - 6);
+                  }
 
-          // nếu không đủ chỗ phía dưới, lật lên phía trên ô gõ
-          if (top + approx > vp.y + vp.h - 8) {
-            top = vp.y + Math.max(8, rc.top - approx - 6);
-          }
+                  _portal.style.top  = `${top}px`;
+                  _portal.style.left = `${left}px`;
+                  _portal.classList.add('show');
+                }
 
-          _portal.style.top  = `${top}px`;
-          _portal.style.left = `${left}px`;
-          _portal.classList.add('show');
-        }
-        
-        // ['scroll','resize','orientationchange'].forEach(ev=>window.addEventListener(ev,()=>{ if(_portalOwner) portalHide(); },{passive:true}));
-        // document.addEventListener('click',e=>{ if(_portalOwner && !e.target.closest('.portal-list')) portalHide(); });
-             // Khi load page → sync đúng loại đơn hiện trên UI
-  
-        ['scroll','resize','orientationchange'].forEach(ev =>
-            window.addEventListener(ev, ()=>{ if(_portalOwner) portalHide(); }, {passive:true})
-          );
-          if (window.visualViewport) {
-            ['resize','scroll'].forEach(ev =>
-              window.visualViewport.addEventListener(ev, ()=>{ if(_portalOwner) portalHide(); }, {passive:true})
-            );
-          }
+                ['scroll','resize','orientationchange'].forEach(ev =>
+                    window.addEventListener(ev, ()=>{ if(_portalOwner) portalHide(); }, {passive:true})
+                  );
+                  if (window.visualViewport) {
+                    ['resize','scroll'].forEach(ev =>
+                      window.visualViewport.addEventListener(ev, ()=>{ if(_portalOwner) portalHide(); }, {passive:true})
+                    );
+                  }
 
-        /* ========================== BIẾN THỂ & GIÁ ========================== */
-        function getBts(sp){ if(sp?._bts && Array.isArray(sp._bts)) return sp._bts;
-          const b=(sp?.BienThe||sp?.bienThe||[]).map(bt=>({Id:bt.Id??bt.id,TenBienThe:bt.TenBienThe??bt.tenBienThe??'Size Chuẩn',GiaBan:bt.GiaBan??bt.giaBan??0})).sort((a,b)=>a.GiaBan-b.GiaBan);
-          return b;
-        }
-        function getDefaultBt(sp){ const b=getBts(sp); return b[0]||{Id:sp.Id||sp.id, TenBienThe:'Size Chuẩn', GiaBan:sp.giaBan||0}; }
-        function getSecondBt(sp){ const b=getBts(sp); return b.length>1? b[1]:null; }
-        function getGiaBanThucTe(sp, bt){
-          const fallback=(bt?.GiaBan||0); if(!khId||!GB_INDEX) return fallback;
-          const map=GB_INDEX[khId]; if(!map) return fallback; const btId=bt?.Id||bt?.id, spId=sp?.Id||sp?.id;
-          if(btId && map.byBt[btId]!=null) return map.byBt[btId]; if(spId && map.bySp[spId]!=null) return map.bySp[spId]; return fallback;
-        }
+                /* ========================== BIẾN THỂ & GIÁ ========================== */
+                function getBts(sp){ if(sp?._bts && Array.isArray(sp._bts)) return sp._bts;
+                  const b=(sp?.BienThe||sp?.bienThe||[]).map(bt=>({Id:bt.Id??bt.id,TenBienThe:bt.TenBienThe??bt.tenBienThe??'Size Chuẩn',GiaBan:bt.GiaBan??bt.giaBan??0})).sort((a,b)=>a.GiaBan-b.GiaBan);
+                  return b;
+                }
+                function getDefaultBt(sp){ const b=getBts(sp); return b[0]||{Id:sp.Id||sp.id, TenBienThe:'Size Chuẩn', GiaBan:sp.giaBan||0}; }
+                function getSecondBt(sp){ const b=getBts(sp); return b.length>1? b[1]:null; }
+                function getGiaBanThucTe(sp, bt){
+                  const fallback=(bt?.GiaBan||0); if(!khId||!GB_INDEX) return fallback;
+                  const map=GB_INDEX[khId]; if(!map) return fallback; const btId=bt?.Id||bt?.id, spId=sp?.Id||sp?.id;
+                  if(btId && map.byBt[btId]!=null) return map.byBt[btId]; if(spId && map.bySp[spId]!=null) return map.bySp[spId]; return fallback;
+                }
 
-        /* ========================== THÊM DÒNG ========================== */
-            function addLineFromSanPhamVariant(sp, bt){
-          const useBt = bt || getDefaultBt(sp);
+                /* ========================== THÊM DÒNG ========================== */
+                    function addLineFromSanPhamVariant(sp, bt){
+                  const useBt = bt || getDefaultBt(sp);
 
-          lines.push({
-            idSanPham:  sp.Id||sp.id,
-            idBienThe:  useBt.Id,
-            tenSanPham: sp.Ten||sp.ten,
-            tenBienThe: useBt.TenBienThe||'',
-            soLuong:    1,
-            donGia:     getGiaBanThucTe(sp, useBt),
-            note:       '',
-            toppings:   [],
-            topTotal:   0
-          });
+                  lines.push({
+                    idSanPham:  sp.Id||sp.id,
+                    idBienThe:  useBt.Id,
+                    tenSanPham: sp.Ten||sp.ten,
+                    tenBienThe: useBt.TenBienThe||'',
+                    soLuong:    1,
+                    donGia:     getGiaBanThucTe(sp, useBt),
+                    note:       '',
+                    toppings:   [],
+                    topTotal:   0
+                  });
 
-          renderLines();
-          recalc();
-          updateMonCountBadgeWpf();
-          touchChanged();
+                  renderLines();
+                  recalc();
+                  updateMonCountBadgeWpf();
+                  touchChanged();
 
-          // ✅ Feedback tức thì
-          const shortName = (sp.Ten||sp.ten||'').toString();
-          const btName    = (useBt.TenBienThe||'').toString();
-          showAddedToast(`Đã thêm: ${shortName}${btName? ' ('+btName+')':''}`);
+                  // ✅ Feedback tức thì
+                  const shortName = (sp.Ten||sp.ten||'').toString();
+                  const btName    = (useBt.TenBienThe||'').toString();
+                  showAddedToast(`Đã thêm: ${shortName}${btName? ' ('+btName+')':''}`);
 
-          // Badge “X món” nháy nhẹ
-          pulseCountBadge();
+                  // Badge “X món” nháy nhẹ
+                  pulseCountBadge();
 
-          // Cố gắng đưa dòng mới vào khung nhìn (không làm mất focus ô tìm)
-          const list = document.getElementById('Lines');
-          setTimeout(()=>{ list?.lastElementChild?.scrollIntoView({block:'nearest', behavior:'smooth'}); }, 0);
-        }
-        
-        function addLineFromSanPham(sp){ addLineFromSanPhamVariant(sp, getDefaultBt(sp)); }
+                  // Cố gắng đưa dòng mới vào khung nhìn (không làm mất focus ô tìm)
+                  const list = document.getElementById('Lines');
+                  setTimeout(()=>{ list?.lastElementChild?.scrollIntoView({block:'nearest', behavior:'smooth'}); }, 0);
+                }
 
-        /* ========================== KHÁCH HÀNG ========================== */
-        function getPhone(k){ return (k.Phones?.[0]?.SoDienThoai || k.phones?.[0]?.soDienThoai || k.soDienThoai || k.SoDienThoai || '')+''; }
-        function getAddress(k){ return (k.Addresses?.[0]?.DiaChi || k.addresses?.[0]?.diaChi || k.diaChi || k.DiaChi || '')+''; }
+                function addLineFromSanPham(sp){ addLineFromSanPhamVariant(sp, getDefaultBt(sp)); }
 
-        const khInput=el('TenKhachHangText'); khInput.setAttribute('autocomplete','off'); khInput.setAttribute('autocapitalize','off'); khInput.setAttribute('spellcheck','false');
-        const khClearBtn = el('KhachHangClear');
-        khInput.addEventListener('input', () => { khClearBtn?.classList.toggle('d-none', !(khInput.value?.trim())); });
-        khInput.addEventListener('keydown', (e) => { if (e.key === 'Escape' && khInput.value?.length) { clearKhInput(); e.preventDefault(); } });
+                /* ========================== KHÁCH HÀNG ========================== */
+                function getPhone(k){ return (k.Phones?.[0]?.SoDienThoai || k.phones?.[0]?.soDienThoai || k.soDienThoai || k.SoDienThoai || '')+''; }
+                function getAddress(k){ return (k.Addresses?.[0]?.DiaChi || k.addresses?.[0]?.diaChi || k.diaChi || k.DiaChi || '')+''; }
 
-        // Xoá nhanh KH
-        function clearKhInput(){
-          hideFavoritePointsUI();
-          khInput.value = '';
-          khId = null;
-          khProfile = { addresses: [], phones: [] };
-          el('DienThoai').value = '';
-          el('DiaChi').value = '';
-          refreshPickButtons?.();
-          renderFavoriteChips?.([]);
-          const lp = el('LoyaltyPanel'); if (lp) lp.classList.add('d-none');
-          congNoCurrent = 0;
-          el('CongNoView')    && (el('CongNoView').innerText = '0');
-          el('CongNoDisplay') && (el('CongNoDisplay').innerText = '0');
-          portalHide?.();
-          khClearBtn?.classList.add('d-none');
-          khInput.focus();
-          recalc?.();
-          touchChanged?.();
-        }
+                const khInput=el('TenKhachHangText'); khInput.setAttribute('autocomplete','off'); khInput.setAttribute('autocapitalize','off'); khInput.setAttribute('spellcheck','false');
+                const khClearBtn = el('KhachHangClear');
+                khInput.addEventListener('input', () => { khClearBtn?.classList.toggle('d-none', !(khInput.value?.trim())); });
+                khInput.addEventListener('keydown', (e) => { if (e.key === 'Escape' && khInput.value?.length) { clearKhInput(); e.preventDefault(); } });
 
-        async function loadCustomerInfo(khGuid){
-          if(!khGuid) { hideFavoritePointsUI(); return; }
-          try{
-            const r = await fetch(`?handler=KhInfo&id=${encodeURIComponent(khGuid)}`, { credentials:'include' });
-            if(!r.ok){ hideFavoritePointsUI(); return; }
-            const info=await r.json();
+                // Xoá nhanh KH
+                function clearKhInput(){
+                  hideFavoritePointsUI();
+                  khInput.value = '';
+                  khId = null;
+                  khProfile = { addresses: [], phones: [] };
+                  el('DienThoai').value = '';
+                  el('DiaChi').value = '';
+                  refreshPickButtons?.();
+                  renderFavoriteChips?.([]);
+                  congNoCurrent = 0;
+                  el('CongNoDisplay') && (el('CongNoDisplay').innerText = '0');
+                  portalHide?.();
+                  khClearBtn?.classList.add('d-none');
+                  khInput.focus();
+                  recalc?.();
+                  touchChanged?.();
+                }
 
-            const tongNo=info?.TongNo ?? info?.tongNo ?? 0;
-            const diemNay=info?.DiemThangNay ?? info?.diemThangNay ?? 0;
-            const diemTruoc=info?.DiemThangTruoc ?? info?.diemThangTruoc ?? 0;
-            const daNhanVoucher=info?.DaNhanVoucher ?? info?.daNhanVoucher ?? false;
-            const duocNhanVoucher=info?.DuocNhanVoucher ?? info?.duocNhanVoucher ?? false;
+                // Load minimal customer info: chỉ lấy tổng nợ để hiển thị ở bảng dưới
+                async function loadCustomerInfo(khGuid){
+                  if(!khGuid) { hideFavoritePointsUI(); return; }
+                  try{
+                    const r = await fetch(`?handler=KhInfo&id=${encodeURIComponent(khGuid)}`, { credentials:'include' });
+                    if(!r.ok){ return; }
+                    const info=await r.json();
 
-            // Panel loyalty
-            el('LoyaltyPanel').classList.remove('d-none');
-            el('TongNo').innerText=fmt(tongNo);
+                    const tongNo=info?.TongNo ?? info?.tongNo ?? 0;
 
-            // >>> HIỂN THỊ GIỐNG WPF: "điểm/100 (★…☆)"
-            el('DiemThangNay').innerText   = starText(diemNay);
-            el('DiemThangTruoc').innerText = starText(diemTruoc);
+                    congNoCurrent=Number(tongNo||0);
+                    el('CongNoDisplay') && (el('CongNoDisplay').innerText = fmt(congNoCurrent));
 
-            // Badge + blink khi đủ điều kiện và chưa nhận
-            el('VoucherBlink').classList.toggle('d-none', !(duocNhanVoucher && !daNhanVoucher));
-            const prevEl = el('DiemThangTruoc');
-            if (duocNhanVoucher && !daNhanVoucher) { prevEl?.classList.add('blink'); } else { prevEl?.classList.remove('blink'); }
+                    // keep minimal loyaltyState in case needed later
+                    loyaltyState = { duocNhan:false, daNhan:false, diemNay:0, diemTruoc:0 };
 
-            congNoCurrent=Number(tongNo||0);
-            //el('CongNoView').innerText=fmt(congNoCurrent);
-            el('CongNoDisplay').innerText=fmt(congNoCurrent);
+                    recalc();
+                  }catch{
+                    // ignore
+                  }
+                }
+                function updateFavoritePointsUI(nowPts = 0, prevPts = 0){ hideFavoritePointsUI(); }
+                function hideFavoritePointsUI(){ const wrap = el('FavoriteWrap'); if (wrap) wrap.classList.add('d-none'); }
 
-            // Save state
-            loyaltyState = { duocNhan: !!(duocNhanVoucher && !daNhanVoucher), daNhan: !!daNhanVoucher, diemNay:Number(diemNay||0), diemTruoc:Number(diemTruoc||0) };
+                /* Gợi ý theo KH */
+                function getFavoriteItemsFromKH(k){
+                  const ids=k.FavoriteSanPhamIds||k.favoriteSanPhamIds||null;
+                  const namesRaw=k.FavoriteMon||k.favoriteMon||'';
+                  const names=namesRaw? namesRaw.split(/[;,]/).map(s=>s.trim()).filter(Boolean):[];
+                  return { ids, names };
+                }
+                function mapFavByIds(ids){
+                  const list=[]; if(!Array.isArray(ids) || !SP_CACHE) return list;
+                  const seen=new Set();
+                  for(const id of ids){
+                    const sp=SP_CACHE.find(x=>(x.Id||x.id)===id);
+                    if(sp){ const key=sp.Id||sp.id; if(!seen.has(key)){ seen.add(key); list.push(sp); } }
+                  }
+                  return list;
+                }
+                function mapFavByNames(names){
+                  const list=[]; if(!Array.isArray(names) || !SP_CACHE) return list;
+                  const idx=(SP_CACHE._nameIdx ||= (()=>{const m=new Map(); for(const sp of SP_CACHE){ m.set(noAccent((sp.Ten||sp.ten||'').trim()), sp);} return m; })());
+                  const seen=new Set();
+                  for(const raw of names){
+                    const q=noAccent(raw);
+                    let sp = idx.get(q) || SP_CACHE.find(sp=>noAccent(sp.Ten||sp.ten||'').startsWith(q)) || SP_CACHE.find(sp=>noAccent(sp.Ten||sp.ten||'').includes(q));
+                    if(sp){ const key=sp.Id||sp.id; if(!seen.has(key)){ seen.add(key); list.push(sp); } }
+                  }
+                  return list;
+                }
+                function renderFavoriteChips(spList){
+                  const wrap=el('FavoriteWrap'), span=el('FavoriteMon');
+                  if(!spList?.length){ wrap.classList.add('d-none'); span.innerHTML=''; return; }
+                  span.innerHTML='';
+                  spList.forEach(sp=>{
+                    const name=sp.Ten||sp.ten||'';
+                    const btn=document.createElement('button');
+                    btn.type='button'; btn.className='btn btn-sm btn-outline-primary me-1 mb-1';
+                    btn.textContent=name; btn.onclick=()=>{ addLineFromSanPhamVariant(sp, getDefaultBt(sp)); };
+                    span.appendChild(btn);
+                  });
+                  wrap.classList.remove('d-none');
+                }
 
-            recalc();
-          }catch{
-            hideFavoritePointsUI();
-          }
-        }
-        function updateFavoritePointsUI(nowPts = 0, prevPts = 0){ hideFavoritePointsUI(); }
-        function hideFavoritePointsUI(){ const wrap = el('FavoriteWrap'); if (wrap) wrap.classList.add('d-none'); }
+                khInput.addEventListener('input', debounce(async ()=>{
+                  const q = khInput.value.trim();
+                  if(q.length < 1){ portalHide(); return; }
+                  const list = await searchKHOnline(q);
 
-        /* Gợi ý theo KH */
-        function getFavoriteItemsFromKH(k){
-          const ids=k.FavoriteSanPhamIds||k.favoriteSanPhamIds||null;
-          const namesRaw=k.FavoriteMon||k.favoriteMon||'';
-          const names=namesRaw? namesRaw.split(/[;,]/).map(s=>s.trim()).filter(Boolean):[];
-          return { ids, names };
-        }
-        function mapFavByIds(ids){
-          const list=[]; if(!Array.isArray(ids) || !SP_CACHE) return list;
-          const seen=new Set();
-          for(const id of ids){
-            const sp=SP_CACHE.find(x=>(x.Id||x.id)===id);
-            if(sp){ const key=sp.Id||sp.id; if(!seen.has(key)){ seen.add(key); list.push(sp); } }
-          }
-          return list;
-        }
-        function mapFavByNames(names){
-          const list=[]; if(!Array.isArray(names) || !SP_CACHE) return list;
-          const idx=(SP_CACHE._nameIdx ||= (()=>{const m=new Map(); for(const sp of SP_CACHE){ m.set(noAccent((sp.Ten||sp.ten||'').trim()), sp);} return m; })());
-          const seen=new Set();
-          for(const raw of names){
-            const q=noAccent(raw);
-            let sp = idx.get(q) || SP_CACHE.find(sp=>noAccent(sp.Ten||sp.ten||'').startsWith(q)) || SP_CACHE.find(sp=>noAccent(sp.Ten||sp.ten||'').includes(q));
-            if(sp){ const key=sp.Id||sp.id; if(!seen.has(key)){ seen.add(key); list.push(sp); } }
-          }
-          return list;
-        }
-        function renderFavoriteChips(spList){
-          const wrap=el('FavoriteWrap'), span=el('FavoriteMon');
-          if(!spList?.length){ wrap.classList.add('d-none'); span.innerHTML=''; return; }
-          span.innerHTML='';
-          spList.forEach(sp=>{
-            const name=sp.Ten||sp.ten||'';
-            const btn=document.createElement('button');
-            btn.type='button'; btn.className='btn btn-sm btn-outline-primary me-1 mb-1';
-            btn.textContent=name; btn.onclick=()=>{ addLineFromSanPhamVariant(sp, getDefaultBt(sp)); };
-            span.appendChild(btn);
-          });
-          wrap.classList.remove('d-none');
-        }
+                  portalShowFor(khInput, list, k=>{
+                    const name = k.ten || k.Ten || '';
+                    const phone = (k.Phones?.[0]?.SoDienThoai || k.phones?.[0]?.soDienThoai || '') + '';
+                    const addr  = (k.Addresses?.[0]?.DiaChi || k.addresses?.[0]?.diaChi || '') + '';
+                    return `<div class="d-flex flex-column">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <strong class="me-2">${name}</strong><small>${phone || '<span class="text-muted">—</span>'}</small>
+                      </div>
+                      <div class="small text-muted text-clip-1">${addr || '—'}</div></div>`;
+                  }, async k=>{
+                    khId = k.id || k.Id || null;
+                    khInput.value = k.ten || k.Ten || '';
+                    khProfile.addresses = (k.Addresses || k.addresses || []).map(a=>a.DiaChi || a.diaChi || '').filter(Boolean);
+                    khProfile.phones    = (k.Phones || k.phones || []).map(p=>p.SoDienThoai || p.soDienThoai || '').filter(Boolean);
+                    el('DienThoai').value = khProfile.phones?.[0] || '';
+                    el('DiaChi').value    = khProfile.addresses?.[0] || '';
+                    refreshPickButtons();
 
-        khInput.addEventListener('input', debounce(async ()=>{
-          const q = khInput.value.trim();
-          if(q.length < 1){ portalHide(); return; }
-          const list = await searchKHOnline(q);
+                    // gợi ý theo KH
+                    const fav = getFavoriteItemsFromKH(k);
+                    let spList = [];
+                    if (fav.ids && fav.ids.length) spList = spList.concat(mapFavByIds(fav.ids));
+                    if (fav.names && fav.names.length) spList = spList.concat(mapFavByNames(fav.names));
+                    { const seen=new Set(); spList=spList.filter(sp=>{const key=sp.Id||sp.id; if(seen.has(key)) return false; seen.add(key); return true;}); }
+                    renderFavoriteChips(spList);
 
-          portalShowFor(khInput, list, k=>{
-            const name = k.ten || k.Ten || '';
-            const phone = (k.Phones?.[0]?.SoDienThoai || k.phones?.[0]?.soDienThoai || '') + '';
-            const addr  = (k.Addresses?.[0]?.DiaChi || k.addresses?.[0]?.diaChi || '') + '';
-            return `<div class="d-flex flex-column">
-              <div class="d-flex justify-content-between align-items-center">
-                <strong class="me-2">${name}</strong><small>${phone || '<span class="text-muted">—</span>'}</small>
-              </div>
-              <div class="small text-muted text-clip-1">${addr || '—'}</div></div>`;
-          }, async k=>{
-            khId = k.id || k.Id || null;
-            khInput.value = k.ten || k.Ten || '';
-            khProfile.addresses = (k.Addresses || k.addresses || []).map(a=>a.DiaChi || a.diaChi || '').filter(Boolean);
-            khProfile.phones    = (k.Phones || k.phones || []).map(p=>p.SoDienThoai || p.soDienThoai || '').filter(Boolean);
-            el('DienThoai').value = khProfile.phones?.[0] || '';
-            el('DiaChi').value    = khProfile.addresses?.[0] || '';
-            refreshPickButtons();
+                    repriceAllLinesForCurrentCustomer();
+                    await loadCustomerInfo(khId);
+                    touchChanged();
+                  });
+                }, 220));
 
-            // gợi ý theo KH
-            const fav = getFavoriteItemsFromKH(k);
-            let spList = [];
-            if (fav.ids && fav.ids.length) spList = spList.concat(mapFavByIds(fav.ids));
-            if (fav.names && fav.names.length) spList = spList.concat(mapFavByNames(fav.names));
-            { const seen=new Set(); spList=spList.filter(sp=>{const key=sp.Id||sp.id; if(seen.has(key)) return false; seen.add(key); return true;}); }
-            renderFavoriteChips(spList);
+                function getPhonesFromProfile(){ return (khProfile?.phones||[]).map(p=>(p||'').toString().trim()).filter((v,i,a)=>v&&a.indexOf(v)===i); }
+                function getAddressesFromProfile(){ return (khProfile?.addresses||[]).map(a=>(a||'').toString().trim()).filter((v,i,a)=>v&&a.indexOf(v)===i); }
+                function refreshPickButtons(){
+                  const p=getPhonesFromProfile(), a=getAddressesFromProfile();
+                  const phoneBtn=el('PickPhoneBtn'), addrBtn=el('PickAddrBtn');
+                  if(phoneBtn){ phoneBtn.style.display=p.length>0?'':'none'; phoneBtn.disabled=p.length<=1 && ((el('DienThoai').value||'')===(p[0]||'')); }
+                  if(addrBtn){ addrBtn.style.display=a.length>0?'':'none'; addrBtn.disabled=a.length<=1 && ((el('DiaChi').value||'')===(a[0]||'')); }
+                }
+                function openPickerForInput(inputEl, items){
+                  portalShowFor(inputEl,items||[],v=>`<div class="d-flex justify-content-between"><span>${v}</span><small class="text-muted">chọn</small></div>`,v=>{ inputEl.value=v; touchChanged(); });
+                }
+                document.addEventListener('click',e=>{
+                  if(e.target.closest('#PickPhoneBtn')) openPickerForInput(el('DienThoai'), getPhonesFromProfile());
+                  if(e.target.closest('#PickAddrBtn'))  openPickerForInput(el('DiaChi'), getAddressesFromProfile());
+                });
 
-            repriceAllLinesForCurrentCustomer();
-            await loadCustomerInfo(khId);
-            touchChanged();
-          });
+
+
+                const spInput=el('SearchSanPham');
+                 function portalShowForSanPham(input, spList){
+                  _portalOwner = input;
+                  _portal.innerHTML = '';
+
+                  if (!spList || !spList.length){
+                    const d = document.createElement('div');
+                    d.className = 'portal-item text-muted';
+                    d.textContent = 'Không có dữ liệu phù hợp';
+                    _portal.appendChild(d);
+                  } else {
+                    spList.forEach(sp => {
+                      const row = document.createElement('div');
+                      row.className = 'portal-item list-group-item-action';
+
+                      const defaultBt = getDefaultBt(sp);
+                      const secondBt  = getSecondBt(sp);
+
+                      // Top line only (Tên + giá pick nhanh) — đã BỎ dòng liệt kê biến thể
+                      const top  = document.createElement('div');
+                      top.className = 'd-flex align-items-center justify-content-between';
+
+                      const leftBtn  = document.createElement('div');
+                      leftBtn.className = 'pick-name fw-semibold';
+                      leftBtn.textContent = sp.Ten || sp.ten || '';
+
+                      const rightBtn = document.createElement('div');
+                      rightBtn.className = 'pick-price text-muted';
+                      if (secondBt){
+                        rightBtn.textContent = fmt(secondBt.GiaBan);
+                        rightBtn.title = `${secondBt.TenBienThe}`;
+                      } else {
+                        rightBtn.textContent = '';
+                      }
+
+                      top.appendChild(leftBtn);
+                      top.appendChild(rightBtn);
+                      row.appendChild(top);
+
+                      _portal.appendChild(row);
+
+                      const attach = (el, fn) => {
+                        el.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); fn(); portalHide(); });
+                        el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); fn(); portalHide(); }, { passive: false });
+                      };
+                      attach(leftBtn,  () => addLineFromSanPhamVariant(sp, defaultBt));
+                      if (secondBt) attach(rightBtn, () => addLineFromSanPhamVariant(sp, secondBt));
+                    });
+                  }
+
+                  // Position using visualViewport (iOS) or window scroll (others)
+                  const rc = input.getBoundingClientRect();
+                  const vv = window.visualViewport;
+                  const vp = {
+                    x: vv ? vv.offsetLeft : window.scrollX,
+                    y: vv ? vv.offsetTop  : window.scrollY,
+                    w: vv ? vv.width      : window.innerWidth,
+                    h: vv ? vv.height     : window.innerHeight
+                  };
+
+                  _portal.style.width = rc.width + 'px';
+                  const approx = Math.min(_portal.scrollHeight || 240, Math.round(vp.h * 0.4));
+
+                  let top  = vp.y + rc.bottom + 6;
+                  let left = vp.x + Math.max(8, Math.min(rc.left, vp.w - rc.width - 8));
+
+                  if (top + approx > vp.y + vp.h - 8) {
+                    top = vp.y + Math.max(8, rc.top - approx - 6);
+                  }
+
+                  _portal.style.top  = `${top}px`;
+                  _portal.style.left = `${left}px`;
+                  _portal.classList.add('show');
+                }
+        spInput.addEventListener('input', debounce(async ()=>{
+          const q = spInput.value.trim();
+          if (q.length < 1) { portalHide(); return; }
+          const list = await searchSPOnline(q);   // ✅ chỉ gọi server
+          portalShowForSanPham(spInput, list);
         }, 220));
+                /* ========================== MODAL ⚙ (ghi chú + topping) ========================== */
+                function getToppings(sp){
+                  const list = sp?.Toppings || sp?.toppings || [];
+                  return (Array.isArray(list)? list: []).map(t=>({
+                    Id: t.Id??t.id??t.ToppingId??t.toppingId,
+                    Ten: t.Ten??t.ten??t.TenTopping??t.tenTopping??'Topping',
+                    Gia: t.Gia??t.gia??t.GiaBan??t.giaBan??0
+                  }));
+                }
+                              function renderModalNotes(ln){
+          const box = document.getElementById('ModalNotes');
+          if(!box) return;
 
-        function getPhonesFromProfile(){ return (khProfile?.phones||[]).map(p=>(p||'').toString().trim()).filter((v,i,a)=>v&&a.indexOf(v)===i); }
-        function getAddressesFromProfile(){ return (khProfile?.addresses||[]).map(a=>(a||'').toString().trim()).filter((v,i,a)=>v&&a.indexOf(v)===i); }
-        function refreshPickButtons(){
-          const p=getPhonesFromProfile(), a=getAddressesFromProfile();
-          const phoneBtn=el('PickPhoneBtn'), addrBtn=el('PickAddrBtn');
-          if(phoneBtn){ phoneBtn.style.display=p.length>0?'':'none'; phoneBtn.disabled=p.length<=1 && ((el('DienThoai').value||'')===(p[0]||'')); }
-          if(addrBtn){ addrBtn.style.display=a.length>0?'':'none'; addrBtn.disabled=a.length<=1 && ((el('DiaChi').value||'')===(a[0]||'')); }
-        }
-        function openPickerForInput(inputEl, items){
-          portalShowFor(inputEl,items||[],v=>`<div class="d-flex justify-content-between"><span>${v}</span><small class="text-muted">chọn</small></div>`,v=>{ inputEl.value=v; touchChanged(); });
-        }
-        document.addEventListener('click',e=>{
-          if(e.target.closest('#PickPhoneBtn')) openPickerForInput(el('DienThoai'), getPhonesFromProfile());
-          if(e.target.closest('#PickAddrBtn'))  openPickerForInput(el('DiaChi'), getAddressesFromProfile());
-        });
+            const parts = (ln?.note || "")
+        .split(/\s*#\s*/)
+        .map(x => x.trim())
+        .filter(Boolean);
 
+          const chipNotes = [];
+          const freeNotes = [];
 
+          parts.forEach(p=>{
+              if(COMMON_NOTES.includes(p))
+                  chipNotes.push(p);
+              else
+                  freeNotes.push(p);
+          });
 
-        const spInput=el('SearchSanPham');
-         function portalShowForSanPham(input, spList){
-          _portalOwner = input;
-          _portal.innerHTML = '';
+          box.innerHTML = "";
 
-          if (!spList || !spList.length){
-            const d = document.createElement('div');
-            d.className = 'portal-item text-muted';
-            d.textContent = 'Không có dữ liệu phù hợp';
-            _portal.appendChild(d);
-          } else {
-            spList.forEach(sp => {
-              const row = document.createElement('div');
-              row.className = 'portal-item list-group-item-action';
+          COMMON_NOTES.forEach(note=>{
+              const chip = document.createElement("span");
+              chip.className = "note-chip";
+              chip.textContent = note;
 
-              const defaultBt = getDefaultBt(sp);
-              const secondBt  = getSecondBt(sp);
+              if(chipNotes.includes(note))
+                  chip.classList.add("active");
 
-              // Top line only (Tên + giá pick nhanh) — đã BỎ dòng liệt kê biến thể
-              const top  = document.createElement('div');
-              top.className = 'd-flex align-items-center justify-content-between';
-
-              const leftBtn  = document.createElement('div');
-              leftBtn.className = 'pick-name fw-semibold';
-              leftBtn.textContent = sp.Ten || sp.ten || '';
-
-              const rightBtn = document.createElement('div');
-              rightBtn.className = 'pick-price text-muted';
-              if (secondBt){
-                rightBtn.textContent = fmt(secondBt.GiaBan);
-                rightBtn.title = `${secondBt.TenBienThe}`;
-              } else {
-                rightBtn.textContent = '';
-              }
-
-              top.appendChild(leftBtn);
-              top.appendChild(rightBtn);
-              row.appendChild(top);
-
-              _portal.appendChild(row);
-
-              const attach = (el, fn) => {
-                el.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); fn(); portalHide(); });
-                el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); fn(); portalHide(); }, { passive: false });
+              chip.onclick = ()=>{
+                  chip.classList.toggle("active");
               };
-              attach(leftBtn,  () => addLineFromSanPhamVariant(sp, defaultBt));
-              if (secondBt) attach(rightBtn, () => addLineFromSanPhamVariant(sp, secondBt));
-            });
-          }
 
-          // Position using visualViewport (iOS) or window scroll (others)
-          const rc = input.getBoundingClientRect();
-          const vv = window.visualViewport;
-          const vp = {
-            x: vv ? vv.offsetLeft : window.scrollX,
-            y: vv ? vv.offsetTop  : window.scrollY,
-            w: vv ? vv.width      : window.innerWidth,
-            h: vv ? vv.height     : window.innerHeight
-          };
-
-          _portal.style.width = rc.width + 'px';
-          const approx = Math.min(_portal.scrollHeight || 240, Math.round(vp.h * 0.4));
-
-          let top  = vp.y + rc.bottom + 6;
-          let left = vp.x + Math.max(8, Math.min(rc.left, vp.w - rc.width - 8));
-
-          if (top + approx > vp.y + vp.h - 8) {
-            top = vp.y + Math.max(8, rc.top - approx - 6);
-          }
-
-          _portal.style.top  = `${top}px`;
-          _portal.style.left = `${left}px`;
-          _portal.classList.add('show');
-        }
-spInput.addEventListener('input', debounce(async ()=>{
-  const q = spInput.value.trim();
-  if (q.length < 1) { portalHide(); return; }
-  const list = await searchSPOnline(q);   // ✅ chỉ gọi server
-  portalShowForSanPham(spInput, list);
-}, 220));
-        /* ========================== MODAL ⚙ (ghi chú + topping) ========================== */
-        function getToppings(sp){
-          const list = sp?.Toppings || sp?.toppings || [];
-          return (Array.isArray(list)? list: []).map(t=>({
-            Id: t.Id??t.id??t.ToppingId??t.toppingId,
-            Ten: t.Ten??t.ten??t.TenTopping??t.tenTopping??'Topping',
-            Gia: t.Gia??t.gia??t.GiaBan??t.giaBan??0
-          }));
-        }
-        function renderModalNotes(ln){
-          const wrap=el('ModalNotes'); wrap.innerHTML='';
-          COMMON_NOTES.forEach(n=>{
-            const b=document.createElement('span'); b.className='note-chip'; b.textContent=n;
-            if((ln.note||'').includes(n)) b.classList.add('active');
-            b.onclick=()=>{ b.classList.toggle('active'); };
-            wrap.appendChild(b);
+              box.appendChild(chip);
           });
-        }
-        function renderModalToppings(ln, sp){
-          const wrap=el('ModalToppings'); wrap.innerHTML='';
-          const src=getToppings(sp);
-          if(!src.length){ wrap.innerHTML='<div class="text-muted small">Không có topping</div>'; el('ModalTopTotal').innerText='0'; return; }
-          const cur = new Map((ln.toppings||[]).map(t=>[t.Id,{...t}]));
-          const recalcTop=()=>{
-            let sum=0; src.forEach(t=>{ const q=(cur.get(t.Id)?.Qty)||0; sum += q * (t.Gia||0); });
-            el('ModalTopTotal').innerText = fmt(sum);
-          };
-          src.forEach(tp=>{
-            const row=document.createElement('div'); row.className='topping-row';
-            const name=document.createElement('div'); name.className='flex-fill'; name.innerHTML=`${tp.Ten} <span class="text-muted">(${fmt(tp.Gia)}đ)</span>`;
-            const qty=document.createElement('div'); qty.className='topping-qty btn-group';
-            const minus=document.createElement('button'); minus.type='button'; minus.className='btn btn-outline-secondary btn-sm'; minus.innerHTML='<i class="fa fa-minus"></i>';
-            const input=document.createElement('input'); input.type='number'; input.min='0'; input.className='form-control form-control-sm text-center'; input.style.width='56px'; input.value=cur.get(tp.Id)?.Qty||0;
-            const plus=document.createElement('button'); plus.type='button'; plus.className='btn btn-outline-secondary btn-sm'; plus.innerHTML='<i class="fa fa-plus"></i>';
-            qty.appendChild(minus); qty.appendChild(input); qty.appendChild(plus);
-            row.appendChild(name); row.appendChild(qty); wrap.appendChild(row);
-            const setQ = (v)=>{ const q=Math.max(0, parseInt(v||0)); if(q===0) cur.delete(tp.Id); else cur.set(tp.Id,{Id:tp.Id,Ten:tp.Ten,Gia:tp.Gia,Qty:q}); input.value=q; recalcTop(); };
-            minus.onclick=()=>setQ((parseInt(input.value||0)-1));
-            plus.onclick =()=>setQ((parseInt(input.value||0)+1));
-            input.oninput=()=>setQ(input.value);
-          });
-          recalcTop();
-        }
 
-        function openLineModal(i){
-          modalIdx=i; const ln=lines[i];
+          // chỉ đưa phần free text vào textarea
+          document.getElementById("ModalNote").value = freeNotes.join("# ");
+        }
+                function renderModalToppings(ln, sp){
+                  const wrap=el('ModalToppings'); wrap.innerHTML='';
+                  const src=getToppings(sp);
+                  if(!src.length){ wrap.innerHTML='<div class="text-muted small">Không có topping</div>'; el('ModalTopTotal').innerText='0'; return; }
+                  const cur = new Map((ln.toppings||[]).map(t=>[t.Id,{...t}]));
+                  const recalcTop=()=>{
+                    let sum=0; src.forEach(t=>{ const q=(cur.get(t.Id)?.Qty)||0; sum += q * (t.Gia||0); });
+                    el('ModalTopTotal').innerText = fmt(sum);
+                  };
+                  src.forEach(tp=>{
+                    const row=document.createElement('div'); row.className='topping-row';
+                    const name=document.createElement('div'); name.className='flex-fill'; name.innerHTML=`${tp.Ten} <span class="text-muted">(${fmt(tp.Gia)}đ)</span>`;
+                    const qty=document.createElement('div'); qty.className='topping-qty btn-group';
+                    const minus=document.createElement('button'); minus.type='button'; minus.className='btn btn-outline-secondary btn-sm'; minus.innerHTML='<i class="fa fa-minus"></i>';
+                    const input=document.createElement('input'); input.type='number'; input.min='0'; input.className='form-control form-control-sm text-center'; input.style.width='56px'; input.value=cur.get(tp.Id)?.Qty||0;
+                    const plus=document.createElement('button'); plus.type='button'; plus.className='btn btn-outline-secondary btn-sm'; plus.innerHTML='<i class="fa fa-plus"></i>';
+                    qty.appendChild(minus); qty.appendChild(input); qty.appendChild(plus);
+                    row.appendChild(name); row.appendChild(qty); wrap.appendChild(row);
+                    const setQ = (v)=>{ const q=Math.max(0, parseInt(v||0)); if(q===0) cur.delete(tp.Id); else cur.set(tp.Id,{Id:tp.Id,Ten:tp.Ten,Gia:tp.Gia,Qty:q}); input.value=q; recalcTop(); };
+                    minus.onclick=()=>setQ((parseInt(input.value||0)-1));
+                    plus.onclick =()=>setQ((parseInt(input.value||0)+1));
+                    input.oninput=()=>setQ(input.value);
+                  });
+                  recalcTop();
+                }
+
+                            function openLineModal(i){
+          modalIdx=i;
+
+          const ln=lines[i];
           const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===(ln.idSanPham));
-          const sel=el('ModalBienThe'); sel.innerHTML='';
-          (getBts(sp)||[]).forEach(bt=>{ const o=document.createElement('option'); o.value=bt.Id; o.text=`${bt.TenBienThe} (${fmt(bt.GiaBan)}đ)`; if(bt.Id===ln.idBienThe) o.selected=true; sel.appendChild(o); });
+
           renderModalNotes(ln);
-          el('ModalNote').value = ln.note || '';
+
+          // ❌ bỏ dòng cũ gây lặp
+          // el('ModalNote').value = ln.note || '';
+
           renderModalToppings(ln, sp);
 
           const modalEl=el('lineModal');
           const instance=bootstrap.Modal.getOrCreateInstance(modalEl,{backdrop:'static',keyboard:true});
           instance.show();
         }
-        function applyModal(){
-          if(modalIdx<0) return; const ln=lines[modalIdx];
-          const opt=el('ModalBienThe').selectedOptions[0];
-          ln.idBienThe=opt.value; ln.tenBienThe=opt.text.split(' (')[0];
-          const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===ln.idSanPham);
-          const bt=(getBts(sp)||[]).find(b=>b.Id===ln.idBienThe) || {Id:ln.idBienThe, GiaBan:ln.donGia, TenBienThe:ln.tenBienThe};
-          ln.donGia=getGiaBanThucTe(sp, bt);
+                         function applyModal(){
+          if(modalIdx<0) return;
 
-          // notes
-          const chips=[...el('ModalNotes').querySelectorAll('.note-chip.active')].map(x=>x.textContent.trim());
-          const free=el('ModalNote').value?.trim()||'';
-          ln.note=[...chips, free].filter(Boolean).join('; ');
+          const ln = lines[modalIdx];
+
+          // lấy chip đang chọn
+          const chips = [...document.querySelectorAll('#ModalNotes .note-chip.active')]
+              .map(x => x.textContent.trim());
+
+          // ghi chú tự do
+          const free = document.getElementById('ModalNote').value.trim();
+
+          // ghi đè note (KHÔNG cộng dồn nữa)
+          ln.note = [...chips, free].filter(Boolean).join('# ');
 
           // toppings
-          const rows=el('ModalToppings').querySelectorAll('.topping-row');
+          const rows=document.querySelectorAll('#ModalToppings .topping-row');
           const picked=[];
+
           rows.forEach(r=>{
-            const nameTxt=r.querySelector('.flex-fill').childNodes[0].nodeValue.trim();
+            const name=r.querySelector('.flex-fill').childNodes[0].nodeValue.trim();
             const priceText=r.querySelector('.flex-fill .text-muted')?.textContent||'(0)';
             const price=parseMoney(priceText);
             const qty=parseInt(r.querySelector('input')?.value||0);
-            const id = nameTxt + ':' + price; // fallback id
-            if(qty>0) picked.push({Id:id, Ten:nameTxt, Gia:price, Qty:qty});
-          });
-          ln.toppings=picked;
-          ln.topTotal=(picked||[]).reduce((s,t)=>s+(t.Gia||0)*(t.Qty||0),0);
 
-          bootstrap.Modal.getInstance(el('lineModal'))?.hide();
-          renderLines(); recalc(); updateMonCountBadgeWpf(); touchChanged();
-        }
-
-        /* ========================== DÒNG & HÀNH ĐỘNG ========================== */
-        function lineAmount(ln){ return (ln.soLuong||0)*(ln.donGia||0) + (ln.topTotal||0); }
-
-        function autoMatchVariantByPrice(i){
-          const ln=lines[i]; const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===ln.idSanPham); if(!sp) return;
-          const candidates=getBts(sp);
-          for(const bt of candidates){
-            const eff=getGiaBanThucTe(sp, bt);
-            if(eff === ln.donGia){
-              ln.idBienThe=bt.Id;
-              ln.tenBienThe=bt.TenBienThe||'';
-              const vEl=document.getElementById(`LineVariant_${i}`); if(vEl) vEl.textContent = ln.tenBienThe || '';
-              const row=document.getElementById(`LineName_${i}`); if(row){ row.classList.add('blink'); setTimeout(()=>row.classList.remove('blink'),300); }
-              break;
-            }
-          }
-        }
-        function incrementQty(i, delta){
-          const ln=lines[i]; ln.soLuong=Math.max(0,(ln.soLuong||0)+delta);
-          const input=el(`Qty_${i}`); if(input) input.value=ln.soLuong;
-          updateLineTotal(i); recalc(); updateMonCountBadgeWpf(); touchChanged();
-        }
-        function adjustPrice(i, delta){
-          const ln=lines[i]; ln.donGia=Math.max(0,(ln.donGia||0)+delta);
-          const input=el(`Price_${i}`); if(input){ input.value=fmt(ln.donGia); }
-          autoMatchVariantByPrice(i);
-          updateLineTotal(i); recalc(); touchChanged();
-        }
-        function updateLineTotal(i){
-          const ln=lines[i]; const elTotal=el(`LineTotal_${i}`); if(elTotal) elTotal.innerText=fmt(lineAmount(ln));
-        }
-
-        function renderLines(){
-          const wrap=el('Lines'); wrap.innerHTML='';
-          lines.forEach((ln,i)=>{
-            const row=document.createElement('div'); row.className='list-group-item';
-            const lineTotal=fmt(lineAmount(ln));
-            row.innerHTML = `
-              <div class="d-flex flex-column gap-1">
-                <div class="d-flex align-items-center">
-                  <div class="flex-fill" id="LineName_${i}">
-                    <strong>${ln.tenSanPham}</strong>
-                    <span id="LineVariant_${i}" class="text-danger">${ln.tenBienThe||''}</span>
-                    <div class="small text-muted">${ln.note||''}</div>
-                  </div>
-                  <div class="text-end" style="min-width:120px"><strong id="LineTotal_${i}">${lineTotal}</strong></div>
-                </div>
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                  <div class="btn-group" role="group" aria-label="qty">
-                    <button class="btn btn-outline-secondary btn-sm" onclick="incrementQty(${i},-1)"><i class="fa fa-minus"></i></button>
-                    <input id="Qty_${i}" type="number" min="0" class="form-control form-control-sm text-center" style="width:56px" value="${ln.soLuong}"
-                           oninput="lines[${i}].soLuong=parseInt(this.value||0); updateLineTotal(${i}); recalc(); updateMonCountBadgeWpf(); touchChanged();" />
-                    <button class="btn btn-outline-secondary btn-sm" onclick="incrementQty(${i},+1)"><i class="fa fa-plus"></i></button>
-                  </div>
-
-                  <div class="input-group input-group-sm" style="width:140px">
-                    <button class="btn btn-outline-secondary" title="-5.000" onclick="adjustPrice(${i},-5000)"><i class="fa fa-caret-down"></i></button>
-                    <input id="Price_${i}" inputmode="numeric" class="form-control text-end" value="${fmt(ln.donGia)}"
-                           oninput="lines[${i}].donGia=parseMoney(this.value); updateLineTotal(${i});"
-                           onblur="lines[${i}].donGia=parseMoney(this.value); this.value=fmt(lines[${i}].donGia); autoMatchVariantByPrice(${i}); updateLineTotal(${i}); recalc(); touchChanged();" />
-                    <button class="btn btn-outline-secondary" title="+5.000" onclick="adjustPrice(${i},+5000)"><i class="fa fa-caret-up"></i></button>
-                  </div>
-
-                  <div class="btn-group ms-auto">
-                    <button class="btn btn-outline-secondary btn-sm" onclick="openLineModal(${i})" title="Tuỳ chỉnh"><i class="fa fa-sliders"></i></button>
-                    <button class="btn btn-outline-danger btn-sm" onclick="lines.splice(${i},1); renderLines(); recalc(); updateMonCountBadgeWpf(); touchChanged();" title="Xoá"><i class="fa fa-xmark"></i></button>
-                  </div>
-                </div>
-              </div>`;
-            wrap.appendChild(row);
-          });
-          updateMonCountBadgeWpf();
-        }
-
-        /* ========================== REPRICE WHEN CHANGE CUSTOMER ========================== */
-        function repriceAllLinesForCurrentCustomer(){
-          if (!lines.length) return;
-          for (let i=0;i<lines.length;i++){
-            const ln=lines[i];
-            const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===ln.idSanPham);
-            const bt=(sp?.BienThe||sp?.bienThe||[]).find(b=>(b.Id||b.id)===ln.idBienThe) || { Id: ln.idBienThe, GiaBan: ln.donGia, TenBienThe: ln.tenBienThe };
-            ln.donGia = getGiaBanThucTe(sp, bt);
-            autoMatchVariantByPrice(i);
-          }
-          renderLines(); recalc(); touchChanged();
-        }
-
-        /* ========================== VOUCHER + TÍNH TIỀN + CÔNG NỢ ========================== */
-        function findEligibleVoucherForPoint(){
-          const list = VOUCHER_CACHE || [];
-          if (!Array.isArray(list) || list.length===0) return null;
-          const prefer = list.find(v=>{
-            const ten = (v.Ten || v.ten || '').toLowerCase();
-            const loai= (v.Loai || v.loai || '').toLowerCase();
-            return ten.includes('điểm') || ten.includes('diem') || ten.includes('loyalty') || ten.includes('tặng') || ten.includes('tang') || loai.includes('loyalty');
-          });
-          return prefer || list[0] || null;
-        }
-        function applyVoucherByEligibility(){
-          if (!loyaltyState.duocNhan || loyaltyState.daNhan){
-            alert('Khách hiện KHÔNG đủ điều kiện nhận voucher theo điểm.');
-            return;
-          }
-          const pick = findEligibleVoucherForPoint();
-          if(!pick){ alert('Không tìm thấy voucher phù hợp để áp dụng.'); return; }
-          const sel=el('VoucherId'); if(sel){ sel.value=(pick.Id||pick.id||'').toString(); sel.dispatchEvent(new Event('change')); }
-          el('SaveHint').innerText='✅ Đã áp dụng voucher theo điểm.';
-        }
-        function calcVoucherDiscount(tamTinh){
-          const id = el('VoucherId').value || '';
-          if (!id) return 0; // ❌ không còn giảm giá cố định khi không chọn voucher
-
-          const v = (VOUCHER_CACHE||[]).find(x => (x.Id||x.id||'') == id);
-          if (!v) return 0;
-
-          const kind = (v.KieuGiam ?? v.kieuGiam ?? v.Kieu ?? v.kieu ?? '').toString().toLowerCase();
-          const raw  = Number(v.GiaTri   ?? v.giaTri   ?? v.Value ?? v.value ?? 0) || 0;
-
-          let disc = 0;
-          if (kind.includes('%') || kind.includes('percent') || kind === 'phantram') disc = tamTinh * raw / 100;
-          else disc = raw;
-
-          disc = Math.min(tamTinh, round1000(disc, 'nearest'));
-          return disc;
-        }
-        function recalc(){
-          let tamTinh = 0;
-          lines.forEach(l => tamTinh += (l.soLuong||0)*(l.donGia||0) + (l.topTotal||0));
-
-          const giamGia = calcVoucherDiscount(tamTinh);
-          const thanh   = Math.max(0, tamTinh - giamGia);
-
-          el('TongTien').innerText = fmt(tamTinh);
-          el('GiamGia').innerText  = fmt(giamGia);
-          el('ThanhTien').innerText= fmt(thanh);
-
-          // công nợ hiển thị ở bảng (CongNoDisplay) & nơi khác — không còn CongNoView riêng
-          el('CongNoDisplay') && (el('CongNoDisplay').innerText = fmt(congNoCurrent));
-          el('TongPhaiThu')   && (el('TongPhaiThu').innerText   = fmt(thanh + (congNoCurrent||0)));
-        }
-        el('VoucherId').addEventListener('change',()=>{ recalc(); touchChanged(); });
-
-        /* ========================== SAVE ========================== */
-        ['ld_taicho','ld_muave','ld_ship','ld_app'].forEach(id=> el(id).addEventListener('change',()=>{ el('banWrap').style.display=el('ld_taicho').checked?'':'none'; touchChanged(); }));
-        el('banWrap').style.display='none';
-
-        function validateForm(){
-          el('FormError').innerText='';
-                  if(currentPhanLoaiKey()==='Tại chỗ' && !el('TenBan').value.trim()){ el('FormError').innerText='Tên bàn không được để trống.'; return false; }
-          if(currentPhanLoaiKey()==='Ship'){
-            if(!el('DiaChi').value.trim()){ el('FormError').innerText='Địa chỉ không được để trống.'; return false; }
-            if(!el('DienThoai').value.trim()){ el('FormError').innerText='SĐT không được để trống.'; return false; }
-          }
-          if(lines.length===0 || !lines.some(x=>(x.soLuong||0)>0)){ el('FormError').innerText='Chưa có sản phẩm nào.'; return false; }
-          return true;
-        }
-
- 
-        async function saveInvoice(isAuto = false) {
-  if (!validateForm()) return;
-
-  // ==== Build payload ====
-  const loaiKey = currentPhanLoaiKey(); // 'TaiCho' | 'Mv' | 'Ship' | 'App'
-  const payload = {
-    PhanLoai: loaiKey, // backend dùng trực tiếp giá trị key
-    TenBan: el('ld_taicho').checked ? nullIfEmpty(el('TenBan').value) : null,
-
-    KhachHangId: asGuidOrNull(khId),
-    TenKhachHangText: nullIfEmpty(el('TenKhachHangText').value),
-    SoDienThoaiText: nullIfEmpty(el('DienThoai').value),
-    DiaChiText: nullIfEmpty(el('DiaChi').value),
-
-    VoucherId: asGuidOrNull(el('VoucherId').value),
-    GiamGiaFix: 0,
-    CongNo: Number(congNoCurrent) || 0,
-
-        ChiTietHoaDonVouchers: (function(){
-      const id = asGuidOrNull(el('VoucherId').value);
-      return id ? [{ VoucherId: id }] : [];
-    })(),
-
-    ChiTietHoaDons: lines
-      .filter(l => (l.soLuong || 0) > 0 && GUID_RE.test(l.idSanPham) && GUID_RE.test(l.idBienThe))
-      .map(l => ({
-        SanPhamId: l.idSanPham,
-        SanPhamIdBienThe: l.idBienThe,
-        TenSanPham: l.tenSanPham,
-        TenBienThe: l.tenBienThe,
-        SoLuong: l.soLuong,
-        DonGia: l.donGia,
-        NoteText: nullIfEmpty(l.note),
-        // gửi topping kèm dòng (backend có thể bỏ qua nếu không dùng)
-        ToppingDtos: (l.toppings || [])
-          .filter(t => GUID_RE.test(t.Id))
-          .map(t => ({ ToppingId: t.Id, Ten: t.Ten, DonGia: t.Gia, SoLuong: t.Qty })),
-        ToppingTotal: l.topTotal || 0
-      }))
-  };
-
-  // ==== Call server ====
-  const btn = el('SaveBtn');
-  const old = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> ${isAuto ? 'Đang tự lưu...' : 'Đang lưu...'}`;
-  showBusy(true);
-
-  try {
-    const r = await fetch('?handler=Save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(payload)
-    });
-
-    const text = await r.text();
-    let body = null; try { body = JSON.parse(text); } catch { body = text; }
-
-    // success flags thường gặp từ API
-    const okFlag = body?.success === true || body?.succeeded === true || body?.isSuccess === true;
-
-    if (r.ok && okFlag) {
-      unsaved = false;
-      // ✅ Lưu tay hay tự lưu đều chuyển hướng
-      window.location.href = '/DoanhThuNgay';
-      return;
-    }
-
-    // gom thông điệp lỗi dễ đọc
-    let msg = body?.message || body?.Message || body?.detail || body?.title || body?.error || '';
-    if (!msg && typeof body === 'string' && body.trim().length < 500) msg = body;
-    if (!msg) msg = `HTTP ${r.status} ${r.statusText || ''}`.trim();
-
-    console.error('Save invoice failed:', { status: r.status, body });
-    alert('Lỗi: ' + msg);
-  } catch (e) {
-    console.error('Save invoice exception:', e);
-    alert('Lỗi: ' + (e?.message || e));
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = old;
-    showBusy(false);
-    startAutosave();
-  }
-}
-
-        /* ========================== INIT ========================== */
-        function fillVoucherOptions(){
-          const sel=el('VoucherId'); const list=VOUCHER_CACHE||[];
-          sel.innerHTML='<option value="">-- Không áp dụng --</option>';
-          list.forEach(v=>{ const id=v.Id||v.id; const ten=v.Ten||v.ten||''; const opt=document.createElement('option'); opt.value=id||''; opt.textContent=ten||'(voucher)'; sel.appendChild(opt); });
-        }
-
-        (function init(){
-          if(Array.isArray(window.__KH_INIT)) cacheSet('KH_CACHE', window.__KH_INIT);
-          if(Array.isArray(window.__SP_INIT)) cacheSet('SP_CACHE', window.__SP_INIT);
-          if(Array.isArray(window.__GB_INIT)) cacheSet('GB_CACHE', window.__GB_INIT);
-          if(Array.isArray(window.__VOUCHER_INIT)) cacheSet('VOUCHER_CACHE', window.__VOUCHER_INIT);
-
-          preloadSP().then(r=>{ SP_CACHE=r; buildSPIndex(SP_CACHE); SP_CACHE._indexed=true; });
-          preloadGB().then(r=>{ GB_CACHE=r; buildGBIndex(GB_CACHE); });
-          preloadVoucher().then(r=>{
-            VOUCHER_CACHE=r; fillVoucherOptions();
-
-            // Gắn click vào "Điểm tháng trước" -> tự áp voucher đúng giá trị (giống WPF handler)
-            const elPrev = document.getElementById('DiemThangTruoc');
-            if (elPrev) {
-              elPrev.addEventListener('click', () => {
-                if (loyaltyState.diemTruoc < 0) { alert('Khách hàng này không thuộc diện được nhận voucher.'); return; }
-                if (loyaltyState.daNhan) { alert('Khách hàng đã nhận voucher trong tháng này rồi.'); return; }
-
-                const saoDay   = tinhSoSaoDay(loyaltyState.diemTruoc);
-                const giaTriVc = tinhGiaTriVoucher(loyaltyState.diemTruoc);
-
-                if (saoDay > 0 && giaTriVc > 0) {
-                  const found = (VOUCHER_CACHE||[]).find(v => Number(v.GiaTri ?? v.giaTri ?? v.Value ?? v.value ?? 0) === giaTriVc);
-                  if (found) {
-                    const sel = document.getElementById('VoucherId');
-                    sel.value = (found.Id || found.id || '').toString();
-                    sel.dispatchEvent(new Event('change'));
-                    alert(`Khách đủ ${saoDay} sao → đã áp dụng voucher ${fmt(giaTriVc)} đ.`);
-                  } else {
-                    alert(`Khách đủ ${saoDay} sao nhưng không tìm thấy voucher ${fmt(giaTriVc)} đ trong danh sách.`);
-                  }
-                } else {
-                  alert('Khách chưa đủ điểm để nhận voucher.');
-                }
+            if(qty>0)
+              picked.push({
+                Id:name+':'+price,
+                Ten:name,
+                Gia:price,
+                Qty:qty
               });
-            }
           });
 
-          // Nút áp dụng voucher theo điểm (giữ nguyên)
-          const btnApply=document.getElementById('ApplyVoucherBtn');
-          if(btnApply) btnApply.addEventListener('click', applyVoucherByEligibility);
+          ln.toppings=picked;
+          ln.topTotal=picked.reduce((s,t)=>s+(t.Gia||0)*(t.Qty||0),0);
 
-          startAutosave(); recalc();
-        })();
+          bootstrap.Modal.getInstance(document.getElementById('lineModal'))?.hide();
 
-        /* ========================== SEARCH KH ONLINE ========================== */
-        const KH_CACHE_LRU = new Map();
-        async function searchKHOnline(q){
+          renderLines();
+          recalc();
+        }
+
+                /* ========================== DÒNG & HÀNH ĐỘNG ========================== */
+                function lineAmount(ln){ return (ln.soLuong||0)*(ln.donGia||0) + (ln.topTotal||0); }
+
+                function autoMatchVariantByPrice(i){
+                  const ln=lines[i]; const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===ln.idSanPham); if(!sp) return;
+                  const candidates=getBts(sp);
+                  for(const bt of candidates){
+                    const eff=getGiaBanThucTe(sp, bt);
+                    if(eff === ln.donGia){
+                      ln.idBienThe=bt.Id;
+                      ln.tenBienThe=bt.TenBienThe||'';
+                      const vEl=document.getElementById(`LineVariant_${i}`); if(vEl) vEl.textContent = ln.tenBienThe || '';
+                      const row=document.getElementById(`LineName_${i}`); if(row){ row.classList.add('blink'); setTimeout(()=>row.classList.remove('blink'),300); }
+                      break;
+                    }
+                  }
+                }
+                function incrementQty(i, delta){
+                  const ln=lines[i]; ln.soLuong=Math.max(0,(ln.soLuong||0)+delta);
+                  const input=el(`Qty_${i}`); if(input) input.value=ln.soLuong;
+                  updateLineTotal(i); recalc(); updateMonCountBadgeWpf(); touchChanged();
+                }
+                function adjustPrice(i, delta){
+                  const ln=lines[i]; ln.donGia=Math.max(0,(ln.donGia||0)+delta);
+                  const input=el(`Price_${i}`); if(input){ input.value=fmt(ln.donGia); }
+                  autoMatchVariantByPrice(i);
+                  updateLineTotal(i); recalc(); touchChanged();
+                }
+                function updateLineTotal(i){
+                  const ln=lines[i]; const elTotal=el(`LineTotal_${i}`); if(elTotal) elTotal.innerText=fmt(lineAmount(ln));
+                }
+
+                function renderLines(){
+                  const wrap=el('Lines'); wrap.innerHTML='';
+                  lines.forEach((ln,i)=>{
+                    const row=document.createElement('div'); row.className='list-group-item';
+                    const lineTotal=fmt(lineAmount(ln));
+                    row.innerHTML = `
+                      <div class="d-flex flex-column gap-1">
+                        <div class="d-flex align-items-center">
+                          <div class="flex-fill" id="LineName_${i}">
+                            <strong>${ln.tenSanPham}</strong>
+                            <span id="LineVariant_${i}" class="text-danger">${ln.tenBienThe||''}</span>
+                            <div class="small text-muted">${ln.note||''}</div>
+                          </div>
+                          <div class="text-end" style="min-width:120px"><strong id="LineTotal_${i}">${lineTotal}</strong></div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                          <div class="btn-group" role="group" aria-label="qty">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="incrementQty(${i},-1)"><i class="fa fa-minus"></i></button>
+                            <input id="Qty_${i}" type="number" min="0" class="form-control form-control-sm text-center" style="width:56px" value="${ln.soLuong}"
+                                   oninput="lines[${i}].soLuong=parseInt(this.value||0); updateLineTotal(${i}); recalc(); updateMonCountBadgeWpf(); touchChanged();" />
+                            <button class="btn btn-outline-secondary btn-sm" onclick="incrementQty(${i},+1)"><i class="fa fa-plus"></i></button>
+                          </div>
+
+                          <div class="input-group input-group-sm" style="width:140px">
+                            <button class="btn btn-outline-secondary" title="-5.000" onclick="adjustPrice(${i},-5000)"><i class="fa fa-caret-down"></i></button>
+                            <input id="Price_${i}" inputmode="numeric" class="form-control text-end" value="${fmt(ln.donGia)}"
+                                   oninput="lines[${i}].donGia=parseMoney(this.value); updateLineTotal(${i});"
+                                   onblur="lines[${i}].donGia=parseMoney(this.value); this.value=fmt(lines[${i}].donGia); autoMatchVariantByPrice(${i}); updateLineTotal(${i}); recalc(); touchChanged();" />
+                            <button class="btn btn-outline-secondary" title="+5.000" onclick="adjustPrice(${i},+5000)"><i class="fa fa-caret-up"></i></button>
+                          </div>
+
+                          <div class="btn-group ms-auto">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="openLineModal(${i})" title="Tuỳ chỉnh"><i class="fa fa-sliders"></i></button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="lines.splice(${i},1); renderLines(); recalc(); updateMonCountBadgeWpf(); touchChanged();" title="Xoá"><i class="fa fa-xmark"></i></button>
+                          </div>
+                        </div>
+                      </div>`;
+                    wrap.appendChild(row);
+                  });
+                  updateMonCountBadgeWpf();
+                }
+
+                /* ========================== REPRICE WHEN CHANGE CUSTOMER ========================== */
+                function repriceAllLinesForCurrentCustomer(){
+                  if (!lines.length) return;
+                  for (let i=0;i<lines.length;i++){
+                    const ln=lines[i];
+                    const sp=(SP_CACHE||[]).find(x=>(x.id||x.Id)===ln.idSanPham);
+                    const bt=(sp?.BienThe||sp?.bienThe||[]).find(b=>(b.Id||b.id)===ln.idBienThe) || { Id: ln.idBienThe, GiaBan: ln.donGia, TenBienThe: ln.tenBienThe };
+                    ln.donGia = getGiaBanThucTe(sp, bt);
+                    autoMatchVariantByPrice(i);
+                  }
+                  renderLines(); recalc(); touchChanged();
+                }
+
+                /* ========================== VOUCHER + TÍNH TIỀN + CÔNG NỢ ========================== */
+                function calcVoucherDiscount(tamTinh){
+                  const id = el('VoucherId').value || '';
+                  if (!id) return 0; // ❌ không còn giảm giá cố định khi không chọn voucher
+
+                  const v = (VOUCHER_CACHE||[]).find(x => (x.Id||x.id||'') == id);
+                  if (!v) return 0;
+
+                  const kind = (v.KieuGiam ?? v.kieuGiam ?? v.Kieu ?? v.kieu ?? '').toString().toLowerCase();
+                  const raw  = Number(v.GiaTri   ?? v.giaTri   ?? v.Value ?? v.value ?? 0) || 0;
+
+                  let disc = 0;
+                  if (kind.includes('%') || kind.includes('percent') || kind === 'phantram') disc = tamTinh * raw / 100;
+                  else disc = raw;
+
+                  disc = Math.min(tamTinh, round1000(disc, 'nearest'));
+                  return disc;
+                }
+                function recalc(){
+                  let tamTinh = 0;
+                  lines.forEach(l => tamTinh += (l.soLuong||0)*(l.donGia||0) + (l.topTotal||0));
+
+                  const giamGia = calcVoucherDiscount(tamTinh);
+                  const thanh   = Math.max(0, tamTinh - giamGia);
+
+                  el('TongTien').innerText = fmt(tamTinh);
+                  el('GiamGia').innerText  = fmt(giamGia);
+                  el('ThanhTien').innerText= fmt(thanh);
+
+                  // công nợ hiển thị ở bảng (CongNoDisplay) & nơi khác — vẫn giữ công nợ ở bảng dưới
+                  el('CongNoDisplay') && (el('CongNoDisplay').innerText = fmt(congNoCurrent));
+                  el('TongPhaiThu')   && (el('TongPhaiThu').innerText   = fmt(thanh + (congNoCurrent||0)));
+                }
+                el('VoucherId').addEventListener('change',()=>{ recalc(); touchChanged(); });
+
+                /* ========================== SAVE ========================== */
+                ['ld_taicho','ld_muave','ld_ship','ld_app'].forEach(id=> el(id).addEventListener('change',()=>{ el('banWrap').style.display=el('ld_taicho').checked?'':'none'; touchChanged(); }));
+                el('banWrap').style.display='none';
+
+                function validateForm(){
+                  el('FormError').innerText='';
+                          if(currentPhanLoaiKey()==='Tại chỗ' && !el('TenBan').value.trim()){ el('FormError').innerText='Tên bàn không được để trống.'; return false; }
+                  if(currentPhanLoaiKey()==='Ship'){
+                    if(!el('DiaChi').value.trim()){ el('FormError').innerText='Địa chỉ không được để trống.'; return false; }
+                    if(!el('DienThoai').value.trim()){ el('FormError').innerText='SĐT không được để trống.'; return false; }
+                  }
+                  if(lines.length===0 || !lines.some(x=>(x.soLuong||0)>0)){ el('FormError').innerText='Chưa có sản phẩm nào.'; return false; }
+                  return true;
+                }
+
+
+                async function saveInvoice(isAuto = false) {
+          if (!validateForm()) return;
+
+          // ==== Build payload ====
+          const loaiKey = currentPhanLoaiKey(); // 'TaiCho' | 'Mv' | 'Ship' | 'App'
+          const payload = {
+            PhanLoai: loaiKey, // backend dùng trực tiếp giá trị key
+            TenBan: el('ld_taicho').checked ? nullIfEmpty(el('TenBan').value) : null,
+
+            KhachHangId: asGuidOrNull(khId),
+            TenKhachHangText: nullIfEmpty(el('TenKhachHangText').value),
+            SoDienThoaiText: nullIfEmpty(el('DienThoai').value),
+            DiaChiText: nullIfEmpty(el('DiaChi').value),
+
+            VoucherId: asGuidOrNull(el('VoucherId').value),
+            GiamGiaFix: 0,
+            CongNo: Number(congNoCurrent) || 0,
+
+                ChiTietHoaDonVouchers: (function(){
+              const id = asGuidOrNull(el('VoucherId').value);
+              return id ? [{ VoucherId: id }] : [];
+            })(),
+
+            ChiTietHoaDons: lines
+              .filter(l => (l.soLuong || 0) > 0 && GUID_RE.test(l.idSanPham) && GUID_RE.test(l.idBienThe))
+              .map(l => ({
+                SanPhamId: l.idSanPham,
+                SanPhamIdBienThe: l.idBienThe,
+                TenSanPham: l.tenSanPham,
+                TenBienThe: l.tenBienThe,
+                SoLuong: l.soLuong,
+                DonGia: l.donGia,
+                NoteText: nullIfEmpty(l.note),
+                // gửi topping kèm dòng (backend có thể bỏ qua nếu không dùng)
+                ToppingDtos: (l.toppings || [])
+                  .filter(t => GUID_RE.test(t.Id))
+                  .map(t => ({ ToppingId: t.Id, Ten: t.Ten, DonGia: t.Gia, SoLuong: t.Qty })),
+                ToppingTotal: l.topTotal || 0
+              }))
+          };
+
+          // ==== Call server ====
+          const btn = el('SaveBtn');
+          const old = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> ${isAuto ? 'Đang tự lưu...' : 'Đang lưu...'}`;
+          showBusy(true);
+
+          try {
+            const r = await fetch('?handler=Save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify(payload)
+            });
+
+            const text = await r.text();
+            let body = null; try { body = JSON.parse(text); } catch { body = text; }
+
+            // success flags thường gặp từ API
+            const okFlag = body?.success === true || body?.succeeded === true || body?.isSuccess === true;
+
+            if (r.ok && okFlag) {
+              unsaved = false;
+              // ✅ Lưu tay hay tự lưu đều chuyển hướng
+              window.location.href = '/DoanhThuNgay';
+              return;
+            }
+
+            // gom thông điệp lỗi dễ đọc
+            let msg = body?.message || body?.Message || body?.detail || body?.title || body?.error || '';
+            if (!msg && typeof body === 'string' && body.trim().length < 500) msg = body;
+            if (!msg) msg = `HTTP ${r.status} ${r.statusText || ''}`.trim();
+
+            console.error('Save invoice failed:', { status: r.status, body });
+            alert('Lỗi: ' + msg);
+          } catch (e) {
+            console.error('Save invoice exception:', e);
+            alert('Lỗi: ' + (e?.message || e));
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = old;
+            showBusy(false);
+            // autosave removed — do not restart any timer
+          }
+        }
+
+                /* ========================== INIT ========================== */
+                function fillVoucherOptions(){
+                  const sel=el('VoucherId'); const list=VOUCHER_CACHE||[];
+                  sel.innerHTML='<option value="">-- Không áp dụng --</option>';
+                  list.forEach(v=>{ const id=v.Id||v.id; const ten=v.Ten||v.ten||''; const opt=document.createElement('option'); opt.value=id||''; opt.textContent=ten||'(voucher)'; sel.appendChild(opt); });
+                }
+
+                (function init(){
+                  if(Array.isArray(window.__KH_INIT)) cacheSet('KH_CACHE', window.__KH_INIT);
+                  if(Array.isArray(window.__SP_INIT)) cacheSet('SP_CACHE', window.__SP_INIT);
+                  if(Array.isArray(window.__GB_INIT)) cacheSet('GB_CACHE', window.__GB_INIT);
+                  if(Array.isArray(window.__VOUCHER_INIT)) cacheSet('VOUCHER_CACHE', window.__VOUCHER_INIT);
+
+                  preloadSP().then(r=>{ SP_CACHE=r; buildSPIndex(SP_CACHE); SP_CACHE._indexed=true; });
+                  preloadGB().then(r=>{ GB_CACHE=r; buildGBIndex(GB_CACHE); });
+                  preloadVoucher().then(r=>{
+                    VOUCHER_CACHE=r; fillVoucherOptions();
+                    // removed loyalty click binding (DiemThangTruoc) — panel was removed
+                  });
+
+                  // Nút áp dụng voucher theo điểm (giữ nguyên but hidden by default)
+                  const btnApply=document.getElementById('ApplyVoucherBtn');
+                  if(btnApply) btnApply.addEventListener('click', ()=>{ alert('Tính năng áp voucher theo điểm đã tắt.'); });
+
+                  // autosave removed — do not start timers
+                  recalc();
+                })();
+
+                /* ========================== SEARCH KH ONLINE ========================== */
+                const KH_CACHE_LRU = new Map();
+                async function searchKHOnline(q){
+                  if (!q || q.trim().length < 1) return [];
+                  const url = `?handler=SearchKH&q=${encodeURIComponent(q)}&take=30`;
+                  const res = await fetch(url, { credentials:'include' });
+                  if (!res.ok) return [];
+
+                  const j = await res.json();
+                  const data = j?.data || j || [];
+                  return Array.isArray(data) ? data : [];
+                }
+                /* ========================== SEARCH SP ONLINE ========================== */
+        async function searchSPOnline(q){
           if (!q || q.trim().length < 1) return [];
-          const url = `?handler=SearchKH&q=${encodeURIComponent(q)}&take=30`;
+          const url = `?handler=SearchSp&q=${encodeURIComponent(q)}&take=30`;
           const res = await fetch(url, { credentials:'include' });
           if (!res.ok) return [];
-
           const j = await res.json();
           const data = j?.data || j || [];
           return Array.isArray(data) ? data : [];
         }
-        /* ========================== SEARCH SP ONLINE ========================== */
-async function searchSPOnline(q){
-  if (!q || q.trim().length < 1) return [];
-  const url = `?handler=SearchSp&q=${encodeURIComponent(q)}&take=30`;
-  const res = await fetch(url, { credentials:'include' });
-  if (!res.ok) return [];
-  const j = await res.json();
-  const data = j?.data || j || [];
-  return Array.isArray(data) ? data : [];
-}
-        function _vp() {
-            const vv = window.visualViewport;
-            return {
-              x: vv ? vv.offsetLeft : window.scrollX,
-              y: vv ? vv.offsetTop  : window.scrollY,
-              w: vv ? vv.width      : window.innerWidth,
-              h: vv ? vv.height     : window.innerHeight
-            };
-          }
-                    function _placePortalBelowInput(inputEl) {
-            const rc = inputEl.getBoundingClientRect();
-            const vp = _vp();
+                function _vp() {
+                    const vv = window.visualViewport;
+                    return {
+                      x: vv ? vv.offsetLeft : window.scrollX,
+                      y: vv ? vv.offsetTop  : window.scrollY,
+                      w: vv ? vv.width      : window.innerWidth,
+                      h: vv ? vv.height     : window.innerHeight
+                    };
+                  }
+                            function _placePortalBelowInput(inputEl) {
+                    const rc = inputEl.getBoundingClientRect();
+                    const vp = _vp();
 
-            _portal.style.width = rc.width + 'px';
+                    _portal.style.width = rc.width + 'px';
 
-            // chiều cao ước lượng của list (tối đa 40% chiều cao viewport)
-            const approx = Math.min(_portal.scrollHeight || 240, Math.round(vp.h * 0.4));
+                    // chiều cao ước lượng của list (tối đa 40% chiều cao viewport)
+                    const approx = Math.min(_portal.scrollHeight || 240, Math.round(vp.h * 0.4));
 
-            // mặc định: đặt dưới ô gõ
-            let top  = vp.y + rc.bottom + 6;
-            let left = vp.x + Math.max(8, Math.min(rc.left, vp.w - rc.width - 8));
+                    // mặc định: đặt dưới ô gõ
+                    let top  = vp.y + rc.bottom + 6;
+                    let left = vp.x + Math.max(8, Math.min(rc.left, vp.w - rc.width - 8));
 
-            // nếu không đủ chỗ phía dưới, lật lên phía trên ô gõ
-            if (top + approx > vp.y + vp.h - 8) {
-              top = vp.y + Math.max(8, rc.top - approx - 6);
-            }
+                    // nếu không đủ chỗ phía dưới, lật lên phía trên ô gõ
+                    if (top + approx > vp.y + vp.h - 8) {
+                      top = vp.y + Math.max(8, rc.top - approx - 6);
+                    }
 
-            _portal.style.top  = `${top}px`;
-            _portal.style.left = `${left}px`;
-            _portal.classList.add('show');
-          }
-                  function showAddedToast(text){
-          const box = document.getElementById('AddToast');
-          const tx  = document.getElementById('AddToastText');
-          if(!box || !tx) return;
-          tx.textContent = text;
+                    _portal.style.top  = `${top}px`;
+                    _portal.style.left = `${left}px`;
+                    _portal.classList.add('show');
+                  }
+                          function showAddedToast(text){
+                  const box = document.getElementById('AddToast');
+                  const tx  = document.getElementById('AddToastText');
+                  if(!box || !tx) return;
+                  tx.textContent = text;
 
-          // Đặt vị trí dựa theo visualViewport để luôn nằm TRÊN bàn phím iOS
-          const vv = window.visualViewport;
-          const x  = vv ? vv.offsetLeft : window.scrollX;
-          const y  = vv ? vv.offsetTop  : window.scrollY;
-          const w  = vv ? vv.width      : window.innerWidth;
-          const h  = vv ? vv.height     : window.innerHeight;
+                  // Đặt vị trí dựa theo visualViewport để luôn nằm TRÊN bàn phím iOS
+                  const vv = window.visualViewport;
+                  const x  = vv ? vv.offsetLeft : window.scrollX;
+                  const y  = vv ? vv.offsetTop  : window.scrollY;
+                  const w  = vv ? vv.width      : window.innerWidth;
+                  const h  = vv ? vv.height     : window.innerHeight;
 
-          box.style.left = (x + w/2) + 'px';
-          box.style.top  = (y + h - 72) + 'px';              // cách mép dưới ~72px
+                  box.style.left = (x + w/2) + 'px';
+                  box.style.top  = (y + h - 72) + 'px';              // cách mép dưới ~72px
 
-          box.classList.add('show');
-          try{ navigator.vibrate && navigator.vibrate(15); }catch{}
-          setTimeout(()=> box.classList.remove('show'), 1200);
-        }
+                  box.classList.add('show');
+                  try{ navigator.vibrate && navigator.vibrate(15); }catch{}
+                  setTimeout(()=> box.classList.remove('show'), 1200);
+                }
 
-                // ====== ID & string helpers (dán trước saveInvoice) ======
-        const GUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+                        // ====== ID & string helpers (dán trước saveInvoice) ======
+                const GUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-        function nullIfEmpty(v){
-          const s = (v ?? '').toString().trim();
-          return s.length ? s : null;
-        }
+                function nullIfEmpty(v){
+                  const s = (v ?? '').toString().trim();
+                  return s.length ? s : null;
+                }
 
-        function asGuidOrNull(v){
-          const s = (v ?? '').toString().trim();
-          return GUID_RE.test(s) ? s : null;   // hợp lệ → giữ string GUID, sai → null
-        }
+                function asGuidOrNull(v){
+                  const s = (v ?? '').toString().trim();
+                  return GUID_RE.test(s) ? s : null;   // hợp lệ → giữ string GUID, sai → null
+                }
 
-        // Nếu chưa có, bổ sung luôn:
-           function currentPhanLoaiKey() {
-            if (el('ld_ship').checked)   return 'Ship';
-            if (el('ld_muave').checked)  return 'Mv';
-            if (el('ld_taicho').checked) return 'Tại chỗ';
-            return 'App';
-        }
+                // Nếu chưa có, bổ sung luôn:
+                   function currentPhanLoaiKey() {
+                    if (el('ld_ship').checked)   return 'Ship';
+                    if (el('ld_muave').checked)  return 'Mv';
+                    if (el('ld_taicho').checked) return 'Tại chỗ';
+                    return 'App';
+                }
 
-        function pulseCountBadge(){
-          const b = document.getElementById('TongSo');
-          if(!b) return;
-          b.classList.add('pulse');
-          setTimeout(()=> b.classList.remove('pulse'), 600);
-        }
+                function pulseCountBadge(){
+                  const b = document.getElementById('TongSo');
+                  if(!b) return;
+                  b.classList.add('pulse');
+                  setTimeout(()=> b.classList.remove('pulse'), 600);
+                }
 
     </script>
 }

@@ -57,7 +57,7 @@ public class CongViecNoiBoService : ICongViecNoiBoService
             NgayGio = entity.NgayGio,
             NgayCanhBao = entity.NgayCanhBao,   // ✅
             XNgayCanhBao = entity.XNgayCanhBao, // ✅
-            CreatedAt = entity.CreatedAt,
+
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
@@ -83,7 +83,6 @@ public class CongViecNoiBoService : ICongViecNoiBoService
             NgayGio = dto.NgayGio,
             NgayCanhBao = dto.NgayCanhBao,     // ✅
             XNgayCanhBao = dto.XNgayCanhBao,   // ✅
-            CreatedAt = DateTime.Now,
             LastModified = DateTime.Now,
             IsDeleted = false,
         };
@@ -115,8 +114,8 @@ public class CongViecNoiBoService : ICongViecNoiBoService
         if (entity == null)
             return Result<CongViecNoiBoDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<CongViecNoiBoDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        //  return Result<CongViecNoiBoDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         var before = ToDto(entity);
 
@@ -193,7 +192,7 @@ public class CongViecNoiBoService : ICongViecNoiBoService
                 NgayGio = x.NgayGio,
                 NgayCanhBao = x.NgayCanhBao,     // ✅
                 XNgayCanhBao = x.XNgayCanhBao,   // ✅
-                CreatedAt = x.CreatedAt,
+
                 LastModified = x.LastModified,
                 DeletedAt = x.DeletedAt,
                 IsDeleted = x.IsDeleted
@@ -213,7 +212,7 @@ public class CongViecNoiBoService : ICongViecNoiBoService
                 NgayGio = x.NgayGio,
                 NgayCanhBao = x.NgayCanhBao,     // ✅
                 XNgayCanhBao = x.XNgayCanhBao,   // ✅
-                CreatedAt = x.CreatedAt,
+
                 LastModified = x.LastModified,
                 DeletedAt = x.DeletedAt,
                 IsDeleted = x.IsDeleted
@@ -234,7 +233,7 @@ public class CongViecNoiBoService : ICongViecNoiBoService
                 NgayGio = x.NgayGio,
                 NgayCanhBao = x.NgayCanhBao,     // ✅
                 XNgayCanhBao = x.XNgayCanhBao,   // ✅
-                CreatedAt = x.CreatedAt,
+
                 LastModified = x.LastModified,
                 DeletedAt = x.DeletedAt,
                 IsDeleted = x.IsDeleted

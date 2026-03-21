@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace TraSuaApp.Domain.Entities;
+﻿namespace TraSuaApp.Domain.Entities;
 
 public partial class Topping
 {
@@ -13,7 +10,7 @@ public partial class Topping
 
     public bool NgungBan { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public DateTime? DeletedAt { get; set; }
 
@@ -21,7 +18,6 @@ public partial class Topping
 
     public DateTime? LastModified { get; set; }
 
-    public int OldId { get; set; }
 
     public virtual ICollection<ChiTietHoaDonTopping> ChiTietHoaDonToppings { get; set; } = new List<ChiTietHoaDonTopping>();
 

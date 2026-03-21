@@ -12,7 +12,7 @@ public partial class SanPhamBienThe
 
     public bool MacDinh { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public DateTime? DeletedAt { get; set; }
 

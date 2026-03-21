@@ -1,4 +1,5 @@
 ﻿@page
+@using TraSuaApp.Shared.Dtos
 @model TraSuaAppWeb.Pages.ChiTietHoaDonNoTabModel
 @{
     ViewData["Title"] = "Công Nợ Khách Hàng";
@@ -6,104 +7,21 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-<style>
-    /* Card kiểu mobile */
-    .debt-card {
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        padding: 12px;
-        margin-bottom: 12px;
-        background-color: #fff;
-        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.03);
-    }
-
-        .debt-card .title-line {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
-        }
-
-        .debt-card .name {
-            font-weight: 600;
-            font-size: 1rem;
-            line-height: 1.3;
-        }
-
-        .debt-card .meta {
-            color: #6b7280;
-            font-size: .875rem;
-        }
-
-        .debt-card .amount {
-            font-weight: 700;
-            color: #dc2626;
-        }
-
-        .debt-card .note {
-            color: #374151;
-            white-space: pre-wrap;
-        }
-
-        .debt-card .actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-    .btn-sm .fa {
-        margin-right: 4px;
-    }
-
-    /* Ẩn/hiện theo kích thước */
-    @@media (min-width: 768px) { /* >= md → dùng bảng */
-        #mobileCards
-
-    {
-        display: none;
-    }
-
-    }
-    @@media (max-width: 767.98px) { /* < md → dùng card */
-        #desktopTable
-
-    {
-        display: none;
-    }
-
-    }
-</style>
-
 <div class="container-fluid mt-3">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">
-            <i class="fa fa-money-bill-wave text-success"></i>
-            Công Nợ Khách Hàng
-        </h4>
-        <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">
-            <i class="fa fa-sync"></i> Tải lại
-        </button>
+
+    <div class="d-flex justify-content-between mb-3">
+        <h4><i class="fa fa-money-bill-wave text-success"></i> Công Nợ</h4>
     </div>
 
-    <!-- Ô tìm kiếm + nút X xóa nhanh -->
+    <!-- SEARCH -->
     <div class="input-group mb-3">
-        <span class="input-group-text"><i class="fa fa-search"></i></span>
-        <input type="text" class="form-control" id="searchBox" placeholder="Tìm khách hàng, ghi chú...">
-        <button id="clearSearchBtn" class="btn btn-outline-secondary d-none" type="button" aria-label="Xóa tìm kiếm">
-            <i class="fa fa-times"></i>
-        </button>
+        <input id="searchBox" class="form-control" placeholder="Tìm kiếm..." />
     </div>
 
-    <div id="tipBox" class="alert alert-info py-2">
-        <i class="fa fa-lightbulb"></i>
-        Nhấn giữ để <b>thu nhanh</b>. Bấm thường để mở form thu (cho phép thu thiếu/ghi chú).
-    </div>
-
-    <!-- Desktop: BẢNG -->
-    <div id="desktopTable" class="table-responsive">
-        <table id="noTable" class="table table-striped table-bordered align-middle">
-            <thead class="table-light">
+    <!-- TABLE -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
                 <tr>
                     <th>STT</th>
                     <th>Ngày</th>
@@ -111,402 +29,237 @@
                     <th>Tên</th>
                     <th class="text-end">Còn lại</th>
                     <th>Ghi chú</th>
-                    <th class="text-center">Thao tác</th>
+                    <th></th>
                 </tr>
             </thead>
-            <tbody>
-                @{
-                    var stt = 1;
-                    foreach (var item in Model.Items)
-                    {
-                        <tr data-id="@item.Id"
-                            data-remaining="@item.ConLai"
-                            data-name="@item.TenKhachHangText"
-                            data-note="@item.GhiChu">
-                            <td class="text-center">@stt</td>
-                            <td class="text-center">@item.NgayGio.Value.ToString("dd-MM-yyyy")</td>
-                            <td class="text-center">@item.NgayGio.Value.ToString("HH:mm")</td>
-                            <td>@item.TenKhachHangText</td>
-                            <td class="text-end fw-bold text-danger">@item.ConLai.ToString("N0")</td>
-                            <td>@item.GhiChu</td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-success me-1 pay-btn"
-                                        data-type="TienMat"
-                                        onclick="payOrEdit(event, '@item.Id')">
-                                    <i class="fa fa-money-bill-wave"></i> Tiền mặt
-                                </button>
-                                <button class="btn btn-sm btn-primary pay-btn"
-                                        data-type="ChuyenKhoan"
-                                        onclick="payOrEdit(event, '@item.Id')">
-                                    <i class="fa fa-building-columns"></i> Bank
-                                </button>
-                            </td>
-                        </tr>
-                        stt++;
-                    }
-                }
-            </tbody>
+            <tbody id="tbody"></tbody>
         </table>
     </div>
 
-    <!-- Mobile: CARDS -->
-    <div id="mobileCards">
-        @{
-            foreach (var item in Model.Items)
-            {
-                <div class="debt-card"
-                     data-id="@item.Id"
-                     data-remaining="@item.ConLai"
-                     data-name="@item.TenKhachHangText"
-                     data-note="@item.GhiChu">
-                    <div class="title-line">
-                        <div class="name">@item.TenKhachHangText</div>
-                        <div class="meta">
-                            @item.NgayGio.Value.ToString("dd-MM-yyyy") • @item.NgayGio.Value.ToString("HH:mm")
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="meta">Còn lại</div>
-                        <div class="amount">@item.ConLai.ToString("N0") đ</div>
-                    </div>
-
-                    @if (!string.IsNullOrWhiteSpace(item.GhiChu))
-                    {
-                        <div class="note mt-1">@item.GhiChu</div>
-                    }
-
-                    <div class="actions">
-                        <button class="btn btn-sm btn-success pay-btn"
-                                data-type="TienMat"
-                                onclick="payOrEdit(event, '@item.Id')">
-                            <i class="fa fa-money-bill-wave"></i> Tiền mặt
-                        </button>
-                        <button class="btn btn-sm btn-primary pay-btn"
-                                data-type="ChuyenKhoan"
-                                onclick="payOrEdit(event, '@item.Id')">
-                            <i class="fa fa-building-columns"></i> Bank
-                        </button>
-                    </div>
-                </div>
-            }
-        }
-    </div>
-
-    <div class="mt-3 text-end">
-        <strong>Tổng còn lại:</strong>
-        <span class="text-danger fw-bold" id="totalDebt">@Model.TotalConLai.ToString("N0") đ</span>
+    <div class="text-end mt-2">
+        <b>Tổng:</b>
+        <span id="totalDebt" class="text-danger fw-bold"></span>
     </div>
 </div>
 
-<!-- Modal: sửa số tiền/ghi chú trước khi thanh toán -->
-<div class="modal fade" id="payModal" tabindex="-1" aria-labelledby="payModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<!-- MODAL -->
+<div class="modal fade" id="payModal">
+    <div class="modal-dialog">
         <div class="modal-content">
-            <div id="payModalHeader" class="modal-header">
-                <h5 class="modal-title" id="payModalLabel">Xác nhận thanh toán</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+
+            <div class="modal-header">
+                <h5>Thanh toán</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+
             <div class="modal-body">
-                <form id="payForm" onsubmit="submitPayForm(event)">
-                    <input type="hidden" id="pay_Id" />
-                    <input type="hidden" id="pay_Type" />
-                    <div class="mb-3">
-                        <label class="form-label">Khách hàng</label>
-                        <input type="text" class="form-control" id="pay_Name" readonly />
-                    </div>
-                    <div class="mb-1">
-                        <label class="form-label">Số tiền thanh toán</label>
-                        <input type="text" class="form-control" id="pay_Amount" inputmode="numeric" />
-                        <div class="form-text">Mặc định bằng <code>SoTienConLai</code>. Có thể sửa để thu thiếu.</div>
-                    </div>
+                <input type="hidden" id="m_id" />
+                <input type="hidden" id="m_type" />
 
-                    <!-- Nút nhanh 50% / Thu đủ / Xóa -->
-                    <div class="mb-3 d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="quickAmt(0.5)">50%</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="quickAmt(1)">Thu đủ</button>
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="document.getElementById('pay_Amount').value=''">Xóa</button>
-                    </div>
+                <div class="mb-2">
+                    <label>Khách</label>
+                    <input id="m_name" class="form-control" readonly />
+                </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Ghi chú</label>
-                        <textarea class="form-control" id="pay_Note" rows="2"></textarea>
-                    </div>
-                    <div class="text-end">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button id="paySubmitBtn" type="submit" class="btn btn-secondary ms-2">
-                            <i class="fa fa-paper-plane"></i> Lưu thanh toán
-                        </button>
-                    </div>
-                </form>
+                <div class="mb-2">
+                    <label>Số tiền</label>
+                    <input id="m_amount" class="form-control" />
+                </div>
+
+                <div class="mb-2">
+                    <label>Ghi chú</label>
+                    <textarea id="m_note" class="form-control"></textarea>
+                </div>
             </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button class="btn btn-primary" onclick="submitModal()">Lưu</button>
+            </div>
+
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        /* ===== Helpers ===== */
-        function normalizeText(str) {
-          return (str || "")
-            .toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/đ/g, 'd').replace(/[^a-z0-9]/g, '');
-        }
-        function isDesktopMode() {
-          const desk = document.getElementById('desktopTable');
-          return desk && getComputedStyle(desk).display !== 'none';
-        }
 
-        /* ===== Re-index STT theo hàng hiển thị (desktop) ===== */
-        function reindexStt() {
-          const rows = document.querySelectorAll('#noTable tbody tr');
-          let i = 1;
-          rows.forEach(r => {
-            const visible = r.style.display !== 'none';
-            if (visible) {
-              const sttCell = r.querySelector('td:first-child');
-              if (sttCell) sttCell.textContent = i++;
-            }
-          });
-        }
+        let items = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items ?? new List<TraSuaApp.Shared.Dtos.HoaDonNoDto>()));
+        let debounceTimer;
 
-        /* ===== Lọc + tính tổng THEO CHẾ ĐỘ HIỂN THỊ ===== */
-        function filterList(keyword) {
-          const keyNorm = normalizeText(keyword);
-          let total = 0;
-          const desktop = isDesktopMode();
+        // =====================
+        // RENDER
+        // =====================
+        function render() {
 
-          if (desktop) {
-            document.querySelectorAll("#noTable tbody tr").forEach(row => {
-              const text = normalizeText(row.innerText);
-              const visible = text.includes(keyNorm);
-              row.style.display = visible ? "" : "none";
-              if (visible) {
-                const td = row.querySelectorAll("td")[4]; // cột "Còn lại"
-                if (td) total += parseFloat(td.innerText.replace(/[^\d]/g, "")) || 0;
-              }
-            });
-            reindexStt();
-          } else {
-            document.querySelectorAll("#mobileCards .debt-card").forEach(card => {
-              const text = normalizeText(card.innerText);
-              const visible = text.includes(keyNorm);
-              card.style.display = visible ? "" : "none";
-              if (visible) {
-                const remain = parseFloat(card.dataset.remaining || "0");
-                total += remain || 0;
-              }
-            });
-          }
+            let tbody = document.getElementById("tbody");
+            tbody.innerHTML = "";
 
-          const totalEl = document.getElementById("totalDebt");
-          if (totalEl) totalEl.innerText = total.toLocaleString('vi-VN') + " đ";
-        }
+            let total = 0;
+            let stt = 1;
 
-        /* ===== Gọi server ===== */
-        async function postPay(id, type, amount, note) {
-          const res = await fetch('@Url.Page("/ChiTietHoaDonNoTab", "Pay")', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, type, amount, note })
-          });
-          const result = await res.json();
-          if (!result.success) {
-            alert(result.message || 'Không thể ghi nhận thanh toán.');
-            return false;
-          }
-          return true;
-        }
+            items.forEach(x => {
 
-        /* ===== Click: mở form / Ctrl: thu đủ nhanh ===== */
-        async function payOrEdit(ev, id) {
-          if (ev?.currentTarget?.dataset?.skipClick === '1') {
-            ev.currentTarget.dataset.skipClick = '';
-            return;
-          }
+                if (x._hidden) return;
 
-          const btn = ev.currentTarget;
-          const type = btn.dataset.type;
-          const container = btn.closest('tr') || btn.closest('.debt-card');
-          const name = container?.dataset.name || '';
-          const remaining = parseFloat(container?.dataset.remaining || "0");
-          const note = container?.dataset.note || "";
+                total += x.ConLai;
 
-          if (ev.ctrlKey) {
-            const oldHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Đang thu...';
-            try {
-              const ok = await postPay(id, type, null, null); // null => thu đủ
-              if (ok) location.reload();
-            } catch(e) {
-              alert("Lỗi: " + e);
-              btn.disabled = false;
-              btn.innerHTML = oldHtml;
-            }
-            return;
-          }
-
-          // Mở modal
-          document.getElementById('pay_Id').value = id;
-          document.getElementById('pay_Type').value = type;
-          document.getElementById('pay_Name').value = name;
-          document.getElementById('pay_Amount').value = remaining.toLocaleString('vi-VN');
-          document.getElementById('pay_Note').value = note;
-
-          const header = document.getElementById('payModalHeader');
-          header.classList.remove('bg-success','bg-primary','text-white');
-          if (type === 'TienMat') header.classList.add('bg-success','text-white');
-          else header.classList.add('bg-primary','text-white');
-
-          const modal = new bootstrap.Modal(document.getElementById('payModal'));
-          modal.show();
-        }
-
-        /* ===== Submit modal: gửi amount + note ===== */
-        async function submitPayForm(ev) {
-          ev.preventDefault();
-
-          const id    = document.getElementById('pay_Id').value;
-          const type  = document.getElementById('pay_Type').value;
-          const amtStr= document.getElementById('pay_Amount').value.replace(/[^\d]/g,'');
-          const amount= amtStr ? parseFloat(amtStr) : null; // null => thu đủ
-          const note  = document.getElementById('pay_Note').value || null;
-
-          // Chặn nhập quá số còn lại (client-side)
-          const remain = getCurrentRemaining();
-          if (amount != null && remain && amount > remain) {
-            alert('Số tiền vượt quá số còn lại. Vui lòng nhập lại.');
-            return;
-          }
-
-          const submitBtn = document.getElementById('paySubmitBtn');
-          const oldHtml   = submitBtn.innerHTML;
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Đang lưu...';
-
-          try {
-            const ok = await postPay(id, type, amount, note);
-            if (ok) {
-              const modalEl = document.getElementById('payModal');
-              bootstrap.Modal.getInstance(modalEl)?.hide();
-              location.reload();
-            } else {
-              submitBtn.disabled = false; submitBtn.innerHTML = oldHtml;
-            }
-          } catch(e) {
-            alert("Lỗi: " + e);
-            submitBtn.disabled = false; submitBtn.innerHTML = oldHtml;
-          }
-        }
-
-        /* ===== Quick amount buttons + guard ===== */
-        function getCurrentRemaining() {
-          const id = document.getElementById('pay_Id').value;
-          const container = document.querySelector(`[data-id="${id}"]`);
-          if (!container) return 0;
-          const remain = parseFloat(container.dataset.remaining || "0");
-          return isNaN(remain) ? 0 : remain;
-        }
-        function quickAmt(factor) {
-          const remain = getCurrentRemaining();
-          const v = Math.floor(remain * factor);
-          document.getElementById('pay_Amount').value = v.toLocaleString('vi-VN');
-        }
-        (function guardAmount(){
-          document.addEventListener('DOMContentLoaded', () => {
-            const amt = document.getElementById('pay_Amount');
-            if (!amt) return;
-            amt.addEventListener('blur', () => {
-              const remain = getCurrentRemaining();
-              const amtNum = parseFloat(amt.value.replace(/[^\d]/g,'')) || 0;
-              if (remain && amtNum > remain) {
-                alert('Số tiền vượt quá số còn lại. Đã tự chỉnh về mức tối đa.');
-                amt.value = remain.toLocaleString('vi-VN');
-              }
-            });
-          });
-        })();
-
-        /* ===== Mobile: long-press (~600ms) để thu đủ nhanh ===== */
-        const LONG_PRESS_MS = 600;
-        function quickPayFromButton(btn) {
-          const container = btn.closest('tr') || btn.closest('.debt-card');
-          const id   = container?.dataset.id;
-          const type = btn.dataset.type;
-          if (!id || !type) return;
-
-          const oldHtml = btn.innerHTML;
-          btn.disabled = true;
-          btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Đang thu...';
-
-          postPay(id, type, null, null) // null => thu đủ
-            .then(ok => { if (ok) location.reload(); })
-            .catch(e => {
-              alert("Lỗi: " + e);
-              btn.disabled = false;
-              btn.innerHTML = oldHtml;
-            });
-        }
-        function wireLongPress() {
-          document.querySelectorAll('.pay-btn').forEach(btn => {
-            ['pointerdown','pointerup','pointercancel','pointerleave'].forEach(ev => {
-              btn.removeEventListener(ev, btn._lpHandler);
+                tbody.innerHTML += `
+                <tr>
+                    <td class="text-center">${stt++}</td>
+                    <td class="text-center">${formatDate(x.NgayGio)}</td>
+                    <td class="text-center">${formatTime(x.NgayGio)}</td>
+                    <td>${x.TenKhachHangText ?? ""}</td>
+                    <td class="text-end text-danger fw-bold">${money(x.ConLai)}</td>
+                    <td>${x.GhiChu ?? ""}</td>
+                    <td>
+                        <button class="btn btn-sm btn-success" data-type="TienMat" onclick="handleClick(event,'${x.Id}')">TM</button>
+                        <button class="btn btn-sm btn-primary" data-type="ChuyenKhoan" onclick="handleClick(event,'${x.Id}')">CK</button>
+                    </td>
+                </tr>`;
             });
 
-            btn._lpHandler = function (e) {
-              if (e.type === 'pointerdown') {
-                if (e.pointerType === 'touch') {
-                  btn._lpTimer = setTimeout(() => {
-                    btn.dataset.skipClick = '1';
-                    quickPayFromButton(btn);
-                  }, LONG_PRESS_MS);
-                }
-              } else {
-                if (btn._lpTimer) { clearTimeout(btn._lpTimer); btn._lpTimer = null; }
-              }
-            };
-
-            ['pointerdown','pointerup','pointercancel','pointerleave'].forEach(ev => {
-              btn.addEventListener(ev, btn._lpHandler, { passive: true });
-            });
-          });
+            document.getElementById("totalDebt").innerText = money(total);
         }
 
-        /* ===== OnLoad ===== */
-        document.addEventListener('DOMContentLoaded', () => {
-          wireLongPress();
+        // =====================
+        // SEARCH
+        // =====================
+        document.getElementById("searchBox").addEventListener("input", e => {
 
-          const tip   = document.getElementById('tipBox');
-          const input = document.getElementById('searchBox');
-          const clear = document.getElementById('clearSearchBtn');
+            clearTimeout(debounceTimer);
 
-          function syncUI() {
-            const has = input.value.trim().length > 0;
-            // ẩn/hiện hint + nút X
-            if (tip) tip.style.display = has ? 'none' : '';
-            if (clear) clear.classList.toggle('d-none', !has);
-            // lọc + tính tổng
-            filterList(input.value);
-          }
+            debounceTimer = setTimeout(() => {
+                let key = normalize(e.target.value);
 
-          if (input) {
-            input.addEventListener('input', syncUI);
-            input.addEventListener('keydown', (e) => {
-              if (e.key === 'Escape') { input.value = ''; syncUI(); }
-            });
-          }
-          if (clear) {
-            clear.addEventListener('click', () => {
-              input.value = '';
-              input.focus();
-              syncUI();
-            });
-          }
+                items.forEach(x => {
+                    let text = normalize(x.TimKiem || "");
+                    x._hidden = !text.includes(key);
+                });
 
-          // Tính tổng ban đầu theo mode hiện hành
-          syncUI();
+                render();
+            }, 300);
         });
+
+        // =====================
+        // CLICK
+        // =====================
+        function handleClick(ev, id) {
+
+            let type = ev.currentTarget.dataset.type;
+
+            if (ev.ctrlKey) {
+                pay(id, type, true);
+                return;
+            }
+
+            openModal(id, type);
+        }
+
+        // =====================
+        // MODAL
+        // =====================
+        function openModal(id, type) {
+
+            let item = items.find(x => x.Id === id);
+
+            document.getElementById("m_id").value = id;
+            document.getElementById("m_type").value = type;
+            document.getElementById("m_name").value = item.TenKhachHangText;
+            document.getElementById("m_amount").value = item.ConLai;
+            document.getElementById("m_note").value = item.GhiChu ?? "";
+
+            new bootstrap.Modal(document.getElementById('payModal')).show();
+        }
+
+        async function submitModal() {
+
+            let id = m_id.value;
+            let type = m_type.value;
+            let amount = parseFloat(m_amount.value || "0");
+            let note = m_note.value;
+
+            await pay(id, type, false, amount, note);
+
+            bootstrap.Modal.getInstance(document.getElementById('payModal')).hide();
+        }
+
+        // =====================
+        // CORE LOGIC
+        // =====================
+        async function pay(id, type, quick = false, amount = null, note = null) {
+
+            let item = items.find(x => x.Id === id);
+            if (!item) return;
+
+            if (item.ConLai <= 0) {
+                alert("Đã thu đủ");
+                return;
+            }
+
+            if (quick)
+                amount = item.ConLai;
+
+            // backup
+            let old = { ...item };
+
+            // optimistic UI
+            item.DaThu += amount;
+            item.ConLai = item.ThanhTien - item.DaThu;
+
+            if (item.ConLai <= 0)
+                items = items.filter(x => x.Id !== id);
+
+            render();
+
+            try {
+
+                let res = await fetch('?handler=Pay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, type, amount, note })
+                });
+
+                let r = await res.json();
+
+                if (!r.success) throw "fail";
+
+            } catch {
+
+                Object.assign(item, old);
+                if (!items.find(x => x.Id === item.Id))
+                    items.push(item);
+
+                render();
+
+                alert("Thanh toán lỗi");
+            }
+        }
+
+        // =====================
+        // HELPERS
+        // =====================
+        function normalize(str) {
+            return (str || "").toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+
+        function money(x) {
+            return (x || 0).toLocaleString('vi-VN') + " đ";
+        }
+
+        function formatDate(d) {
+            if (!d) return "";
+            return new Date(d).toLocaleDateString('vi-VN');
+        }
+
+        function formatTime(d) {
+            if (!d) return "";
+            return new Date(d).toLocaleTimeString('vi-VN');
+        }
+
+        // init
+        render();
+
     </script>
 }

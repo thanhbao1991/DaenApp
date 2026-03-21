@@ -12,7 +12,7 @@ public partial class CongThuc
     public string? Loai { get; set; }        // VD: "Default", "ItDuong", ...
     public bool IsDefault { get; set; }      // Công thức đang dùng để trừ kho
 
-    public DateTime CreatedAt { get; set; }
+    
     public DateTime? DeletedAt { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? LastModified { get; set; }

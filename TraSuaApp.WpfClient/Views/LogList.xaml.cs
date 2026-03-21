@@ -34,7 +34,7 @@ public partial class LogList : Window
             var result = await response.Content.ReadFromJsonAsync<Result<List<LogDto>>>();
 
             if (result?.IsSuccess != true || result.Data == null)
-                throw new Exception(result?.Message ?? "Không thể tải log theo ngày.");
+                NotiHelper.ShowError(result?.Message ?? "Không thể tải log theo ngày.");
 
             _logs = result.Data.OrderByDescending(x => x.ThoiGian).ToList();
 
@@ -63,7 +63,7 @@ public partial class LogList : Window
             var result = await response.Content.ReadFromJsonAsync<Result<List<LogDto>>>();
 
             if (result?.IsSuccess != true || result.Data == null)
-                throw new Exception(result?.Message ?? "Không thể truy vết theo EntityId.");
+                NotiHelper.ShowError(result?.Message ?? "Không thể truy vết theo EntityId.");
 
             _logs = result.Data.OrderByDescending(x => x.ThoiGian).ToList();
             _entityIdFilter = entityId;

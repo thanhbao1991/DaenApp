@@ -34,7 +34,6 @@ public class NguyenLieuTransactionService : INguyenLieuTransactionService
             TenNguyenLieu = nlb?.Ten,
             DonViTinh = nlb?.DonViTinh,
 
-            CreatedAt = entity.CreatedAt,
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted
@@ -98,7 +97,6 @@ public class NguyenLieuTransactionService : INguyenLieuTransactionService
             ChiTieuHangNgayId = dto.ChiTieuHangNgayId,
             HoaDonId = dto.HoaDonId,
 
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false
         };
@@ -123,8 +121,8 @@ public class NguyenLieuTransactionService : INguyenLieuTransactionService
         if (entity == null)
             return Result<NguyenLieuTransactionDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<NguyenLieuTransactionDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        //  return Result<NguyenLieuTransactionDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         var beforeNlb = await _context.NguyenLieuBanHangs.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == entity.NguyenLieuId && !x.IsDeleted);

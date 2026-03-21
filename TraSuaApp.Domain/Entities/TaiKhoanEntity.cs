@@ -19,7 +19,7 @@ public partial class TaiKhoan
 
     public DateTime ThoiGianTao { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    
 
     public DateTime? DeletedAt { get; set; }
 

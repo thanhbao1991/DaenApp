@@ -26,7 +26,7 @@ public class NguyenLieuService : INguyenLieuService
             DonViTinh = entity.DonViTinh,
             GiaNhap = entity.GiaNhap,
             DangSuDung = entity.DangSuDung,
-            CreatedAt = entity.CreatedAt,
+
             LastModified = entity.LastModified,
             DeletedAt = entity.DeletedAt,
             IsDeleted = entity.IsDeleted,
@@ -53,7 +53,6 @@ public class NguyenLieuService : INguyenLieuService
             DangSuDung = dto.DangSuDung,
             DonViTinh = dto.DonViTinh,
             GiaNhap = dto.GiaNhap,
-            CreatedAt = now,
             LastModified = now,
             IsDeleted = false,
 
@@ -79,8 +78,8 @@ public class NguyenLieuService : INguyenLieuService
         if (entity == null)
             return Result<NguyenLieuDto>.Failure($"Không tìm thấy {_friendlyName.ToLower()}.");
 
-        if (dto.LastModified < entity.LastModified)
-            return Result<NguyenLieuDto>.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
+        //if (dto.LastModified < entity.LastModified)
+        //   return Result<NguyenLieuDto>//.Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
 
         bool daTonTai = await _context.NguyenLieus
             .AnyAsync(x => x.Id != id &&
