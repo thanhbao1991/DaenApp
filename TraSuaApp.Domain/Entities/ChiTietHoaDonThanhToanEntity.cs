@@ -7,7 +7,6 @@ public partial class ChiTietHoaDonThanhToan
     public string? LoaiThanhToan { get; set; }
     public string? GhiChu { get; set; }
 
-    public string TenPhuongThucThanhToan { get; set; }
 
     public decimal SoTien { get; set; }
     public DateTime Ngay { get; set; }

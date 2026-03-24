@@ -40,7 +40,6 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             HoaDonId = t.HoaDonId,
             KhachHangId = t.KhachHangId,
             PhuongThucThanhToanId = t.PhuongThucThanhToanId,
-            TenPhuongThucThanhToan = t.TenPhuongThucThanhToan,
             GhiChu = t.GhiChu,
             //        IsThanhToanHidden =
             //(
@@ -91,7 +90,6 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
             HoaDonId = dto.HoaDonId,
             KhachHangId = dto.KhachHangId,
             PhuongThucThanhToanId = dto.PhuongThucThanhToanId,
-            TenPhuongThucThanhToan = dto.TenPhuongThucThanhToan,
             GhiChu = GetGhiChu(dto.SoTien, soTienConLai),
             LastModified = now,
             IsDeleted = false
@@ -157,7 +155,6 @@ public class ChiTietHoaDonThanhToanService : IChiTietHoaDonThanhToanService
         entity.KhachHangId = dto.KhachHangId;
         entity.HoaDonId = dto.HoaDonId;
         entity.PhuongThucThanhToanId = dto.PhuongThucThanhToanId;
-        entity.TenPhuongThucThanhToan = dto.TenPhuongThucThanhToan;
         entity.GhiChu = GetGhiChu(dto.SoTien, soTienConLai);
         entity.LastModified = DateTime.Now;
 

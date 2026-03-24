@@ -499,7 +499,6 @@ namespace TraSuaApp.WpfClient.Views
                         HoaDonId = selected.Id,
                         KhachHangId = selected.KhachHangId,
                         Ten = selected.TenKhachHangText,
-                        TenPhuongThucThanhToan = form.Model.TenPhuongThucThanhToan,
                         SoTien = soTien,
                         PhuongThucThanhToanId = phuongThucId,
 

@@ -164,7 +164,6 @@ namespace TraSuaApp.WpfClient.Views
                     SoTien = item.ConLai,
                     PhuongThucThanhToanId = phuongThucId,
                 };
-
                 var owner = Window.GetWindow(this);
 
                 var form = new ChiTietHoaDonThanhToanEdit(dto)
@@ -224,9 +223,6 @@ namespace TraSuaApp.WpfClient.Views
                         HoaDonId = item.Id,
                         KhachHangId = item.KhachHangId,
                         Ten = item.TenKhachHangText,
-                        TenPhuongThucThanhToan = quickPay
-                            ? (phuongThucId == AppConstants.TienMatId ? "Tiền mặt" : "Chuyển khoản")
-                            : "",
                         SoTien = soTien,
                         PhuongThucThanhToanId = phuongThucId,
                     };

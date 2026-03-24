@@ -153,4 +153,22 @@
         </div>
     </div>
 
+    <!-- CHƯA THANH TOÁN -->
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white d-flex justify-content-between">
+                <span>Chưa thanh toán</span>
+                <span>@Model.TongChuaThanhToan.ToString("N0")</span>
+            </div>
+            <div class="card-body">
+                @foreach (var x in Model.ChuaThanhToan)
+                {
+                    <div class="d-flex justify-content-between">
+                        <span>@x.TenKhachHang</span>
+                        <span>@x.SoTien.ToString("N0")</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
 </div>

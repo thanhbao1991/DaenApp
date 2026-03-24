@@ -62,13 +62,11 @@
             <tbody>
                 @foreach (var item in Model.Items)
                 {
-                    var bgClass = item.TenPhuongThucThanhToan?.Contains("Chuyển khoản") == true ? "table-warning" : "";
-                    <tr class="@bgClass">
+                    <tr >
                         <td>@item.Ten</td>
                         <td>@item.Ngay.ToString("dd/MM")</td>
                         <td>@item.NgayGio.ToString("HH:mm")</td>
                         <td>@item.LoaiThanhToan</td>
-                        <td>@item.TenPhuongThucThanhToan</td>
                         <td class="text-end fw-bold">@item.SoTien.ToString("N0")</td>
                         <td>@item.GhiChu</td>
                         <td class="text-center">

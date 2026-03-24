@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -7,15 +8,17 @@ using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaAppWeb.Pages
 {
+    [IgnoreAntiforgeryToken]
     public class DoanhThuNgayModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
+
         public DoanhThuNgayModel(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
         }
 
-        public DoanhThuNgayDto? Data { get; set; }
+        public List<HoaDonNoDto> Items { get; set; } = new();
 
         [BindProperty(SupportsGet = true)] public int Ngay { get; set; }
         [BindProperty(SupportsGet = true)] public int Thang { get; set; }
@@ -32,7 +35,8 @@ namespace TraSuaAppWeb.Pages
             }
 
             var client = _httpClientFactory.CreateClient("Api");
-            var res = await client.GetAsync($"api/doanhthu/ngay?ngay={Ngay}&thang={Thang}&nam={Nam}");
+
+            var res = await client.GetAsync("/api/dashboard/get-hoa-don");
 
             if (res.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -43,40 +47,75 @@ namespace TraSuaAppWeb.Pages
             if (res.IsSuccessStatusCode)
             {
                 var json = await res.Content.ReadAsStringAsync();
-                var wrapper = JsonSerializer.Deserialize<Result<DoanhThuNgayDto>>(json,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                Data = wrapper?.Data;
+
+                var wrapper = JsonSerializer.Deserialize<Result<List<HoaDonNoDto>>>(
+                    json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+
+                Items = wrapper?.Data ?? new();
             }
 
             return Page();
         }
 
-        // ========= PROXY CHO AJAX: Chi tiết hoá đơn =========
-        public async Task<IActionResult> OnGetChiTiet(Guid hoaDonId)
+        public class PayRequestDto
         {
-            var client = _httpClientFactory.CreateClient("Api");
-            var upstream = await client.GetAsync($"api/doanhthu/chitiet?hoaDonId={hoaDonId}");
-            var body = await upstream.Content.ReadAsStringAsync();
-            return new ContentResult
-            {
-                Content = body,
-                ContentType = "application/json",
-                StatusCode = (int)upstream.StatusCode
-            };
+            public Guid Id { get; set; }
+            public Guid? KhachHangId { get; set; }
+            public string? Ten { get; set; }
+            public decimal SoTien { get; set; }
+            public string? GhiChu { get; set; }
+            public Guid PhuongThucThanhToanId { get; set; }
         }
 
-        // ========= PROXY CHO AJAX: Danh sách hoá đơn theo khách =========
-        public async Task<IActionResult> OnGetDanhSach(Guid khachHangId)
+        public class F12RequestDto
         {
-            var client = _httpClientFactory.CreateClient("Api");
-            var upstream = await client.GetAsync($"api/doanhthu/danhsach?khachHangId={khachHangId}");
-            var body = await upstream.Content.ReadAsStringAsync();
-            return new ContentResult
+            public Guid Id { get; set; }
+            public JsonElement Dto { get; set; }
+        }
+
+        public async Task<IActionResult> OnPostPayAsync([FromBody] PayRequestDto req)
+        {
+            var api = _httpClientFactory.CreateClient("Api");
+
+            var payload = new
             {
-                Content = body,
-                ContentType = "application/json",
-                StatusCode = (int)upstream.StatusCode
+                req.KhachHangId,
+                req.Ten,
+                req.SoTien,
+                req.GhiChu,
+                req.PhuongThucThanhToanId
             };
+
+            var res = await api.PutAsync(
+                $"/api/HoaDon/{req.Id}/f1f4",
+                new StringContent(
+                    JsonSerializer.Serialize(payload),
+                    Encoding.UTF8,
+                    "application/json"
+                )
+            );
+
+            var json = await res.Content.ReadAsStringAsync();
+            return Content(json, "application/json");
+        }
+
+        public async Task<IActionResult> OnPostF12Async([FromBody] F12RequestDto req)
+        {
+            var api = _httpClientFactory.CreateClient("Api");
+
+            var res = await api.PutAsync(
+                $"/api/HoaDon/{req.Id}/f12",
+                new StringContent(
+                    req.Dto.GetRawText(),
+                    Encoding.UTF8,
+                    "application/json"
+                )
+            );
+
+            var json = await res.Content.ReadAsStringAsync();
+            return Content(json, "application/json");
         }
     }
 }

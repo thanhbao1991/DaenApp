@@ -48,7 +48,9 @@ namespace TraSuaApp.WpfClient.Views
                 TongThanhToanTextBlock.Text = "?";
                 TongDoanhThuTextBlock.Text = "?";
                 TongTraNoTextBlock.Text = "?";
+                TongChuaThanhToanTextBlock.Text = "?";
 
+                ChuaThanhToanStackPanel.Children.Clear();
                 ChiTieuNgayStackPanel.Children.Clear();
                 ChiTieuThangStackPanel.Children.Clear();
                 CongNoNgayStackPanel.Children.Clear();
@@ -59,12 +61,13 @@ namespace TraSuaApp.WpfClient.Views
                 TraNoShipperStackPanel.Children.Clear();
 
                 await Task.WhenAll(
-                    LoadChiTieuAsync(date),
-                    LoadCongNoAsync(date),
-                    LoadThanhToanAsync(date),
-                    LoadDoanhThuAsync(date),
-                    LoadTraNoAsync(date)
-                );
+                LoadChiTieuAsync(date),
+                LoadCongNoAsync(date),
+                LoadThanhToanAsync(date),
+                LoadDoanhThuAsync(date),
+                LoadTraNoAsync(date),
+                LoadChuaThanhToanAsync(date) // 🟟 thêm dòng này
+            );
 
                 ChuyenKhoanStackPanel.Children.Add(new Separator
                 {
@@ -83,7 +86,23 @@ namespace TraSuaApp.WpfClient.Views
                 MessageBox.Show(ex.Message);
             }
         }
+        private async Task LoadChuaThanhToanAsync(DateTime date)
+        {
+            var result = await _api.GetDonChuaThanhToanAsync(date);
+            if (result?.Data == null) return;
 
+            var dto = result.Data;
+
+            TongChuaThanhToanTextBlock.Text = dto.TongChuaThanhToan.ToString("N0");
+
+            foreach (var x in dto.DanhSach)
+                AddRow(
+                    ChuaThanhToanStackPanel,
+                    x.TenKhachHang,
+                    x.SoTien,
+                    ColorFromHex("#0369A1")
+                );
+        }
         private async Task LoadChiTieuAsync(DateTime date)
         {
             var result = await _api.GetByDateAsync(date);

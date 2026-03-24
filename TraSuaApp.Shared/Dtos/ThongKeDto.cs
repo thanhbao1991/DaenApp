@@ -88,4 +88,24 @@ namespace TraSuaApp.Shared.Dtos
         public List<KhachTraNoItemDto> TraNoTaiQuan { get; set; } = new();
         public List<KhachTraNoItemDto> TraNoShipper { get; set; } = new();
     }
+
+
+}
+
+
+namespace TraSuaApp.Shared.Dtos
+{
+
+    public class ThongKeDonChuaThanhToanDto
+    {
+        public decimal TongChuaThanhToan { get; set; }
+
+        public List<DonChuaThanhToanItemDto> DanhSach { get; set; } = new();
+    }
+
+    public class DonChuaThanhToanItemDto
+    {
+        public string TenKhachHang { get; set; } = "";
+        public decimal SoTien { get; set; }
+    }
 }

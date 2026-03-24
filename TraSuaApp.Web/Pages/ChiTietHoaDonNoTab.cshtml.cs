@@ -1,87 +1,73 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Text;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Helpers;
+
 namespace TraSuaAppWeb.Pages
 {
     [IgnoreAntiforgeryToken]
     public class ChiTietHoaDonNoTabModel : PageModel
     {
-        private readonly IHttpClientFactory _clientFactory;
+        private readonly IHttpClientFactory _http;
 
         public List<HoaDonNoDto> Items { get; set; } = new();
 
-        public ChiTietHoaDonNoTabModel(IHttpClientFactory factory)
+        public ChiTietHoaDonNoTabModel(IHttpClientFactory http)
         {
-            _clientFactory = factory;
+            _http = http;
         }
 
         public async Task OnGetAsync()
         {
-            try
-            {
-                var client = _clientFactory.CreateClient("Api");
+            var client = _http.CreateClient("Api");
 
-                // ✅ FIX: dùng đúng API giống WPF
-                var res = await client.GetFromJsonAsync<Result<List<HoaDonNoDto>>>(
-                    "/api/dashboard/get-cong-no"
-                );
+            var res = await client.GetFromJsonAsync<Result<List<HoaDonNoDto>>>(
+                "/api/dashboard/get-cong-no"
+            );
 
-                if (res?.IsSuccess == true && res.Data != null)
-                {
-                    Items = res.Data;
-                }
-                else
-                {
-                    Items = new();
-                }
-            }
-            catch
-            {
-                Items = new();
-            }
+            Items = res?.IsSuccess == true && res.Data != null
+                ? res.Data
+                : new();
         }
 
-        public class PayRequest
+        public class PayRequestDto
         {
             public Guid Id { get; set; }
-            public string Type { get; set; } = "";
-            public decimal? Amount { get; set; }
-            public string? Note { get; set; }
+
+            public Guid? KhachHangId { get; set; }
+            public string? Ten { get; set; }
+
+            public decimal SoTien { get; set; }
+            public string? GhiChu { get; set; }
+
+            public Guid PhuongThucThanhToanId { get; set; }
         }
 
-        public async Task<IActionResult> OnPostPayAsync([FromBody] PayRequest req)
+        public async Task<IActionResult> OnPostPayAsync([FromBody] PayRequestDto req)
         {
-            try
+            var api = _http.CreateClient("Api");
+
+            var payload = new
             {
-                var client = _clientFactory.CreateClient("Api");
+                req.KhachHangId,
+                req.Ten,
+                req.SoTien,
+                req.GhiChu,
+                req.PhuongThucThanhToanId
+            };
 
-                var response = await client.PostAsJsonAsync(
-                    $"/api/ChiTietHoaDonNo/{req.Id}/pay",
-                    new
-                    {
-                        type = req.Type,
-                        amount = req.Amount,
-                        note = req.Note
-                    }
-                );
+            var res = await api.PutAsync(
+                $"/api/HoaDon/{req.Id}/f1f4",
+                new StringContent(
+                    System.Text.Json.JsonSerializer.Serialize(payload),
+                    Encoding.UTF8,
+                    "application/json"
+                )
+            );
 
-                var result = await response.Content.ReadFromJsonAsync<Result<object>>();
-
-                return new JsonResult(new
-                {
-                    success = result?.IsSuccess ?? false,
-                    message = result?.Message
-                });
-            }
-            catch (Exception ex)
-            {
-                return new JsonResult(new
-                {
-                    success = false,
-                    message = ex.Message
-                });
-            }
+            var json = await res.Content.ReadAsStringAsync();
+            return Content(json, "application/json");
         }
     }
 }

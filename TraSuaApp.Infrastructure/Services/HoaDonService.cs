@@ -1675,8 +1675,6 @@ public class HoaDonService : IHoaDonService
                 .Failure("Dữ liệu đã được cập nhật ở nơi khác. Vui lòng tải lại.");
         }
 
-        var now = DateTime.Now;
-
         var before = ToDto(hoaDon);
 
         // ==============================
@@ -1694,34 +1692,60 @@ public class HoaDonService : IHoaDonService
                 .Failure($"Số tiền còn lại cần thu: {soTienConLai:N0}.");
         }
 
+        DateTime now = DateTime.Now;
+
         DateTime ngay;
         DateTime ngayGio;
 
-        if (now.Date > hoaDon.NgayGio.Date)
+        bool quaNgay = now.Date > hoaDon.NgayGio.Date;
+        bool coGhiNo = hoaDon.NgayNo != null;
+
+        // ==============================
+        // 1️⃣ XÁC ĐỊNH NGÀY THANH TOÁN
+        // ==============================
+        if (quaNgay && !coGhiNo)
         {
-            ngayGio = hoaDon.NgayGio.Date.AddDays(1).AddSeconds(-1);
-            ngay = ngayGio.Date;
+            // Qua ngày + chưa ghi nợ
+            // 👉 chốt về cuối ngày hôm qua
+            ngay = now.Date.AddDays(-1);
+            ngayGio = ngay.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
         }
         else
         {
-            ngayGio = now;
+            // còn lại: hôm nay
             ngay = now.Date;
+            ngayGio = now;
         }
+
         // ==============================
-        // 2️⃣ INSERT CHI TIẾT THANH TOÁN
+        // 2️⃣ LOẠI THANH TOÁN
+        // ==============================
+        string loaiThanhToan =
+            ngay == hoaDon.Ngay ? "Thanh toán" : "Trả nợ qua ngày";
+
+        // ==============================
+        // 3️⃣ INSERT
         // ==============================
         var ct = new ChiTietHoaDonThanhToan
         {
             Id = Guid.NewGuid(),
             SoTien = dto.SoTien,
-            LoaiThanhToan = ngay == now.Date ? "Thanh toán" : "Trả nợ qua ngày",
+
+            LoaiThanhToan = loaiThanhToan,
+
             NgayGio = ngayGio,
             Ngay = ngay,
+
             HoaDonId = id,
             KhachHangId = dto.KhachHangId,
             PhuongThucThanhToanId = dto.PhuongThucThanhToanId,
-            TenPhuongThucThanhToan = dto.TenPhuongThucThanhToan,
-            GhiChu = dto.SoTien <= 0 ? "Không thanh toán" : dto.SoTien >= soTienConLai ? "Thanh toán đủ" : "Thanh toán thiếu",
+
+            GhiChu = dto.SoTien <= 0
+                ? "Không thanh toán"
+                : dto.SoTien >= soTienConLai
+                    ? "Thanh toán đủ"
+                    : "Thanh toán thiếu",
+
             LastModified = now,
             IsDeleted = false
         };

@@ -304,7 +304,6 @@ public partial class ChiTietHoaDonThanhToanEdit : Window
         // assign lại model
         Model.SoTien = tien;
         Model.PhuongThucThanhToanId = pt.Id;
-        Model.TenPhuongThucThanhToan = pt.Ten;
 
         return true;
     }

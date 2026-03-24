@@ -9,257 +9,386 @@
 
 <div class="container-fluid mt-3">
 
-    <div class="d-flex justify-content-between mb-3">
-        <h4><i class="fa fa-money-bill-wave text-success"></i> Công Nợ</h4>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">
+            <i class="fa fa-money-bill-wave text-success"></i> Công Nợ
+        </h4>
     </div>
 
-    <!-- SEARCH -->
     <div class="input-group mb-3">
-        <input id="searchBox" class="form-control" placeholder="Tìm kiếm..." />
+        <span class="input-group-text bg-white border-0 shadow-sm">
+            <i class="fa fa-search text-muted"></i>
+        </span>
+        <input class="form-control shadow-sm border-0"
+               style="border-radius:12px"
+               placeholder="Tìm kiếm khách hàng / ghi chú..."
+               oninput="onSearch(this.value)" />
     </div>
 
-    <!-- TABLE -->
-    <div class="table-responsive">
-        <table class="table table-bordered table-striped">
-            <thead>
-                <tr>
-                    <th>STT</th>
-                    <th>Ngày</th>
-                    <th>Giờ</th>
-                    <th>Tên</th>
-                    <th class="text-end">Còn lại</th>
-                    <th>Ghi chú</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-        </table>
-    </div>
+    <div id="cardContainer" class="row g-3"></div>
 
-    <div class="text-end mt-2">
+    <div class="text-end mt-3">
         <b>Tổng:</b>
         <span id="totalDebt" class="text-danger fw-bold"></span>
     </div>
 </div>
 
-<!-- MODAL -->
-<div class="modal fade" id="payModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-
-            <div class="modal-header">
-                <h5>Thanh toán</h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body">
-                <input type="hidden" id="m_id" />
-                <input type="hidden" id="m_type" />
-
-                <div class="mb-2">
-                    <label>Khách</label>
-                    <input id="m_name" class="form-control" readonly />
-                </div>
-
-                <div class="mb-2">
-                    <label>Số tiền</label>
-                    <input id="m_amount" class="form-control" />
-                </div>
-
-                <div class="mb-2">
-                    <label>Ghi chú</label>
-                    <textarea id="m_note" class="form-control"></textarea>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button class="btn btn-primary" onclick="submitModal()">Lưu</button>
-            </div>
-
-        </div>
-    </div>
-</div>
-
 @section Scripts {
     <script>
-
         let items = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items ?? new List<TraSuaApp.Shared.Dtos.HoaDonNoDto>()));
-        let debounceTimer;
 
-        // =====================
-        // RENDER
-        // =====================
-        function render() {
+        let swipe = {};
+        let swipeConfirm = {};
 
-            let tbody = document.getElementById("tbody");
-            tbody.innerHTML = "";
+        function onSearch(key){
+            key = (key||"").toLowerCase();
+
+            items.forEach(x=>{
+                x._hidden =
+                    !(x.TenKhachHangText||"").toLowerCase().includes(key) &&
+                    !(x.GhiChu||"").toLowerCase().includes(key);
+            });
+
+            render();
+        }
+
+        function render(){
+            let container = document.getElementById("cardContainer");
+            container.innerHTML = "";
 
             let total = 0;
-            let stt = 1;
 
-            items.forEach(x => {
+            items.forEach(x=>{
+                if(x._hidden) return;
 
-                if (x._hidden) return;
+                total += (x.ConLai || 0);
 
-                total += x.ConLai;
+                let type = swipeConfirm[x.Id]?.type;
 
-                tbody.innerHTML += `
-                <tr>
-                    <td class="text-center">${stt++}</td>
-                    <td class="text-center">${formatDate(x.NgayGio)}</td>
-                    <td class="text-center">${formatTime(x.NgayGio)}</td>
-                    <td>${x.TenKhachHangText ?? ""}</td>
-                    <td class="text-end text-danger fw-bold">${money(x.ConLai)}</td>
-                    <td>${x.GhiChu ?? ""}</td>
-                    <td>
-                        <button class="btn btn-sm btn-success" data-type="TienMat" onclick="handleClick(event,'${x.Id}')">TM</button>
-                        <button class="btn btn-sm btn-primary" data-type="ChuyenKhoan" onclick="handleClick(event,'${x.Id}')">CK</button>
-                    </td>
-                </tr>`;
+                let dimClass = "";
+                if(type === "ChuyenKhoan") dimClass = "dim-blue";
+                if(type === "TienMat") dimClass = "dim-green";
+
+                container.innerHTML += `
+                <div class="col-12 col-md-6 col-xl-4">
+
+                    <div class="debt-card ${dimClass}"
+                         data-id="${x.Id}"
+                         onpointerdown="startSwipe(event,'${x.Id}')"
+                         onpointermove="moveSwipe(event,'${x.Id}')"
+                         onpointerup="endSwipe(event,'${x.Id}')"
+                         onpointercancel="cancelSwipe(event)">
+
+                        <div class="card-inner">
+
+                            <div class="top-row">
+
+                                <div class="avatar">
+                                    ${getInitials(x.TenKhachHangText)}
+                                </div>
+
+                                <div class="info">
+                                    <div class="name">
+                                        ${x.TenKhachHangText ?? "Khách lẻ"}
+                                    </div>
+                                    <div class="time">
+                                        <i class="fa fa-clock me-1"></i>
+                                        ${formatDate(x.NgayGio)}
+                                    </div>
+                                </div>
+
+                                <div class="amount">
+                                    ${money(x.ConLai)}
+                                </div>
+
+                            </div>
+
+                            <div class="note">
+                                ${x.GhiChu ?? ""}
+                            </div>
+
+                        </div>
+                    </div>
+                </div>`;
             });
 
             document.getElementById("totalDebt").innerText = money(total);
         }
 
-        // =====================
-        // SEARCH
-        // =====================
-        document.getElementById("searchBox").addEventListener("input", e => {
+        // ================= SWIPE =================
+        function startSwipe(ev,id){
+            swipe = { id, x: ev.clientX };
+        }
 
-            clearTimeout(debounceTimer);
+        function moveSwipe(ev,id){
+            if(!swipe.id || swipe.id !== id) return;
 
-            debounceTimer = setTimeout(() => {
-                let key = normalize(e.target.value);
+            let dx = ev.clientX - swipe.x;
+            let el = ev.currentTarget;
 
-                items.forEach(x => {
-                    let text = normalize(x.TimKiem || "");
-                    x._hidden = !text.includes(key);
-                });
+            el.style.transform = `translateX(${dx}px)`;
 
-                render();
-            }, 300);
-        });
+            el.style.background = dx > 0
+                ? "linear-gradient(135deg,#3b82f6,#2563eb)"
+                : "linear-gradient(135deg,#22c55e,#16a34a)";
+        }
 
-        // =====================
-        // CLICK
-        // =====================
-        function handleClick(ev, id) {
+        function endSwipe(ev,id){
+            let el = ev.currentTarget;
 
-            let type = ev.currentTarget.dataset.type;
+            let dx = ev.clientX - swipe.x;
 
-            if (ev.ctrlKey) {
-                pay(id, type, true);
+            el.style.transform = "";
+            el.style.background = "";
+
+            if(Math.abs(dx) < 80){
+                swipe = {};
                 return;
             }
 
-            openModal(id, type);
-        }
-
-        // =====================
-        // MODAL
-        // =====================
-        function openModal(id, type) {
-
+            let type = dx > 0 ? "ChuyenKhoan" : "TienMat";
             let item = items.find(x => x.Id === id);
+            let amount = item?.ConLai || 0;
 
-            document.getElementById("m_id").value = id;
-            document.getElementById("m_type").value = type;
-            document.getElementById("m_name").value = item.TenKhachHangText;
-            document.getElementById("m_amount").value = item.ConLai;
-            document.getElementById("m_note").value = item.GhiChu ?? "";
-
-            new bootstrap.Modal(document.getElementById('payModal')).show();
-        }
-
-        async function submitModal() {
-
-            let id = m_id.value;
-            let type = m_type.value;
-            let amount = parseFloat(m_amount.value || "0");
-            let note = m_note.value;
-
-            await pay(id, type, false, amount, note);
-
-            bootstrap.Modal.getInstance(document.getElementById('payModal')).hide();
-        }
-
-        // =====================
-        // CORE LOGIC
-        // =====================
-        async function pay(id, type, quick = false, amount = null, note = null) {
-
-            let item = items.find(x => x.Id === id);
-            if (!item) return;
-
-            if (item.ConLai <= 0) {
-                alert("Đã thu đủ");
+            // ================= LẦN 1 =================
+            if(!swipeConfirm[id]){
+                swipeConfirm[id] = { type, amount };
+                showConfirmOverlay(id);
+                swipe = {};
                 return;
             }
 
-            if (quick)
-                amount = item.ConLai;
+            // ================= LẦN 2 (đổi hướng) =================
+            if(swipeConfirm[id].type !== type){
+                swipeConfirm[id] = { type, amount };
+                showConfirmOverlay(id);
+                swipe = {};
+                return;
+            }
 
-            // backup
-            let old = { ...item };
+            // ================= LẦN 2 OK =================
+            delete swipeConfirm[id];
+            removeOverlay(id);
 
-            // optimistic UI
-            item.DaThu += amount;
-            item.ConLai = item.ThanhTien - item.DaThu;
+            quickPay(id,type);
 
-            if (item.ConLai <= 0)
-                items = items.filter(x => x.Id !== id);
+            swipe = {};
+        }
+
+        function cancelSwipe(ev){
+            ev.currentTarget.style.transform = "";
+            ev.currentTarget.style.background = "";
+            swipe = {};
+        }
+
+        // ================= OVERLAY =================
+        function showConfirmOverlay(id){
+
+            let card = document.querySelector(`[data-id="${id}"]`);
+            if(!card) return;
+
+            let data = swipeConfirm[id];
+            if(!data) return;
+
+            let label = data.type === "ChuyenKhoan"
+                ? "CHUYỂN KHOẢN"
+                : "TIỀN MẶT";
+
+            let overlayId = "overlay-" + id;
+            document.getElementById(overlayId)?.remove();
+
+            let div = document.createElement("div");
+            div.id = overlayId;
+            div.className = "overlay";
+
+            div.style.background =
+                data.type === "ChuyenKhoan"
+                    ? "rgba(59,130,246,0.75)"
+                    : "rgba(34,197,94,0.75)";
+
+            div.innerHTML = `
+                <div class="money">${money(data.amount)}</div>
+                <div class="label">${label}</div>
+            `;
+
+            card.style.position = "relative";
+            card.appendChild(div);
+        }
+
+        function removeOverlay(id){
+            document.getElementById("overlay-" + id)?.remove();
+            delete swipeConfirm[id];
+        }
+
+        // ================= PAYMENT =================
+        async function quickPay(id,type){
+            let item = items.find(x=>x.Id===id);
+            if(!item) return;
+
+            await pay(id,type,item.ConLai,item.KhachHangId,item.TenKhachHangText);
+        }
+
+
+        async function pay(id,type,amount,khachHangId,ten){
+
+            amount = parseFloat(amount || 0);
+            if(amount <= 0) return;
+
+            let old = [...items];
+            let itemIndex = items.findIndex(x => x.Id === id);
+            let item = items[itemIndex];
+
+            if(!item) return;
+
+            item.DaThu = (item.DaThu || 0) + amount;
+            item.ConLai = (item.ThanhTien || 0) - item.DaThu;
 
             render();
 
-            try {
+            let phuongThuc =
+                type === "ChuyenKhoan"
+                    ? "2CF9A88F-3BC0-4D4B-940D-F8FFA4AFFA02"
+                    : "0121FC04-0469-4908-8B9A-7002F860FB5C";
 
-                let res = await fetch('?handler=Pay', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, type, amount, note })
+            try{
+                let res = await fetch('?handler=Pay',{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        id,
+                        khachHangId,
+                        ten,
+                        soTien: amount,
+                        phuongThucThanhToanId: phuongThuc
+                    })
                 });
 
                 let r = await res.json();
+                if(!r.isSuccess) throw "";
 
-                if (!r.success) throw "fail";
+                // 🟟 CHỈ SỬA PHẦN NÀY: XÓA ITEM SAU KHI PAY THÀNH CÔNG
+                items.splice(itemIndex, 1);
 
-            } catch {
+                // reset swipe state
+                swipe = {};
+                delete swipeConfirm[id];
 
-                Object.assign(item, old);
-                if (!items.find(x => x.Id === item.Id))
-                    items.push(item);
-
+                // render lại để item tiếp theo nhảy lên
                 render();
 
-                alert("Thanh toán lỗi");
+            }catch{
+                items = old;
+                render();
             }
         }
 
-        // =====================
-        // HELPERS
-        // =====================
-        function normalize(str) {
-            return (str || "").toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        // ================= UTILS =================
+        function money(x){return (x||0).toLocaleString('vi-VN')+" đ";}
+        function formatDate(d){return d?new Date(d).toLocaleString('vi-VN'):"";}
+        function getInitials(name){
+            if(!name) return "?";
+            return name.split(" ").slice(-2).map(x=>x[0]).join("").toUpperCase();
         }
 
-        function money(x) {
-            return (x || 0).toLocaleString('vi-VN') + " đ";
-        }
-
-        function formatDate(d) {
-            if (!d) return "";
-            return new Date(d).toLocaleDateString('vi-VN');
-        }
-
-        function formatTime(d) {
-            if (!d) return "";
-            return new Date(d).toLocaleTimeString('vi-VN');
-        }
-
-        // init
         render();
-
     </script>
 }
+
+<style>
+    .debt-card {
+        position: relative;
+        border-radius: 18px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 8px 25px rgba(0,0,0,.06);
+        transition: .2s;
+        user-select: none;
+        touch-action: pan-y;
+    }
+
+        .debt-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 35px rgba(0,0,0,.12);
+        }
+
+    /* ================= DIM STATES ================= */
+    .dim-blue {
+        position: relative;
+    }
+
+    .dim-green {
+        position: relative;
+    }
+
+    .dim-blue::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(59,130,246,0.18); /* 🟟 xanh dương đậm hơn */
+        pointer-events: none;
+    }
+
+    .dim-green::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(34,197,94,0.18); /* 🟟 xanh lá đậm hơn */
+        pointer-events: none;
+    }
+
+    /* ================= CONTENT ================= */
+    .card-inner {
+        padding: 16px;
+    }
+
+    .top-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: linear-gradient(135deg,#3b82f6,#60a5fa);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+
+    .amount {
+        font-weight: 800;
+        color: #ef4444;
+    }
+
+    /* ================= OVERLAY ================= */
+    .overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-weight: 800;
+        text-align: center;
+        z-index: 10;
+    }
+
+        .overlay .money {
+            font-size: 22px;
+        }
+
+        .overlay .label {
+            margin-top: 6px;
+        }
+
+        .overlay .hint {
+            margin-top: 10px;
+            font-size: 12px;
+            opacity: .9;
+        }
+</style>

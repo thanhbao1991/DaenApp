@@ -20,12 +20,10 @@ public class ChiTietHoaDonThanhToanDto : DtoBase
     public Guid PhuongThucThanhToanId { get; set; } // ✅ bổ sung
 
     // Thông tin hiển thị
-    public string TenPhuongThucThanhToan { get; set; } = null!;
     public string? GhiChu { get; set; }
 
     public string TimKiem =>
     StringHelper.MyNormalizeText(Ten ?? "") + " " +
-    StringHelper.MyNormalizeText(TenPhuongThucThanhToan ?? "") + " " +
     StringHelper.MyNormalizeText(LoaiThanhToan ?? "") + " " +
     StringHelper.MyNormalizeText(GhiChu ?? "");
 

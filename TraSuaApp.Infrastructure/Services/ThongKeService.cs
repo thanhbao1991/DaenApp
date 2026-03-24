@@ -129,6 +129,15 @@ namespace TraSuaApp.Infrastructure.Services
                     x.SoTien
                 })
                 .ToListAsync();
+            // ===== ĐƠN CHƯA THANH TOÁN =====
+            var donChuaThanhToan = await _db.HoaDonNos
+                .AsNoTracking()
+                .Where(x =>
+                    x.ConLai > 0 &&
+                    x.NgayNo == null &&
+                    x.NgayGio >= start &&
+                    x.NgayGio < end)
+                .SumAsync(x => (decimal?)x.ConLai) ?? 0;
 
             // ===== TỔNG CHUYỂN KHOẢN =====
             var tongChuyenKhoan = data
@@ -146,10 +155,10 @@ namespace TraSuaApp.Infrastructure.Services
 
             var traNoQuaShipper = tienMat
                 .Where(x => x.LoaiThanhToan == "Trả nợ qua ngày" && x.GhiChu == "Shipper")
-                .Sum(x => x.SoTien);
+               .Sum(x => x.SoTien);
 
             var thuTaiQuan = tienMat
-                .Where(x => x.LoaiThanhToan == "Thanh toán" && x.GhiChu.StartsWith("Thanh toán"))
+                .Where(x => x.LoaiThanhToan == "Thanh toán")
                 .Sum(x => x.SoTien);
 
             var thuQuaShipper = tienMat
@@ -170,7 +179,7 @@ namespace TraSuaApp.Infrastructure.Services
             {
                 TongTienMat = tongTienMat,
                 TongChuyenKhoan = tongChuyenKhoan,
-                DanhSachTienMat = danhSachTienMat
+                DanhSachTienMat = danhSachTienMat,
             };
         }
 
@@ -269,5 +278,41 @@ namespace TraSuaApp.Infrastructure.Services
         }
 
 
+        public async Task<ThongKeDonChuaThanhToanDto> TinhDonChuaThanhToanAsync(DateTime ngay)
+        {
+            var start = ngay.Date;
+            var end = start.AddDays(1);
+
+            var data = await _db.HoaDonNos
+                .AsNoTracking()
+                .Where(x =>
+                    x.ConLai > 0 &&
+                    x.NgayNo == null &&
+                    x.NgayGio >= start &&
+                    x.NgayGio < end)
+                .Select(x => new
+                {
+                    Ten = x.TenKhachHangText ?? "(khách)",
+                    x.ConLai
+                })
+                .ToListAsync();
+
+            var result = new ThongKeDonChuaThanhToanDto
+            {
+                TongChuaThanhToan = data.Sum(x => x.ConLai),
+
+                DanhSach = data
+                    .GroupBy(x => x.Ten)
+                    .Select(g => new DonChuaThanhToanItemDto
+                    {
+                        TenKhachHang = g.Key,
+                        SoTien = g.Sum(x => x.ConLai)
+                    })
+                    .OrderByDescending(x => x.SoTien)
+                    .ToList()
+            };
+
+            return result;
+        }
     }
 }

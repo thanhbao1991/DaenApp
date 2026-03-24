@@ -35,5 +35,13 @@ namespace TraSuaApp.WpfClient.Services
 
             return GetAsync<ThongKeTraNoNgayDto>(url);
         }
+
+        public Task<Result<ThongKeDonChuaThanhToanDto>> GetDonChuaThanhToanAsync(DateTime date)
+        {
+            var url =
+                $"{BASE_URL}/don-chua-thanh-toan?ngay={date.Day}&thang={date.Month}&nam={date.Year}";
+
+            return GetAsync<ThongKeDonChuaThanhToanDto>(url);
+        }
     }
 }

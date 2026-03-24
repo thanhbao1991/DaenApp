@@ -322,7 +322,6 @@ public class DoanhThuService : IDoanhThuService
             {
                 HoaDonId = x.HoaDonId,
                 SoTien = x.SoTien,
-                TenPhuongThuc = x.TenPhuongThucThanhToan,
                 NgayGio = x.NgayGio
             })
             .ToListAsync();

@@ -138,7 +138,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <!--<DataGridTextColumn
+                <DataGridTextColumn
                     Width="Auto"
                     Binding="{Binding TenPhuongThucThanhToan}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
@@ -152,7 +152,7 @@
                     Width="*"
                     Binding="{Binding GhiChu}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
-                    Header="Ghi chú" />-->
+                    Header="Ghi chú" />
                 <!--  Nút xoá (ẩn như thường lệ)  -->
                 <DataGridTemplateColumn Width="Auto">
                     <DataGridTemplateColumn.CellTemplate>

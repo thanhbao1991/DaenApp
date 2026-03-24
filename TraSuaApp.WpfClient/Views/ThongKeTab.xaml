@@ -468,7 +468,63 @@
 
             </Border>
 
+            <!--  ĐƠN CHƯA THANH TOÁN  -->
+            <Border Width="300" Style="{StaticResource CardBase}">
 
+                <Grid>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="48" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border
+                        Grid.Row="0"
+                        Background="#0EA5E9"
+                        CornerRadius="10,10,0,0">
+
+                        <DockPanel Margin="12,8">
+
+                            <TextBlock
+                                DockPanel.Dock="Left"
+                                Style="{StaticResource CardHeaderText}"
+                                Text="Chưa thanh toán" />
+
+                            <TextBlock
+                                x:Name="TongChuaThanhToanTextBlock"
+                                DockPanel.Dock="Right"
+                                Foreground="White"
+                                Style="{StaticResource AmountText}" />
+
+                        </DockPanel>
+
+                    </Border>
+
+                    <Border
+                        Grid.Row="1"
+                        Background="#F0F9FF"
+                        CornerRadius="0,0,10,10">
+
+                        <StackPanel Margin="12">
+
+                            <Border
+                                Padding="10"
+                                Background="White"
+                                CornerRadius="8">
+
+                                <StackPanel>
+                                    <StackPanel x:Name="ChuaThanhToanStackPanel" />
+                                </StackPanel>
+
+                            </Border>
+
+                        </StackPanel>
+
+                    </Border>
+
+                </Grid>
+
+            </Border>
         </WrapPanel>
 
     </ScrollViewer>

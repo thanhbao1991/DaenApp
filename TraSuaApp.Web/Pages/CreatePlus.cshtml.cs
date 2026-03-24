@@ -72,25 +72,6 @@ namespace TraSuaAppWeb.Pages.HoaDon
             var s = await res.Content.ReadAsStringAsync();
             return Content(s, res.Content.Headers.ContentType?.MediaType ?? "application/json");
         }
-        // POST: /HoaDon/CreatePlus?handler=Save
-        //public async Task<IActionResult> OnPostSaveAsync([FromBody] SaveRequest req)
-        //{
-        //    var api = _http.CreateClient("Api");
-
-        //    using var res = await api.PostAsJsonAsync("/api/HoaDon", req);
-        //    var raw = await res.Content.ReadAsStringAsync();
-        //    var contentType = res.Content.Headers.ContentType?.MediaType ?? "application/json";
-
-        //    // ⬇️ Forward nguyên trạng mã lỗi & nội dung từ API
-        //    return new ContentResult
-        //    {
-        //        Content = raw,
-        //        ContentType = contentType,
-        //        StatusCode = (int)res.StatusCode
-        //    };
-        //}
-        // ====== SEARCH SẢN PHẨM (forward) ======
-        // GET: /HoaDon/CreatePlus?handler=SearchSp&q=...&take=30
         public async Task<IActionResult> OnGetSearchSpAsync(string q, int take = 30)
         {
             var api = _http.CreateClient("Api");

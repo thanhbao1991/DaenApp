@@ -105,7 +105,15 @@ namespace TraSuaAppWeb.Pages
                 TraNoShipper = traNo.TraNoShipper;
             }
 
+            var chuaThanhToan = await Get<ThongKeDonChuaThanhToanDto>($"api/ThongKe/don-chua-thanh-toan{qs}");
+            if (chuaThanhToan != null)
+            {
+                TongChuaThanhToan = chuaThanhToan.TongChuaThanhToan;
+                ChuaThanhToan = chuaThanhToan.DanhSach;
+            }
             return Page();
         }
+        public decimal TongChuaThanhToan { get; set; }
+        public List<DonChuaThanhToanItemDto> ChuaThanhToan { get; set; } = new();
     }
 }
