@@ -5,44 +5,61 @@ using TraSuaApp.WpfClient.Apis;
 
 namespace TraSuaApp.WpfClient.Services;
 
-public class KhachHangGiaBanApi : BaseApi, IKhachHangGiaBanApi
+public class KhachHangGiaBanApi : BaseApi
 {
     private const string BASE_URL = "/api/KhachHangGiaBan";
 
-    public KhachHangGiaBanApi() : base(TuDien._tableFriendlyNames["KhachHangGiaBan"]) { }
+    public KhachHangGiaBanApi()
+        : base(TuDien._tableFriendlyNames["KhachHangGiaBan"]) { }
 
-    public async Task<Result<List<KhachHangGiaBanDto>>> GetAllAsync()
+    // =========================
+    // GET
+    // =========================
+    public async Task<Result<List<KhachHangGiaBanDto>>> GetAllAsync(CancellationToken ct = default)
     {
-        return await GetAsync<List<KhachHangGiaBanDto>>(BASE_URL);
+        return await GetAsync<List<KhachHangGiaBanDto>>(BASE_URL, ct);
     }
 
-    public async Task<Result<KhachHangGiaBanDto>> GetByIdAsync(Guid id)
+    public async Task<Result<KhachHangGiaBanDto>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<KhachHangGiaBanDto>($"{BASE_URL}/{id}");
+        return await GetAsync<KhachHangGiaBanDto>($"{BASE_URL}/{id}", ct);
     }
 
-    public async Task<Result<KhachHangGiaBanDto>> CreateAsync(KhachHangGiaBanDto dto)
+    public async Task<Result<List<KhachHangGiaBanDto>>> GetUpdatedSince(DateTime since, CancellationToken ct = default)
     {
-        return await PostAsync<KhachHangGiaBanDto>(BASE_URL, dto);
+        return await GetAsync<List<KhachHangGiaBanDto>>(
+            $"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}",
+            ct);
     }
 
-    public async Task<Result<KhachHangGiaBanDto>> UpdateAsync(Guid id, KhachHangGiaBanDto dto)
+    // =========================
+    // CREATE / UPDATE
+    // =========================
+    public async Task<Result<KhachHangGiaBanDto>> CreateAsync(KhachHangGiaBanDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<KhachHangGiaBanDto>($"{BASE_URL}/{id}", dto);
+        return await PostAsync<KhachHangGiaBanDto>(BASE_URL, dto, ct);
     }
 
-    public async Task<Result<KhachHangGiaBanDto>> DeleteAsync(Guid id)
+    public async Task<Result<KhachHangGiaBanDto>> UpdateAsync(Guid id, KhachHangGiaBanDto dto, CancellationToken ct = default)
     {
-        return await DeleteAsync<KhachHangGiaBanDto>($"{BASE_URL}/{id}");
+        return await PutAsync<KhachHangGiaBanDto>($"{BASE_URL}/{id}", dto, ct);
     }
 
-    public async Task<Result<KhachHangGiaBanDto>> RestoreAsync(Guid id)
+    public async Task<Result<KhachHangGiaBanDto>> UpdateSingleAsync(Guid id, KhachHangGiaBanDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<KhachHangGiaBanDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<KhachHangGiaBanDto>($"{BASE_URL}/{id}/single", dto, ct);
     }
 
-    public async Task<Result<List<KhachHangGiaBanDto>>> GetUpdatedSince(DateTime since)
+    // =========================
+    // DELETE / RESTORE
+    // =========================
+    public async Task<Result<KhachHangGiaBanDto>> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<List<KhachHangGiaBanDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
+        return await DeleteAsync<KhachHangGiaBanDto>($"{BASE_URL}/{id}", ct);
+    }
+
+    public async Task<Result<KhachHangGiaBanDto>> RestoreAsync(Guid id, CancellationToken ct = default)
+    {
+        return await PutAsync<KhachHangGiaBanDto>($"{BASE_URL}/{id}/restore", null!, ct);
     }
 }

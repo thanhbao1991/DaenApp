@@ -5,44 +5,60 @@ using TraSuaApp.WpfClient.Apis;
 
 namespace TraSuaApp.WpfClient.Services;
 
-public class NguyenLieuApi : BaseApi, INguyenLieuApi
+public class NguyenLieuApi : BaseApi
 {
     private const string BASE_URL = "/api/NguyenLieu";
 
     public NguyenLieuApi() : base(TuDien._tableFriendlyNames["NguyenLieu"]) { }
 
-    public async Task<Result<List<NguyenLieuDto>>> GetAllAsync()
+    // =========================
+    // GET
+    // =========================
+    public async Task<Result<List<NguyenLieuDto>>> GetAllAsync(CancellationToken ct = default)
     {
-        return await GetAsync<List<NguyenLieuDto>>(BASE_URL);
+        return await GetAsync<List<NguyenLieuDto>>(BASE_URL, ct);
     }
 
-    public async Task<Result<NguyenLieuDto>> GetByIdAsync(Guid id)
+    public async Task<Result<NguyenLieuDto>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<NguyenLieuDto>($"{BASE_URL}/{id}");
+        return await GetAsync<NguyenLieuDto>($"{BASE_URL}/{id}", ct);
     }
 
-    public async Task<Result<NguyenLieuDto>> CreateAsync(NguyenLieuDto dto)
+    public async Task<Result<List<NguyenLieuDto>>> GetUpdatedSince(DateTime since, CancellationToken ct = default)
     {
-        return await PostAsync<NguyenLieuDto>(BASE_URL, dto);
+        return await GetAsync<List<NguyenLieuDto>>(
+            $"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}",
+            ct);
     }
 
-    public async Task<Result<NguyenLieuDto>> UpdateAsync(Guid id, NguyenLieuDto dto)
+    // =========================
+    // CREATE / UPDATE
+    // =========================
+    public async Task<Result<NguyenLieuDto>> CreateAsync(NguyenLieuDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<NguyenLieuDto>($"{BASE_URL}/{id}", dto);
+        return await PostAsync<NguyenLieuDto>(BASE_URL, dto, ct);
     }
 
-    public async Task<Result<NguyenLieuDto>> DeleteAsync(Guid id)
+    public async Task<Result<NguyenLieuDto>> UpdateAsync(Guid id, NguyenLieuDto dto, CancellationToken ct = default)
     {
-        return await DeleteAsync<NguyenLieuDto>($"{BASE_URL}/{id}");
+        return await PutAsync<NguyenLieuDto>($"{BASE_URL}/{id}", dto, ct);
     }
 
-    public async Task<Result<NguyenLieuDto>> RestoreAsync(Guid id)
+    public async Task<Result<NguyenLieuDto>> UpdateSingleAsync(Guid id, NguyenLieuDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<NguyenLieuDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<NguyenLieuDto>($"{BASE_URL}/{id}/single", dto, ct);
     }
 
-    public async Task<Result<List<NguyenLieuDto>>> GetUpdatedSince(DateTime since)
+    // =========================
+    // DELETE / RESTORE
+    // =========================
+    public async Task<Result<NguyenLieuDto>> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<List<NguyenLieuDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
+        return await DeleteAsync<NguyenLieuDto>($"{BASE_URL}/{id}", ct);
+    }
+
+    public async Task<Result<NguyenLieuDto>> RestoreAsync(Guid id, CancellationToken ct = default)
+    {
+        return await PutAsync<NguyenLieuDto>($"{BASE_URL}/{id}/restore", null!, ct);
     }
 }

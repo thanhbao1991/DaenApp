@@ -14,14 +14,13 @@ using TraSuaApp.WpfClient.AiOrdering;
 using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Controls;
 using TraSuaApp.WpfClient.Helpers;
-using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.HoaDonViews
 {
     public partial class HoaDonEdit : Window
     {
         public HoaDonDto Model { get; set; } = new();
-        private readonly IHoaDonApi _api;
+        private readonly HoaDonApi _api;
         string _friendlyName = TuDien._tableFriendlyNames["HoaDon"];
 
         public Guid? SavedHoaDonId { get; internal set; }
@@ -527,42 +526,86 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 SaveButton_Click(SaveButton, new RoutedEventArgs());
             }
         }
-
         private void UpdateTotals()
         {
-            decimal tongTien = 0;
-            int tongSoSanPham = 0;
-
-            foreach (var ct in Model.ChiTietHoaDons)
+            try
             {
-                decimal tienTopping = ct.ToppingDtos?.Sum(t => t.Gia * t.SoLuong) ?? 0;
-                tongTien += (ct.DonGia * ct.SoLuong) + tienTopping;
+                decimal tongTien = 0;
 
-                var bienThe = _bienTheList.FirstOrDefault(bt => bt.Id == ct.SanPhamIdBienThe);
-                var sp = _sanPhamList.FirstOrDefault(s => s.Id == bienThe?.SanPhamId);
-
-                if (sp != null &&
-                    sp.TenNhomSanPham != "Thuốc lá" &&
-                    sp.TenNhomSanPham != "Nước lon" &&
-                    sp.TenNhomSanPham != "Ăn vặt")
+                // ── 1. Tính tổng tiền (bao gồm topping)
+                foreach (var ct in Model.ChiTietHoaDons)
                 {
-                    tongSoSanPham += ct.SoLuong;
+                    decimal tienTopping = ct.ToppingDtos?.Sum(t => t.Gia * t.SoLuong) ?? 0;
+                    tongTien += (ct.DonGia * ct.SoLuong) + tienTopping;
                 }
+
+                // ── 2. Tính tổng số sản phẩm (dùng chung logic)
+                int tongSoSanPham = HoaDonCalculator.TinhTongSoSanPham(
+                    Model.ChiTietHoaDons,
+                    _sanPhamList
+                );
+
+                // ── 3. Tính giảm giá
+                var currVoucher = VoucherComboBox.SelectedItem as VoucherDto;
+
+                decimal giamGia = Pricing.CalcVoucherDiscount(
+                    tongTien,
+                    currVoucher,
+                    Model.GiamGia
+                );
+
+                // ── 4. Gán lại model
+                Model.TongTien = tongTien;
+                Model.GiamGia = giamGia;
+                Model.ThanhTien = tongTien - giamGia;
+
+                // ── 5. Update UI
+                TongTienTextBlock.Text = $"{Model.TongTien:N0} đ";
+                GiamGiaTextBlock.Text = $"{Model.GiamGia:N0} đ";
+                ThanhTienTextBlock.Text = $"{Model.ThanhTien:N0} đ";
+
+                TongSoSanPhamTextBlock.Text = tongSoSanPham.ToString("N0");
             }
-
-            var currVoucher = VoucherComboBox.SelectedItem as VoucherDto;
-            decimal giamGia = Pricing.CalcVoucherDiscount(tongTien, currVoucher, Model.GiamGia);
-
-            Model.TongTien = tongTien;
-            Model.GiamGia = giamGia;
-            Model.ThanhTien = tongTien - giamGia;
-
-            TongTienTextBlock.Text = $"{Model.TongTien:N0} đ";
-            GiamGiaTextBlock.Text = $"{Model.GiamGia:N0} đ";
-            ThanhTienTextBlock.Text = $"{Model.ThanhTien:N0} đ";
-
-            TongSoSanPhamTextBlock.Text = tongSoSanPham.ToString("N0");
+            catch (Exception ex)
+            {
+                Debug.WriteLine("UpdateTotals error: " + ex.Message);
+            }
         }
+        //private void UpdateTotals()
+        //{
+        //    decimal tongTien = 0;
+        //    int tongSoSanPham = 0;
+
+        //    foreach (var ct in Model.ChiTietHoaDons)
+        //    {
+        //        decimal tienTopping = ct.ToppingDtos?.Sum(t => t.Gia * t.SoLuong) ?? 0;
+        //        tongTien += (ct.DonGia * ct.SoLuong) + tienTopping;
+
+        //        var bienThe = _bienTheList.FirstOrDefault(bt => bt.Id == ct.SanPhamIdBienThe);
+        //        var sp = _sanPhamList.FirstOrDefault(s => s.Id == bienThe?.SanPhamId);
+
+        //        if (sp != null &&
+        //            sp.TenNhomSanPham != "Thuốc lá" &&
+        //            sp.TenNhomSanPham != "Nước lon" &&
+        //            sp.TenNhomSanPham != "Ăn vặt")
+        //        {
+        //            tongSoSanPham += ct.SoLuong;
+        //        }
+        //    }
+
+        //    var currVoucher = VoucherComboBox.SelectedItem as VoucherDto;
+        //    decimal giamGia = Pricing.CalcVoucherDiscount(tongTien, currVoucher, Model.GiamGia);
+
+        //    Model.TongTien = tongTien;
+        //    Model.GiamGia = giamGia;
+        //    Model.ThanhTien = tongTien - giamGia;
+
+        //    TongTienTextBlock.Text = $"{Model.TongTien:N0} đ";
+        //    GiamGiaTextBlock.Text = $"{Model.GiamGia:N0} đ";
+        //    ThanhTienTextBlock.Text = $"{Model.ThanhTien:N0} đ";
+
+        //    TongSoSanPhamTextBlock.Text = tongSoSanPham.ToString("N0");
+        //}
 
         private void CapNhatToppingChoSanPham()
         {

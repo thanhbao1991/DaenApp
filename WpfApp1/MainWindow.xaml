@@ -3,21 +3,25 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Telegram IDM"
-    Width="500"
-    Height="500">
+    Width="860"
+    Height="720"
+    WindowStartupLocation="CenterScreen">
 
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!--  ===================== CONFIG =====================  -->
+        <!--  CONFIG  -->
         <GroupBox
+            Grid.Row="0"
             Margin="0,0,0,10"
             Padding="10"
             Header="⚙️ Cấu hình Telegram">
-
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="160" />
@@ -31,13 +35,11 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!--  BOT TOKEN  -->
                 <TextBlock
                     Grid.Row="0"
                     Grid.Column="0"
                     VerticalAlignment="Center"
                     Text="Bot Token:" />
-
                 <StackPanel Grid.Row="0" Grid.Column="1">
                     <TextBox
                         x:Name="BotTokenBox"
@@ -49,13 +51,11 @@
                         Text="Lấy từ @BotFather trên Telegram" />
                 </StackPanel>
 
-                <!--  API ID  -->
                 <TextBlock
                     Grid.Row="1"
                     Grid.Column="0"
                     VerticalAlignment="Center"
                     Text="API ID:" />
-
                 <StackPanel Grid.Row="1" Grid.Column="1">
                     <TextBox
                         x:Name="ApiIdBox"
@@ -67,13 +67,11 @@
                         Text="Lấy tại https://my.telegram.org" />
                 </StackPanel>
 
-                <!--  API HASH  -->
                 <TextBlock
                     Grid.Row="2"
                     Grid.Column="0"
                     VerticalAlignment="Center"
                     Text="API Hash:" />
-
                 <StackPanel Grid.Row="2" Grid.Column="1">
                     <TextBox
                         x:Name="ApiHashBox"
@@ -85,13 +83,11 @@
                         Text="Chuỗi bảo mật đi kèm API ID" />
                 </StackPanel>
 
-                <!--  PHONE  -->
                 <TextBlock
                     Grid.Row="3"
                     Grid.Column="0"
                     VerticalAlignment="Center"
                     Text="Phone:" />
-
                 <StackPanel Grid.Row="3" Grid.Column="1">
                     <TextBox x:Name="PhoneBox" Margin="0,2" />
                     <TextBlock
@@ -99,32 +95,138 @@
                         Foreground="Gray"
                         Text="Số Telegram (+84...) để login WTelegram" />
                 </StackPanel>
-
             </Grid>
         </GroupBox>
 
-        <!--  START BUTTON  -->
-        <Button
-            Grid.Row="0"
-            Height="35"
+        <!--  CRAWL SETTINGS  -->
+        <GroupBox
+            Grid.Row="1"
+            Margin="0,0,0,10"
+            Padding="10"
+            Header="Crawl lịch sử nhóm">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="160" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Text="Nhóm / Username:" />
+                <TextBox
+                    x:Name="GroupInputBox"
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="0,2"
+                    Text="BJ_Lover" />
+
+                <TextBlock
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Text="Ngày crawl:" />
+                <StackPanel Grid.Row="1" Grid.Column="1">
+                    <DatePicker x:Name="CrawlDatePicker" Margin="0,2" />
+                    <TextBlock
+                        FontSize="11"
+                        Foreground="Gray"
+                        Text="Crawl từ ngày này trở về trước" />
+                </StackPanel>
+
+                <TextBlock
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Text="Trạng thái:" />
+                <TextBlock
+                    x:Name="CrawlStatusText"
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Margin="0,2"
+                    Text="Chưa chạy" />
+            </Grid>
+        </GroupBox>
+
+        <!--  BUTTONS  -->
+        <StackPanel
+            Grid.Row="2"
             Margin="0,0,0,10"
             HorizontalAlignment="Right"
-            Click="Start_Click"
-            Content="🟟 Start Bot + Downloader" />
+            Orientation="Horizontal">
+            <Button
+                Width="150"
+                Height="35"
+                Margin="0,0,8,0"
+                Click="Start_Click"
+                Content="Login / Start Bot" />
 
-        <!--  ===================== DOWNLOAD LIST =====================  -->
-        <GroupBox Grid.Row="1" Header="🟟 Danh sách download">
+            <Button
+                Width="150"
+                Height="35"
+                Margin="0,0,8,0"
+                Click="Crawl_Click"
+                Content="Crawl / Resume" />
 
-            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding Downloads}">
+            <Button
+                x:Name="ContinueButton"
+                Width="150"
+                Height="35"
+                Click="Continue_Click"
+                Content="Crawl tiếp"
+                IsEnabled="False" />
+        </StackPanel>
 
+        <!--  STATE INFO  -->
+        <GroupBox
+            Grid.Row="3"
+            Margin="0,0,0,10"
+            Padding="10"
+            Header="Tiến trình">
+            <StackPanel>
+                <TextBlock x:Name="CrawlDayText" Text="Ngày hiện tại: -" />
+                <TextBlock
+                    x:Name="CrawlResumeText"
+                    Margin="0,4,0,0"
+                    Text="Resume: -" />
+                <TextBlock
+                    x:Name="CrawlNoteText"
+                    Margin="0,4,0,0"
+                    Text="Ghi chú: -" />
+            </StackPanel>
+        </GroupBox>
+
+        <!--  DOWNLOAD LIST  -->
+        <GroupBox Grid.Row="4" Header="Danh sách download">
+            <DataGrid
+                AutoGenerateColumns="False"
+                CanUserAddRows="False"
+                GridLinesVisibility="Horizontal"
+                HeadersVisibility="Column"
+                IsReadOnly="True"
+                ItemsSource="{Binding Downloads}">
                 <DataGrid.Columns>
-
                     <DataGridTextColumn
-                        Width="auto"
+                        Width="140"
                         Binding="{Binding FileName}"
                         Header="File" />
+                    <DataGridTextColumn
+                        Width="180"
+                        Binding="{Binding GroupName}"
+                        Header="Group" />
+                    <DataGridTextColumn
+                        Width="120"
+                        Binding="{Binding CrawlDay, StringFormat=yyyy-MM-dd}"
+                        Header="Day" />
 
-                    <DataGridTemplateColumn Width="200" Header="Progress">
+                    <DataGridTemplateColumn Width="170" Header="Progress">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <ProgressBar
@@ -135,16 +237,12 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-
                     <DataGridTextColumn
                         Width="*"
                         Binding="{Binding Status}"
                         Header="Status" />
-
                 </DataGrid.Columns>
-
             </DataGrid>
-
         </GroupBox>
     </Grid>
 </Window>

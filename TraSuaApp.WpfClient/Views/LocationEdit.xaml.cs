@@ -4,7 +4,6 @@ using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.AdminViews
@@ -12,7 +11,7 @@ namespace TraSuaApp.WpfClient.AdminViews
     public partial class LocationEdit : Window
     {
         public LocationDto Model { get; set; } = new();
-        private readonly ILocationApi _api;
+        private readonly LocationApi _api;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["Location"];
 
         public LocationEdit(LocationDto? dto = null)

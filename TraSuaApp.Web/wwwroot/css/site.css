@@ -21,12 +21,14 @@ html {
   min-height: 100%;
 }
 
-body {
-  margin-bottom: 60px;
-  font-family: "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-  font-variant-numeric: tabular-nums;
-  /* Căn số đều */
+html, body {
+  height: 100%;
+}
 
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .so-tien {
@@ -40,17 +42,19 @@ body {
   font-family: system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
+
 #KhachHangClear {
-    border: none;
-    z-index: 5;
-    background: transparent !important;
-    opacity: .6;
-    transition: opacity .15s;
+  border: none;
+  z-index: 5;
+  background: transparent !important;
+  opacity: .6;
+  transition: opacity .15s;
 }
 
 #KhachHangClear:hover {
-        opacity: 1;
+  opacity: 1;
 }
+
 td.center-middle {
   vertical-align: middle;
   text-align: center;
@@ -74,47 +78,105 @@ input[type="number"] {
   touch-action: manipulation;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .bg-success-light {
-    background-color: #90EE90 !important; /* xanh lá nhạt */
-    color: #000 !important; /* chữ đen */
+  background-color: #90EE90 !important;
+  color: #000 !important;
 }
 
 .bg-warning-light {
-    background-color: #FFFFE0 !important; /* vàng nhạt */
-    color: #000 !important; /* chữ đen */
+  background-color: #FFFFE0 !important;
+  color: #000 !important;
 }
 
-
 .highlight-animate {
-    animation: borderFlashPrimary 0.4s alternate infinite;
-    border-radius: 6px;
+  animation: borderFlashPrimary 0.4s alternate infinite;
+  border-radius: 6px;
 }
 
 @keyframes borderFlashPrimary {
-    from {
-        box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.9);
-    }
+  from {
+    box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.9);
+  }
 
-    to {
-        box-shadow: 0 0 12px 4px rgba(13, 110, 253, 0.9);
-    }
+  to {
+    box-shadow: 0 0 12px 4px rgba(13, 110, 253, 0.9);
+  }
 }
 
-#chitieu, #congno {
-    scroll-margin-top: 20px; /* chừa 80px phía trên, bạn có thể chỉnh 60-100 tuỳ giao diện */
+#chitieu,
+#congno {
+  scroll-margin-top: 20px;
+}
+
+.app-container {
+  padding-top: calc(0px + env(safe-area-inset-top));
+  padding-bottom: env(safe-area-inset-bottom);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1;
+  padding-bottom: 70px;
+}
+
+.app-bottom-menu {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #fff;
+  border-top: 1px solid #ddd;
+  z-index: 9999;
+}
+
+.spinner-custom {
+  width: 36px;
+  height: 36px;
+  border-width: 3px;
+}
+
+#globalSpinner {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#globalSpinner.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+
+.spinner-border {
+  color: #000;
+}
+
+@media (prefers-color-scheme: dark) {
+  .spinner-border {
+    color: #258cfb;
+  }
+}
+
+
+
+#totalMoney {
+  padding-right: 4px;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px !important;
 }

@@ -10,8 +10,8 @@ namespace TraSuaApp.WpfClient.Helpers
     {
         private static readonly HttpClient _httpClient = new HttpClient
         {
-            BaseAddress = new Uri(Config.ApiBaseUrl)
-            //tonthoigian
+            BaseAddress = new Uri(Config.ApiBaseUrl),
+            Timeout = TimeSpan.FromSeconds(30)
         };
 
         public static string? ConnectionId { get; set; }
@@ -33,7 +33,8 @@ namespace TraSuaApp.WpfClient.Helpers
                 if (_httpClient.DefaultRequestHeaders.Authorization == null ||
                     _httpClient.DefaultRequestHeaders.Authorization.Parameter != token)
                 {
-                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    _httpClient.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Bearer", token);
                 }
             }
         }
@@ -51,21 +52,28 @@ namespace TraSuaApp.WpfClient.Helpers
 
         public static void SetToken(string token)
         {
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
             Properties.Settings.Default.Token = token;
             Properties.Settings.Default.Save();
         }
 
-        private static async Task<HttpResponseMessage> SendAsync(Func<HttpRequestMessage> createRequest, bool includeToken)
+        private static async Task<HttpResponseMessage> SendAsync(
+            Func<HttpRequestMessage> createRequest,
+            bool includeToken,
+            CancellationToken ct = default)
         {
+            var request = createRequest();
+
+            if (includeToken)
+                AddAuthorizationHeader();
+
+            AddConnectionIdHeader(request);
+
             try
             {
-                var request = createRequest();
-
-                if (includeToken) AddAuthorizationHeader();
-                AddConnectionIdHeader(request);
-
-                var response = await _httpClient.SendAsync(request);
+                var response = await _httpClient.SendAsync(request, ct);
 
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
@@ -74,32 +82,46 @@ namespace TraSuaApp.WpfClient.Helpers
 
                 return response;
             }
-            catch
+            catch (OperationCanceledException)
             {
                 throw;
             }
+            catch (Exception ex)
+            {
+                throw new Exception("Không thể kết nối server: " + ex.Message);
+            }
         }
 
-        public static async Task<T?> Get<T>(string uri, bool includeToken = true)
+        public static async Task<T?> Get<T>(
+            string uri,
+            bool includeToken = true,
+            CancellationToken ct = default)
         {
-            var response = await GetAsync(uri, includeToken);
+            var response = await GetAsync(uri, includeToken, ct);
+
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<T>();
+                return await response.Content.ReadFromJsonAsync<T>(cancellationToken: ct);
             }
 
-            var msg = await response.Content.ReadAsStringAsync();
-            NotiHelper.ShowError($"{msg}");
-            throw new Exception($"{msg}");
-
+            var msg = await response.Content.ReadAsStringAsync(ct);
+            NotiHelper.ShowError(msg);
+            throw new Exception(msg);
         }
 
-        public static Task<HttpResponseMessage> GetAsync(string uri, bool includeToken = true)
+        public static Task<HttpResponseMessage> GetAsync(
+            string uri,
+            bool includeToken = true,
+            CancellationToken ct = default)
         {
-            return SendAsync(() => new HttpRequestMessage(HttpMethod.Get, uri), includeToken);
+            return SendAsync(() => new HttpRequestMessage(HttpMethod.Get, uri), includeToken, ct);
         }
 
-        public static Task<HttpResponseMessage> PostAsync<T>(string uri, T content, bool includeToken = true)
+        public static Task<HttpResponseMessage> PostAsync<T>(
+            string uri,
+            T content,
+            bool includeToken = true,
+            CancellationToken ct = default)
         {
             return SendAsync(() =>
             {
@@ -108,10 +130,14 @@ namespace TraSuaApp.WpfClient.Helpers
                     Content = JsonContent.Create(content)
                 };
                 return request;
-            }, includeToken);
+            }, includeToken, ct);
         }
 
-        public static Task<HttpResponseMessage> PutAsync<T>(string uri, T content, bool includeToken = true)
+        public static Task<HttpResponseMessage> PutAsync<T>(
+            string uri,
+            T content,
+            bool includeToken = true,
+            CancellationToken ct = default)
         {
             return SendAsync(() =>
             {
@@ -120,14 +146,15 @@ namespace TraSuaApp.WpfClient.Helpers
                     Content = JsonContent.Create(content)
                 };
                 return request;
-            }, includeToken);
+            }, includeToken, ct);
         }
 
-        public static Task<HttpResponseMessage> DeleteAsync(string uri, bool includeToken = true)
+        public static Task<HttpResponseMessage> DeleteAsync(
+            string uri,
+            bool includeToken = true,
+            CancellationToken ct = default)
         {
-            return SendAsync(() => new HttpRequestMessage(HttpMethod.Delete, uri), includeToken);
+            return SendAsync(() => new HttpRequestMessage(HttpMethod.Delete, uri), includeToken, ct);
         }
-
-
     }
 }

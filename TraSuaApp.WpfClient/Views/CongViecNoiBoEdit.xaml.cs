@@ -4,7 +4,6 @@ using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Models;
 using TraSuaApp.WpfClient.Services;
 
@@ -13,7 +12,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
     public partial class CongViecNoiBoEdit : Window
     {
         public CongViecNoiBoDto Model { get; set; } = new();
-        private readonly ICongViecNoiBoApi _api;
+        private readonly CongViecNoiBoApi _api;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["CongViecNoiBo"];
         private List<NhomSanPhamCheckItem> _bindingList = new();
 

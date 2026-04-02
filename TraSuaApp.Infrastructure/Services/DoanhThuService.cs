@@ -697,12 +697,12 @@ public class DoanhThuService : IDoanhThuService
 
     public static Expression<Func<HoaDonNoDto, bool>> DoanhThuFillter(DateTime now)
     {
-        var oneHourAgo = now.AddHours(-1);
+        var oneHourAgo = now.AddHours(-3);
 
         return h =>
             h.PhanLoai == "App"
             || (h.NgayNo != null && h.IsBank == true)
-            || h.NgayGio >= oneHourAgo
+            || h.LastModified >= oneHourAgo
             || h.IsBank == true
             || h.NgayIn != null
             || (h.IsBank == false && h.NgayGio.Value.Second % 59 == 0);

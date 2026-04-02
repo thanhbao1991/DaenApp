@@ -261,7 +261,7 @@
                                     </DataTrigger>
 
                                     <!--  Nhóm 3: ship đã giao chưa xử lý  -->
-                                    <DataTrigger Binding="{Binding SortOrder}" Value="5">
+                                    <DataTrigger Binding="{Binding ConLai}" Value="">
                                         <Setter Property="FontWeight" Value="Bold" />
                                     </DataTrigger>
 
@@ -272,7 +272,7 @@
                                     </DataTrigger>
 
                                     <!--  Nhóm 4: đã thanh  -->
-                                    <DataTrigger Binding="{Binding SortOrder}" Value="6">
+                                    <DataTrigger Binding="{Binding ConLai}" Value="0">
                                         <Setter Property="TextDecorations" Value="Strikethrough" />
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -600,16 +600,10 @@
                             Background="Transparent"
                             CornerRadius="8"
                             Visibility="{Binding ElementName=TongSoSanPhamTextBlock, Path=Visibility}">
-
                             <StackPanel>
-
                                 <StackPanel x:Name="ThongTinThanhToanPanel" Margin="0,0,0,6" />
-
-
                             </StackPanel>
-
                         </Border>
-
                     </StackPanel>
                 </ScrollViewer>
 

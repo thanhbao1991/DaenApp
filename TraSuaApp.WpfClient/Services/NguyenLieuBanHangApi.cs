@@ -5,49 +5,60 @@ using TraSuaApp.WpfClient.Apis;
 
 namespace TraSuaApp.WpfClient.Services;
 
-public class NguyenLieuBanHangApi : BaseApi, INguyenLieuBanHangApi
+public class NguyenLieuBanHangApi : BaseApi
 {
     private const string BASE_URL = "/api/NguyenLieuBanHang";
 
     public NguyenLieuBanHangApi() : base(TuDien._tableFriendlyNames["NguyenLieuBanHang"]) { }
 
-    public async Task<Result<List<NguyenLieuBanHangDto>>> GetAllAsync()
+    // =========================
+    // GET
+    // =========================
+    public async Task<Result<List<NguyenLieuBanHangDto>>> GetAllAsync(CancellationToken ct = default)
     {
-        return await GetAsync<List<NguyenLieuBanHangDto>>(BASE_URL);
+        return await GetAsync<List<NguyenLieuBanHangDto>>(BASE_URL, ct);
     }
 
-    public async Task<Result<NguyenLieuBanHangDto>> GetByIdAsync(Guid id)
+    public async Task<Result<NguyenLieuBanHangDto>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<NguyenLieuBanHangDto>($"{BASE_URL}/{id}");
+        return await GetAsync<NguyenLieuBanHangDto>($"{BASE_URL}/{id}", ct);
     }
 
-    public async Task<Result<NguyenLieuBanHangDto>> CreateAsync(NguyenLieuBanHangDto dto)
+    public async Task<Result<List<NguyenLieuBanHangDto>>> GetUpdatedSince(DateTime since, CancellationToken ct = default)
     {
-        return await PostAsync<NguyenLieuBanHangDto>(BASE_URL, dto);
+        return await GetAsync<List<NguyenLieuBanHangDto>>(
+            $"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}",
+            ct);
     }
 
-    // TraSuaApp.WpfClient.Services/NguyenLieuBanHangApi.cs
-
-    public async Task<Result<NguyenLieuBanHangDto>> UpdateAsync(Guid id, NguyenLieuBanHangDto dto)
+    // =========================
+    // CREATE / UPDATE
+    // =========================
+    public async Task<Result<NguyenLieuBanHangDto>> CreateAsync(NguyenLieuBanHangDto dto, CancellationToken ct = default)
     {
-        // ❌ đang sai: PostAsync
-        // return await PostAsync<NguyenLieuBanHangDto>($"{BASE_URL}/{id}", dto);
-
-        // ✅ đúng: PutAsync (match với [HttpPut("{id}")] bên Controller)
-        return await PutAsync<NguyenLieuBanHangDto>($"{BASE_URL}/{id}", dto);
-    }
-    public async Task<Result<NguyenLieuBanHangDto>> DeleteAsync(Guid id)
-    {
-        return await DeleteAsync<NguyenLieuBanHangDto>($"{BASE_URL}/{id}");
+        return await PostAsync<NguyenLieuBanHangDto>(BASE_URL, dto, ct);
     }
 
-    public async Task<Result<NguyenLieuBanHangDto>> RestoreAsync(Guid id)
+    public async Task<Result<NguyenLieuBanHangDto>> UpdateAsync(Guid id, NguyenLieuBanHangDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<NguyenLieuBanHangDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<NguyenLieuBanHangDto>($"{BASE_URL}/{id}", dto, ct);
     }
 
-    public async Task<Result<List<NguyenLieuBanHangDto>>> GetUpdatedSince(DateTime since)
+    public async Task<Result<NguyenLieuBanHangDto>> UpdateSingleAsync(Guid id, NguyenLieuBanHangDto dto, CancellationToken ct = default)
     {
-        return await GetAsync<List<NguyenLieuBanHangDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
+        return await PutAsync<NguyenLieuBanHangDto>($"{BASE_URL}/{id}/single", dto, ct);
+    }
+
+    // =========================
+    // DELETE / RESTORE
+    // =========================
+    public async Task<Result<NguyenLieuBanHangDto>> DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        return await DeleteAsync<NguyenLieuBanHangDto>($"{BASE_URL}/{id}", ct);
+    }
+
+    public async Task<Result<NguyenLieuBanHangDto>> RestoreAsync(Guid id, CancellationToken ct = default)
+    {
+        return await PutAsync<NguyenLieuBanHangDto>($"{BASE_URL}/{id}/restore", null!, ct);
     }
 }

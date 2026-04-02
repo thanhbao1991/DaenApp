@@ -5,7 +5,6 @@ using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.SettingsViews
@@ -16,7 +15,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
         public ObservableCollection<KhachHangPhoneDto> Phones { get; set; } = new();
         public ObservableCollection<KhachHangAddressDto> Addresses { get; set; } = new();
 
-        private readonly IKhachHangApi _api;
+        private readonly KhachHangApi _api;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["KhachHang"];
 
         public KhachHangEdit(KhachHangDto? dto = null)

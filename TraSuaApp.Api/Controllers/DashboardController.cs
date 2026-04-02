@@ -16,94 +16,6 @@ namespace TraSuaApp.Api.Controllers
         {
             _db = db;
         }
-        [HttpGet("xephang-sanpham")]
-        public async Task<ActionResult<Result<List<SanPhamXepHangDto>>>> GetXepHangSanPham([FromQuery] int? year = null)
-        {
-            var y = (year is > 0 ? year.Value : DateTime.Today.Year);
-            var start = new DateTime(y, 1, 1);
-            var end = start.AddYears(1);
-
-            var query = await (
-                from ct in _db.ChiTietHoaDons.AsNoTracking()
-                join h in _db.HoaDons.AsNoTracking() on ct.HoaDonId equals h.Id
-                where !ct.IsDeleted && !h.IsDeleted
-                      && h.NgayGio >= start && h.NgayGio < end
-                group ct by ct.TenSanPham into g
-                orderby g.Sum(x => x.SoLuong) descending
-                select new SanPhamXepHangDto
-                {
-                    TenSanPham = g.Key,
-                    TongSoLuong = g.Sum(x => x.SoLuong),
-                    TongDoanhThu = g.Sum(x => x.SoLuong * x.DonGia)
-                }
-            ).ToListAsync();
-
-            return Result<List<SanPhamXepHangDto>>.Success(query);
-        }
-        [HttpGet("xephang-khachhang")]
-        public async Task<ActionResult<Result<List<KhachHangXepHangDto>>>> GetXepHangKhachHang([FromQuery] int? year = null)
-        {
-            var y = (year is > 0 ? year.Value : DateTime.Today.Year);
-            var start = new DateTime(y, 1, 1);
-            var end = start.AddYears(1);
-
-            var list = await (
-                from h in _db.HoaDons.AsNoTracking()
-                join k in _db.KhachHangs.AsNoTracking() on h.KhachHangId equals k.Id
-                where !h.IsDeleted
-                      && h.NgayGio >= start && h.NgayGio < end
-                group new { h, k } by new { k.Id, k.Ten } into g
-                orderby g.Sum(x => x.h.ThanhTien) descending
-                select new KhachHangXepHangDto
-                {
-                    KhachHangId = g.Key.Id,
-                    TenKhachHang = g.Key.Ten ?? "",
-                    TongSoDon = g.Select(x => x.h.Id).Distinct().Count(),
-                    TongDoanhThu = g.Sum(x => x.h.ThanhTien),
-                    LanCuoiMua = g.Max(x => x.h.NgayGio)
-                }
-            ).ToListAsync();
-
-            return Result<List<KhachHangXepHangDto>>.Success(list);
-        }
-        [HttpGet("lichsu-khachhang/{khachHangId}")]
-        public async Task<ActionResult<DashboardDto>> GetLichSuKhachHang(Guid khachHangId)
-        {
-            if (khachHangId == Guid.Empty)
-                return BadRequest("KhachHangId không hợp lệ.");
-
-            var history = await (
-                from ct in _db.ChiTietHoaDons.AsNoTracking()
-                join h in _db.HoaDons.AsNoTracking() on ct.HoaDonId equals h.Id
-                where h.KhachHangId == khachHangId
-                      && !h.IsDeleted
-                orderby h.NgayGio descending, ct.LastModified descending
-                select new ChiTietHoaDonDto
-                {
-                    Id = ct.Id,
-                    SoLuong = ct.SoLuong,
-                    DonGia = ct.DonGia,
-                    SanPhamIdBienThe = ct.SanPhamBienTheId,
-                    SanPhamId = ct.SanPhamId,
-                    HoaDonId = ct.HoaDonId,
-                    NoteText = ct.NoteText,
-                    ToppingText = ct.ToppingText,
-
-                    DeletedAt = ct.DeletedAt,
-                    IsDeleted = ct.IsDeleted,
-                    LastModified = ct.LastModified,
-                    TenBienThe = ct.TenBienThe,
-                    TenSanPham = ct.TenSanPham,
-                    NgayGio = h.NgayGio
-                }
-            ).ToListAsync();
-
-            return new DashboardDto { History = history };
-        }
-
-
-
-
 
         private static readonly Expression<Func<HoaDonNoDto, HoaDonNoDto>> SelectHoaDonNoDto =
     x => new HoaDonNoDto
@@ -126,6 +38,12 @@ namespace TraSuaApp.Api.Controllers
         KhachHangId = x.KhachHangId,
         VoucherId = x.VoucherId,
     };
+
+
+
+
+
+
 
         [HttpGet("get-cong-no")]
         public async Task<ActionResult<Result<List<HoaDonNoDto>>>> GetCongNo()
@@ -271,6 +189,50 @@ namespace TraSuaApp.Api.Controllers
                 DonKhac = donKhac,
                 MonYeuThich = kh.FavoriteMon
             };
+        }
+
+        [HttpGet("get-chi-tieu-hang-ngay")]
+        public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> GetChiTieuHangNgay(
+    [FromQuery] int thang,
+    [FromQuery] int nam)
+        {
+            try
+            {
+                if (thang < 1 || thang > 12)
+                    return BadRequest(Result<List<ChiTieuHangNgayDto>>.Failure("Tháng không hợp lệ"));
+
+                var start = new DateTime(nam, thang, 1);
+                var end = start.AddMonths(1);
+
+                var query = await _db.ChiTieuHangNgays
+                    .AsNoTracking()
+                    .Where(x =>
+                        x.Ngay >= start &&
+                        x.Ngay < end &&
+                        !x.IsDeleted
+                    )
+                    .OrderByDescending(x => x.NgayGio)
+                    .Select(x => new ChiTieuHangNgayDto
+                    {
+                        Id = x.Id,
+                        SoLuong = x.SoLuong,
+                        DonGia = x.DonGia,
+                        ThanhTien = x.ThanhTien,
+                        BillThang = x.BillThang,
+                        Ten = x.Ten,
+                        GhiChu = x.GhiChu,
+                        Ngay = x.Ngay,
+                        NgayGio = x.NgayGio,
+                        NguyenLieuId = x.NguyenLieuId,
+                    })
+                    .ToListAsync();
+
+                return Result<List<ChiTieuHangNgayDto>>.Success(query);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, Result<List<ChiTieuHangNgayDto>>.Failure(ex.ToString()));
+            }
         }
     }
 }

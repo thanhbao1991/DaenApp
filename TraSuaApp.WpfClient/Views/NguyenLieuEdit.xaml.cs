@@ -3,7 +3,6 @@ using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.SettingsViews
@@ -12,7 +11,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
     {
         public NguyenLieuDto Model { get; set; } = new();
 
-        private readonly INguyenLieuApi _api;
+        private readonly NguyenLieuApi _api;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["NguyenLieu"];
 
         private List<NguyenLieuBanHangDto> _nguyenLieuBanHangList = new();

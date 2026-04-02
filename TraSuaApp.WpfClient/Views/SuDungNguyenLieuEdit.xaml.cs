@@ -3,7 +3,6 @@ using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.AdminViews
@@ -12,7 +11,7 @@ namespace TraSuaApp.WpfClient.AdminViews
     {
         public SuDungNguyenLieuDto Model { get; set; }
 
-        private readonly ISuDungNguyenLieuApi _api;
+        private readonly SuDungNguyenLieuApi _api;
         private readonly CongThucDto _parentCongThuc;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["SuDungNguyenLieu"];
 

@@ -6,25 +6,41 @@ namespace TraSuaApp.WpfClient.Services
 {
     public class DashboardApi
     {
-        public async Task<Result<List<HoaDonNoDto>>> GetHoaDon()
+        public async Task<Result<List<HoaDonNoDto>>> GetHoaDon(CancellationToken ct = default)
         {
             try
             {
-                var result = await ApiClient.Get<Result<List<HoaDonNoDto>>>($"/api/dashboard/get-hoa-don");
+                var result = await ApiClient.Get<Result<List<HoaDonNoDto>>>(
+                    "/api/dashboard/get-hoa-don",
+                    true,
+                    ct);
+
                 return result ?? Result<List<HoaDonNoDto>>.Failure("Không nhận được dữ liệu từ server.");
+            }
+            catch (OperationCanceledException)
+            {
+                return Result<List<HoaDonNoDto>>.Failure("Đã hủy tải dữ liệu.");
             }
             catch (Exception ex)
             {
-                return Result<List<HoaDonNoDto>>.Failure($"Lỗi khi tải dữ liệu hóa đơn : {ex.Message}");
+                return Result<List<HoaDonNoDto>>.Failure($"Lỗi khi tải dữ liệu hóa đơn: {ex.Message}");
             }
         }
 
-        public async Task<Result<List<HoaDonNoDto>>> GetCongNo()
+        public async Task<Result<List<HoaDonNoDto>>> GetCongNo(CancellationToken ct = default)
         {
             try
             {
-                var result = await ApiClient.Get<Result<List<HoaDonNoDto>>>($"/api/dashboard/get-cong-no");
+                var result = await ApiClient.Get<Result<List<HoaDonNoDto>>>(
+                    "/api/dashboard/get-cong-no",
+                    true,
+                    ct);
+
                 return result ?? Result<List<HoaDonNoDto>>.Failure("Không nhận được dữ liệu từ server.");
+            }
+            catch (OperationCanceledException)
+            {
+                return Result<List<HoaDonNoDto>>.Failure("Đã hủy tải dữ liệu.");
             }
             catch (Exception ex)
             {
@@ -32,21 +48,20 @@ namespace TraSuaApp.WpfClient.Services
             }
         }
 
-
-
-
-
-
-
-
-
-
-        public async Task<Result<List<SanPhamXepHangDto>>> GetXepHangSanPham(int year)
+        public async Task<Result<List<SanPhamXepHangDto>>> GetXepHangSanPham(int year, CancellationToken ct = default)
         {
             try
             {
-                var result = await ApiClient.Get<Result<List<SanPhamXepHangDto>>>($"/api/dashboard/xephang-sanpham?year={year}");
+                var result = await ApiClient.Get<Result<List<SanPhamXepHangDto>>>(
+                    $"/api/dashboard/xephang-sanpham?year={year}",
+                    true,
+                    ct);
+
                 return result ?? Result<List<SanPhamXepHangDto>>.Failure("Không nhận được dữ liệu từ server.");
+            }
+            catch (OperationCanceledException)
+            {
+                return Result<List<SanPhamXepHangDto>>.Failure("Đã hủy tải dữ liệu.");
             }
             catch (Exception ex)
             {
@@ -54,12 +69,20 @@ namespace TraSuaApp.WpfClient.Services
             }
         }
 
-        public async Task<Result<List<KhachHangXepHangDto>>> GetXepHangKhachHang(int year)
+        public async Task<Result<List<KhachHangXepHangDto>>> GetXepHangKhachHang(int year, CancellationToken ct = default)
         {
             try
             {
-                var result = await ApiClient.Get<Result<List<KhachHangXepHangDto>>>($"/api/dashboard/xephang-khachhang?year={year}");
+                var result = await ApiClient.Get<Result<List<KhachHangXepHangDto>>>(
+                    $"/api/dashboard/xephang-khachhang?year={year}",
+                    true,
+                    ct);
+
                 return result ?? Result<List<KhachHangXepHangDto>>.Failure("Không nhận được dữ liệu từ server.");
+            }
+            catch (OperationCanceledException)
+            {
+                return Result<List<KhachHangXepHangDto>>.Failure("Đã hủy tải dữ liệu.");
             }
             catch (Exception ex)
             {
@@ -67,7 +90,10 @@ namespace TraSuaApp.WpfClient.Services
             }
         }
 
-        public async Task<Result<List<ChiTieuHangNgayDto>>> GetChiTieuByNguyenLieuId(int offset, Guid? nguyenLieuId = null)
+        public async Task<Result<List<ChiTieuHangNgayDto>>> GetChiTieuByNguyenLieuId(
+            int offset,
+            Guid? nguyenLieuId = null,
+            CancellationToken ct = default)
         {
             try
             {
@@ -75,8 +101,16 @@ namespace TraSuaApp.WpfClient.Services
                 if (nguyenLieuId != null && nguyenLieuId != Guid.Empty)
                     uri += $"&nguyenLieuId={nguyenLieuId}";
 
-                var result = await ApiClient.Get<Result<List<ChiTieuHangNgayDto>>>(uri);
+                var result = await ApiClient.Get<Result<List<ChiTieuHangNgayDto>>>(
+                    uri,
+                    true,
+                    ct);
+
                 return result ?? Result<List<ChiTieuHangNgayDto>>.Failure("Không nhận được dữ liệu từ server.");
+            }
+            catch (OperationCanceledException)
+            {
+                return Result<List<ChiTieuHangNgayDto>>.Failure("Đã hủy tải dữ liệu.");
             }
             catch (Exception ex)
             {
@@ -84,7 +118,10 @@ namespace TraSuaApp.WpfClient.Services
             }
         }
 
-        public async Task<Result<List<VoucherChiTraDto>>> GetVoucher(int offset, Guid? voucherId = null)
+        public async Task<Result<List<VoucherChiTraDto>>> GetVoucher(
+            int offset,
+            Guid? voucherId = null,
+            CancellationToken ct = default)
         {
             try
             {
@@ -92,8 +129,16 @@ namespace TraSuaApp.WpfClient.Services
                 if (voucherId != null && voucherId != Guid.Empty)
                     uri += $"&voucherId={voucherId}";
 
-                var result = await ApiClient.Get<Result<List<VoucherChiTraDto>>>(uri);
+                var result = await ApiClient.Get<Result<List<VoucherChiTraDto>>>(
+                    uri,
+                    true,
+                    ct);
+
                 return result ?? Result<List<VoucherChiTraDto>>.Failure("Không nhận được dữ liệu từ server.");
+            }
+            catch (OperationCanceledException)
+            {
+                return Result<List<VoucherChiTraDto>>.Failure("Đã hủy tải dữ liệu.");
             }
             catch (Exception ex)
             {

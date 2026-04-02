@@ -11,6 +11,8 @@
     var next = new DateTime(nam, thang, ngay).AddDays(1);
 }
 
+<div class="container-fluid mt-3">
+
 <div class="d-flex justify-content-between align-items-center mb-3">
     <a class="btn btn-outline-primary"
        href="?ngay=@prev.Day&thang=@prev.Month&nam=@prev.Year">← Ngày trước</a>
@@ -172,3 +174,23 @@
         </div>
     </div>
 </div>
+</div>
+<script>
+    function showSpinner() {
+        document.getElementById("globalSpinner")?.classList.add("show");
+    }
+
+    // bắt click tất cả link (a)
+    document.querySelectorAll("a").forEach(a => {
+        a.addEventListener("click", function () {
+            showSpinner();
+        });
+    });
+
+    // nếu có button submit (form)
+    document.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", function () {
+            showSpinner();
+        });
+    });
+</script>

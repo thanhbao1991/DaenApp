@@ -5,7 +5,6 @@ using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.SettingsViews
@@ -13,7 +12,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
     public partial class SanPhamEdit : Window
     {
         public SanPhamDto Model { get; set; }
-        private readonly ISanPhamApi _api;
+        private readonly SanPhamApi _api;
         private ObservableCollection<SanPhamBienTheDto> _variants;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["SanPham"];
 

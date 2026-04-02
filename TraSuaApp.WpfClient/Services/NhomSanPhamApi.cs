@@ -5,44 +5,60 @@ using TraSuaApp.WpfClient.Apis;
 
 namespace TraSuaApp.WpfClient.Services;
 
-public class NhomSanPhamApi : BaseApi, INhomSanPhamApi
+public class NhomSanPhamApi : BaseApi
 {
     private const string BASE_URL = "/api/NhomSanPham";
 
     public NhomSanPhamApi() : base(TuDien._tableFriendlyNames["NhomSanPham"]) { }
 
-    public async Task<Result<List<NhomSanPhamDto>>> GetAllAsync()
+    // =========================
+    // GET
+    // =========================
+    public async Task<Result<List<NhomSanPhamDto>>> GetAllAsync(CancellationToken ct = default)
     {
-        return await GetAsync<List<NhomSanPhamDto>>(BASE_URL);
+        return await GetAsync<List<NhomSanPhamDto>>(BASE_URL, ct);
     }
 
-    public async Task<Result<NhomSanPhamDto>> GetByIdAsync(Guid id)
+    public async Task<Result<NhomSanPhamDto>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<NhomSanPhamDto>($"{BASE_URL}/{id}");
+        return await GetAsync<NhomSanPhamDto>($"{BASE_URL}/{id}", ct);
     }
 
-    public async Task<Result<NhomSanPhamDto>> CreateAsync(NhomSanPhamDto dto)
+    public async Task<Result<List<NhomSanPhamDto>>> GetUpdatedSince(DateTime since, CancellationToken ct = default)
     {
-        return await PostAsync<NhomSanPhamDto>(BASE_URL, dto);
+        return await GetAsync<List<NhomSanPhamDto>>(
+            $"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}",
+            ct);
     }
 
-    public async Task<Result<NhomSanPhamDto>> UpdateAsync(Guid id, NhomSanPhamDto dto)
+    // =========================
+    // CREATE / UPDATE
+    // =========================
+    public async Task<Result<NhomSanPhamDto>> CreateAsync(NhomSanPhamDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<NhomSanPhamDto>($"{BASE_URL}/{id}", dto);
+        return await PostAsync<NhomSanPhamDto>(BASE_URL, dto, ct);
     }
 
-    public async Task<Result<NhomSanPhamDto>> DeleteAsync(Guid id)
+    public async Task<Result<NhomSanPhamDto>> UpdateAsync(Guid id, NhomSanPhamDto dto, CancellationToken ct = default)
     {
-        return await DeleteAsync<NhomSanPhamDto>($"{BASE_URL}/{id}");
+        return await PutAsync<NhomSanPhamDto>($"{BASE_URL}/{id}", dto, ct);
     }
 
-    public async Task<Result<NhomSanPhamDto>> RestoreAsync(Guid id)
+    public async Task<Result<NhomSanPhamDto>> UpdateSingleAsync(Guid id, NhomSanPhamDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<NhomSanPhamDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<NhomSanPhamDto>($"{BASE_URL}/{id}/single", dto, ct);
     }
 
-    public async Task<Result<List<NhomSanPhamDto>>> GetUpdatedSince(DateTime since)
+    // =========================
+    // DELETE / RESTORE
+    // =========================
+    public async Task<Result<NhomSanPhamDto>> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<List<NhomSanPhamDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
+        return await DeleteAsync<NhomSanPhamDto>($"{BASE_URL}/{id}", ct);
+    }
+
+    public async Task<Result<NhomSanPhamDto>> RestoreAsync(Guid id, CancellationToken ct = default)
+    {
+        return await PutAsync<NhomSanPhamDto>($"{BASE_URL}/{id}/restore", null!, ct);
     }
 }

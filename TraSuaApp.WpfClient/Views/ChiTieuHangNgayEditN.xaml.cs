@@ -3,14 +3,13 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using TraSuaApp.Shared.Dtos;
-using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.HoaDonViews
 {
     public partial class ChiTieuHangNgayEditN : Window, INotifyPropertyChanged
     {
-        private readonly IChiTieuHangNgayApi _api;
+        private readonly ChiTieuHangNgayApi _api;
         private readonly ChiTieuHangNgayDto? _editingItem;
         private readonly bool _isEdit;
         /// <summary>

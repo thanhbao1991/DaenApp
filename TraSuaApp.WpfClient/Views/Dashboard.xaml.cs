@@ -273,7 +273,8 @@ namespace TraSuaApp.WpfClient.Views
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             // Theo behavior cũ: minimize thay vì close
-            MinimizeButton_Click(sender, e);
+            // MinimizeButton_Click(sender, e);
+            Application.Current.Shutdown();
         }
 
         // ====== Import Noti Window (giữ nguyên logic) ======
@@ -403,7 +404,7 @@ namespace TraSuaApp.WpfClient.Views
             if (Keyboard.FocusedElement is TextBox)
             {
                 bool isHotkey =
-                    (e.Key == Key.F1 || e.Key == Key.F4 || e.Key == Key.F5) || // hotkey của tab Công nợ
+                    (e.Key == Key.F1 || e.Key == Key.F4) || // hotkey của tab Công nợ
                     (e.Key >= Key.F1 && e.Key <= Key.F24) ||                    // các phím F nói chung
                     e.Key == Key.Escape || e.Key == Key.Delete;                 // nếu bạn cần
 
@@ -428,7 +429,7 @@ namespace TraSuaApp.WpfClient.Views
                 ChiTietHoaDonNoTabControl.HandleHotkey(e.Key);
 
                 // Chỉ 3 hotkey của tab Công nợ
-                if (e.Key == Key.F1 || e.Key == Key.F4 || e.Key == Key.F5)
+                if (e.Key == Key.F1 || e.Key == Key.F4)
                     e.Handled = true;
             }
 
@@ -446,7 +447,7 @@ namespace TraSuaApp.WpfClient.Views
                 case TAB_TAG_HOADON:
                     await WithBusy(async () =>
                     {
-                        await AppProviders.HoaDons.ReloadAsync();
+                        //await AppProviders.HoaDons.ReloadAsync();
                         await HoaDonTabControl.ReloadAndRestoreSelectionAsync();
                     });
                     break;
@@ -472,11 +473,7 @@ namespace TraSuaApp.WpfClient.Views
 
         private readonly Dictionary<string, Func<UserControl>> _reportFactories = new()
         {
-            ["UngNha"] = () => new ChiTieuTab(true),
-            ["ChiTieu"] = () => new ChiTieuTab(false),
             ["Vouchers"] = () => new VoucherTab(),
-            ["SanPham"] = () => new XepHangSanPhamTab(),
-            ["KhachHang"] = () => new XepHangKhachHangTab(),
         };
 
         private void ReportsHeader_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

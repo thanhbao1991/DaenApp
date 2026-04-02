@@ -3,7 +3,6 @@ using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.HoaDonViews
@@ -11,7 +10,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
     public partial class ChiTieuHangNgayEdit : Window
     {
         public ChiTieuHangNgayDto Model { get; set; }
-        private readonly IChiTieuHangNgayApi _api;
+        private readonly ChiTieuHangNgayApi _api;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["ChiTieuHangNgay"];
         private List<NguyenLieuDto> _nguyenLieuList = new();
         public bool ReturnOnly { get; set; } = false;

@@ -127,7 +127,7 @@
                                                 <Setter Property="Foreground" Value="{StaticResource DangerForeground}" />
                                                 <Setter Property="Background" Value="{StaticResource DangerBrush}" />
                                             </DataTrigger>
-                                            <DataTrigger Binding="{Binding TenPhuongThucThanhToan}" Value="Chuyển khoản">
+                                            <DataTrigger Binding="{Binding PhuongThucThanhToanId}" Value="2CF9A88F-3BC0-4D4B-940D-F8FFA4AFFA02">
                                                 <Setter Property="Foreground" Value="{StaticResource PrimaryForeground}" />
                                                 <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
                                             </DataTrigger>
@@ -138,7 +138,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn
+                <!--<DataGridTextColumn
                     Width="Auto"
                     Binding="{Binding TenPhuongThucThanhToan}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
@@ -147,7 +147,7 @@
                     Width="Auto"
                     Binding="{Binding LoaiThanhToan}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
-                    Header="Phân loại" />
+                    Header="Phân loại" />-->
                 <DataGridTextColumn
                     Width="*"
                     Binding="{Binding GhiChu}"

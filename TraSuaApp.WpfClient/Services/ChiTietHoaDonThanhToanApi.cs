@@ -5,44 +5,61 @@ using TraSuaApp.WpfClient.Apis;
 
 namespace TraSuaApp.WpfClient.Services;
 
-public class ChiTietHoaDonThanhToanApi : BaseApi, IChiTietHoaDonThanhToanApi
+public class ChiTietHoaDonThanhToanApi : BaseApi
 {
     private const string BASE_URL = "/api/ChiTietHoaDonThanhToan";
 
-    public ChiTietHoaDonThanhToanApi() : base(TuDien._tableFriendlyNames["ChiTietHoaDonThanhToan"]) { }
+    public ChiTietHoaDonThanhToanApi()
+        : base(TuDien._tableFriendlyNames["ChiTietHoaDonThanhToan"]) { }
 
-    public async Task<Result<List<ChiTietHoaDonThanhToanDto>>> GetAllAsync()
+    // =========================
+    // GET
+    // =========================
+    public async Task<Result<List<ChiTietHoaDonThanhToanDto>>> GetAllAsync(CancellationToken ct = default)
     {
-        return await GetAsync<List<ChiTietHoaDonThanhToanDto>>(BASE_URL);
+        return await GetAsync<List<ChiTietHoaDonThanhToanDto>>(BASE_URL, ct);
     }
 
-    public async Task<Result<ChiTietHoaDonThanhToanDto>> GetByIdAsync(Guid id)
+    public async Task<Result<ChiTietHoaDonThanhToanDto>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<ChiTietHoaDonThanhToanDto>($"{BASE_URL}/{id}");
+        return await GetAsync<ChiTietHoaDonThanhToanDto>($"{BASE_URL}/{id}", ct);
     }
 
-    public async Task<Result<ChiTietHoaDonThanhToanDto>> CreateAsync(ChiTietHoaDonThanhToanDto dto)
+    public async Task<Result<List<ChiTietHoaDonThanhToanDto>>> GetUpdatedSince(DateTime since, CancellationToken ct = default)
     {
-        return await PostAsync<ChiTietHoaDonThanhToanDto>(BASE_URL, dto);
+        return await GetAsync<List<ChiTietHoaDonThanhToanDto>>(
+            $"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}",
+            ct);
     }
 
-    public async Task<Result<ChiTietHoaDonThanhToanDto>> UpdateAsync(Guid id, ChiTietHoaDonThanhToanDto dto)
+    // =========================
+    // CREATE / UPDATE
+    // =========================
+    public async Task<Result<ChiTietHoaDonThanhToanDto>> CreateAsync(ChiTietHoaDonThanhToanDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<ChiTietHoaDonThanhToanDto>($"{BASE_URL}/{id}", dto);
+        return await PostAsync<ChiTietHoaDonThanhToanDto>(BASE_URL, dto, ct);
     }
 
-    public async Task<Result<ChiTietHoaDonThanhToanDto>> DeleteAsync(Guid id)
+    public async Task<Result<ChiTietHoaDonThanhToanDto>> UpdateAsync(Guid id, ChiTietHoaDonThanhToanDto dto, CancellationToken ct = default)
     {
-        return await DeleteAsync<ChiTietHoaDonThanhToanDto>($"{BASE_URL}/{id}");
+        return await PutAsync<ChiTietHoaDonThanhToanDto>($"{BASE_URL}/{id}", dto, ct);
     }
 
-    public async Task<Result<ChiTietHoaDonThanhToanDto>> RestoreAsync(Guid id)
+    public async Task<Result<ChiTietHoaDonThanhToanDto>> UpdateSingleAsync(Guid id, ChiTietHoaDonThanhToanDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<ChiTietHoaDonThanhToanDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<ChiTietHoaDonThanhToanDto>($"{BASE_URL}/{id}/single", dto, ct);
     }
 
-    public async Task<Result<List<ChiTietHoaDonThanhToanDto>>> GetUpdatedSince(DateTime since)
+    // =========================
+    // DELETE / RESTORE
+    // =========================
+    public async Task<Result<ChiTietHoaDonThanhToanDto>> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<List<ChiTietHoaDonThanhToanDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
+        return await DeleteAsync<ChiTietHoaDonThanhToanDto>($"{BASE_URL}/{id}", ct);
+    }
+
+    public async Task<Result<ChiTietHoaDonThanhToanDto>> RestoreAsync(Guid id, CancellationToken ct = default)
+    {
+        return await PutAsync<ChiTietHoaDonThanhToanDto>($"{BASE_URL}/{id}/restore", null!, ct);
     }
 }

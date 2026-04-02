@@ -7,6 +7,7 @@ using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaAppWeb.Pages
 {
+
     public class ThongKeNgayModel : PageModel
     {
         private readonly IHttpClientFactory _http;
@@ -37,7 +38,6 @@ namespace TraSuaAppWeb.Pages
         public decimal TongTraNo { get; set; }
         public List<KhachTraNoItemDto> TraNoTaiQuan { get; set; } = new();
         public List<KhachTraNoItemDto> TraNoShipper { get; set; } = new();
-
         public async Task<IActionResult> OnGetAsync()
         {
             if (Ngay == 0)
@@ -50,19 +50,26 @@ namespace TraSuaAppWeb.Pages
 
             var client = _http.CreateClient("Api");
 
-            async Task<T?> Get<T>(string url)
+            async Task<T?> Get<T>(string url) where T : class
             {
                 var res = await client.GetAsync(url);
 
                 if (res.StatusCode == HttpStatusCode.Unauthorized)
-                    return default;
+                {
+                    var returnUrl = $"{Request.Path}{Request.QueryString}";
+                    Response.Redirect($"/Login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+                    return null;
+                }
+
+                if (!res.IsSuccessStatusCode)
+                    return null;
 
                 var json = await res.Content.ReadAsStringAsync();
 
                 var wrapper = JsonSerializer.Deserialize<Result<T>>(json,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                return wrapper.Data;
+                return wrapper?.Data;
             }
 
             var qs = $"?ngay={Ngay}&thang={Thang}&nam={Nam}";
@@ -111,6 +118,7 @@ namespace TraSuaAppWeb.Pages
                 TongChuaThanhToan = chuaThanhToan.TongChuaThanhToan;
                 ChuaThanhToan = chuaThanhToan.DanhSach;
             }
+
             return Page();
         }
         public decimal TongChuaThanhToan { get; set; }

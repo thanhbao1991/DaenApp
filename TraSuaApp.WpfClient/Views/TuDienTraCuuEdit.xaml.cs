@@ -3,7 +3,6 @@ using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
 using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.AdminViews
@@ -11,7 +10,7 @@ namespace TraSuaApp.WpfClient.AdminViews
     public partial class TuDienTraCuuEdit : Window
     {
         public TuDienTraCuuDto Model { get; set; } = new();
-        private readonly ITuDienTraCuuApi _api;
+        private readonly TuDienTraCuuApi _api;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["TuDienTraCuu"];
 
         public TuDienTraCuuEdit(TuDienTraCuuDto? dto = null)

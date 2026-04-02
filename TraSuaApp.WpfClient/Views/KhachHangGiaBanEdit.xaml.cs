@@ -3,7 +3,6 @@ using System.Windows;
 using System.Windows.Input;
 using TraSuaApp.Shared.Dtos;
 using TraSuaApp.Shared.Enums;
-using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.SettingsViews
@@ -11,7 +10,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
     public partial class KhachHangGiaBanEdit : Window
     {
         public KhachHangGiaBanDto Model { get; set; } = new();
-        private readonly IKhachHangGiaBanApi _api;
+        private readonly KhachHangGiaBanApi _api;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["KhachHangGiaBan"];
 
         public KhachHangGiaBanEdit(KhachHangGiaBanDto? dto = null)

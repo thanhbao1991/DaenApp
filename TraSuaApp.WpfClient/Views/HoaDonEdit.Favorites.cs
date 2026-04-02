@@ -84,7 +84,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             Model.ChiTietHoaDons.Add(ct);
 
             UpdateTotals();
-
+            if (ChiTietListBox.SelectedIndex == -1)
+                ChiTietListBox.SelectedIndex = 0;
             SaveButton.Focus();
         }
     }

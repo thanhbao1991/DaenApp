@@ -643,119 +643,6 @@ public class HoaDonService : IHoaDonService
             return Result<HoaDonDto>.Failure($"Lỗi tạo hoá đơn (đã rollback): {ex.Message}");
         }
     }
-    public async Task<Result<HoaDonDto>> DeleteAsync(Guid id)
-    {
-        //return Result<HoaDonDto>
-        // .Failure($"Chức năng tạm thời bị khóa");
-        await using var tx = await _context.Database.BeginTransactionAsync();
-
-        try
-        {
-            var entity = await _context.HoaDons
-                .Include(x => x.ChiTietHoaDons)
-                .Include(x => x.ChiTietHoaDonToppings)
-                .Include(x => x.ChiTietHoaDonVouchers)
-                .Include(x => x.ChiTietHoaDonThanhToans)
-                //.Include(x => x.ChiTietHoaDonNos)
-                .Include(x => x.ChiTietHoaDonPoints)
-                .FirstOrDefaultAsync(x => x.Id == id);
-
-            if (entity == null || entity.IsDeleted)
-                return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
-
-            var before = ToDto(entity);
-            var now = DateTime.Now;
-
-            // ==============================
-            // 1️⃣ HOÀN KHO
-            // ==============================
-            await ApplyTonKhoByCongThucAsync(
-                ExtractBienTheFromEntity(entity.ChiTietHoaDons),
-                sign: +1,
-                now: now,
-                hoaDonId: entity.Id,
-                loai: LoaiGiaoDichNguyenLieu.DieuChinh,
-                ghiChu: "Hoàn kho do xoá hoá đơn"
-            );
-
-            // ==============================
-            // 2️⃣ SOFT DELETE BẢNG CON
-            // ==============================
-
-            foreach (var ct in entity.ChiTietHoaDons)
-            {
-                ct.IsDeleted = true;
-                ct.DeletedAt = now;
-                ct.LastModified = now;
-            }
-
-            foreach (var tp in entity.ChiTietHoaDonToppings)
-            {
-                tp.IsDeleted = true;
-                tp.DeletedAt = now;
-                tp.LastModified = now;
-            }
-
-            foreach (var v in entity.ChiTietHoaDonVouchers)
-            {
-                v.IsDeleted = true;
-                v.DeletedAt = now;
-                v.LastModified = now;
-            }
-
-            foreach (var tt in entity.ChiTietHoaDonThanhToans)
-            {
-                tt.IsDeleted = true;
-                tt.DeletedAt = now;
-                tt.LastModified = now;
-            }
-
-            //foreach (var no in entity.ChiTietHoaDonNos)
-            //{
-            //    no.IsDeleted = true;
-            //    no.DeletedAt = now;
-            //    no.LastModified = now;
-            //}
-
-            foreach (var p in entity.ChiTietHoaDonPoints)
-            {
-                p.IsDeleted = true;
-                p.DeletedAt = now;
-                p.LastModified = now;
-            }
-
-            // ==============================
-            // 3️⃣ SOFT DELETE CHA
-            // ==============================
-
-            entity.IsDeleted = true;
-            entity.DeletedAt = now;
-            entity.LastModified = now;
-
-            // ==============================
-            // 4️⃣ SAVE + COMMIT
-            // ==============================
-
-            await _context.SaveChangesAsync();
-            await tx.CommitAsync();
-
-            await DiscordService.SendAsync(
-                DiscordEventType.HoaDonDel,
-                $"🟟️ Đã xoá hoá đơn: {entity.MaHoaDon}\n" +
-                $"Khách: {entity.KhachHang?.Ten ?? entity.TenBan}\n" +
-                $"Tổng tiền: {entity.ThanhTien:N0} đ"
-            );
-
-            return Result<HoaDonDto>.Success(before, "Xoá hóa đơn thành công.")
-                .WithId(before.Id)
-                .WithBefore(before);
-        }
-        catch (Exception ex)
-        {
-            await tx.RollbackAsync();
-            return Result<HoaDonDto>.Failure($"Lỗi xoá hoá đơn (đã rollback): {ex.Message}");
-        }
-    }
     public async Task<Result<HoaDonDto>> RestoreAsync(Guid id)
     {
         await using var tx = await _context.Database.BeginTransactionAsync();
@@ -1192,6 +1079,101 @@ public class HoaDonService : IHoaDonService
 
 
 
+
+    public async Task<Result<HoaDonDto>> DeleteAsync(Guid id)
+    {
+        await using var tx = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            var entity = await _context.HoaDons
+                .Include(x => x.KhachHang)
+                .Include(x => x.ChiTietHoaDons)
+                .Include(x => x.ChiTietHoaDonToppings)
+                .Include(x => x.ChiTietHoaDonVouchers)
+                .Include(x => x.ChiTietHoaDonThanhToans)
+                .Include(x => x.ChiTietHoaDonPoints)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (entity == null)
+                return Result<HoaDonDto>.Failure("Không tìm thấy hóa đơn.");
+
+            var before = ToDto(entity);
+            var now = DateTime.Now;
+
+            // ==============================
+            // 1️⃣ HOÀN KHO
+            // ==============================
+            await ApplyTonKhoByCongThucAsync(
+                ExtractBienTheFromEntity(entity.ChiTietHoaDons),
+                sign: +1,
+                now: now,
+                hoaDonId: entity.Id,
+                loai: LoaiGiaoDichNguyenLieu.DieuChinh,
+                ghiChu: "Hoàn kho do xoá hoá đơn"
+            );
+
+            // ==============================
+            // 2️⃣ BUILD LOG DETAIL (TRƯỚC KHI XÓA)
+            // ==============================
+            var detailLines = entity.ChiTietHoaDons.Select(x =>
+                $"- {x.TenSanPham} x{x.SoLuong}"
+            );
+
+            var toppingLines = entity.ChiTietHoaDonToppings.Select(x =>
+                $"- {x.TenTopping} x{x.SoLuong}"
+            );
+
+            // ==============================
+            // 3️⃣ HARD DELETE BẢNG CON
+            // ==============================
+            _context.ChiTietHoaDons.RemoveRange(entity.ChiTietHoaDons);
+            _context.ChiTietHoaDonToppings.RemoveRange(entity.ChiTietHoaDonToppings);
+            _context.ChiTietHoaDonVouchers.RemoveRange(entity.ChiTietHoaDonVouchers);
+            _context.ChiTietHoaDonThanhToans.RemoveRange(entity.ChiTietHoaDonThanhToans);
+            _context.ChiTietHoaDonPoints.RemoveRange(entity.ChiTietHoaDonPoints);
+
+            // ==============================
+            // 4️⃣ HARD DELETE CHA
+            // ==============================
+            _context.HoaDons.Remove(entity);
+
+            // ==============================
+            // 5️⃣ SAVE
+            // ==============================
+            await _context.SaveChangesAsync();
+            await tx.CommitAsync();
+
+            // ==============================
+            // 6️⃣ DISCORD LOG (CỰC CHI TIẾT)
+            // ==============================
+            var message =
+                $"Khách: {entity.KhachHang?.Ten ?? entity.TenBan}\n" +
+                $"Thời gian: {entity.NgayGio:dd/MM/yyyy HH:mm}\n" +
+                $"Tổng tiền: {entity.ThanhTien:N0} đ\n" +
+
+                $"**Sản phẩm:**\n{string.Join("\n", detailLines)}\n" +
+
+                (toppingLines.Any()
+                    ? $"**Topping:**\n{string.Join("\n", toppingLines)}\n"
+                    : "")
+                ;
+
+            await DiscordService.SendAsync(
+                DiscordEventType.HoaDonDel,
+                message
+            );
+
+            return Result<HoaDonDto>.Success(before, "Xoá hóa đơn thành công.")
+                .WithId(before.Id)
+                .WithBefore(before);
+        }
+        catch (Exception ex)
+        {
+            await tx.RollbackAsync();
+            return Result<HoaDonDto>.Failure($"Lỗi xoá hoá đơn (đã rollback): {ex.Message}");
+        }
+    }
 
     public async Task<HoaDonDto?> GetByIdAsync(Guid id)
     {

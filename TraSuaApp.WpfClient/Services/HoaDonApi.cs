@@ -4,83 +4,93 @@ using TraSuaApp.Shared.Helpers;
 
 namespace TraSuaApp.WpfClient.Apis;
 
-public class HoaDonApi : BaseApi, IHoaDonApi
+public class HoaDonApi : BaseApi
 {
     private const string BASE_URL = "/api/HoaDon";
 
     public HoaDonApi() : base(TuDien._tableFriendlyNames["HoaDon"]) { }
 
-    public async Task<Result<List<HoaDonDto>>> GetAllAsync()
+    // =========================
+    // GET
+    // =========================
+    public async Task<Result<List<HoaDonDto>>> GetAllAsync(CancellationToken ct = default)
     {
-        return await GetAsync<List<HoaDonDto>>(BASE_URL);
+        return await GetAsync<List<HoaDonDto>>(BASE_URL, ct);
     }
 
-    public async Task<Result<List<HoaDonDto>>> GetUpdatedSince(DateTime since)
+    public async Task<Result<List<HoaDonDto>>> GetUpdatedSince(DateTime since, CancellationToken ct = default)
     {
         return await GetAsync<List<HoaDonDto>>(
-            $"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
+            $"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}",
+            ct);
     }
 
-    public async Task<Result<HoaDonDto>> CreateAsync(HoaDonDto dto)
+    public async Task<Result<HoaDonDto>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await PostAsync<HoaDonDto>(BASE_URL, dto);
+        return await GetAsync<HoaDonDto>($"{BASE_URL}/{id}", ct);
     }
 
-    public async Task<Result<HoaDonDto>> UpdateAsync(Guid id, HoaDonDto dto)
+    public async Task<Result<KhachHangInfoDto>> GetKhachHangInfoAsync(Guid khachHangId, CancellationToken ct = default)
     {
-        return await PutAsync<HoaDonDto>($"{BASE_URL}/{id}", dto);
+        return await GetAsync<KhachHangInfoDto>($"{BASE_URL}/get-khach-hang-info/{khachHangId}", ct);
     }
 
-    public async Task<Result<HoaDonDto>> UpdateSingleAsync(Guid id, HoaDonDto dto)
+    // =========================
+    // CREATE / UPDATE
+    // =========================
+    public async Task<Result<HoaDonDto>> CreateAsync(HoaDonDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<HoaDonDto>($"{BASE_URL}/{id}/single", dto);
+        return await PostAsync<HoaDonDto>(BASE_URL, dto, ct);
     }
 
-    public async Task<Result<HoaDonDto>> DeleteAsync(Guid id)
+    public async Task<Result<HoaDonDto>> UpdateAsync(Guid id, HoaDonDto dto, CancellationToken ct = default)
     {
-        return await DeleteAsync<HoaDonDto>($"{BASE_URL}/{id}");
+        return await PutAsync<HoaDonDto>($"{BASE_URL}/{id}", dto, ct);
     }
 
-    public async Task<Result<HoaDonDto>> RestoreAsync(Guid id)
+    public async Task<Result<HoaDonDto>> UpdateSingleAsync(Guid id, HoaDonDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<HoaDonDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<HoaDonDto>($"{BASE_URL}/{id}/single", dto, ct);
     }
 
-    public async Task<Result<HoaDonDto>> GetByIdAsync(Guid id)
+    // =========================
+    // DELETE / RESTORE
+    // =========================
+    public async Task<Result<HoaDonDto>> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<HoaDonDto>($"{BASE_URL}/{id}");
+        return await DeleteAsync<HoaDonDto>($"{BASE_URL}/{id}", ct);
     }
 
-    public async Task<Result<KhachHangInfoDto>> GetKhachHangInfoAsync(Guid khachHangId)
+    public async Task<Result<HoaDonDto>> RestoreAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<KhachHangInfoDto>($"{BASE_URL}/get-khach-hang-info/{khachHangId}");
+        return await PutAsync<HoaDonDto>($"{BASE_URL}/{id}/restore", null!, ct);
     }
 
-    // ===== FAST UPDATE (trả về HoaDonNoDto để patch list) =====
-
-    public async Task<Result<HoaDonNoDto>> UpdateEscSingleAsync(Guid id, HoaDonDto dto)
+    // =========================
+    // FAST UPDATE
+    // =========================
+    public async Task<Result<HoaDonNoDto>> UpdateEscSingleAsync(Guid id, HoaDonDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<HoaDonNoDto>($"{BASE_URL}/{id}/esc", dto);
+        return await PutAsync<HoaDonNoDto>($"{BASE_URL}/{id}/esc", dto, ct);
     }
 
-    public async Task<Result<HoaDonNoDto>> UpdateRollBackSingleAsync(Guid id, HoaDonDto dto)
+    public async Task<Result<HoaDonNoDto>> UpdateRollBackSingleAsync(Guid id, HoaDonDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<HoaDonNoDto>($"{BASE_URL}/{id}/rollback", dto);
+        return await PutAsync<HoaDonNoDto>($"{BASE_URL}/{id}/rollback", dto, ct);
     }
 
-    public async Task<Result<HoaDonNoDto>> UpdatePrintSingleAsync(Guid id, HoaDonDto dto)
+    public async Task<Result<HoaDonNoDto>> UpdatePrintSingleAsync(Guid id, HoaDonDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<HoaDonNoDto>($"{BASE_URL}/{id}/print", dto);
+        return await PutAsync<HoaDonNoDto>($"{BASE_URL}/{id}/print", dto, ct);
     }
 
-    public async Task<Result<HoaDonNoDto>> UpdateF12SingleAsync(Guid id, HoaDonDto dto)
+    public async Task<Result<HoaDonNoDto>> UpdateF12SingleAsync(Guid id, HoaDonDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<HoaDonNoDto>($"{BASE_URL}/{id}/f12", dto);
+        return await PutAsync<HoaDonNoDto>($"{BASE_URL}/{id}/f12", dto, ct);
     }
-    public async Task<Result<HoaDonNoDto>> UpdateF1F4SingleAsync(Guid id, ChiTietHoaDonThanhToanDto dto)
+
+    public async Task<Result<HoaDonNoDto>> UpdateF1F4SingleAsync(Guid id, ChiTietHoaDonThanhToanDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<HoaDonNoDto>($"{BASE_URL}/{id}/f1f4", dto);
+        return await PutAsync<HoaDonNoDto>($"{BASE_URL}/{id}/f1f4", dto, ct);
     }
-
-
 }

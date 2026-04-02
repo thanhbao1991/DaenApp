@@ -117,5 +117,19 @@ namespace TraSuaAppWeb.Pages
             var json = await res.Content.ReadAsStringAsync();
             return Content(json, "application/json");
         }
+
+        public async Task<IActionResult> OnGetDetailAsync(Guid id)
+        {
+            var client = _httpClientFactory.CreateClient("Api");
+
+            var res = await client.GetAsync($"/api/HoaDon/{id}");
+
+            if (!res.IsSuccessStatusCode)
+                return new JsonResult(new { isSuccess = false });
+
+            var json = await res.Content.ReadAsStringAsync();
+
+            return Content(json, "application/json");
+        }
     }
 }

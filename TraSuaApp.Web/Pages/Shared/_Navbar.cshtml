@@ -133,49 +133,18 @@
             </li>
 
             <!-- (9) Nhóm 2 -->
-            <li class="nav-item dropdown">
+            <li class="nav-item dropup">
                 <a class="nav-link" href="#" id="moreDropdown" role="button"
                    data-bs-toggle="dropdown" title="Mở rộng">
                     <i class="fa-solid fa-ellipsis-vertical"></i>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreDropdown">
+                    <li><a class="dropdown-item" asp-page="/ChiTieuThang">Chi tiêu tháng</a></li>
 
-                    @* ĐÃ BỎ "Doanh Thu Tháng" khỏi dropdown *@
-
-                    <li class="dropdown-header">Xếp hạng</li>
-                    <li><a class="dropdown-item" asp-page="/XepHangSanPham">TOP Sản phẩm</a></li>
-                    <li><a class="dropdown-item" asp-page="/XepHangKhachHang">TOP Khách hàng</a></li>
-
-                    <li><hr class="dropdown-divider" /></li>
-
-                    <li class="dropdown-header">Mở rộng</li>
-                    <li><a class="dropdown-item" asp-page="/VoucherTab">Voucher</a></li>
-                    <li><a class="dropdown-item" asp-page="/ChiTieuTab">Ứng Nhã</a></li>
-
-                    <li><hr class="dropdown-divider" /></li>
-
-                    <!-- Logout cuối -->
-                    @if (!string.IsNullOrWhiteSpace(displayName))
-                    {
-                        <li>
-                            <form asp-page="/Login" asp-page-handler="Logout" method="post" class="dropdown-item p-0">
-                                <button type="submit" class="btn btn-link dropdown-item text-danger text-start">
-                                    <i class="fa-solid fa-right-from-bracket me-2"></i>
-                                    Đăng xuất @displayName
-                                </button>
-                            </form>
-                        </li>
-                    }
-                    else
-                    {
-                        <li>
-                            <a class="dropdown-item" asp-page="/Login">
-                                <i class="fa-solid fa-right-to-bracket me-2"></i>
-                                Đăng nhập
-                            </a>
-                        </li>
-                    }
                 </ul>
+      
+
+
             </li>
 
         </ul>
@@ -191,5 +160,35 @@
                     if (dd) dd.hide();
                 });
             });
+    });
+</script>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const spinner = document.getElementById('globalSpinner');
+
+        // bắt tất cả link trong navbar
+        document.querySelectorAll('.icon-bar .nav-link').forEach(link => {
+            link.addEventListener('click', function (e) {
+                // tránh click dropdown
+                if (this.getAttribute('href') === '#') return;
+
+                spinner.classList.add('show');
+            });
+        });
+
+        // dropdown item cũng bắt luôn
+        document.querySelectorAll('.dropdown-menu .dropdown-item').forEach(item => {
+            item.addEventListener('click', function () {
+                spinner.classList.add('show');
+            });
+        });
+
+        // khi load xong thì ẩn
+        window.addEventListener('pageshow', () => {
+            spinner.classList.remove('show');
+        });
     });
 </script>

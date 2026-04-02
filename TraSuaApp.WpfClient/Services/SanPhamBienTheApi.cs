@@ -5,47 +5,60 @@ using TraSuaApp.WpfClient.Apis;
 
 namespace TraSuaApp.WpfClient.Services;
 
-public class SanPhamBienTheApi : BaseApi, ISanPhamBienTheApi
+public class SanPhamBienTheApi : BaseApi
 {
     private const string BASE_URL = "/api/SanPhamBienThe";
 
     public SanPhamBienTheApi() : base(TuDien._tableFriendlyNames["SanPhamBienThe"]) { }
 
-    public async Task<Result<List<SanPhamBienTheDto>>> GetAllAsync()
+    // =========================
+    // GET
+    // =========================
+    public async Task<Result<List<SanPhamBienTheDto>>> GetAllAsync(CancellationToken ct = default)
     {
-        return await GetAsync<List<SanPhamBienTheDto>>(BASE_URL);
+        return await GetAsync<List<SanPhamBienTheDto>>(BASE_URL, ct);
     }
 
-    public async Task<Result<SanPhamBienTheDto>> GetByIdAsync(Guid id)
+    public async Task<Result<SanPhamBienTheDto>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<SanPhamBienTheDto>($"{BASE_URL}/{id}");
+        return await GetAsync<SanPhamBienTheDto>($"{BASE_URL}/{id}", ct);
     }
 
-    public async Task<Result<SanPhamBienTheDto>> CreateAsync(SanPhamBienTheDto dto)
+    public async Task<Result<List<SanPhamBienTheDto>>> GetUpdatedSince(DateTime since, CancellationToken ct = default)
     {
-        return await PostAsync<SanPhamBienTheDto>(BASE_URL, dto);
+        return await GetAsync<List<SanPhamBienTheDto>>(
+            $"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}",
+            ct);
     }
 
-    public async Task<Result<SanPhamBienTheDto>> UpdateAsync(Guid id, SanPhamBienTheDto dto)
+    // =========================
+    // CREATE / UPDATE
+    // =========================
+    public async Task<Result<SanPhamBienTheDto>> CreateAsync(SanPhamBienTheDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<SanPhamBienTheDto>($"{BASE_URL}/{id}", dto);
+        return await PostAsync<SanPhamBienTheDto>(BASE_URL, dto, ct);
     }
 
-    public async Task<Result<SanPhamBienTheDto>> DeleteAsync(Guid id)
+    public async Task<Result<SanPhamBienTheDto>> UpdateAsync(Guid id, SanPhamBienTheDto dto, CancellationToken ct = default)
     {
-        return await DeleteAsync<SanPhamBienTheDto>($"{BASE_URL}/{id}");
+        return await PutAsync<SanPhamBienTheDto>($"{BASE_URL}/{id}", dto, ct);
     }
 
-    public async Task<Result<SanPhamBienTheDto>> RestoreAsync(Guid id)
+    public async Task<Result<SanPhamBienTheDto>> UpdateSingleAsync(Guid id, SanPhamBienTheDto dto, CancellationToken ct = default)
     {
-        return await PutAsync<SanPhamBienTheDto>($"{BASE_URL}/{id}/restore", null!);
+        return await PutAsync<SanPhamBienTheDto>($"{BASE_URL}/{id}/single", dto, ct);
     }
-    public async Task<Result<SanPhamBienTheDto>> UpdateSingleAsync(Guid id, SanPhamBienTheDto dto)
+
+    // =========================
+    // DELETE / RESTORE
+    // =========================
+    public async Task<Result<SanPhamBienTheDto>> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        return await PutAsync<SanPhamBienTheDto>($"{BASE_URL}/{id}/single", dto);
+        return await DeleteAsync<SanPhamBienTheDto>($"{BASE_URL}/{id}", ct);
     }
-    public async Task<Result<List<SanPhamBienTheDto>>> GetUpdatedSince(DateTime since)
+
+    public async Task<Result<SanPhamBienTheDto>> RestoreAsync(Guid id, CancellationToken ct = default)
     {
-        return await GetAsync<List<SanPhamBienTheDto>>($"{BASE_URL}/sync?lastSync={Uri.EscapeDataString(since.ToUniversalTime().ToString("o"))}");
+        return await PutAsync<SanPhamBienTheDto>($"{BASE_URL}/{id}/restore", null!, ct);
     }
 }

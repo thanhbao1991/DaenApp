@@ -182,6 +182,9 @@ namespace TraSuaApp.Shared.Dtos
         {
             get
             {
+                if (ConLai <= 0 && PhanLoai == "Ship" && ChuaCoShipper)
+                    return 1;
+
                 if (ConLai <= 0)
                     return 6;
 
