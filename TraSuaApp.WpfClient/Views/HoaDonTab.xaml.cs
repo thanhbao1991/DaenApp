@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Net.Http.Json;
@@ -10,10 +9,10 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using TraSuaApp.Shared.Constants;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
 using TraSuaApp.WpfClient.Services;
@@ -41,8 +40,6 @@ namespace TraSuaApp.WpfClient.Views
         private readonly Queue<Guid> _cacheOrder = new();
 
         // ── Signal queue thread-safe ───────────────────────────────────────────
-        private readonly ConcurrentQueue<Guid> _signalQueue = new();
-        private readonly SemaphoreSlim _signalSemaphore = new(1, 1);
 
         // ── Batch refresh ──────────────────────────────────────────────────────
         private bool _refreshPending = false;
@@ -60,8 +57,13 @@ namespace TraSuaApp.WpfClient.Views
 
         private void HoaDonTab_Loaded(object? sender, RoutedEventArgs e)
         {
+            _items = AppProviders.HoaDonNos!.Items;
+            if (!_isSubscribed)
+            {
+                AppProviders.HoaDonNos!.OnChanged += OnHoaDonNosChanged;
+                _isSubscribed = true;
+            }
             StartWaitingTimer();
-            BuildBienTheLookup();
             _view = CollectionViewSource.GetDefaultView(_items);
             HoaDonDataGrid.ItemsSource = _view;
             _view.Filter = FilterHoaDon;
@@ -75,12 +77,7 @@ namespace TraSuaApp.WpfClient.Views
             if (_items.Count == 0)
                 ReloadAndRestoreSelectionAsync();
         }
-        private void BuildBienTheLookup()
-        {
-            _bienTheLookup = AppProviders.SanPhamBienThes.Items
-                .Where(x => x.Id != Guid.Empty)
-                .ToDictionary(x => x.Id, x => x.Ten ?? "");
-        }
+
         private void OnUnloaded(object? sender, RoutedEventArgs e)
         {
             _ttsCts?.Cancel();
@@ -90,8 +87,20 @@ namespace TraSuaApp.WpfClient.Views
             _actionCts?.Cancel();
             _actionCts?.Dispose();
             _actionCts = null;
-        }
 
+            if (_isSubscribed && AppProviders.HoaDonNos != null)
+            {
+                AppProviders.HoaDonNos.OnChanged -= OnHoaDonNosChanged;
+                _isSubscribed = false;
+            }
+        }
+        private void OnHoaDonNosChanged()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                Debounce("refresh_ui", RequestRefresh, 50);
+            });
+        }
         // ══════════════════════════════════════════════════════════════════════
         // BATCH REFRESH
         // ══════════════════════════════════════════════════════════════════════
@@ -111,7 +120,7 @@ namespace TraSuaApp.WpfClient.Views
                 ThanhTienColumn.Header = $"{_items.Sum(x => x.ThanhTien):N0}";
             }, DispatcherPriority.Background);
         }
-
+        private bool _isSubscribed = false;
         // ══════════════════════════════════════════════════════════════════════
         // HELPERS
         // ══════════════════════════════════════════════════════════════════════
@@ -427,13 +436,13 @@ namespace TraSuaApp.WpfClient.Views
             if (Dashboard.IsThanhToanHidden)
             {
                 var cutoff = DateTime.Now.AddHours(-3);
-                if (!(x.PhanLoai == "App"
-                    || x.LastModified >= cutoff
-                    || (x.NgayNo != null && x.IsBank == true)
-                    || x.IsBank == true
-                    || x.NgayIn != null
-                    || (x.IsBank == false && x.NgayGio?.Second % 59 == 0)))
-                    return false;
+                //if (!(x.PhanLoai == "App"
+                //    || x.LastModified >= cutoff
+                //    || (x.NgayNo != null && x.IsBank == true)
+                //    || x.IsBank == true
+                //    || x.NgayIn != null
+                //    || (x.IsBank == false && x.NgayGio?.Second % 59 == 0)))
+                //    return false;
             }
 
             var keyword = StringHelper.MyNormalizeText(SearchHoaDonTextBox.Text ?? "");
@@ -478,6 +487,11 @@ namespace TraSuaApp.WpfClient.Views
 
         public async Task ReloadAndRestoreSelectionAsync(Guid? preferId = null)
         {
+            if (!await _reloadLock.WaitAsync(0))
+                return; // đang reload rồi thì bỏ qua lần bấm mới
+
+            _isReloading = true;
+
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -485,7 +499,11 @@ namespace TraSuaApp.WpfClient.Views
                 //await Task.WhenAll(AppProviders.ChiTietHoaDonThanhToans.ReloadAsync());
 
                 var response = await _api.GetHoaDon();
-                if (!response.IsSuccess) { NotiHelper.ShowError(response.Message); return; }
+                if (!response.IsSuccess)
+                {
+                    NotiHelper.ShowError(response.Message);
+                    return;
+                }
 
                 var newData = response.Data ?? new List<HoaDonNoDto>();
                 var dict = _items.ToDictionary(x => x.Id);
@@ -513,8 +531,16 @@ namespace TraSuaApp.WpfClient.Views
                 if (preferId.HasValue)
                 {
                     var found = _items.FirstOrDefault(x => x.Id == preferId.Value);
-                    if (found != null) { HoaDonDataGrid.SelectedItem = found; HoaDonDataGrid.ScrollIntoView(found); }
-                    else { HoaDonDataGrid.SelectedItem = null; ScrollToTop(); }
+                    if (found != null)
+                    {
+                        HoaDonDataGrid.SelectedItem = found;
+                        HoaDonDataGrid.ScrollIntoView(found);
+                    }
+                    else
+                    {
+                        HoaDonDataGrid.SelectedItem = null;
+                        ScrollToTop();
+                    }
                 }
                 else
                 {
@@ -522,37 +548,115 @@ namespace TraSuaApp.WpfClient.Views
                     ScrollToTop();
                 }
             }
-            catch (Exception ex) { NotiHelper.ShowError(ex.Message); }
-            finally { Mouse.OverrideCursor = null; }
+            catch (Exception ex)
+            {
+                NotiHelper.ShowError(ex.Message);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+                _isReloading = false;
+                _reloadLock.Release();
+            }
         }
-
+        private readonly SemaphoreSlim _reloadLock = new(1, 1);
+        private bool _isReloading = false;
         // ══════════════════════════════════════════════════════════════════════
         // SELECTION CHANGED
         // ══════════════════════════════════════════════════════════════════════
 
-        private async void HoaDonDataGrid_SelectionChangedAsync(object sender, SelectionChangedEventArgs e)
+        private void HoaDonDataGrid_SelectionChangedAsync(object sender, SelectionChangedEventArgs e)
         {
-            _selectionCts?.Cancel();
+            if (_isReloading)
+                return;
+
+            if (HoaDonDataGrid.SelectedItem is not HoaDonNoDto row)
+            {
+                _currentHoaDon = null;
+                _ = AnimationHelper.FadeSwitchAsync(HoaDonDetailPanel, null);
+                return;
+            }
+
+            Debounce("select_row", () =>
+            {
+                _ = HandleSelectionChangedAsync(row);
+            }, 200); // 100–150ms là đẹp
+        }
+
+        //private async void HoaDonDataGrid_SelectionChangedAsync(object sender, SelectionChangedEventArgs e)
+        //{
+        //    if (_isReloading)
+        //        return;
+
+        //    _selectionCts?.Cancel();
+        //    _selectionCts = new CancellationTokenSource();
+        //    var token = _selectionCts.Token;
+
+        //    try
+        //    {
+        //        TTSHelper.Stop();
+
+        //        if (HoaDonDataGrid.SelectedItem is not HoaDonNoDto row)
+        //        {
+        //            _currentHoaDon = null;
+        //            await AnimationHelper.FadeSwitchAsync(HoaDonDetailPanel, null);
+        //            return;
+        //        }
+
+        //        SetRightBusy(true);
+
+        //        var hd = await FetchHoaDonForSelectionAsync(row, token);
+        //        if (hd == null || token.IsCancellationRequested) return;
+
+        //        if (HoaDonDataGrid.SelectedItem is not HoaDonNoDto current || current.Id != row.Id)
+        //            return;
+
+        //        BindDetailUI(hd);
+
+        //        _ = Task.Run(() => StartReadMonNotes(hd));
+
+        //        await AnimationHelper.FadeSwitchAsync(
+        //            HoaDonDetailPanel.Visibility == Visibility.Visible ? HoaDonDetailPanel : null,
+        //            HoaDonDetailPanel);
+        //    }
+        //    catch (OperationCanceledException)
+        //    {
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        NotiHelper.ShowError($"Lỗi: {ex.Message}");
+        //    }
+        //    finally
+        //    {
+        //        if (!token.IsCancellationRequested)
+        //            SetRightBusy(false);
+        //    }
+        //}
+
+
+        private async Task HandleSelectionChangedAsync(HoaDonNoDto row)
+        {
+            _selectionCts?.CancelAfter(50);
             _selectionCts = new CancellationTokenSource();
             var token = _selectionCts.Token;
+
+            bool showedBusy = false;
 
             try
             {
                 TTSHelper.Stop();
 
-                if (HoaDonDataGrid.SelectedItem is not HoaDonNoDto row)
-                {
-                    _currentHoaDon = null;
-                    await AnimationHelper.FadeSwitchAsync(HoaDonDetailPanel, null);
-                    return;
-                }
-
-                SetRightBusy(true);
-
-                var hd = await FetchHoaDonForSelectionAsync(row, token);
+                var (hd, fromCache) = await FetchHoaDonForSelectionAsync(row, token);
                 if (hd == null || token.IsCancellationRequested) return;
 
-                if (HoaDonDataGrid.SelectedItem is not HoaDonNoDto current || current.Id != row.Id) return;
+                if (!fromCache)
+                {
+                    SetRightBusy(true);
+                    showedBusy = true;
+                }
+
+                if (HoaDonDataGrid.SelectedItem is not HoaDonNoDto current || current.Id != row.Id)
+                    return;
 
                 BindDetailUI(hd);
 
@@ -562,31 +666,42 @@ namespace TraSuaApp.WpfClient.Views
                     HoaDonDetailPanel.Visibility == Visibility.Visible ? HoaDonDetailPanel : null,
                     HoaDonDetailPanel);
             }
-            catch (OperationCanceledException) { }
-            catch (Exception ex) { NotiHelper.ShowError($"Lỗi: {ex.Message}"); }
-            finally { if (!token.IsCancellationRequested) SetRightBusy(false); }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                NotiHelper.ShowError($"Lỗi: {ex.Message}");
+            }
+            finally
+            {
+                if (showedBusy && !token.IsCancellationRequested)
+                    SetRightBusy(false);
+            }
         }
 
-        private async Task<HoaDonDto?> FetchHoaDonForSelectionAsync(HoaDonNoDto row, CancellationToken token)
+        private async Task<(HoaDonDto? data, bool fromCache)> FetchHoaDonForSelectionAsync(
+            HoaDonNoDto row,
+            CancellationToken token)
         {
-            // cache hit — chỉ dùng nếu LastModified khớp
-            if (_hoaDonCache.TryGetValue(row.Id, out var cached) && cached.LastModified == row.LastModified)
-                return cached;
+            if (_hoaDonCache.TryGetValue(row.Id, out var cached) &&
+                cached.LastModified == row.LastModified)
+            {
+                return (cached, true);
+            }
 
-            // cache miss — fetch với cancel token
             var result = await _hoaDonApi.GetByIdAsync(row.Id, token);
-            if (token.IsCancellationRequested) return null;
+            if (token.IsCancellationRequested) return (null, false);
 
             if (!result.IsSuccess || result.Data == null)
             {
                 NotiHelper.ShowError($"Lỗi: {result.Message}");
-                return null;
+                return (null, false);
             }
 
             CacheHoaDon(result.Data);
-            return result.Data;
+            return (result.Data, false);
         }
-
         private void BindDetailUI(HoaDonDto hd)
         {
             _currentHoaDon = hd;
@@ -596,7 +711,7 @@ namespace TraSuaApp.WpfClient.Views
             _fullChiTietHoaDonList = chiTiet.ToList();
 
             TenHoaDonTextBlock.Text =
-                $"{hd.Ten}{(string.IsNullOrWhiteSpace(hd.DiaChiText) ? "" : " - " + hd.DiaChiText)}";
+                $"{hd.TenKhachHangText}{(string.IsNullOrWhiteSpace(hd.DiaChiText) ? "" : " - " + hd.DiaChiText)}";
 
             DiemThangNayTextBlock.Text = DiemThangTruocTextBlock.Text = null;
 
@@ -610,7 +725,6 @@ namespace TraSuaApp.WpfClient.Views
         // ══════════════════════════════════════════════════════════════════════
         // THANH TOÁN
         // ══════════════════════════════════════════════════════════════════════
-
         private async Task ThanhToanAsync(Guid phuongThucId, CancellationToken ct = default)
         {
             var selected = SelectedNoHoaDon;
@@ -644,7 +758,6 @@ namespace TraSuaApp.WpfClient.Views
             var oldLastModified = selected.LastModified;
             var lastModified = selected.LastModified;
 
-            // Optimistic update
             selected.DaThu += soTien;
             selected.ConLai = selected.ThanhTien - selected.DaThu;
             selected.RefreshWaitingTime();
@@ -656,15 +769,32 @@ namespace TraSuaApp.WpfClient.Views
                 {
                     ct.ThrowIfCancellationRequested();
 
-                    var r = await _hoaDonApi.UpdateF1F4SingleAsync(selected.Id, new ChiTietHoaDonThanhToanDto
+                    Result<HoaDonNoDto> r;
+
+                    if (phuongThucId == AppConstants.TienMatId)
                     {
-                        LastModified = lastModified,
-                        HoaDonId = selected.Id,
-                        KhachHangId = selected.KhachHangId,
-                        Ten = selected.TenKhachHangText,
-                        SoTien = soTien,
-                        PhuongThucThanhToanId = phuongThucId
-                    }, ct);
+                        r = await _hoaDonApi.F1Async(selected.Id, new ChiTietHoaDonThanhToanDto
+                        {
+                            LastModified = lastModified,
+                            HoaDonId = selected.Id,
+                            KhachHangId = selected.KhachHangId,
+                            Ten = selected.TenKhachHangText,
+                            SoTien = soTien,
+                            PhuongThucThanhToanId = phuongThucId
+                        }, ct);
+                    }
+                    else
+                    {
+                        r = await _hoaDonApi.F4Async(selected.Id, new ChiTietHoaDonThanhToanDto
+                        {
+                            LastModified = lastModified,
+                            HoaDonId = selected.Id,
+                            KhachHangId = selected.KhachHangId,
+                            Ten = selected.TenKhachHangText,
+                            SoTien = soTien,
+                            PhuongThucThanhToanId = phuongThucId
+                        }, ct);
+                    }
 
                     if (!r.IsSuccess) NotiHelper.ShowError(r.Message);
 
@@ -692,8 +822,89 @@ namespace TraSuaApp.WpfClient.Views
                 }
             });
         }
+        //private async Task ThanhToanAsync(Guid phuongThucId, CancellationToken ct = default)
+        //{
+        //    var selected = SelectedNoHoaDon;
+        //    if (selected == null) return;
+        //    if (selected.ConLai <= 0) { NotiHelper.Show("Hoá đơn đã thu đủ!"); return; }
 
-        // ══════════════════════════════════════════════════════════════════════
+        //    var owner = Window.GetWindow(this);
+        //    var form = new ChiTietHoaDonThanhToanEdit(new ChiTietHoaDonThanhToanDto
+        //    {
+        //        HoaDonId = selected.Id,
+        //        KhachHangId = selected.KhachHangId,
+        //        Ten = selected.TenKhachHangText,
+        //        SoTien = selected.ConLai,
+        //        PhuongThucThanhToanId = phuongThucId
+        //    })
+        //    {
+        //        Owner = owner,
+        //        Width = owner?.ActualWidth ?? 1200,
+        //        Height = owner?.ActualHeight ?? 800
+        //    };
+
+        //    form.PhuongThucThanhToanComboBox.IsEnabled = false;
+        //    if (form.ShowDialog() != true) return;
+
+        //    var soTien = form.Model.SoTien;
+        //    if (soTien <= 0) return;
+        //    if (soTien > selected.ConLai) soTien = selected.ConLai;
+
+        //    var oldConLai = selected.ConLai;
+        //    var oldDaThu = selected.DaThu;
+        //    var oldLastModified = selected.LastModified;
+        //    var lastModified = selected.LastModified;
+
+        //    // Optimistic update
+        //    selected.DaThu += soTien;
+        //    selected.ConLai = selected.ThanhTien - selected.DaThu;
+        //    selected.RefreshWaitingTime();
+        //    RequestRefresh();
+
+        //    _ = Task.Run(async () =>
+        //    {
+        //        try
+        //        {
+        //            ct.ThrowIfCancellationRequested();
+
+        //            var r = await _hoaDonApi.UpdateF1F4SingleAsync(selected.Id, new ChiTietHoaDonThanhToanDto
+        //            {
+        //                LastModified = lastModified,
+        //                HoaDonId = selected.Id,
+        //                KhachHangId = selected.KhachHangId,
+        //                Ten = selected.TenKhachHangText,
+        //                SoTien = soTien,
+        //                PhuongThucThanhToanId = phuongThucId
+        //            }, ct);
+
+        //            if (!r.IsSuccess) NotiHelper.ShowError(r.Message);
+
+        //            await Dispatcher.InvokeAsync(() =>
+        //            {
+        //                if (r.Data != null)
+        //                {
+        //                    UpdateLocalHoaDon(r.Data);
+        //                    HoaDonDataGrid_SelectionChangedAsync(null!, null!);
+        //                }
+        //            });
+        //        }
+        //        catch (OperationCanceledException) { }
+        //        catch
+        //        {
+        //            await Dispatcher.InvokeAsync(() =>
+        //            {
+        //                selected.ConLai = oldConLai;
+        //                selected.DaThu = oldDaThu;
+        //                selected.LastModified = oldLastModified;
+        //                selected.RefreshWaitingTime();
+        //                RequestRefresh();
+        //                NotiHelper.ShowError("Thanh toán thất bại!");
+        //            });
+        //        }
+        //    });
+        //}
+
+        //// ══════════════════════════════════════════════════════════════════════
         // BUTTON HANDLERS
         // ══════════════════════════════════════════════════════════════════════
 
@@ -740,7 +951,7 @@ namespace TraSuaApp.WpfClient.Views
                     {
                         ct.ThrowIfCancellationRequested();
 
-                        var r = await _hoaDonApi.UpdateF12SingleAsync(selected.Id, new HoaDonDto
+                        var r = await _hoaDonApi.F12Async(selected.Id, new HoaDonDto
                         {
                             Id = selected.Id,
                             NgayNo = ngayNo,
@@ -808,6 +1019,7 @@ namespace TraSuaApp.WpfClient.Views
                         {
                             RestoreItem(local, index);
                             NotiHelper.ShowError("Không thể kết nối server!");
+
                         });
                     }
                 });
@@ -855,7 +1067,7 @@ namespace TraSuaApp.WpfClient.Views
                     {
                         ct.ThrowIfCancellationRequested();
 
-                        var r = await _hoaDonApi.UpdateEscSingleAsync(hoaDon.Id, new HoaDonDto
+                        var r = await _hoaDonApi.EscAsync(hoaDon.Id, new HoaDonDto
                         {
                             Id = hoaDon.Id,
                             LastModified = lastModified,
@@ -911,7 +1123,7 @@ namespace TraSuaApp.WpfClient.Views
                     {
                         ct.ThrowIfCancellationRequested();
 
-                        var r = await _hoaDonApi.UpdatePrintSingleAsync(hoaDon.Id, new HoaDonDto
+                        var r = await _hoaDonApi.PrintAsync(hoaDon.Id, new HoaDonDto
                         {
                             Id = hoaDon.Id,
                             NgayIn = now,
@@ -990,7 +1202,7 @@ namespace TraSuaApp.WpfClient.Views
                         "Rollback hóa đơn", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                     return;
 
-                var r = await _hoaDonApi.UpdateRollBackSingleAsync(
+                var r = await _hoaDonApi.RollbackAsync(
                     selected.Id, new HoaDonDto { LastModified = DateTime.Now }, ct);
 
                 if (!r.IsSuccess) NotiHelper.ShowError(r.Message);
@@ -1124,11 +1336,17 @@ namespace TraSuaApp.WpfClient.Views
 
         private void ChiTietHoaDonListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ChiTietHoaDonListBox.SelectedItem is not ChiTietHoaDonDto ct) return;
-            var sp = AppProviders.SanPhams.Items.FirstOrDefault(x => x.Ten == ct.TenSanPham);
-            ct.DinhLuong = sp?.DinhLuong ?? "";
-        }
+            if (ChiTietHoaDonListBox.SelectedItem is not ChiTietHoaDonDto ct)
+                return;
 
+            var sp = AppProviders.SanPhams.Items
+                .FirstOrDefault(x => x.Id == ct.SanPhamId);
+
+            var bt = sp?.BienThe?
+                .FirstOrDefault(x => x.Id == ct.SanPhamBienTheId);
+
+            ct.DinhLuong = bt?.DinhLuong ?? "";
+        }
         private void UpdateTongSanPham(HoaDonDto hd)
         {
             try
@@ -1168,6 +1386,9 @@ namespace TraSuaApp.WpfClient.Views
                 case Key.F2: F2Button_Click(this, new RoutedEventArgs()); break;
                 case Key.F3: F3Button_Click(this, new RoutedEventArgs()); break;
                 case Key.F4: F4Button_Click(this, new RoutedEventArgs()); break;
+                case Key.F5:
+                    _ = ReloadAndRestoreSelectionAsync(SelectedNoHoaDon?.Id);
+                    break;
                 case Key.F9: F9Button_Click(this, new RoutedEventArgs()); break;
                 case Key.F12: F12Button_Click(this, new RoutedEventArgs()); break;
                 case Key.Delete: DelButton_Click(this, new RoutedEventArgs()); break;
@@ -1192,63 +1413,6 @@ namespace TraSuaApp.WpfClient.Views
             _timer.Start();
         }
 
-        // ══════════════════════════════════════════════════════════════════════
-        // SIGNAL
-        // ══════════════════════════════════════════════════════════════════════
-
-        public void HandleHoaDonSignal(Guid id)
-        {
-            _signalQueue.Enqueue(id);
-            _ = ProcessSignalQueue();
-        }
-
-        private async Task ProcessSignalQueue()
-        {
-            if (!await _signalSemaphore.WaitAsync(0)) return;
-            try
-            {
-                while (_signalQueue.TryDequeue(out var id))
-                    await UpdateSingleHoaDonAsync(id);
-            }
-            finally { _signalSemaphore.Release(); }
-        }
-
-        private async Task UpdateSingleHoaDonAsync(Guid id)
-        {
-            try
-            {
-                var result = await _hoaDonApi.GetByIdAsync(id);
-                if (!result.IsSuccess || result.Data == null) return;
-
-                var incoming = result.Data;
-
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    var existing = _items.FirstOrDefault(x => x.Id == id);
-
-                    if (existing != null)
-                    {
-                        if (incoming.LastModified <= existing.LastModified) return;
-
-                        // Invalidate cache vì data mới từ server
-                        InvalidateCache(id);
-                        UpdateLocalHoaDon(ToNoDto(incoming));
-                    }
-                    else
-                    {
-                        _items.Add(ToNoDto(incoming));
-                        TTSHelper.DownloadAndPlayGoogleTTSAsync(
-                            $"Có đơn mới: {incoming.DiaChiText} {(long)incoming.ThanhTien} đồng");
-                        RequestRefresh();
-                    }
-                });
-            }
-            catch { }
-        }
-
-        // ══════════════════════════════════════════════════════════════════════
-        // SHIPPER DIALOG
-        // ══════════════════════════════════════════════════════════════════════
 
         private MessageBoxResult ShowShipperImageDialog()
         {

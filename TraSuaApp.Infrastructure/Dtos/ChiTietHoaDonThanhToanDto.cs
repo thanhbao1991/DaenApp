@@ -1,0 +1,33 @@
+﻿using TraSuaApp.Infrastructure.Helpers;
+
+namespace TraSuaApp.Infrastructure.Dtos;
+
+public class ChiTietHoaDonThanhToanDto : DtoBase
+{
+    
+    public int Stt { get; set; }
+    public string Ten { get; set; } = null!; public override string ApiRoute => "ChiTietHoaDonThanhToan";
+
+    public bool IsToday => Ngay == DateTime.Today;
+
+    public string? LoaiThanhToan { get; set; }
+
+
+    public decimal SoTien { get; set; }
+    public DateTime NgayGio { get; set; }
+    public DateTime Ngay { get; set; }
+    public Guid HoaDonId { get; set; }
+    public Guid? KhachHangId { get; set; }
+
+    public Guid PhuongThucThanhToanId { get; set; } // ✅ bổ sung
+
+    // Thông tin hiển thị
+    public string? GhiChu { get; set; }
+
+    public string TimKiem =>
+    StringHelper.MyNormalizeText(Ten ?? "") + " " +
+    StringHelper.MyNormalizeText(LoaiThanhToan ?? "") + " " +
+    StringHelper.MyNormalizeText(GhiChu ?? "");
+
+
+}

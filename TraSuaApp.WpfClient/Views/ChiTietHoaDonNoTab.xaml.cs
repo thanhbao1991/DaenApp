@@ -1,10 +1,9 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using TraSuaApp.Shared.Constants;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
 using TraSuaApp.WpfClient.Services;
@@ -164,6 +163,7 @@ namespace TraSuaApp.WpfClient.Views
                     SoTien = item.ConLai,
                     PhuongThucThanhToanId = phuongThucId,
                 };
+
                 var owner = Window.GetWindow(this);
 
                 var form = new ChiTietHoaDonThanhToanEdit(dto)
@@ -208,8 +208,6 @@ namespace TraSuaApp.WpfClient.Views
 
             ApplyFilter();
 
-            var lastModified = item.LastModified;
-
             // ==============================
             // CALL API
             // ==============================
@@ -219,7 +217,7 @@ namespace TraSuaApp.WpfClient.Views
                 {
                     var newDto = new ChiTietHoaDonThanhToanDto
                     {
-                        LastModified = lastModified,
+                        LastModified = oldLastModified,
                         HoaDonId = item.Id,
                         KhachHangId = item.KhachHangId,
                         Ten = item.TenKhachHangText,
@@ -227,7 +225,20 @@ namespace TraSuaApp.WpfClient.Views
                         PhuongThucThanhToanId = phuongThucId,
                     };
 
-                    var r = await _hoaDonApi.UpdateF1F4SingleAsync(item.Id, newDto);
+                    Result<HoaDonNoDto> r;
+
+                    if (phuongThucId == AppConstants.TienMatId)
+                    {
+                        r = await _hoaDonApi.F1Async(item.Id, newDto);
+                    }
+                    else if (phuongThucId == AppConstants.ChuyenKhoanId)
+                    {
+                        r = await _hoaDonApi.F4Async(item.Id, newDto);
+                    }
+                    else
+                    {
+                        r = await _hoaDonApi.F1Async(item.Id, newDto);
+                    }
 
                     if (!r.IsSuccess)
                         NotiHelper.ShowError(r.Message);
@@ -279,10 +290,7 @@ namespace TraSuaApp.WpfClient.Views
             var item = SelectedNo;
 
             if (item == null)
-            {
-                //NotiHelper.Show("Vui lòng chọn công nợ!");
                 return;
-            }
 
             bool quickPay = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
 

@@ -1,8 +1,9 @@
 ﻿using System.Windows;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.HoaDonViews
@@ -10,16 +11,19 @@ namespace TraSuaApp.WpfClient.HoaDonViews
     public partial class ChiTieuHangNgayEdit : Window
     {
         public ChiTieuHangNgayDto Model { get; set; }
-        private readonly ChiTieuHangNgayApi _api;
+
         private readonly string _friendlyName = TuDien._tableFriendlyNames["ChiTieuHangNgay"];
         private List<NguyenLieuDto> _nguyenLieuList = new();
+
         public bool ReturnOnly { get; set; } = false;
+
         public ChiTieuHangNgayEdit(ChiTieuHangNgayDto? dto = null)
         {
             InitializeComponent();
             this.KeyDown += Window_KeyDown;
+
             TieuDeTextBlock.Text = _friendlyName;
-            _api = new ChiTieuHangNgayApi();
+
             _nguyenLieuList = AppProviders.NguyenLieus.Items.ToList();
 
             NguyenLieuComboBox.NguyenLieuList = _nguyenLieuList;
@@ -30,16 +34,17 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 ThanhTienTextBox.Value = SoLuongTextBox.Value * nguyenLieu.GiaNhap;
             };
 
-            // Đăng ký sự kiện ValueChanged cho SoLuongTextBox và DonGiaTextBox
             SoLuongTextBox.txtValue.ValueChanged += (s, e) =>
             {
                 ThanhTienTextBox.Value = SoLuongTextBox.Value * DonGiaTextBox.Value;
             };
+
             DonGiaTextBox.ValueChanged += (s, e) =>
             {
                 ThanhTienTextBox.Value = SoLuongTextBox.Value * DonGiaTextBox.Value;
             };
-            Model = dto != null ? dto : new ChiTieuHangNgayDto();
+
+            Model = dto ?? new ChiTieuHangNgayDto();
 
             if (dto != null)
             {
@@ -48,19 +53,16 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 GhiChuTextBox.Text = dto.GhiChu;
                 DonGiaTextBox.Value = dto.DonGia;
                 ThanhTienTextBox.Value = dto.ThanhTien;
-                BillThangCheckBox.IsChecked = dto.BillThang == true ? true : false;
+                BillThangCheckBox.IsChecked = dto.BillThang == true;
                 NgayDatePicker.SelectedDate = dto.Ngay;
             }
             else
             {
                 NguyenLieuComboBox.SearchTextBox.Focus();
-                NgayDatePicker.SelectedDate = DateTime.Today; // mặc định hôm nay
+                NgayDatePicker.SelectedDate = DateTime.Today;
             }
-            if (Model.IsDeleted)
-            {
-                SaveButton.Content = "Khôi phục";
-                SetControlsEnabled(false);
-            }
+
+
         }
 
         private void SetControlsEnabled(bool enabled)
@@ -84,22 +86,23 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 if (NguyenLieuComboBox.IsPopupOpen)
                     return;
 
-                SaveButton_Click(SaveButton, new RoutedEventArgs()); // Enter = Lưu & thêm tiếp
+                SaveButton_Click(SaveButton, new RoutedEventArgs());
             }
         }
 
-
-
-
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
-
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+            => Close();
 
         private async Task<bool> SaveAsync()
         {
             ErrorTextBlock.Text = "";
 
+            var api = Apis.ChiTieuHangNgay;
+
             Model.NguyenLieuId = NguyenLieuComboBox.SelectedNguyenLieu?.Id ?? Guid.Empty;
-            if (Model.NguyenLieuId == Guid.Empty || NguyenLieuComboBox.SearchTextBox.Text.Trim() == "")
+
+            if (Model.NguyenLieuId == Guid.Empty ||
+                string.IsNullOrWhiteSpace(NguyenLieuComboBox.SearchTextBox.Text))
             {
                 ErrorTextBlock.Text = "Nguyên liệu không được để trống.";
                 NguyenLieuComboBox.SearchTextBox.Focus();
@@ -113,15 +116,23 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             Model.ThanhTien = ThanhTienTextBox.Value;
             Model.BillThang = BillThangCheckBox.IsChecked == true;
             Model.Ngay = NgayDatePicker.SelectedDate ?? DateTime.Today;
-            Model.NgayGio = Model.Ngay == DateTime.Today ? DateTime.Now : Model.Ngay.AddDays(1).AddMinutes(-1);
+
+            Model.NgayGio = Model.Ngay == DateTime.Today
+                ? DateTime.Now
+                : Model.Ngay.AddDays(1).AddMinutes(-1);
 
             Result<ChiTieuHangNgayDto> result;
+
             if (Model.Id == Guid.Empty)
-                result = await _api.CreateAsync(Model);
-            else if (Model.IsDeleted)
-                result = await _api.RestoreAsync(Model.Id);
+            {
+                // CREATE
+                result = await api.CreateAsync(Model);
+            }
             else
-                result = await _api.UpdateAsync(Model.Id, Model);
+            {
+                // UPDATE
+                result = await api.UpdateAsync(Model.Id, Model);
+            }
 
             if (!result.IsSuccess)
             {
@@ -140,6 +151,5 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 Close();
             }
         }
-
     }
 }

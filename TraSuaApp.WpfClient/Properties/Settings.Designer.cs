@@ -87,6 +87,7 @@ namespace TraSuaApp.WpfClient.Properties {
             }
         }
 
+        public string ServerUrl { get; internal set; }
     }
 }
 

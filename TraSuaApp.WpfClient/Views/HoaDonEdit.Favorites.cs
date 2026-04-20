@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.WpfClient.DataProviders;
 
 namespace TraSuaApp.WpfClient.HoaDonViews
 {
@@ -56,7 +57,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 Id = Guid.NewGuid(),
                 TenSanPham = sp.Ten,
                 TenBienThe = bt.TenBienThe,
-                SanPhamIdBienThe = bt.Id,
+                SanPhamBienTheId = bt.Id,
                 SoLuong = 1
             };
 
@@ -68,8 +69,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 var customGia = AppProviders.KhachHangGiaBans.Items
                     .FirstOrDefault(x =>
                         x.KhachHangId == Model.KhachHangId.Value &&
-                        x.SanPhamBienTheId == bt.Id &&
-                        !x.IsDeleted);
+                        x.SanPhamBienTheId == bt.Id
+                        );
 
                 if (customGia != null)
                 {

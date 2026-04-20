@@ -1,15 +1,17 @@
-﻿using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
-using TraSuaApp.WpfClient.Apis;
+﻿using TraSuaApp.Shared.Config;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.WpfClient.Services
 {
-    public class ThongKeApi : BaseApi
+    public class ThongKeApi : BaseApi<object> // 👈 dùng object vì không có DTO chung
     {
         private const string BASE_URL = "/api/ThongKe";
 
-        public ThongKeApi() : base(TuDien._tableFriendlyNames["ThongKe"]) { }
+        public ThongKeApi()
+            : base(BASE_URL, TuDien._tableFriendlyNames["ThongKe"])
+        {
+        }
 
         // =========================
         // GET

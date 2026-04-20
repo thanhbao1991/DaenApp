@@ -1,12 +1,14 @@
 ﻿using System.ComponentModel;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.AdminViews
@@ -15,42 +17,78 @@ namespace TraSuaApp.WpfClient.AdminViews
     {
         private readonly CollectionViewSource _viewSource = new();
         private readonly WpfErrorHandler _errorHandler = new();
-        string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham"];
+        private readonly string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham"];
+
+        private Guid? _editingId;
+
         public NhomSanPhamList()
         {
             InitializeComponent();
-            this.Title = _friendlyName;
-            this.TieuDeTextBlock.Text = _friendlyName;
-            this.PreviewKeyDown += NhomSanPhamList_PreviewKeyDown;
 
-            while (AppProviders.NhomSanPhams?.Items == null)
-            {
-                Task.Delay(100); // chờ 100ms rồi kiểm tra lại
-            }
+            Title = _friendlyName;
+            TieuDeTextBlock.Text = _friendlyName;
+            PreviewKeyDown += NhomSanPhamList_PreviewKeyDown;
+            Closed += NhomSanPhamList_Closed;
 
-
-            // 1. Gán Source ngay
-            _viewSource.Source = AppProviders.NhomSanPhams.Items;
             _viewSource.Filter += ViewSource_Filter;
-            NhomSanPhamDataGrid.ItemsSource = _viewSource.View;
+            BindSource();
 
-            // 2. Subscribe OnChanged (sau khi Source đã có)
-            AppProviders.NhomSanPhams.OnChanged += () => ApplySearch();
+            AppProviders.NhomSanPhams.OnChanged += AppProviders_NhomSanPhams_OnChanged;
 
-            // 3. Sau cùng mới reload async
             Loaded += async (_, __) =>
             {
-                await AppProviders.NhomSanPhams.ReloadAsync();
-                ApplySearch();
+                try
+                {
+                    Mouse.OverrideCursor = Cursors.Wait;
+                    await AppProviders.NhomSanPhams.ReloadAsync();
+                    BindSource();
+                    ApplySearch();
+                    SetAddMode();
+                }
+                catch (Exception ex)
+                {
+                    _errorHandler.Handle(ex, "Load");
+                }
+                finally
+                {
+                    Mouse.OverrideCursor = null;
+                }
             };
+        }
+
+        private void NhomSanPhamList_Closed(object? sender, EventArgs e)
+        {
+            AppProviders.NhomSanPhams.OnChanged -= AppProviders_NhomSanPhams_OnChanged;
+        }
+
+        private void AppProviders_NhomSanPhams_OnChanged()
+        {
+            BindSource();
+            ApplySearch();
+        }
+
+        private void BindSource()
+        {
+            _viewSource.Source = AppProviders.NhomSanPhams.Items;
+            NhomSanPhamDataGrid.ItemsSource = _viewSource.View;
         }
 
         private void ApplySearch()
         {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(ApplySearch);
+                return;
+            }
+
+            if (_viewSource.View == null)
+                return;
+
             _viewSource.View.Refresh();
 
             _viewSource.View.SortDescriptions.Clear();
-            _viewSource.View.SortDescriptions.Add(new SortDescription(nameof(NhomSanPhamDto.LastModified), ListSortDirection.Descending));
+            _viewSource.View.SortDescriptions.Add(
+                new SortDescription(nameof(NhomSanPhamDto.LastModified), ListSortDirection.Descending));
 
             var view = _viewSource.View.Cast<NhomSanPhamDto>().ToList();
             for (int i = 0; i < view.Count; i++)
@@ -68,23 +106,69 @@ namespace TraSuaApp.WpfClient.AdminViews
             var keyword = StringHelper.MyNormalizeText(SearchTextBox.Text.Trim());
             e.Accepted = string.IsNullOrEmpty(keyword) || (item.TimKiem?.Contains(keyword) ?? false);
         }
+
+        private void SetAddMode()
+        {
+            _editingId = null;
+            FormTitleTextBlock.Text = "Thêm nhóm sản phẩm";
+            SaveButton.Content = "Thêm";
+            TenTextBox.Text = string.Empty;
+            NhomSanPhamDataGrid.UnselectAll();
+            TenTextBox.Focus();
+        }
+
+        private void SetEditMode(NhomSanPhamDto selected)
+        {
+            _editingId = selected.Id;
+            FormTitleTextBlock.Text = "Sửa nhóm sản phẩm";
+            SaveButton.Content = "Cập nhật";
+            TenTextBox.Text = selected.Ten;
+            TenTextBox.Focus();
+            TenTextBox.SelectAll();
+        }
+
+        private int FindIndex(Guid id)
+        {
+            for (int i = 0; i < AppProviders.NhomSanPhams.Items.Count; i++)
+            {
+                if (AppProviders.NhomSanPhams.Items[i].Id == id)
+                    return i;
+            }
+
+            return -1;
+        }
+
         private async void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
-            await AppProviders.NhomSanPhams.ReloadAsync();
+            await ReloadAsync();
         }
 
-        private async void AddButton_Click(object sender, RoutedEventArgs e)
+        private async Task ReloadAsync()
         {
-            var window = new NhomSanPhamEdit()
+            try
             {
-                Width = this.ActualWidth,
-                Height = this.ActualHeight,                 Owner = this
-            };
-            if (window.ShowDialog() == true)
+                Mouse.OverrideCursor = Cursors.Wait;
                 await AppProviders.NhomSanPhams.ReloadAsync();
+                BindSource();
+                ApplySearch();
+                SetAddMode();
+            }
+            catch (Exception ex)
+            {
+                _errorHandler.Handle(ex, "Reload");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
         }
 
-        private async void EditButton_Click(object sender, RoutedEventArgs e)
+        private void AddButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetAddMode();
+        }
+
+        private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             if (NhomSanPhamDataGrid.SelectedItem is not NhomSanPhamDto selected)
             {
@@ -92,14 +176,89 @@ namespace TraSuaApp.WpfClient.AdminViews
                 return;
             }
 
-            var window = new NhomSanPhamEdit(selected)
-            {
-                Width = this.ActualWidth,
-                Height = this.ActualHeight,                 Owner = this
-            };
+            SetEditMode(selected);
+        }
 
-            if (window.ShowDialog() == true)
-                await AppProviders.NhomSanPhams.ReloadAsync();
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            var ten = TenTextBox.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(ten))
+            {
+                MessageBox.Show("Tên nhóm không được để trống.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                TenTextBox.Focus();
+                return;
+            }
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+
+                HttpResponseMessage response;
+
+                if (_editingId == null)
+                {
+                    response = await ApiClient.PostAsync(
+                        "/api/NhomSanPham",
+                        new NhomSanPhamDto { Ten = ten });
+                }
+                else
+                {
+                    response = await ApiClient.PutAsync(
+                        $"/api/NhomSanPham/{_editingId.Value}",
+                        new NhomSanPhamDto { Ten = ten });
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    MessageBox.Show(
+                        $"{(_editingId == null ? "Thêm" : "Cập nhật")} thất bại ({(int)response.StatusCode}).",
+                        "Thông báo",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<Result<NhomSanPhamDto>>();
+
+                if (result?.IsSuccess == true)
+                {
+                    if (result.Data != null)
+                    {
+                        var index = FindIndex(result.Data.Id);
+
+                        if (index >= 0)
+                            AppProviders.NhomSanPhams.Items[index] = result.Data;
+                        else
+                            AppProviders.NhomSanPhams.Items.Add(result.Data);
+                    }
+                    else
+                    {
+                        await AppProviders.NhomSanPhams.ReloadAsync();
+                    }
+
+                    NotiHelper.ShowSuccess(result.Message);
+                    BindSource();
+                    ApplySearch();
+                    SetAddMode();
+                }
+                else
+                {
+                    await AppProviders.NhomSanPhams.ReloadAsync();
+                    BindSource();
+                    ApplySearch();
+                    SetAddMode();
+                    NotiHelper.ShowSuccess(_editingId == null ? "Thêm nhóm thành công." : "Cập nhật thành công.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandler.Handle(ex, "Save");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
         }
 
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
@@ -112,19 +271,42 @@ namespace TraSuaApp.WpfClient.AdminViews
 
             var confirm = MessageBox.Show(
                 $"Bạn có chắc chắn muốn xoá {_friendlyName} '{selected.Ten}'?",
-                "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                "Xác nhận xoá",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
 
-            if (confirm != MessageBoxResult.Yes) return;
+            if (confirm != MessageBoxResult.Yes)
+                return;
 
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
+
                 var response = await ApiClient.DeleteAsync($"/api/NhomSanPham/{selected.Id}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    NotiHelper.ShowError($"Xoá thất bại ({(int)response.StatusCode}).");
+                    return;
+                }
+
                 var result = await response.Content.ReadFromJsonAsync<Result<NhomSanPhamDto>>();
-                if (result?.IsSuccess == true)
-                    AppProviders.NhomSanPhams.Remove(selected.Id);
+
+                var id = result?.Data?.Id != Guid.Empty
+                    ? result!.Data!.Id
+                    : selected.Id;
+
+                var index = FindIndex(id);
+
+                if (index >= 0)
+                    AppProviders.NhomSanPhams.Items.RemoveAt(index);
                 else
-                     NotiHelper.ShowError( result?.Message ?? "Không thể xoá.");
+                    await AppProviders.NhomSanPhams.ReloadAsync();
+
+                NotiHelper.ShowSuccess(result?.Message ?? "Xoá thành công.");
+                BindSource();
+                ApplySearch();
+                SetAddMode();
             }
             catch (Exception ex)
             {
@@ -136,26 +318,51 @@ namespace TraSuaApp.WpfClient.AdminViews
             }
         }
 
-        private async void NhomSanPhamDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void CancelEditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (NhomSanPhamDataGrid.SelectedItem is not NhomSanPhamDto selected) return;
-            var window = new NhomSanPhamEdit(selected);
-            if (window.ShowDialog() == true)
-                await AppProviders.NhomSanPhams.ReloadAsync();
+            SetAddMode();
         }
 
-        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e) => ApplySearch();
+        private void NhomSanPhamDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (NhomSanPhamDataGrid.SelectedItem is not NhomSanPhamDto selected)
+                return;
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+            SetEditMode(selected);
+        }
+
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ApplySearch();
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
 
         private void NhomSanPhamList_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N) { AddButton_Click(null!, null!); e.Handled = true; }
-            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E) { EditButton_Click(null!, null!); e.Handled = true; }
-            else if (e.Key == Key.Delete) { DeleteButton_Click(null!, null!); e.Handled = true; }
-            else if (e.Key == Key.F5) { ReloadButton_Click(null!, null!); e.Handled = true; }
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N)
+            {
+                AddButton_Click(null!, null!);
+                e.Handled = true;
+            }
+            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E)
+            {
+                EditButton_Click(null!, null!);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Delete)
+            {
+                DeleteButton_Click(null!, null!);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.F5)
+            {
+                ReloadButton_Click(null!, null!);
+                e.Handled = true;
+            }
         }
-
-
     }
 }

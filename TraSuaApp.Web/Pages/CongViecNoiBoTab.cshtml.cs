@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaAppWeb.Pages
 {
@@ -22,7 +22,6 @@ namespace TraSuaAppWeb.Pages
             var res = await client.GetFromJsonAsync<Result<List<CongViecNoiBoDto>>>("/api/CongViecNoiBo");
             if (res?.IsSuccess == true && res.Data != null)
                 Items = res.Data!
-                    .Where(x => !x.IsDeleted)
                     .OrderBy(x => x.DaHoanThanh)
                     .ThenByDescending(x => x.LastModified)
                     .ToList();

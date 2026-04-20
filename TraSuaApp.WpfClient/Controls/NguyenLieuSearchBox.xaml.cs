@@ -1,8 +1,8 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.WpfClient.Controls
 {

@@ -7,8 +7,8 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;             // Clipboard
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 using D = System.Drawing;
 using DP = System.Drawing.Printing;
 

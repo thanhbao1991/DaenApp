@@ -1,0 +1,38 @@
+﻿using TraSuaApp.Infrastructure.Helpers;
+
+namespace TraSuaApp.Infrastructure.Dtos;
+
+public class VoucherDto : DtoBase
+{
+
+    
+    
+    
+    public int Stt { get; set; }
+    public string Ten { get; set; } = null!;
+    
+
+    public override string ApiRoute => "Voucher";
+
+    public string KieuGiam { get; set; } = null!;
+
+    public decimal GiaTri { get; set; }
+
+    public decimal? DieuKienToiThieu { get; set; }  // 🟟 THÊM: Điều kiện hóa đơn tối thiểu
+
+    public int? SoLanSuDungToiDa { get; set; }      // 🟟 TUỲ CHỌN: giới hạn số lượt dùng
+
+    public DateTime NgayBatDau { get; set; }
+
+    public DateTime? NgayKetThuc { get; set; }
+
+    public bool DangSuDung { get; set; }
+    public virtual List<Guid> NhomSanPhamIds { get; set; } = new List<Guid>();
+    public string TimKiem =>
+       $"{Ten?.ToLower() ?? ""} " +
+       StringHelper.MyNormalizeText(Ten ?? "") + " " +
+       StringHelper.MyNormalizeText((Ten ?? "").Replace(" ", "")) + " " +
+       StringHelper.GetShortName(Ten ?? "");
+
+}
+

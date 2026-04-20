@@ -1,104 +1,173 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using TraSuaApp.Api.Hubs;
-using TraSuaApp.Applicationn.Interfaces;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using Microsoft.EntityFrameworkCore;
+using TraSuaApp.Infrastructure;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Entities;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
 
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class NhomSanPhamController : BaseApiController
+public class NhomSanPhamController : ControllerBase
 {
-    private readonly INhomSanPhamService _service;
-    private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["NhomSanPham"];
+    private readonly AppDbContext _context;
 
-    public NhomSanPhamController(INhomSanPhamService service, IHubContext<SignalRHub> hub)
+    public NhomSanPhamController(AppDbContext context)
     {
-        _service = service;
-        _hub = hub;
+        _context = context;
     }
 
-    private async Task NotifyClients(string action, Guid id)
-    {
-        if (!string.IsNullOrEmpty(ConnectionId))
-        {
-            await _hub.Clients
-                .AllExcept(ConnectionId)
-                .SendAsync("EntityChanged", "NhomSanPham", action, id.ToString(), ConnectionId ?? "");
-        }
-        else
-        {
-            await _hub.Clients.All.SendAsync("EntityChanged", "NhomSanPham", action, id.ToString(), ConnectionId ?? "");
-        }
-    }
-
+    // ======================
+    // GET ALL
+    // ======================
     [HttpGet]
-    public async Task<ActionResult<Result<List<NhomSanPhamDto>>>> GetAll()
+    public async Task<Result<List<NhomSanPhamDto>>> GetAll()
     {
-        var list = await _service.GetAllAsync();
+        var list = await _context.NhomSanPhams
+            .AsNoTracking()
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => new NhomSanPhamDto
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                LastModified = x.LastModified
+            })
+            .ToListAsync();
+
         return Result<List<NhomSanPhamDto>>.Success(list);
     }
 
+    // ======================
+    // GET BY ID
+    // ======================
     [HttpGet("{id}")]
-    public async Task<ActionResult<Result<NhomSanPhamDto>>> GetById(Guid id)
+    public async Task<Result<NhomSanPhamDto>> GetById(Guid id)
     {
-        var dto = await _service.GetByIdAsync(id);
-        if (dto == null)
-            return Result<NhomSanPhamDto>.Failure($"Không tìm thấy {_friendlyName}.");
+        var entity = await _context.NhomSanPhams
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return Result<NhomSanPhamDto>.Success(dto);
+        if (entity == null)
+            return Result<NhomSanPhamDto>.Failure("Không tìm thấy nhóm.");
+
+        return Result<NhomSanPhamDto>.Success(new NhomSanPhamDto
+        {
+            Id = entity.Id,
+            Ten = entity.Ten,
+            LastModified = entity.LastModified
+        });
     }
 
+    // ======================
+    // CREATE
+    // ======================
     [HttpPost]
-    public async Task<ActionResult<Result<NhomSanPhamDto>>> Create(NhomSanPhamDto dto)
+    public async Task<Result<NhomSanPhamDto>> Create(NhomSanPhamDto dto)
     {
-        var result = await _service.CreateAsync(dto);
-        if (result.IsSuccess && result.Data != null)
-            await NotifyClients("created", result.Data.Id);
+        var ten = dto.Ten.Trim();
 
-        return result;
+        bool exist = await _context.NhomSanPhams
+            .AnyAsync(x => x.Ten.ToLower() == ten.ToLower());
+
+        if (exist)
+            return Result<NhomSanPhamDto>.Failure($"Nhóm {ten} đã tồn tại.");
+
+        var now = DateTime.Now;
+
+        var entity = new NhomSanPham
+        {
+            Id = Guid.NewGuid(),
+            Ten = ten,
+            LastModified = now
+        };
+
+        _context.NhomSanPhams.Add(entity);
+        await _context.SaveChangesAsync();
+
+        var result = new NhomSanPhamDto
+        {
+            Id = entity.Id,
+            Ten = entity.Ten,
+            LastModified = entity.LastModified
+        };
+
+        return Result<NhomSanPhamDto>.Success(result, "Thêm nhóm thành công.")
+            ;
     }
 
+    // ======================
+    // UPDATE
+    // ======================
     [HttpPut("{id}")]
-    public async Task<ActionResult<Result<NhomSanPhamDto>>> Update(Guid id, NhomSanPhamDto dto)
+    public async Task<Result<NhomSanPhamDto>> Update(Guid id, NhomSanPhamDto dto)
     {
-        var result = await _service.UpdateAsync(id, dto);
-        if (result.IsSuccess)
-            await NotifyClients("updated", id);
+        var entity = await _context.NhomSanPhams
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
+        if (entity == null)
+            return Result<NhomSanPhamDto>.Failure("Không tìm thấy nhóm.");
+
+        var ten = dto.Ten.Trim();
+
+        bool exist = await _context.NhomSanPhams
+            .AnyAsync(x => x.Id != id &&
+                           x.Ten.ToLower() == ten.ToLower());
+
+        if (exist)
+            return Result<NhomSanPhamDto>.Failure($"Nhóm {ten} đã tồn tại.");
+
+        var before = new NhomSanPhamDto
+        {
+            Id = entity.Id,
+            Ten = entity.Ten,
+            LastModified = entity.LastModified
+        };
+
+        entity.Ten = ten;
+        entity.LastModified = DateTime.Now;
+
+        await _context.SaveChangesAsync();
+
+        var after = new NhomSanPhamDto
+        {
+            Id = entity.Id,
+            Ten = entity.Ten,
+            LastModified = entity.LastModified
+        };
+
+        return Result<NhomSanPhamDto>.Success(after, "Cập nhật thành công.")
+
+
+            ;
     }
 
+    // ======================
+    // DELETE (HARD DELETE)
+    // ======================
     [HttpDelete("{id}")]
-    public async Task<ActionResult<Result<NhomSanPhamDto>>> Delete(Guid id)
+    public async Task<Result<NhomSanPhamDto>> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("deleted", id);
+        var entity = await _context.NhomSanPhams
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
-    }
+        if (entity == null)
+            return Result<NhomSanPhamDto>.Failure("Không tìm thấy nhóm.");
 
-    [HttpPut("{id}/restore")]
-    public async Task<ActionResult<Result<NhomSanPhamDto>>> Restore(Guid id)
-    {
-        var result = await _service.RestoreAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("restored", id);
+        var before = new NhomSanPhamDto
+        {
+            Id = entity.Id,
+            Ten = entity.Ten,
+            LastModified = entity.LastModified
+        };
 
-        return result;
-    }
+        _context.NhomSanPhams.Remove(entity);
+        await _context.SaveChangesAsync();
 
-    [HttpGet("sync")]
-    public async Task<ActionResult<Result<List<NhomSanPhamDto>>>> Sync(DateTime lastSync)
-    {
-        var list = await _service.GetUpdatedSince(lastSync);
-        return Result<List<NhomSanPhamDto>>.Success(list);
+        return Result<NhomSanPhamDto>.Success(before, "Đã xoá.")
+
+            ;
     }
 }

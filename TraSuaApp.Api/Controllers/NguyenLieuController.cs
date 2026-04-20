@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Api.Hubs;
-using TraSuaApp.Applicationn.Interfaces;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure;
+using TraSuaApp.Infrastructure.Entities;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
 
@@ -14,91 +16,161 @@ namespace TraSuaApp.Api.Controllers;
 [Route("api/[controller]")]
 public class NguyenLieuController : BaseApiController
 {
-    private readonly INguyenLieuService _service;
+    private readonly AppDbContext _context;
     private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["NguyenLieu"];
+    private readonly string _friendlyName = TuDien._tableFriendlyNames["NguyenLieu"];
 
-    public NguyenLieuController(INguyenLieuService service, IHubContext<SignalRHub> hub)
+    public NguyenLieuController(AppDbContext context, IHubContext<SignalRHub> hub)
     {
-        _service = service;
+        _context = context;
         _hub = hub;
     }
 
-    private async Task NotifyClients(string action, Guid id)
+    private static NguyenLieuDto ToDto(NguyenLieu e)
+    {
+        return new NguyenLieuDto
+        {
+            Id = e.Id,
+            Ten = e.Ten,
+            DonViTinh = e.DonViTinh,
+            GiaNhap = e.GiaNhap,
+            DangSuDung = e.DangSuDung,
+            NguyenLieuBanHangId = e.NguyenLieuBanHangId,
+            HeSoQuyDoiBanHang = e.HeSoQuyDoiBanHang,
+            LastModified = e.LastModified
+        };
+    }
+
+    private async Task Notify(string action, Guid id)
     {
         if (!string.IsNullOrEmpty(ConnectionId))
         {
-            await _hub.Clients
-                .AllExcept(ConnectionId)
-                .SendAsync("EntityChanged", "NguyenLieu", action, id.ToString(), ConnectionId ?? "");
+            await _hub.Clients.AllExcept(ConnectionId)
+                .SendAsync("EntityChanged", "NguyenLieu", action, id.ToString(), ConnectionId);
         }
         else
         {
-            await _hub.Clients.All.SendAsync("EntityChanged", "NguyenLieu", action, id.ToString(), ConnectionId ?? "");
+            await _hub.Clients.All
+                .SendAsync("EntityChanged", "NguyenLieu", action, id.ToString(), "");
         }
     }
 
+    // ======================
+    // GET ALL
+    // ======================
     [HttpGet]
     public async Task<ActionResult<Result<List<NguyenLieuDto>>>> GetAll()
     {
-        var list = await _service.GetAllAsync();
+        var list = await _context.NguyenLieus
+            .AsNoTracking()
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
+            .ToListAsync();
+
         return Result<List<NguyenLieuDto>>.Success(list);
     }
 
+    // ======================
+    // GET BY ID
+    // ======================
     [HttpGet("{id}")]
     public async Task<ActionResult<Result<NguyenLieuDto>>> GetById(Guid id)
     {
-        var dto = await _service.GetByIdAsync(id);
-        if (dto == null)
+        var entity = await _context.NguyenLieus
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (entity == null)
             return Result<NguyenLieuDto>.Failure($"Không tìm thấy {_friendlyName}.");
 
-        return Result<NguyenLieuDto>.Success(dto);
+        return Result<NguyenLieuDto>.Success(ToDto(entity));
     }
 
+    // ======================
+    // CREATE
+    // ======================
     [HttpPost]
     public async Task<ActionResult<Result<NguyenLieuDto>>> Create(NguyenLieuDto dto)
     {
-        var result = await _service.CreateAsync(dto);
-        if (result.IsSuccess && result.Data != null)
-            await NotifyClients("created", result.Data.Id);
+        var entity = new NguyenLieu
+        {
+            Id = Guid.NewGuid(),
+            Ten = dto.Ten.Trim(),
+            DonViTinh = dto.DonViTinh,
+            GiaNhap = dto.GiaNhap,
+            DangSuDung = dto.DangSuDung,
+            NguyenLieuBanHangId = dto.NguyenLieuBanHangId,
+            HeSoQuyDoiBanHang = dto.HeSoQuyDoiBanHang,
+            LastModified = DateTime.Now
+        };
 
-        return result;
+        _context.NguyenLieus.Add(entity);
+        await _context.SaveChangesAsync();
+
+        var after = ToDto(entity);
+
+        await Notify("created", entity.Id);
+
+        return Result<NguyenLieuDto>.Success(after, "Đã thêm nguyên liệu.")
+            
+            ;
     }
 
+    // ======================
+    // UPDATE
+    // ======================
     [HttpPut("{id}")]
     public async Task<ActionResult<Result<NguyenLieuDto>>> Update(Guid id, NguyenLieuDto dto)
     {
-        var result = await _service.UpdateAsync(id, dto);
-        if (result.IsSuccess)
-            await NotifyClients("updated", id);
+        var entity = await _context.NguyenLieus
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
+        if (entity == null)
+            return Result<NguyenLieuDto>.Failure("Không tìm thấy.");
+
+        var before = ToDto(entity);
+
+        entity.Ten = dto.Ten.Trim();
+        entity.DonViTinh = dto.DonViTinh;
+        entity.GiaNhap = dto.GiaNhap;
+        entity.DangSuDung = dto.DangSuDung;
+        entity.NguyenLieuBanHangId = dto.NguyenLieuBanHangId;
+        entity.HeSoQuyDoiBanHang = dto.HeSoQuyDoiBanHang;
+        entity.LastModified = DateTime.Now;
+
+        await _context.SaveChangesAsync();
+
+        var after = ToDto(entity);
+
+        await Notify("updated", id);
+
+        return Result<NguyenLieuDto>.Success(after, "Cập nhật thành công.")
+            
+            
+            ;
     }
 
+    // ======================
+    // DELETE (HARD DELETE)
+    // ======================
     [HttpDelete("{id}")]
     public async Task<ActionResult<Result<NguyenLieuDto>>> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("deleted", id);
+        var entity = await _context.NguyenLieus
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
-    }
+        if (entity == null)
+            return Result<NguyenLieuDto>.Failure("Không tìm thấy.");
 
-    [HttpPut("{id}/restore")]
-    public async Task<ActionResult<Result<NguyenLieuDto>>> Restore(Guid id)
-    {
-        var result = await _service.RestoreAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("restored", id);
+        var before = ToDto(entity);
 
-        return result;
-    }
+        _context.NguyenLieus.Remove(entity);
+        await _context.SaveChangesAsync();
 
-    [HttpGet("sync")]
-    public async Task<ActionResult<Result<List<NguyenLieuDto>>>> Sync(DateTime lastSync)
-    {
-        var list = await _service.GetUpdatedSince(lastSync);
-        return Result<List<NguyenLieuDto>>.Success(list);
+        await Notify("deleted", id);
+
+        return Result<NguyenLieuDto>.Success(before, "Đã xoá.")
+            
+            ;
     }
 }

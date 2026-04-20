@@ -1,108 +1,121 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using TraSuaApp.Api.Hubs;
-using TraSuaApp.Applicationn.Interfaces;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using Microsoft.EntityFrameworkCore;
+using TraSuaApp.Infrastructure;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Entities;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
 
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class VoucherController : BaseApiController
+public class VoucherController : ControllerBase
 {
-    private readonly IVoucherService _service;
-    private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["Voucher"];
+    private readonly AppDbContext _context;
 
-    public VoucherController(IVoucherService service, IHubContext<SignalRHub> hub)
+    public VoucherController(AppDbContext context)
     {
-        _service = service;
-        _hub = hub;
+        _context = context;
     }
 
-    private async Task NotifyClients(string action, Guid id)
-    {
-        if (!string.IsNullOrEmpty(ConnectionId))
-        {
-            await _hub.Clients
-                .AllExcept(ConnectionId)
-                .SendAsync("EntityChanged", "Voucher", action, id.ToString(), ConnectionId ?? "");
-        }
-        else
-        {
-            await _hub.Clients.All.SendAsync("EntityChanged", "Voucher", action, id.ToString(), ConnectionId ?? "");
-        }
-    }
-
+    // ======================
+    // GET ALL
+    // ======================
     [HttpGet]
-    public async Task<ActionResult<Result<List<VoucherDto>>>> GetAll()
+    public async Task<Result<List<VoucherDto>>> GetAll()
     {
-        var list = await _service.GetAllAsync();
+        var list = await _context.Vouchers
+            .AsNoTracking()
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => new VoucherDto
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                GiaTri = x.GiaTri,
+                KieuGiam = x.KieuGiam,
+                LastModified = x.LastModified
+            })
+            .ToListAsync();
+
         return Result<List<VoucherDto>>.Success(list);
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Result<VoucherDto>>> GetById(Guid id)
-    {
-        var dto = await _service.GetByIdAsync(id);
-        if (dto == null)
-            return Result<VoucherDto>.Failure($"Không tìm thấy {_friendlyName}.");
-
-        return Result<VoucherDto>.Success(dto);
-    }
-
+    // ======================
+    // CREATE
+    // ======================
     [HttpPost]
-    public async Task<ActionResult<Result<VoucherDto>>> Create(VoucherDto dto)
+    public async Task<Result<VoucherDto>> Create(VoucherDto dto)
     {
-        var result = await _service.CreateAsync(dto);
-        if (result.IsSuccess && result.Data != null)
-            await NotifyClients("created", result.Data.Id);
+        var entity = new Voucher
+        {
+            Id = Guid.NewGuid(),
+            Ten = dto.Ten,
+            GiaTri = dto.GiaTri,
+            KieuGiam = dto.KieuGiam,
+            LastModified = DateTime.Now
+        };
 
-        return result;
+        _context.Vouchers.Add(entity);
+        await _context.SaveChangesAsync();
+
+        return Result<VoucherDto>.Success(new VoucherDto
+        {
+            Id = entity.Id,
+            Ten = entity.Ten,
+            GiaTri = entity.GiaTri,
+            KieuGiam = entity.KieuGiam,
+            LastModified = entity.LastModified
+        }, "Thêm thành công");
     }
 
+    // ======================
+    // UPDATE
+    // ======================
     [HttpPut("{id}")]
-    public async Task<ActionResult<Result<VoucherDto>>> Update(Guid id, VoucherDto dto)
+    public async Task<Result<VoucherDto>> Update(Guid id, VoucherDto dto)
     {
-        var result = await _service.UpdateAsync(id, dto);
-        if (result.IsSuccess)
-            await NotifyClients("updated", id);
+        var entity = await _context.Vouchers.FindAsync(id);
 
-        return result;
+        if (entity == null)
+            return Result<VoucherDto>.Failure("Không tìm thấy");
+
+        entity.Ten = dto.Ten;
+        entity.GiaTri = dto.GiaTri;
+        entity.KieuGiam = dto.KieuGiam;
+        entity.LastModified = DateTime.Now;
+
+        await _context.SaveChangesAsync();
+
+        return Result<VoucherDto>.Success(new VoucherDto
+        {
+            Id = entity.Id,
+            Ten = entity.Ten,
+            GiaTri = entity.GiaTri,
+            KieuGiam = entity.KieuGiam,
+            LastModified = entity.LastModified
+        }, "Cập nhật thành công");
     }
 
+    // ======================
+    // DELETE
+    // ======================
     [HttpDelete("{id}")]
-    public async Task<ActionResult<Result<VoucherDto>>> Delete(Guid id)
+    public async Task<Result<VoucherDto>> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("deleted", id);
+        var entity = await _context.Vouchers.FindAsync(id);
 
-        return result;
+        if (entity == null)
+            return Result<VoucherDto>.Failure("Không tìm thấy");
+
+        _context.Vouchers.Remove(entity);
+        await _context.SaveChangesAsync();
+
+        return Result<VoucherDto>.Success(new VoucherDto
+        {
+            Id = entity.Id,
+            Ten = entity.Ten
+        }, "Đã xoá");
     }
-
-    [HttpPut("{id}/restore")]
-    public async Task<ActionResult<Result<VoucherDto>>> Restore(Guid id)
-    {
-        var result = await _service.RestoreAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("restored", id);
-
-        return result;
-    }
-
-    [HttpGet("sync")]
-    public async Task<ActionResult<Result<List<VoucherDto>>>> Sync(DateTime lastSync)
-    {
-        var list = await _service.GetUpdatedSince(lastSync);
-        return Result<List<VoucherDto>>.Success(list);
-    }
-
-
-
-
 }

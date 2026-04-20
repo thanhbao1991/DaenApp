@@ -1,8 +1,9 @@
 ﻿using System.Windows;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.AdminViews
@@ -11,7 +12,6 @@ namespace TraSuaApp.WpfClient.AdminViews
     {
         public SuDungNguyenLieuDto Model { get; set; }
 
-        private readonly SuDungNguyenLieuApi _api;
         private readonly CongThucDto _parentCongThuc;
         private readonly string _friendlyName = TuDien._tableFriendlyNames["SuDungNguyenLieu"];
 
@@ -26,7 +26,6 @@ namespace TraSuaApp.WpfClient.AdminViews
 
             KeyDown += Window_KeyDown;
 
-            _api = new SuDungNguyenLieuApi();
             _parentCongThuc = congThuc;
 
             Title = _friendlyName;
@@ -52,9 +51,11 @@ namespace TraSuaApp.WpfClient.AdminViews
 
             if (dto != null)
             {
-                NguyenLieuBanHangSearchBox.SetSelectedNguyenLieuBanHangByIdWithoutPopup(dto.NguyenLieuId);
+                NguyenLieuBanHangSearchBox
+                    .SetSelectedNguyenLieuBanHangByIdWithoutPopup(dto.NguyenLieuId);
+
                 SoLuongNumeric.Value = dto.SoLuong;
-                // GhiChu đã bind trực tiếp
+
                 Loaded += (_, __) => SoLuongNumeric.Focus();
             }
             else
@@ -63,11 +64,7 @@ namespace TraSuaApp.WpfClient.AdminViews
                 Loaded += (_, __) => NguyenLieuBanHangSearchBox.SearchTextBox.Focus();
             }
 
-            if (Model.IsDeleted)
-            {
-                SaveButton.Content = "Khôi phục";
-                SetControlsEnabled(false);
-            }
+
         }
 
         private void SetControlsEnabled(bool enabled)
@@ -80,6 +77,8 @@ namespace TraSuaApp.WpfClient.AdminViews
         private async Task<bool> SaveAsync()
         {
             ErrorTextBlock.Text = "";
+
+            var api = Apis.SuDungNguyenLieu;
 
             Model.CongThucId = _parentCongThuc.Id;
 
@@ -105,12 +104,17 @@ namespace TraSuaApp.WpfClient.AdminViews
             Model.GhiChu = (Model.GhiChu ?? "").Trim();
 
             Result<SuDungNguyenLieuDto> result;
+
             if (Model.Id == Guid.Empty)
-                result = await _api.CreateAsync(Model);
-            else if (Model.IsDeleted)
-                result = await _api.RestoreAsync(Model.Id);
+            {
+                // CREATE
+                result = await api.CreateAsync(Model);
+            }
             else
-                result = await _api.UpdateAsync(Model.Id, Model);
+            {
+                // UPDATE
+                result = await api.UpdateAsync(Model.Id, Model);
+            }
 
             if (!result.IsSuccess)
             {
@@ -124,6 +128,7 @@ namespace TraSuaApp.WpfClient.AdminViews
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             KeepAdding = true;
+
             if (await SaveAsync())
             {
                 DialogResult = true;
@@ -134,6 +139,7 @@ namespace TraSuaApp.WpfClient.AdminViews
         private async void SaveAndCloseButton_Click(object sender, RoutedEventArgs e)
         {
             KeepAdding = false;
+
             if (await SaveAsync())
             {
                 DialogResult = true;
@@ -141,7 +147,8 @@ namespace TraSuaApp.WpfClient.AdminViews
             }
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+            => Close();
 
         private void Window_KeyDown(object? sender, KeyEventArgs e)
         {

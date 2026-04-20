@@ -3,7 +3,8 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using TraSuaApp.Shared.Enums;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.Views
@@ -13,6 +14,7 @@ namespace TraSuaApp.WpfClient.Views
         public static bool IsThanhToanHidden = true;
         public static HashSet<Guid> VisibleHoaDonIds = new();
         public static HashSet<Guid> HoaDonDaCoThanhToanIds = new();
+
         // ====== Constants / Keys (tránh magic string) ======
         private const string TAB_TAG_HOADON = "HoaDon";
         private const string TAB_TAG_THONGKE = "ThongKe";
@@ -20,18 +22,9 @@ namespace TraSuaApp.WpfClient.Views
         private const string TAB_TAG_CTHD_TT = "ChiTietHoaDonThanhToan";
         private const string TAB_TAG_CHITIEU = "ChiTieuHangNgay";
 
-        private const string PROV_HOADONS = "HoaDons";
-        private const string PROV_CONG_VIEC = "CongViecNoiBos";
-        private const string PROV_CTHD_TT = "ChiTietHoaDonThanhToans";
-        private const string PROV_CHITIEU = "ChiTieuHangNgays";
-
         // ====== INotifyPropertyChanged ======
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-
-
-        // Lưu handler để hủy đăng ký khi đóng cửa sổ (tránh memory leak)
-        private readonly Dictionary<string, Action> _providerHandlers = new();
 
         private DateTime _today;
         private DateTime Today
@@ -45,9 +38,8 @@ namespace TraSuaApp.WpfClient.Views
             InitializeComponent();
 
             foreach (TabItem tab in TabControl.Items)
-                if (tab.ToolTip.ToString() == "-")
+                if (tab.ToolTip?.ToString() == "-")
                     tab.Visibility = Visibility.Collapsed;
-
 
             DataContext = this;
             Loaded += Dashboard_Loaded;
@@ -64,40 +56,35 @@ namespace TraSuaApp.WpfClient.Views
             var items = AppProviders.CongViecNoiBos?.Items;
             if (items == null) return;
 
-            int count = items.Count(x => !x.DaHoanThanh && !x.IsDeleted);
+            int count = items.Count(x => !x.DaHoanThanh);
             Dispatcher.Invoke(() =>
             {
                 CvBadgeText.Text = count.ToString();
                 CvBadge.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
             });
         }
+
         private async void Dashboard_Loaded(object? sender, RoutedEventArgs e)
         {
-
             try
             {
                 Today = DateTime.Today;
-                await BindAllProviders();
-                UpdateCongViecBadge();
-                AppProviders.CongViecNoiBos.ItemsChanged += (_, __) => UpdateCongViecBadge();
 
                 await AppProviders.ReloadAllAsync();
+                UpdateCongViecBadge();
 
-                // 🟟 DELAY INIT: APP SHIPPING 60s sau khi vào Dashboard
                 _ = Task.Run(async () =>
                 {
                     await Task.Delay(TimeSpan.FromSeconds(15));
                     try
                     {
-                        // thay bằng tài khoản shipping thực tế
                         string shippingUsername = "12122431577";
                         string shippingPassword = "baothanh1991";
 
                         await AppShippingHelperFactory.CreateAsync(shippingUsername, shippingPassword);
                     }
-                    catch (Exception ex)
+                    catch
                     {
-
                     }
                 });
             }
@@ -106,72 +93,13 @@ namespace TraSuaApp.WpfClient.Views
                 NotiHelper.Show("Lỗi tải Dashboard: " + ex.Message);
             }
         }
-        private async Task BindAllProviders()
-        {
-            RegisterProvider("HoaDons",
-     () => AppProviders.HoaDons.OnChanged += _providerHandlers["HoaDons"],
-     () => HoaDonTabControl?.RefreshVisibleItemsOnly()
- );
-
-            RegisterProvider("CongViecNoiBos",
-                () => AppProviders.CongViecNoiBos.OnChanged += _providerHandlers["CongViecNoiBos"],
-                UpdateCongViecBadge);
-
-
-
-            RegisterProvider("ChiTietHoaDonThanhToans",
-                () => AppProviders.ChiTietHoaDonThanhToans.OnChanged += _providerHandlers["ChiTietHoaDonThanhToans"],
-                () =>
-                {
-                    ChiTietHoaDonThanhToanTabControl.Today = Today;
-                    ChiTietHoaDonThanhToanTabControl.ReloadUI();
-                });
-
-            RegisterProvider("ChiTieuHangNgays",
-                () => AppProviders.ChiTieuHangNgays.OnChanged += _providerHandlers["ChiTieuHangNgays"],
-                () =>
-                {
-                    ChiTieuHangNgayTabControl.Today = Today;
-                    ChiTieuHangNgayTabControl.ReloadUI();
-                });
-
-            await Task.CompletedTask;
-        }
-
-        private void RegisterProvider(string key, Action subscribeAction, Action uiUpdate)
-        {
-            Action handler = () =>
-            {
-                try
-                {
-                    Dispatcher.Invoke(uiUpdate);
-                }
-                catch { }
-            };
-
-            _providerHandlers[key] = handler;
-            subscribeAction();
-        }
-
-        private void Window_Closing(object sender, CancelEventArgs e)
-        {
-            foreach (var kv in _providerHandlers)
-            {
-                var name = kv.Key;
-                var handler = kv.Value;
-                var p = typeof(AppProviders).GetProperty(name)?.GetValue(null);
-                var evt = p?.GetType().GetEvent("OnChanged");
-                evt?.RemoveEventHandler(p, handler);
-            }
-        }
-
-        // ====== Badge Công việc ======
 
         // ====== Busy indicator helper ======
         private async Task WithBusy(Func<Task> body)
         {
             if (ProgressBar != null)
                 ProgressBar.Visibility = Visibility.Visible;
+
             try { await body(); }
             finally
             {
@@ -179,7 +107,6 @@ namespace TraSuaApp.WpfClient.Views
                     ProgressBar.Visibility = Visibility.Collapsed;
             }
         }
-
 
         // ====== Menu động (Admin/Hóa đơn/Settings) ======
         private void GenerateMenu(string loai, MenuItem m)
@@ -211,13 +138,15 @@ namespace TraSuaApp.WpfClient.Views
                     Margin = new Thickness(4)
                 };
                 btn.Click += MenuButton_Click;
+
                 if (view.Name == "SuDungNguyenLieuList" ||
                     view.Name == "NguyenLieuTransactionList" ||
-                    view.Name == "LocationList"
-                    )
-                    ;
-                else
-                    m.Items.Add(btn);
+                    view.Name == "LocationList")
+                {
+                    continue;
+                }
+
+                m.Items.Add(btn);
             }
         }
 
@@ -237,8 +166,6 @@ namespace TraSuaApp.WpfClient.Views
                     return;
                 }
 
-                await Task.Delay(100);
-
                 if (Activator.CreateInstance(type) is Window window)
                 {
                     window.Width = Width;
@@ -249,7 +176,9 @@ namespace TraSuaApp.WpfClient.Views
             }
             catch (Exception ex)
             {
-                NotiHelper.ShowError($"Lỗi mở form '{tag}': {ex.Message}");
+                var real = ex.InnerException?.ToString() ?? ex.ToString();
+                NotiHelper.ShowError(real);
+                Clipboard.SetText(real);
             }
         }
 
@@ -272,12 +201,10 @@ namespace TraSuaApp.WpfClient.Views
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            // Theo behavior cũ: minimize thay vì close
-            // MinimizeButton_Click(sender, e);
             Application.Current.Shutdown();
         }
 
-        // ====== Import Noti Window (giữ nguyên logic) ======
+        // ====== Import Noti Window ======
         void Import_Click(object sender, RoutedEventArgs e)
         {
             App.Current.Dispatcher.Invoke(() =>
@@ -299,36 +226,34 @@ namespace TraSuaApp.WpfClient.Views
             });
         }
 
-        // ====== Chuyển Tab: map rõ ràng + freshness override cho Hoá đơn ======
+        // ====== Chuyển Tab ======
         private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             foreach (TabItem tab in TabControl.Items)
-                if (tab.ToolTip.ToString() == "-")
+                if (tab.ToolTip?.ToString() == "-")
                     tab.Visibility = Visibility.Collapsed;
+
             IsThanhToanHidden = true;
-            //HoaDonTabControl.ApplyHoaDonFilter();
-            //ChiTietHoaDonThanhToanTabControl.ApplyFilter();
 
             if (!ReferenceEquals(e.OriginalSource, sender)) return;
             if (sender is not System.Windows.Controls.TabControl) return;
 
-            // Hiệu ứng chuyển
             FrameworkElement? oldContent = (e.RemovedItems.Count > 0 && e.RemovedItems[0] is TabItem oldTab)
-                ? oldTab.Content as FrameworkElement : null;
-            FrameworkElement? newContent = (TabControl.SelectedContent as FrameworkElement);
+                ? oldTab.Content as FrameworkElement
+                : null;
+
+            FrameworkElement? newContent = TabControl.SelectedContent as FrameworkElement;
             await AnimationHelper.FadeSwitchAsync(oldContent, newContent);
 
             if (TabControl.SelectedItem is not TabItem selectedTab) return;
             string? tag = selectedTab.Tag?.ToString();
             if (string.IsNullOrEmpty(tag)) return;
 
-            // Thống kê: gọi ReloadToday()
             if (tag == TAB_TAG_THONGKE && selectedTab.Content is ThongKeTab thongKeTab)
             {
                 thongKeTab.ReloadToday();
             }
 
-            // Map tag → hành động
             var loadActions = new Dictionary<string, Func<Task>>
             {
                 [TAB_TAG_HOADON] = async () =>
@@ -346,6 +271,7 @@ namespace TraSuaApp.WpfClient.Views
                     }
                     await Task.CompletedTask;
                 },
+
                 [TAB_TAG_CTHD_TT] = async () =>
                 {
                     if (ChiTietHoaDonThanhToanTabControl != null)
@@ -360,7 +286,6 @@ namespace TraSuaApp.WpfClient.Views
             if (loadActions.TryGetValue(tag, out var action))
                 await action();
 
-            // Nếu là tab Chi tiêu: tự động mở form "Thêm chi tiêu mới"
             if (tag == TAB_TAG_CHITIEU && ChiTieuHangNgayTabControl != null)
             {
                 ChiTieuHangNgayTabControl.TriggerAddNew();
@@ -370,47 +295,51 @@ namespace TraSuaApp.WpfClient.Views
         // ====== Hotkeys: forward xuống Tab con ======
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.F9)
+            {
+                TraSuaApp.WpfClient.Tools.FileViewerWindowList fileViewerWindow = new TraSuaApp.WpfClient.Tools.FileViewerWindowList();
+                fileViewerWindow.ShowDialog();
+                e.Handled = true;
+                return;
+            }
             if (e.Key == Key.F5)
             {
                 _ = ForceReloadCurrentTabAsync();
                 e.Handled = true;
                 return;
             }
-            if (Keyboard.Modifiers == (ModifierKeys.Control)
-         && e.Key == Key.Down)
+
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Down)
             {
                 foreach (TabItem t in TabControl.Items)
-                    if (t.ToolTip.ToString() == "-")
+                    if (t.ToolTip?.ToString() == "-")
                         t.Visibility = Visibility.Visible;
+
                 IsThanhToanHidden = false;
-                HoaDonTabControl.ReloadAndRestoreSelectionAsync();
+                _ = HoaDonTabControl.ReloadAndRestoreSelectionAsync();
                 e.Handled = true;
                 return;
             }
-            else
-            if (Keyboard.Modifiers == (ModifierKeys.Control)
-         && e.Key == Key.Up)
+            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Up)
             {
-
                 foreach (TabItem t in TabControl.Items)
-                    if (t.ToolTip.ToString() == "-")
+                    if (t.ToolTip?.ToString() == "-")
                         t.Visibility = Visibility.Collapsed;
+
                 IsThanhToanHidden = true;
-                HoaDonTabControl.ReloadAndRestoreSelectionAsync();
-                //  e.Handled = true;
+                _ = HoaDonTabControl.ReloadAndRestoreSelectionAsync();
                 return;
             }
-            // Nếu đang gõ trong TextBox: cho nhập bình thường, chỉ giữ hotkey
+
             if (Keyboard.FocusedElement is TextBox)
             {
                 bool isHotkey =
-                    (e.Key == Key.F1 || e.Key == Key.F4) || // hotkey của tab Công nợ
-                    (e.Key >= Key.F1 && e.Key <= Key.F24) ||                    // các phím F nói chung
-                    e.Key == Key.Escape || e.Key == Key.Delete;                 // nếu bạn cần
+                    (e.Key == Key.F1 || e.Key == Key.F4) ||
+                    (e.Key >= Key.F1 && e.Key <= Key.F24) ||
+                    e.Key == Key.Escape ||
+                    e.Key == Key.Delete;
 
-                if (!isHotkey) return; // không chặn ký tự gõ
-
-
+                if (!isHotkey) return;
             }
 
             if (TabControl.SelectedItem is not TabItem tab) return;
@@ -420,22 +349,24 @@ namespace TraSuaApp.WpfClient.Views
             {
                 HoaDonTabControl.HandleHotkey(e.Key);
 
-                // Chỉ mark handled nếu thật sự là hotkey của tab Hóa đơn
-                if ((e.Key >= Key.F1 && e.Key <= Key.F24) || e.Key == Key.Escape || e.Key == Key.Delete || e.Key == Key.Enter || e.Key == Key.Space)
+                if ((e.Key >= Key.F1 && e.Key <= Key.F24) ||
+                    e.Key == Key.Escape ||
+                    e.Key == Key.Delete ||
+                    e.Key == Key.Enter ||
+                    e.Key == Key.Space)
+                {
                     e.Handled = true;
+                }
             }
             else if (tag == TAB_TAG_CTHD_NO && ChiTietHoaDonNoTabControl != null)
             {
                 ChiTietHoaDonNoTabControl.HandleHotkey(e.Key);
 
-                // Chỉ 3 hotkey của tab Công nợ
                 if (e.Key == Key.F1 || e.Key == Key.F4)
                     e.Handled = true;
             }
-
-            // 🟟 Dev hotkey: Ctrl + Shift + Enter
-
         }
+
         private async Task ForceReloadCurrentTabAsync()
         {
             if (TabControl.SelectedItem is not TabItem tab) return;
@@ -447,7 +378,6 @@ namespace TraSuaApp.WpfClient.Views
                 case TAB_TAG_HOADON:
                     await WithBusy(async () =>
                     {
-                        //await AppProviders.HoaDons.ReloadAsync();
                         await HoaDonTabControl.ReloadAndRestoreSelectionAsync();
                     });
                     break;
@@ -468,55 +398,8 @@ namespace TraSuaApp.WpfClient.Views
                     });
                     break;
             }
-
         }
 
-        private readonly Dictionary<string, Func<UserControl>> _reportFactories = new()
-        {
-            ["Vouchers"] = () => new VoucherTab(),
-        };
 
-        private void ReportsHeader_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is Border b && b.ContextMenu != null)
-            {
-                b.ContextMenu.PlacementTarget = b;
-                b.ContextMenu.IsOpen = true;
-                e.Handled = true; // không đổi selection, chỉ mở menu
-            }
-        }
-
-        private void ReportMenu_Click(object sender, RoutedEventArgs e)
-        {
-            TabControl.SelectedIndex = TabControl.Items.Count - 1;
-            if (sender is not MenuItem mi) return;
-
-            string key = mi.Tag?.ToString() ?? "";
-            string title = mi.Header?.ToString() ?? "Báo cáo";
-
-            if (key == "__Clear")
-            {
-                ReportsTab.Content = new TextBlock
-                {
-                    Text = "Chọn báo cáo từ tiêu đề tab...",
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    FontStyle = FontStyles.Italic,
-                    Opacity = 0.7
-                };
-                ReportsHeaderText.Text = "Báo cáo";
-                return;
-            }
-
-            if (!_reportFactories.TryGetValue(key, out var factory))
-            {
-                System.Diagnostics.Debug.WriteLine($"No factory for report key: {key}");
-                return;
-            }
-
-            var content = factory();
-            ReportsTab.Content = content;
-            ReportsHeaderText.Text = title;
-        }
     }
 }

@@ -5,9 +5,10 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
-using TraSuaApp.Shared.Services;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.WpfClient.DataProviders;
 
 namespace TraSuaApp.WpfClient.Services
 {
@@ -209,7 +210,7 @@ Trả về DUY NHẤT một MẢNG JSON hợp lệ:
                 }
             }
 
-            await DiscordService.SendAsync(Shared.Enums.DiscordEventType.Admin, string.Join("\n", baoCao), customerNameHint);
+            await DiscordService.SendAsync(DiscordEventType.Admin, string.Join("\n", baoCao), customerNameHint);
             return result;
         }
 
@@ -257,7 +258,7 @@ Trả về DUY NHẤT một MẢNG JSON hợp lệ:
                     Stt = i++,
                     Id = Guid.NewGuid(),
                     SanPhamId = sp.Id,
-                    SanPhamIdBienThe = bt.Id,
+                    SanPhamBienTheId = bt.Id,
                     TenSanPham = sp.Ten,
                     DonGia = bt.GiaBan,
                     TenBienThe = bt.TenBienThe,
@@ -273,7 +274,7 @@ Trả về DUY NHẤT một MẢNG JSON hợp lệ:
                 lines.Add($"{ct.Stt}. {ct.TenSanPham} - {ct.TenBienThe} x{ct.SoLuong} - {ct.DonGia:N0}đ - {ct.NoteText}");
             }
             await DiscordService.SendAsync(
-             Shared.Enums.DiscordEventType.Admin,
+             DiscordEventType.Admin,
              string.Join("\n", lines)
 
          );

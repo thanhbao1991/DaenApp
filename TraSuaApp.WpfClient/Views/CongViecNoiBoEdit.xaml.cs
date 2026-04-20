@@ -1,9 +1,9 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.Shared.Config;
 using TraSuaApp.WpfClient.Models;
 using TraSuaApp.WpfClient.Services;
 
@@ -12,7 +12,7 @@ namespace TraSuaApp.WpfClient.SettingsViews
     public partial class CongViecNoiBoEdit : Window
     {
         public CongViecNoiBoDto Model { get; set; } = new();
-        private readonly CongViecNoiBoApi _api;
+
         private readonly string _friendlyName = TuDien._tableFriendlyNames["CongViecNoiBo"];
         private List<NhomSanPhamCheckItem> _bindingList = new();
 
@@ -20,10 +20,9 @@ namespace TraSuaApp.WpfClient.SettingsViews
         {
             InitializeComponent();
             this.KeyDown += Window_KeyDown;
+
             this.Title = _friendlyName;
             TieuDeTextBlock.Text = _friendlyName;
-
-            _api = new CongViecNoiBoApi();
 
             if (dto != null)
             {
@@ -36,23 +35,20 @@ namespace TraSuaApp.WpfClient.SettingsViews
                 TenTextBox.Focus();
             }
 
-            if (Model.IsDeleted)
-            {
-                TenTextBox.IsEnabled = false;
-                SaveButton.Content = "Khôi phục";
-            }
 
         }
-
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             ErrorTextBlock.Text = "";
 
+            var api = Apis.CongViecNoiBo;
+
             Model.Ten = TenTextBox.Text.Trim();
             Model.XNgayCanhBao = (int)XNgayCanhBaoTextBox.Value;
             Model.DaHoanThanh = false;
             Model.NgayGio = DateTime.Now;
+
             if (string.IsNullOrWhiteSpace(Model.Ten))
             {
                 ErrorTextBlock.Text = $"Tên {_friendlyName} không được để trống.";
@@ -60,14 +56,19 @@ namespace TraSuaApp.WpfClient.SettingsViews
                 return;
             }
 
-            // Cập nhật danh sách NhomSanPhamIds từ checkbox
             Result<CongViecNoiBoDto> result;
+
             if (Model.Id == Guid.Empty)
-                result = await _api.CreateAsync(Model);
-            else if (Model.IsDeleted)
-                result = await _api.RestoreAsync(Model.Id);
+            {
+                // CREATE
+                result = await api.CreateAsync(Model);
+            }
+
             else
-                result = await _api.UpdateAsync(Model.Id, Model);
+            {
+                // UPDATE
+                result = await api.UpdateAsync(Model.Id, Model);
+            }
 
             if (!result.IsSuccess)
             {
@@ -79,24 +80,24 @@ namespace TraSuaApp.WpfClient.SettingsViews
             Close();
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+            => Close();
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape)
             {
-                CloseButton_Click(null!, null!);
+                Close();
                 return;
             }
 
             if (e.Key == Key.Enter)
             {
-                SaveButton_Click(null, null);
-
+                SaveButton_Click(null!, null!);
             }
         }
 
-        // Giữ event handler để tránh cảnh báo XAML
+        // giữ để tránh warning XAML
         private void NhomSanPhamListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
         }

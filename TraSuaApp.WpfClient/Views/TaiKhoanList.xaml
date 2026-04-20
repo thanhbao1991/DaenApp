@@ -10,6 +10,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!--  Tiêu đề  -->
@@ -27,6 +28,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
+
             <Grid Margin="0,0,4,0">
                 <TextBox
                     x:Name="SearchTextBox"
@@ -37,6 +39,7 @@
                     Text="Tìm kiếm..."
                     Visibility="{Binding Text.IsEmpty, ElementName=SearchTextBox, Converter={StaticResource BoolToVisibilityConverter}}" />
             </Grid>
+
             <StackPanel
                 Grid.Column="1"
                 HorizontalAlignment="Right"
@@ -78,26 +81,155 @@
             <DataGrid.Columns>
                 <DataGridTextColumn
                     Width="50"
-                    Binding="{Binding STT}"
+                    Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
                 <DataGridTextColumn
-                    Width="200"
+                    Width="180"
                     Binding="{Binding TenDangNhap}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Tên đăng nhập" />
                 <DataGridTextColumn
-                    Width="250"
-                    Binding="{Binding HoTen}"
-                    Header="Họ tên" />
+                    Width="220"
+                    Binding="{Binding TenHienThi}"
+                    ElementStyle="{StaticResource LeftTextCellStyle}"
+                    Header="Tên hiển thị" />
                 <DataGridTextColumn
-                    Width="200"
-                    Binding="{Binding Quyen}"
-                    Header="Quyền" />
+                    Width="140"
+                    Binding="{Binding VaiTro}"
+                    ElementStyle="{StaticResource CenterTextCellStyle}"
+                    Header="Vai trò" />
                 <DataGridCheckBoxColumn
                     Width="100"
-                    Binding="{Binding KichHoat}"
+                    Binding="{Binding IsActive}"
                     Header="Kích hoạt" />
             </DataGrid.Columns>
         </DataGrid>
+
+        <!--  Form nhập liệu  -->
+        <Border
+            Grid.Row="3"
+            Margin="10,10,10,0"
+            Padding="10"
+            Background="WhiteSmoke"
+            BorderBrush="Gray"
+            BorderThickness="1"
+            CornerRadius="8">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="40" />
+                    <RowDefinition Height="40" />
+                    <RowDefinition Height="40" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    x:Name="FormTitleTextBlock"
+                    Grid.ColumnSpan="4"
+                    Margin="0,0,0,6"
+                    FontWeight="SemiBold"
+                    Text="Thêm tài khoản" />
+
+                <!--  Row 1  -->
+                <TextBlock
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Text="Tên đăng nhập" />
+                <TextBox
+                    x:Name="TenDangNhapTextBox"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Height="30"
+                    Margin="0,0,10,0"
+                    HorizontalAlignment="Stretch" />
+
+                <TextBlock
+                    Grid.Row="1"
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Text="Mật khẩu" />
+                <PasswordBox
+                    x:Name="MatKhauBox"
+                    Grid.Row="1"
+                    Grid.Column="3"
+                    Height="30"
+                    HorizontalAlignment="Stretch" />
+
+                <!--  Row 2  -->
+                <TextBlock
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Text="Tên hiển thị" />
+                <TextBox
+                    x:Name="TenHienThiTextBox"
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Height="30"
+                    Margin="0,0,10,0"
+                    HorizontalAlignment="Stretch" />
+
+                <TextBlock
+                    Grid.Row="2"
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Text="Vai trò" />
+                <ComboBox
+                    x:Name="VaiTroComboBox"
+                    Grid.Row="2"
+                    Grid.Column="3"
+                    Height="30"
+                    HorizontalAlignment="Stretch">
+                    <ComboBoxItem Content="Admin" />
+                    <ComboBoxItem Content="Nhân viên" />
+                </ComboBox>
+
+                <!--  Row 3  -->
+                <CheckBox
+                    x:Name="IsActiveCheckBox"
+                    Grid.Row="3"
+                    Grid.ColumnSpan="4"
+                    Margin="0,8,0,0"
+                    Content="Hoạt động" />
+
+                <!--  Error  -->
+                <TextBlock
+                    x:Name="ErrorTextBlock"
+                    Grid.Row="4"
+                    Grid.ColumnSpan="4"
+                    Margin="0,8,0,6"
+                    Style="{StaticResource ErrorTextBlock}" />
+
+                <!--  Buttons  -->
+                <StackPanel
+                    Grid.Row="5"
+                    Grid.ColumnSpan="4"
+                    Orientation="Horizontal">
+                    <Button
+                        x:Name="SaveButton"
+                        Width="100"
+                        Margin="0,0,6,0"
+                        Click="SaveButton_Click"
+                        Content="Thêm"
+                        Style="{StaticResource AddButtonStyle}" />
+                    <Button
+                        Width="100"
+                        Click="CancelEditButton_Click"
+                        Content="Huỷ"
+                        Style="{StaticResource ReloadButtonStyle}" />
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

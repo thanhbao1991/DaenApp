@@ -39,8 +39,8 @@ namespace TraSuaApp.WpfClient
         }
         protected override void OnStartup(StartupEventArgs e)
         {
-            //    FileViewerWindow fileViewerWindow = new FileViewerWindow();
-            //       fileViewerWindow.ShowDialog();
+            ////TraSuaApp.WpfClient.Tools.FileViewerWindow fileViewerWindow = new TraSuaApp.WpfClient.Tools.FileViewerWindow();
+            ////fileViewerWindow.ShowDialog();
 
             KillAllChromeDriver();
 

@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Infrastructure.Dtos;
 using TraSuaApp.WpfClient.Controls;
 
 

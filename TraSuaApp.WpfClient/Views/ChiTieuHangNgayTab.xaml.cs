@@ -3,8 +3,9 @@ using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.HoaDonViews;
 
@@ -66,7 +67,7 @@ namespace TraSuaApp.WpfClient.Views
 
             _fullChiTieuHangNgayList =
                 await UiListHelper.BuildListAsync(
-                    AppProviders.ChiTieuHangNgays.Items.Where(x => !x.IsDeleted),
+                    AppProviders.ChiTieuHangNgays.Items,
                     snap => snap
                         .Where(x => x.Ngay == todayLocal)
                         .OrderByDescending(x => x.NgayGio)

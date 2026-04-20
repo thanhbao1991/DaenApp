@@ -1,4 +1,4 @@
-﻿using TraSuaApp.Shared.Dtos;
+﻿using TraSuaApp.Infrastructure.Dtos;
 
 public static class HoaDonCalculator
 {
@@ -25,7 +25,7 @@ public static class HoaDonCalculator
 
         foreach (var ct in chiTiet)
         {
-            if (!bienTheDict.TryGetValue(ct.SanPhamIdBienThe, out var spId)) continue;
+            if (!bienTheDict.TryGetValue(ct.SanPhamBienTheId, out var spId)) continue;
             if (!sanPhamDict.TryGetValue(spId, out var sp)) continue;
 
             if (!ExcludedGroups.Contains(sp.TenNhomSanPham))

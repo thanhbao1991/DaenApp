@@ -10,9 +10,10 @@ using System.Windows;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
-using TraSuaApp.Shared.Services;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.WpfClient.DataProviders;
 
 public class AppShippingHelperText
 {
@@ -420,7 +421,7 @@ public class AppShippingHelperText
                 var ct = new ChiTietHoaDonDto
                 {
                     Id = Guid.NewGuid(),
-                    SanPhamIdBienThe = bienTheId,
+                    SanPhamBienTheId = bienTheId,
                     TenSanPham = tenSP,
                     TenBienThe = tenBienThe ?? (bienThe?.TenBienThe ?? ""),
                     DonGia = bienThe?.GiaBan ?? donGiaWeb,
@@ -569,7 +570,7 @@ public class AppShippingHelperText
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning
             );
-            DiscordService.SendAsync(TraSuaApp.Shared.Enums.DiscordEventType.Admin,
+            DiscordService.SendAsync(DiscordEventType.Admin,
                 $"{tenSanPham} AppShippingError");
             return Guid.Empty;
         }
@@ -649,7 +650,7 @@ public class AppShippingHelperText
             var text = TruncateForMessageBox(redacted, 100000);
 
             // Gửi Discord để theo dõi
-            DiscordService.SendAsync(TraSuaApp.Shared.Enums.DiscordEventType.Admin, text);
+            DiscordService.SendAsync(DiscordEventType.Admin, text);
 
 #if DEBUG
             // Chỉ popup khi DEBUG để tránh làm chậm bản release

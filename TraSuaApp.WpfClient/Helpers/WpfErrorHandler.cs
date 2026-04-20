@@ -2,7 +2,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using TraSuaApp.Shared.Services;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.WpfClient.Helpers
 {
@@ -45,7 +46,7 @@ namespace TraSuaApp.WpfClient.Helpers
             else Application.Current?.Dispatcher?.Invoke(Show);
 
             // Log lên Discord (không block UI)
-            _ = DiscordService.SendAsync(Shared.Enums.DiscordEventType.Admin, ex.ToString());
+            _ = DiscordService.SendAsync(DiscordEventType.Admin, ex.ToString());
         }
 
         private static string ExtractMessage(Exception ex)

@@ -1,5 +1,5 @@
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Services;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.Infrastructure.Helpers;
 using TraSuaAppWeb.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);

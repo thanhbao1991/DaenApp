@@ -1,105 +1,68 @@
-﻿
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using TraSuaApp.Api.Hubs;
-using TraSuaApp.Applicationn.Interfaces;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using Microsoft.EntityFrameworkCore;
+
+using TraSuaApp.Infrastructure;
+using TraSuaApp.Infrastructure.Entities;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
 
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class TuDienTraCuuController : BaseApiController
+public class TuDienTraCuuController : ControllerBase
 {
-    private readonly ITuDienTraCuuService _service;
-    private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["TuDienTraCuu"];
+    private readonly AppDbContext _context;
 
-    public TuDienTraCuuController(ITuDienTraCuuService service, IHubContext<SignalRHub> hub)
+    public TuDienTraCuuController(AppDbContext context)
     {
-        _service = service;
-        _hub = hub;
-    }
-
-    private async Task NotifyClients(string action, Guid id)
-    {
-        if (!string.IsNullOrEmpty(ConnectionId))
-        {
-            await _hub.Clients
-                .AllExcept(ConnectionId)
-                .SendAsync("EntityChanged", "TuDienTraCuu", action, id.ToString(), ConnectionId ?? "");
-        }
-        else
-        {
-            await _hub.Clients.All.SendAsync("EntityChanged", "TuDienTraCuu", action, id.ToString(), ConnectionId ?? "");
-        }
+        _context = context;
     }
 
     [HttpGet]
-    public async Task<ActionResult<Result<List<TuDienTraCuuDto>>>> GetAll()
+    public async Task<Result<List<TuDienTraCuuDto>>> GetAll()
     {
-        var list = await _service.GetAllAsync();
+        var list = await _context.TuDienTraCuus
+            .AsNoTracking()
+            .Select(x => new TuDienTraCuuDto
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                TenPhienDich = x.TenPhienDich
+            })
+            .ToListAsync();
+
         return Result<List<TuDienTraCuuDto>>.Success(list);
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Result<TuDienTraCuuDto>>> GetById(Guid id)
+    [HttpPost]
+    public async Task<Result<TuDienTraCuuDto>> Create(TuDienTraCuuDto dto)
     {
-        var dto = await _service.GetByIdAsync(id);
-        if (dto == null)
-            return Result<TuDienTraCuuDto>.Failure($"Không tìm thấy {_friendlyName}.");
+        var entity = new TuDienTraCuu
+        {
+            Id = Guid.NewGuid(),
+            Ten = dto.Ten,
+            TenPhienDich = dto.TenPhienDich,
+            LastModified = DateTime.Now
+        };
+
+        _context.TuDienTraCuus.Add(entity);
+        await _context.SaveChangesAsync();
 
         return Result<TuDienTraCuuDto>.Success(dto);
     }
 
-    [HttpPost]
-    public async Task<ActionResult<Result<TuDienTraCuuDto>>> Create(TuDienTraCuuDto dto)
-    {
-        var result = await _service.CreateAsync(dto);
-        if (result.IsSuccess && result.Data != null)
-            await NotifyClients("created", result.Data.Id);
-
-        return result;
-    }
-
-    [HttpPut("{id}")]
-    public async Task<ActionResult<Result<TuDienTraCuuDto>>> Update(Guid id, TuDienTraCuuDto dto)
-    {
-        var result = await _service.UpdateAsync(id, dto);
-        if (result.IsSuccess)
-            await NotifyClients("updated", id);
-
-        return result;
-    }
-
     [HttpDelete("{id}")]
-    public async Task<ActionResult<Result<TuDienTraCuuDto>>> Delete(Guid id)
+    public async Task<Result<TuDienTraCuuDto>> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("deleted", id);
+        var entity = await _context.TuDienTraCuus.FindAsync(id);
+        if (entity == null) return Result<TuDienTraCuuDto>.Failure("Không tìm thấy");
 
-        return result;
-    }
+        _context.TuDienTraCuus.Remove(entity);
+        await _context.SaveChangesAsync();
 
-    [HttpPut("{id}/restore")]
-    public async Task<ActionResult<Result<TuDienTraCuuDto>>> Restore(Guid id)
-    {
-        var result = await _service.RestoreAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("restored", id);
-
-        return result;
-    }
-
-    [HttpGet("sync")]
-    public async Task<ActionResult<Result<List<TuDienTraCuuDto>>>> Sync(DateTime lastSync)
-    {
-        var list = await _service.GetUpdatedSince(lastSync);
-        return Result<List<TuDienTraCuuDto>>.Success(list);
+        return Result<TuDienTraCuuDto>.Success(null);
     }
 }

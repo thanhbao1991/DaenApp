@@ -1,19 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Compile Remove="Data\Entities\**" />
     <Compile Remove="TempDbContext\**" />
-    <EmbeddedResource Remove="Data\Entities\**" />
     <EmbeddedResource Remove="TempDbContext\**" />
-    <None Remove="Data\Entities\**" />
     <None Remove="TempDbContext\**" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\TraSuaApp.Application\TraSuaApp.Application.csproj" />
-    <ProjectReference Include="..\TraSuaApp.Domain\TraSuaApp.Domain.csproj" />
-    <ProjectReference Include="..\TraSuaApp.Shared\TraSuaApp.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

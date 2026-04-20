@@ -3,8 +3,9 @@ using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.Services;
 using TraSuaApp.WpfClient.SettingsViews;
@@ -13,7 +14,6 @@ namespace TraSuaApp.WpfClient.Views
 {
     public partial class CongViecNoiBoTab : UserControl
     {
-
         private readonly DebounceManager _debouncer = new();
         private readonly WpfErrorHandler _errorHandler = new();
 
@@ -22,9 +22,9 @@ namespace TraSuaApp.WpfClient.Views
         public CongViecNoiBoTab()
         {
             InitializeComponent();
+
             Loaded += async (_, __) =>
             {
-                // đợi provider sẵn sàng một nhịp (tránh null khi window vừa mở)
                 var sw = Stopwatch.StartNew();
                 while (AppProviders.CongViecNoiBos == null && sw.ElapsedMilliseconds < 5000)
                     await Task.Delay(100);
@@ -35,11 +35,11 @@ namespace TraSuaApp.WpfClient.Views
 
         public async Task ReloadUI()
         {
-            if (AppProviders.CongViecNoiBos == null) return; // guard
+            if (AppProviders.CongViecNoiBos == null) return;
 
             _fullCongViecNoiBoList = await UiListHelper.BuildListAsync(
                 AppProviders.CongViecNoiBos.Items,
-                snap => snap.Where(x => !x.IsDeleted)
+                snap => snap
                             .OrderBy(x => x.DaHoanThanh)
                             .ThenByDescending(x => x.LastModified)
                             .ToList()
@@ -51,21 +51,16 @@ namespace TraSuaApp.WpfClient.Views
         private void ApplyCongViecNoiBoFilter()
         {
             string keyword = SearchCongViecNoiBoTextBox.Text.Trim().ToLower();
-            List<CongViecNoiBoDto> sourceList;
 
-            if (string.IsNullOrWhiteSpace(keyword))
-            {
-                sourceList = _fullCongViecNoiBoList;
-            }
-            else
-            {
-                sourceList = _fullCongViecNoiBoList
+            var sourceList = string.IsNullOrWhiteSpace(keyword)
+                ? _fullCongViecNoiBoList
+                : _fullCongViecNoiBoList
                     .Where(x => x.TimKiem.ToLower().Contains(keyword))
                     .ToList();
-            }
 
             int stt = 1;
-            foreach (var item in sourceList) item.Stt = stt++;
+            foreach (var item in sourceList)
+                item.Stt = stt++;
 
             CongViecNoiBoDataGrid.ItemsSource = sourceList;
         }
@@ -84,6 +79,7 @@ namespace TraSuaApp.WpfClient.Views
                 Height = owner?.ActualHeight ?? 800,
                 Owner = owner
             };
+
             if (window.ShowDialog() == true)
                 await AppProviders.CongViecNoiBos.ReloadAsync();
         }
@@ -99,6 +95,7 @@ namespace TraSuaApp.WpfClient.Views
                 Height = owner?.ActualHeight ?? 800,
                 Owner = owner
             };
+
             if (window.ShowDialog() == true)
                 await AppProviders.CongViecNoiBos.ReloadAsync();
         }
@@ -117,6 +114,7 @@ namespace TraSuaApp.WpfClient.Views
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
+
                 var response = await ApiClient.DeleteAsync($"/api/CongViecNoiBo/{selected.Id}");
                 var result = await response.Content.ReadFromJsonAsync<Result<CongViecNoiBoDto>>();
 
@@ -143,8 +141,12 @@ namespace TraSuaApp.WpfClient.Views
         {
             if (CongViecNoiBoDataGrid.SelectedItem is not CongViecNoiBoDto selected) return;
 
+            var api = Apis.CongViecNoiBo;
+
+            // ===== TOGGLE =====
             selected.DaHoanThanh = !selected.DaHoanThanh;
             selected.NgayGio = DateTime.Now;
+
             if (selected.DaHoanThanh)
             {
                 if (selected.XNgayCanhBao != null && selected.XNgayCanhBao != 0)
@@ -155,8 +157,7 @@ namespace TraSuaApp.WpfClient.Views
                 selected.NgayCanhBao = null;
             }
 
-            var api = new CongViecNoiBoApi();
-            var result = await api.ToggleAsync(selected.Id);
+            var result = await api.UpdateAsync(selected.Id, selected);
 
             if (!result.IsSuccess)
             {
@@ -165,6 +166,7 @@ namespace TraSuaApp.WpfClient.Views
             }
 
             var updated = result.Data!;
+
             selected.DaHoanThanh = updated.DaHoanThanh;
             selected.NgayGio = updated.NgayGio;
             selected.NgayCanhBao = updated.NgayCanhBao;

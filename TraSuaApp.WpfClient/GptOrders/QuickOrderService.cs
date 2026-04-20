@@ -3,8 +3,9 @@ using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;                // dùng OrderTextCleaner
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;                // dùng OrderTextCleaner
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.AiOrdering
@@ -132,7 +133,6 @@ namespace TraSuaApp.WpfClient.AiOrdering
                     LastModified = DateTime.Now,
                     ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>(),
                     ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>(),
-                    ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>()
                 }, cleanedForDisplay, new List<QuickOrderDto>());
             }
 
@@ -157,7 +157,6 @@ namespace TraSuaApp.WpfClient.AiOrdering
                 LastModified = DateTime.Now,
                 ChiTietHoaDons = chiTiets,
                 ChiTietHoaDonToppings = new List<ChiTietHoaDonToppingDto>(),
-                ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>()
             };
 
 

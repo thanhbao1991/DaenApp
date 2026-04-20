@@ -1,5 +1,5 @@
 ﻿@page
-@using TraSuaApp.Shared.Dtos
+@using TraSuaApp.Infrastructure.Dtos
 @model TraSuaAppWeb.Pages.ChiTietHoaDonNoTabModel
 @{
     ViewData["Title"] = "Công Nợ Khách Hàng";
@@ -10,250 +10,402 @@
 <div class="container-fluid mt-3">
 
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">
-            <i class="fa fa-money-bill-wave text-success"></i> Công Nợ
+        <h4 class="mb-0 fw-bold">
+            <i class="fa fa-money-bill-wave text-success me-2"></i>Công Nợ
         </h4>
     </div>
 
-    <div class="input-group mb-3">
-        <span class="input-group-text bg-white border-0 shadow-sm">
-            <i class="fa fa-search text-muted"></i>
-        </span>
-        <input class="form-control shadow-sm border-0"
-               style="border-radius:12px"
-               placeholder="Tìm kiếm khách hàng / ghi chú..."
+    <div class="d-flex mb-3 gap-2 align-items-center">
+        <input type="text"
+               id="searchBox"
+               class="form-control"
+               style="max-width:70%"
+               placeholder="Tìm..."
                oninput="onSearch(this.value)" />
+
+        <div id="totalDebt"
+             class="fw-bold fs-5 text-danger ms-auto text-end"
+             style="min-width: 120px;">
+            0 đ
+        </div>
     </div>
 
     <div id="cardContainer" class="row g-3"></div>
-
-    <div class="text-end mt-3">
-        <b>Tổng:</b>
-        <span id="totalDebt" class="text-danger fw-bold"></span>
-    </div>
 </div>
 
 @section Scripts {
     <script>
-        let items = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items ?? new List<TraSuaApp.Shared.Dtos.HoaDonNoDto>()));
+        let items = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items ?? new List<TraSuaApp.Infrastructure.Dtos.HoaDonNoDto>()));
 
-        let swipe = {};
-        let swipeConfirm = {};
+        let searchKey = "";
+        let cardState = {};
+        let swipeState = {};
+        let openCardId = null;
 
-        function onSearch(key){
-            key = (key||"").toLowerCase();
+        const BUTTON_WIDTH = 74;
+        const TOTAL_BUTTONS = 3;
+        const REVEAL_WIDTH = BUTTON_WIDTH * TOTAL_BUTTONS;
+        const OPEN_THRESHOLD = 55;
+        const DRAG_THRESHOLD = 8;
 
-            items.forEach(x=>{
-                x._hidden =
-                    !(x.TenKhachHangText||"").toLowerCase().includes(key) &&
-                    !(x.GhiChu||"").toLowerCase().includes(key);
+        function money(x) {
+            return (x || 0).toLocaleString('vi-VN') + " đ";
+        }
+
+        function normalizeText(str) {
+            return (str || "")
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/[^a-z0-9\s#]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function firstNonEmpty(...values) {
+            for (const v of values) {
+                if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+            }
+            return "";
+        }
+
+        function getName(x) {
+            return firstNonEmpty(x?.TenKhachHangText, x?.tenKhachHangText, "Khách lẻ");
+        }
+
+        function getCardEl(id) {
+            return document.querySelector(`[data-id="${id}"]`);
+        }
+
+        function setCardOffset(id, offset) {
+            cardState[id] = offset;
+            let el = getCardEl(id);
+            if (el) el.style.transform = `translateX(${offset}px)`;
+        }
+
+        function closeCard(id) {
+            if (!id) return;
+            setCardOffset(id, 0);
+            if (openCardId === id) openCardId = null;
+        }
+
+        function applyCardStates() {
+            Object.keys(cardState).forEach(id => {
+                let el = getCardEl(id);
+                if (!el) return;
+                el.style.transform = `translateX(${cardState[id] || 0}px)`;
             });
+        }
 
+        function getType(x) {
+            let p = (x?.PhanLoai || x?.phanLoai || "");
+            if (p.includes("App")) return "APP";
+            if (p.includes("Ship")) return "SHI";
+            if (p.includes("Mv")) return "MVE";
+            if (p.includes("Tại Chỗ")) return "TC";
+            return "?";
+        }
+
+        function getAvatarIcon(type, x) {
+            if (type === "SHI") {
+                if ((x?.NguoiShip || x?.nguoiShip) === "Nhã")
+                    return `<img src="/images/nha.jpg" class="avatar-img" />`;
+                if ((x?.NguoiShip || x?.nguoiShip) === "Khánh")
+                    return `<img src="/images/khanh.jpg" class="avatar-img" />`;
+
+                return `<img src="/images/ship.jpg" class="avatar-img" />`;
+            }
+
+            switch (type) {
+                case "APP": return `<img src="/images/app.jpg" class="avatar-img" />`;
+                case "MVE": return `<img src="/images/muave.jpg" class="avatar-img" />`;
+                case "TC":  return `<img src="/images/taicho.jpg" class="avatar-img" />`;
+                default:     return `<i class="fa-solid fa-user"></i>`;
+            }
+        }
+
+        function formatDate(d) {
+            if (!d) return "";
+
+            let dt = new Date(d);
+            let day = String(dt.getDate()).padStart(2, '0');
+            let month = String(dt.getMonth() + 1).padStart(2, '0');
+            let year = String(dt.getFullYear()).slice(-2);
+            let h = String(dt.getHours()).padStart(2, '0');
+            let m = String(dt.getMinutes()).padStart(2, '0');
+
+            return `
+                <div class="time-sub">  <i class="fa fa-clock"></i> ${day}/${month}/${year} ${h}:${m}
+                </div>
+            `;
+        }
+
+        function formatDateSearch(d) {
+            if (!d) return "";
+            let dt = new Date(d);
+            if (isNaN(dt.getTime())) return "";
+
+            let day = String(dt.getDate()).padStart(2, '0');
+            let month = String(dt.getMonth() + 1).padStart(2, '0');
+            let year = String(dt.getFullYear()).slice(-2);
+            let h = String(dt.getHours()).padStart(2, '0');
+            let m = String(dt.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year} ${h}:${m}`;
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function onSearch(value) {
+            searchKey = normalizeText(value);
             render();
         }
 
-        function render(){
+        function render() {
             let container = document.getElementById("cardContainer");
             container.innerHTML = "";
 
-            let total = 0;
+            let filtered = items.filter(x => {
+                let ten = getName(x) || "";
+                let ghiChu = x.GhiChu || x.ghiChu || "";
+                let rawPhanLoai = x.PhanLoai || x.phanLoai || "";
+                let nguoiShip = x.NguoiShip || x.nguoiShip || "";
+                let type = getType(x);
+                let conLai = x.ConLai ?? x.conLai ?? 0;
+                let thanhTien = x.ThanhTien ?? x.thanhTien ?? 0;
+                let ngay = formatDateSearch(x.NgayGio || x.ngayGio || x.Ngay || x.ngay);
 
-            items.forEach(x=>{
-                if(x._hidden) return;
+                let text = normalizeText(
+                    ten + " " +
+                    ghiChu + " " +
+                    rawPhanLoai + " " +
+                    nguoiShip + " " +
+                    type + " " +
+                    conLai + " " +
+                    thanhTien + " " +
+                    ngay
+                );
 
-                total += (x.ConLai || 0);
-
-                let type = swipeConfirm[x.Id]?.type;
-
-                let dimClass = "";
-                if(type === "ChuyenKhoan") dimClass = "dim-blue";
-                if(type === "TienMat") dimClass = "dim-green";
-
-                container.innerHTML += `
-                <div class="col-12 col-md-6 col-xl-4">
-
-                    <div class="debt-card ${dimClass}"
-                         data-id="${x.Id}"
-                         onpointerdown="startSwipe(event,'${x.Id}')"
-                         onpointermove="moveSwipe(event,'${x.Id}')"
-                         onpointerup="endSwipe(event,'${x.Id}')"
-                         onpointercancel="cancelSwipe(event)">
-
-                        <div class="card-inner">
-
-                            <div class="top-row">
-
-                                <div class="avatar">
-                                    ${getInitials(x.TenKhachHangText)}
-                                </div>
-
-                                <div class="info">
-                                    <div class="name">
-                                        ${x.TenKhachHangText ?? "Khách lẻ"}
-                                    </div>
-                                    <div class="time">
-                                        <i class="fa fa-clock me-1"></i>
-                                        ${formatDate(x.NgayGio)}
-                                    </div>
-                                </div>
-
-                                <div class="amount">
-                                    ${money(x.ConLai)}
-                                </div>
-
-                            </div>
-
-                            <div class="note">
-                                ${x.GhiChu ?? ""}
-                            </div>
-
-                        </div>
-                    </div>
-                </div>`;
+                if (searchKey && !text.includes(searchKey)) return false;
+                return true;
             });
 
+            filtered.sort((a, b) =>
+                new Date(b.NgayGio || b.ngayGio) - new Date(a.NgayGio || a.ngayGio)
+            );
+
+            if (openCardId && !filtered.some(x => (x.Id || x.id) === openCardId)) {
+                openCardId = null;
+            }
+
+            let total = 0;
+
+            filtered.forEach(x => {
+                let id = x.Id || x.id;
+                let ten = getName(x);
+                let type = getType(x);
+                let ghiChu = x.GhiChu || x.ghiChu || "";
+                let conLai = x.ConLai ?? x.conLai ?? 0;
+
+                total += conLai;
+
+                container.innerHTML += `
+                    <div class="col-12 col-md-6 col-xl-4">
+                        <div class="swipe-wrapper"
+                             onpointerdown="startSwipe(event, '${id}')"
+                             onpointermove="moveSwipe(event, '${id}')"
+                             onpointerup="endSwipe(event, '${id}')"
+                             onpointercancel="cancelSwipe(event, '${id}')">
+
+                            <div class="actions right">
+                                <button type="button"
+                                        class="btn-action btn-cash"
+                                        onclick="confirmAction('${id}', 'TienMat'); event.stopPropagation();">
+                                    <i class="fa-solid fa-money-bill-wave"></i>
+                                    <span>Tiền mặt</span>
+                                </button>
+
+                                <button type="button"
+                                        class="btn-action btn-bank"
+                                        onclick="confirmAction('${id}', 'ChuyenKhoan'); event.stopPropagation();">
+                                    <i class="fa-solid fa-credit-card"></i>
+                                    <span>Chuyển khoản</span>
+                                </button>
+
+                                <button type="button"
+                                        class="btn-action btn-delete"
+                                        onclick="confirmAction('${id}', 'Xoa'); event.stopPropagation();">
+                                    <i class="fa-solid fa-trash"></i>
+                                    <span>Xoá</span>
+                                </button>
+                            </div>
+
+                            <div class="debt-card" data-id="${id}">
+                                <div class="card-inner">
+                                    <div class="top-row">
+                                        <div class="avatar">
+                                            ${getAvatarIcon(type, x)}
+                                        </div>
+
+                                        <div class="info">
+                                            <div class="time">
+                                                ${formatDate(x.NgayGio || x.ngayGio)}
+                                            </div>
+                                            <div class="name">
+                                                ${escapeHtml(ten)}
+                                            </div>
+                                            ${ghiChu ? `<div class="note">${escapeHtml(ghiChu)}</div>` : ""}
+                                        </div>
+
+                                        <div class="amount">
+                                            ${money(conLai)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-light text-center mb-0">Không có dữ liệu</div>
+                    </div>`;
+            }
+
             document.getElementById("totalDebt").innerText = money(total);
+            applyCardStates();
         }
 
-        // ================= SWIPE =================
-        function startSwipe(ev,id){
-            swipe = { id, x: ev.clientX };
+        function startSwipe(ev, id) {
+            if (openCardId && openCardId !== id) closeCard(openCardId);
+
+            let currentOffset = cardState[id] || 0;
+            swipeState[id] = {
+                startX: ev.clientX,
+                startOffset: currentOffset,
+                currentOffset: currentOffset,
+                dragging: false
+            };
+
+            let wrapper = ev.currentTarget;
+            if (wrapper?.setPointerCapture) {
+                try { wrapper.setPointerCapture(ev.pointerId); } catch { }
+            }
         }
 
-        function moveSwipe(ev,id){
-            if(!swipe.id || swipe.id !== id) return;
+        function moveSwipe(ev, id) {
+            let state = swipeState[id];
+            if (!state) return;
 
-            let dx = ev.clientX - swipe.x;
-            let el = ev.currentTarget;
+            let delta = ev.clientX - state.startX;
+            let offset = state.startOffset + delta;
 
-            el.style.transform = `translateX(${dx}px)`;
+            if (offset < -REVEAL_WIDTH) offset = -REVEAL_WIDTH;
+            if (offset > 0) offset = 0;
 
-            el.style.background = dx > 0
-                ? "linear-gradient(135deg,#3b82f6,#2563eb)"
-                : "linear-gradient(135deg,#22c55e,#16a34a)";
+            state.currentOffset = offset;
+
+            if (Math.abs(offset - state.startOffset) > DRAG_THRESHOLD) {
+                state.dragging = true;
+            }
+
+            let card = getCardEl(id);
+            if (card) card.style.transform = `translateX(${offset}px)`;
         }
 
-        function endSwipe(ev,id){
-            let el = ev.currentTarget;
+        function endSwipe(ev, id) {
+            let state = swipeState[id];
+            if (!state) return;
 
-            let dx = ev.clientX - swipe.x;
+            let wrapper = ev.currentTarget;
+            if (wrapper?.releasePointerCapture) {
+                try { wrapper.releasePointerCapture(ev.pointerId); } catch { }
+            }
 
-            el.style.transform = "";
-            el.style.background = "";
+            let offset = state.currentOffset || 0;
+            let finalOffset = 0;
 
-            if(Math.abs(dx) < 80){
-                swipe = {};
+            if (state.startOffset < 0) {
+                if (offset > -REVEAL_WIDTH / 1.15) {
+                    finalOffset = 0;
+                    if (openCardId === id) openCardId = null;
+                } else {
+                    finalOffset = -REVEAL_WIDTH;
+                    openCardId = id;
+                }
+            } else {
+                if (offset <= -OPEN_THRESHOLD) {
+                    finalOffset = -REVEAL_WIDTH;
+                    openCardId = id;
+                } else {
+                    finalOffset = 0;
+                    if (openCardId === id) openCardId = null;
+                }
+            }
+
+            setCardOffset(id, finalOffset);
+            delete swipeState[id];
+        }
+
+        function cancelSwipe(ev, id) {
+            let state = swipeState[id];
+            if (!state) return;
+
+            setCardOffset(id, state.startOffset || 0);
+            if ((state.startOffset || 0) === 0 && openCardId === id) openCardId = null;
+            delete swipeState[id];
+        }
+
+        function confirmAction(id, action) {
+            let item = items.find(x => (x.Id || x.id) === id);
+            if (!item) return;
+
+            if (action === "Xoa") {
+                if (!confirm("Xoá công nợ này?")) return;
+                deleteDebt(id);
                 return;
             }
 
-            let type = dx > 0 ? "ChuyenKhoan" : "TienMat";
-            let item = items.find(x => x.Id === id);
-            let amount = item?.ConLai || 0;
+            let label = action === "ChuyenKhoan" ? "chuyển khoản" : "tiền mặt";
+            if (!confirm(`Xác nhận thu ${label}?`)) return;
 
-            // ================= LẦN 1 =================
-            if(!swipeConfirm[id]){
-                swipeConfirm[id] = { type, amount };
-                showConfirmOverlay(id);
-                swipe = {};
-                return;
-            }
-
-            // ================= LẦN 2 (đổi hướng) =================
-            if(swipeConfirm[id].type !== type){
-                swipeConfirm[id] = { type, amount };
-                showConfirmOverlay(id);
-                swipe = {};
-                return;
-            }
-
-            // ================= LẦN 2 OK =================
-            delete swipeConfirm[id];
-            removeOverlay(id);
-
-            quickPay(id,type);
-
-            swipe = {};
+            quickPay(id, action);
         }
 
-        function cancelSwipe(ev){
-            ev.currentTarget.style.transform = "";
-            ev.currentTarget.style.background = "";
-            swipe = {};
+        async function quickPay(id, type) {
+            let item = items.find(x => (x.Id || x.id) === id);
+            if (!item) return;
+
+            let amount = item.ConLai ?? item.conLai ?? 0;
+            let khachHangId = item.KhachHangId || item.khachHangId;
+            let ten = getName(item);
+
+            await pay(id, type, amount, khachHangId, ten);
         }
 
-        // ================= OVERLAY =================
-        function showConfirmOverlay(id){
-
-            let card = document.querySelector(`[data-id="${id}"]`);
-            if(!card) return;
-
-            let data = swipeConfirm[id];
-            if(!data) return;
-
-            let label = data.type === "ChuyenKhoan"
-                ? "CHUYỂN KHOẢN"
-                : "TIỀN MẶT";
-
-            let overlayId = "overlay-" + id;
-            document.getElementById(overlayId)?.remove();
-
-            let div = document.createElement("div");
-            div.id = overlayId;
-            div.className = "overlay";
-
-            div.style.background =
-                data.type === "ChuyenKhoan"
-                    ? "rgba(59,130,246,0.75)"
-                    : "rgba(34,197,94,0.75)";
-
-            div.innerHTML = `
-                <div class="money">${money(data.amount)}</div>
-                <div class="label">${label}</div>
-            `;
-
-            card.style.position = "relative";
-            card.appendChild(div);
-        }
-
-        function removeOverlay(id){
-            document.getElementById("overlay-" + id)?.remove();
-            delete swipeConfirm[id];
-        }
-
-        // ================= PAYMENT =================
-        async function quickPay(id,type){
-            let item = items.find(x=>x.Id===id);
-            if(!item) return;
-
-            await pay(id,type,item.ConLai,item.KhachHangId,item.TenKhachHangText);
-        }
-
-
-        async function pay(id,type,amount,khachHangId,ten){
-
+        async function pay(id, type, amount, khachHangId, ten) {
             amount = parseFloat(amount || 0);
-            if(amount <= 0) return;
-
-            let old = [...items];
-            let itemIndex = items.findIndex(x => x.Id === id);
-            let item = items[itemIndex];
-
-            if(!item) return;
-
-            item.DaThu = (item.DaThu || 0) + amount;
-            item.ConLai = (item.ThanhTien || 0) - item.DaThu;
-
-            render();
+            if (amount <= 0) return;
 
             let phuongThuc =
                 type === "ChuyenKhoan"
                     ? "2CF9A88F-3BC0-4D4B-940D-F8FFA4AFFA02"
                     : "0121FC04-0469-4908-8B9A-7002F860FB5C";
 
-            try{
-                let res = await fetch('?handler=Pay',{
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
+            try {
+                let res = await fetch('?handler=Pay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         id,
                         khachHangId,
@@ -264,131 +416,210 @@
                 });
 
                 let r = await res.json();
-                if(!r.isSuccess) throw "";
+                if (!r.isSuccess) throw "";
 
-                // 🟟 CHỈ SỬA PHẦN NÀY: XÓA ITEM SAU KHI PAY THÀNH CÔNG
-                items.splice(itemIndex, 1);
-
-                // reset swipe state
-                swipe = {};
-                delete swipeConfirm[id];
-
-                // render lại để item tiếp theo nhảy lên
-                render();
-
-            }catch{
-                items = old;
-                render();
+                removeLocalItem(id);
+            } catch {
+                alert("Thanh toán thất bại");
             }
         }
 
-        // ================= UTILS =================
-        function money(x){return (x||0).toLocaleString('vi-VN')+" đ";}
-        function formatDate(d){return d?new Date(d).toLocaleString('vi-VN'):"";}
-        function getInitials(name){
-            if(!name) return "?";
-            return name.split(" ").slice(-2).map(x=>x[0]).join("").toUpperCase();
+        async function deleteDebt(id) {
+            try {
+                let res = await fetch('?handler=Delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+
+                let r = await res.json();
+                if (!r.isSuccess) throw "";
+
+                removeLocalItem(id);
+            } catch {
+                alert("Xoá thất bại");
+            }
         }
 
+        function removeLocalItem(id) {
+            items = items.filter(x => (x.Id || x.id) !== id);
+
+            delete cardState[id];
+            delete swipeState[id];
+            if (openCardId === id) openCardId = null;
+
+            render();
+        }
+
+        function handleDocumentClick(ev) {
+            if (openCardId == null) return;
+            if (ev.target.closest(".swipe-wrapper")) return;
+            closeCard(openCardId);
+        }
+
+        document.addEventListener("click", handleDocumentClick);
         render();
     </script>
 }
 
 <style>
-    .debt-card {
+    .swipe-wrapper {
         position: relative;
-        border-radius: 18px;
         overflow: hidden;
-        background: #fff;
-        box-shadow: 0 8px 25px rgba(0,0,0,.06);
-        transition: .2s;
-        user-select: none;
+        border-radius: 18px;
         touch-action: pan-y;
     }
 
-        .debt-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 14px 35px rgba(0,0,0,.12);
+    .actions {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        display: flex;
+        z-index: 1;
+    }
+
+    .btn-action {
+        width: 74px;
+        border: none;
+        height: 100%;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        color: #fff;
+        font-weight: 700;
+        flex-shrink: 0;
+        user-select: none;
+    }
+
+        .btn-action i {
+            font-size: 18px;
         }
 
-    /* ================= DIM STATES ================= */
-    .dim-blue {
+        .btn-action span {
+            font-size: 11px;
+            line-height: 1;
+        }
+
+    .btn-cash {
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+    }
+
+    .btn-bank {
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+    }
+
+    .btn-delete {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+    }
+
+    .debt-card {
         position: relative;
+        z-index: 2;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 8px 25px rgba(0,0,0,.06);
+        transition: transform .22s cubic-bezier(.22,1,.36,1);
+        user-select: none;
+        overflow: hidden;
+        will-change: transform;
     }
 
-    .dim-green {
-        position: relative;
-    }
+        .debt-card:hover {
+            box-shadow: 0 10px 28px rgba(0,0,0,.08);
+        }
 
-    .dim-blue::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: rgba(59,130,246,0.18); /* 🟟 xanh dương đậm hơn */
-        pointer-events: none;
-    }
-
-    .dim-green::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: rgba(34,197,94,0.18); /* 🟟 xanh lá đậm hơn */
-        pointer-events: none;
-    }
-
-    /* ================= CONTENT ================= */
     .card-inner {
         padding: 16px;
     }
 
     .top-row {
         display: flex;
-        justify-content: space-between;
+        align-items: center;
         gap: 12px;
     }
 
     .avatar {
-        width: 42px;
-        height: 42px;
+        width: 48px;
+        height: 48px;
         border-radius: 12px;
-        background: linear-gradient(135deg,#3b82f6,#60a5fa);
-        color: white;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #3b82f6, #60a5fa);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 700;
+        color: #fff;
+        font-weight: 800;
+    }
+
+        .avatar i {
+            font-size: 20px;
+            color: #fff;
+        }
+
+    .avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        min-width: 0;
+    }
+
+    .name {
+        width: 100%;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.25;
+    }
+
+    .time {
+        width: 100%;
+        font-size: 13px;
+        opacity: 0.7;
+        line-height: 1.2;
     }
 
     .amount {
         font-weight: 800;
         color: #ef4444;
+        flex-shrink: 0;
+        white-space: nowrap;
     }
 
-    /* ================= OVERLAY ================= */
-    .overlay {
-        position: absolute;
-        inset: 0;
+    .note {
+        margin-top: 2px;
+        font-size: 12px;
+        font-style: italic;
+        color: #6c757d;
+        line-height: 1.3;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .date-line {
+        line-height: 1.2;
+    }
+
+    .time-sub {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 2px;
         display: flex;
-        flex-direction: column;
-        justify-content: center;
         align-items: center;
-        color: white;
-        font-weight: 800;
-        text-align: center;
-        z-index: 10;
+        gap: 4px;
     }
-
-        .overlay .money {
-            font-size: 22px;
-        }
-
-        .overlay .label {
-            margin-top: 6px;
-        }
-
-        .overlay .hint {
-            margin-top: 10px;
-            font-size: 12px;
-            opacity: .9;
-        }
 </style>

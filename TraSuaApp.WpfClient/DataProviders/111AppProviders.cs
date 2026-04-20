@@ -1,264 +1,502 @@
-﻿using System.Media;
+﻿using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.Net.Http.Json;
 using System.Windows;
-using TraSuaApp.Shared.Config;
-using TraSuaApp.WpfClient.DataProviders;
+using System.Windows.Data;
+using Microsoft.AspNetCore.SignalR.Client;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.WpfClient.Helpers;
-using TraSuaApp.WpfClient.Hubs;
 
-public static class AppProviders
+namespace TraSuaApp.WpfClient.DataProviders
 {
-    public static string? CurrentConnectionId { get; private set; }
-
-    public static NguyenLieuTransactionDataProvider? NguyenLieuTransactions { get; private set; }
-    public static LocationDataProvider? Locations { get; private set; }
-    public static TuDienTraCuuDataProvider? TuDienTraCuus { get; private set; }
-    public static NguyenLieuBanHangDataProvider? NguyenLieuBanHangs { get; private set; }
-    public static CongThucDataProvider? CongThucs { get; private set; }
-    public static SuDungNguyenLieuDataProvider? SuDungNguyenLieus { get; private set; }
-    public static VoucherDataProvider? Vouchers { get; private set; }
-    public static SanPhamDataProvider? SanPhams { get; private set; }
-    public static SanPhamDataProvider? SanPhamBienThes { get; private set; }
-    public static TaiKhoanDataProvider? TaiKhoans { get; private set; }
-    public static ToppingDataProvider? Toppings { get; private set; }
-    public static KhachHangDataProvider? KhachHangs { get; private set; }
-    public static NhomSanPhamDataProvider? NhomSanPhams { get; private set; }
-    public static HoaDonDataProvider? HoaDons { get; private set; }
-    public static PhuongThucThanhToanDataProvider? PhuongThucThanhToans { get; private set; }
-    public static KhachHangGiaBanDataProvider? KhachHangGiaBans { get; private set; }
-    public static CongViecNoiBoDataProvider? CongViecNoiBos { get; private set; }
-    public static ChiTietHoaDonThanhToanDataProvider? ChiTietHoaDonThanhToans { get; private set; }
-    public static ChiTieuHangNgayDataProvider? ChiTieuHangNgays { get; private set; }
-    public static NguyenLieuDataProvider? NguyenLieus { get; private set; }
-
-    public static string QuickOrderMenu { get; private set; } = "";
-
-    private static SignalRClient? _signalR;
-    private static bool _created;
-
-    // 🟟 danh sách provider để dispatch signal
-    private static List<object> _providers = new();
-
-    public static void BuildQuickOrderMenu()
+    // ============================
+    // BASE
+    // ============================
+    public class BaseDataProvider<T> where T : DtoBase, new()
     {
-        var items = SanPhams?.Items?
-            .Where(x => !x.NgungBan)
-            .OrderBy(x => x.Ten)
-            .Select(x => $"{x.Id}\t{x.TenKhongVietTat}") ?? Enumerable.Empty<string>();
+        public ObservableCollection<T> Items { get; private set; } = new();
 
-        QuickOrderMenu = string.Join("\n", items);
-    }
+        public event Action? OnChanged;
+        public event Action<T>? OnItemChanged;
 
-    public static async Task ReloadAllAsync()
-    {
-        if (HoaDons != null) await HoaDons.ReloadAsync();
-        if (ChiTietHoaDonThanhToans != null) await ChiTietHoaDonThanhToans.ReloadAsync();
-        if (ChiTieuHangNgays != null) await ChiTieuHangNgays.ReloadAsync();
-        if (CongViecNoiBos != null) await CongViecNoiBos.ReloadAsync();
-        if (Toppings != null) await Toppings.ReloadAsync();
-        if (KhachHangs != null) await KhachHangs.ReloadAsync();
-        if (Vouchers != null) await Vouchers.ReloadAsync();
-        if (KhachHangGiaBans != null) await KhachHangGiaBans.ReloadAsync();
-        if (PhuongThucThanhToans != null) await PhuongThucThanhToans.ReloadAsync();
-        if (TuDienTraCuus != null) await TuDienTraCuus.ReloadAsync();
-        if (NguyenLieuBanHangs != null) await NguyenLieuBanHangs.ReloadAsync();
-        if (CongThucs != null) await CongThucs.ReloadAsync();
-        if (SuDungNguyenLieus != null) await SuDungNguyenLieus.ReloadAsync();
-        if (Locations != null) await Locations.ReloadAsync();
-        if (SanPhamBienThes != null) await SanPhamBienThes.ReloadAsync();
+        private readonly string _entityName = (new T()).ApiRoute;
+        private int _isReloading = 0;
 
-        if (SanPhams != null)
+        public string EntityName => _entityName;
+
+        public async Task InitializeAsync()
         {
-            await SanPhams.ReloadAsync();
-            BuildQuickOrderMenu();
+            await ReloadAsync();
         }
-    }
 
-    public static async Task<DashboardDto?> GetDashboardAsync()
-    {
-        var response = await ApiClient.GetAsync("/api/dashboard/homnay");
-        return await response.Content.ReadFromJsonAsync<DashboardDto>();
-    }
-
-    public static async Task EnsureCreatedAsync()
-    {
-        if (_created) return;
-
-        var baseUri = Config.SignalRHubUrl.TrimEnd('/');
-        _signalR = new SignalRClient($"{baseUri}");
-
-        try
+        public async Task ReloadAsync()
         {
-            await _signalR.ConnectAsync();
-        }
-        catch { }
+            if (Interlocked.Exchange(ref _isReloading, 1) == 1) return;
 
-        CurrentConnectionId = await _signalR.GetConnectionId();
-        ApiClient.ConnectionId = CurrentConnectionId;
-
-        // ================================
-        // 🟟 CONNECTION EVENTS
-        // ================================
-        _signalR.OnDisconnected(() =>
-        {
-            SystemSounds.Hand.Play();
-
-            Application.Current.Dispatcher.Invoke(() =>
+            try
             {
-                var existing = Application.Current.Windows
-                    .OfType<TraSuaApp.WpfClient.Views.NotiWindow>()
-                    .FirstOrDefault();
+                var response = await ApiClient.GetAsync($"/api/{_entityName}");
+                var result = await response.Content.ReadFromJsonAsync<Result<List<T>>>();
 
-                if (existing == null)
-                    new TraSuaApp.WpfClient.Views.NotiWindow().Show();
-                else
+                if (result?.IsSuccess == true && result.Data != null)
                 {
-                    existing.Topmost = true;
-                    existing.Focus();
-                }
-            });
-        });
-
-        _signalR.OnReconnected(() =>
-        {
-            SystemSounds.Asterisk.Play();
-
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                var existing = Application.Current.Windows
-                    .OfType<TraSuaApp.WpfClient.Views.NotiWindow>()
-                    .FirstOrDefault();
-
-                existing?.Close();
-            });
-        });
-
-        // ================================
-        // 🟟 INIT PROVIDERS
-        // ================================
-        KhachHangs = new KhachHangDataProvider(_signalR);
-        NhomSanPhams = new NhomSanPhamDataProvider(_signalR);
-        Toppings = new ToppingDataProvider(_signalR);
-        TaiKhoans = new TaiKhoanDataProvider(_signalR);
-        SanPhams = new SanPhamDataProvider(_signalR);
-        SanPhamBienThes = new SanPhamDataProvider(_signalR);
-        SanPhams.OnChanged += BuildQuickOrderMenu;
-
-        Vouchers = new VoucherDataProvider(_signalR);
-        HoaDons = new HoaDonDataProvider(_signalR);
-        PhuongThucThanhToans = new PhuongThucThanhToanDataProvider(_signalR);
-        TuDienTraCuus = new TuDienTraCuuDataProvider(_signalR);
-        NguyenLieuBanHangs = new NguyenLieuBanHangDataProvider(_signalR);
-        CongThucs = new CongThucDataProvider(_signalR);
-        SuDungNguyenLieus = new SuDungNguyenLieuDataProvider(_signalR);
-        Locations = new LocationDataProvider(_signalR);
-        KhachHangGiaBans = new KhachHangGiaBanDataProvider(_signalR);
-        CongViecNoiBos = new CongViecNoiBoDataProvider(_signalR);
-        ChiTietHoaDonThanhToans = new ChiTietHoaDonThanhToanDataProvider(_signalR);
-        NguyenLieus = new NguyenLieuDataProvider(_signalR);
-        ChiTieuHangNgays = new ChiTieuHangNgayDataProvider(_signalR);
-
-        // 🟟 REGISTER LIST
-        _providers = new List<object>
-        {
-            KhachHangs, NhomSanPhams, Toppings, TaiKhoans,
-            SanPhams, SanPhamBienThes, Vouchers, HoaDons,
-            PhuongThucThanhToans, TuDienTraCuus, NguyenLieuBanHangs,
-            CongThucs, SuDungNguyenLieus, Locations,
-            KhachHangGiaBans, CongViecNoiBos,
-            ChiTietHoaDonThanhToans, NguyenLieus, ChiTieuHangNgays
-        };
-
-        // ================================
-        // 🟟 SIGNAL DISPATCH (CHUẨN)
-        // ================================
-        _signalR.Subscribe("EntityChanged", async (string entityName, string action, string id, string senderConnectionId) =>
-        {
-            // 🟟 bỏ qua chính mình
-            if (!string.IsNullOrWhiteSpace(senderConnectionId) &&
-                senderConnectionId == CurrentConnectionId)
-                return;
-
-            foreach (var provider in _providers)
-            {
-                if (provider == null) continue;
-
-                var type = provider.GetType();
-                var entityProp = type.GetProperty("EntityName");
-                var handleMethod = type.GetMethod("HandleSignalAsync");
-
-                if (entityProp == null || handleMethod == null) continue;
-
-                var entity = entityProp.GetValue(provider)?.ToString();
-
-                if (string.Equals(entity, entityName, StringComparison.OrdinalIgnoreCase))
-                {
-                    await (Task)handleMethod.Invoke(provider, new object[] { action, id });
-                    break;
-                }
-            }
-            // ================================
-            // 🟟 PUSH RIÊNG CHO UI HÓA ĐƠN
-            // ================================
-            if (entityName.Equals("HoaDon", StringComparison.OrdinalIgnoreCase))
-            {
-                if (Guid.TryParse(id, out var guid))
-                {
-                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        var dashboard = Application.Current.Windows
-                            .OfType<TraSuaApp.WpfClient.Views.Dashboard>()
-                            .FirstOrDefault();
+                        Items.Clear();
+                        foreach (var item in result.Data)
+                            Items.Add(item);
 
-                        dashboard?.HoaDonTabControl?.HandleHoaDonSignal(guid);
+                        OnChanged?.Invoke();
                     });
                 }
             }
-            // ================================
-            // 🟟 TTS (giữ nguyên)
-            // ================================
-            if (entityName.Equals("HoaDon", StringComparison.OrdinalIgnoreCase))
+            catch (Exception ex)
             {
-                var hoaDon = HoaDons?.Items.FirstOrDefault(x => x.Id.ToString() == id);
-
-                if (hoaDon != null && action == "updatedEsc")
-                {
-                    TTSHelper.DownloadAndPlayGoogleTTSAsync(
-                        $"Đi ship {hoaDon.DiaChiText} {((long)hoaDon.ThanhTien)} đồng"
-                    );
-                }
+                Console.WriteLine(ex.Message);
             }
-        });
+            finally
+            {
+                Interlocked.Exchange(ref _isReloading, 0);
+            }
+        }
+        public void Remove(Guid id)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var found = Items.FirstOrDefault(x => x.Id == id);
+                if (found != null)
+                {
+                    Items.Remove(found);
 
-        _created = true;
+                    CollectionViewSource.GetDefaultView(Items)?.Refresh(); // 🟟 THÊM
+
+                    OnChanged?.Invoke();
+                }
+            });
+        }
+        public void Upsert(T item)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var existing = Items.FirstOrDefault(x => x.Id == item.Id);
+
+                if (existing != null)
+                {
+                    if (item.LastModified <= existing.LastModified)
+                        return;
+
+                    var index = Items.IndexOf(existing);
+                    Items[index] = item;
+                }
+                else
+                {
+                    Items.Insert(0, item);
+                }
+
+                CollectionViewSource.GetDefaultView(Items)?.Refresh(); // 🟟 THÊM
+
+                OnItemChanged?.Invoke(item);
+                OnChanged?.Invoke();
+            });
+        }
+        public virtual async Task<T?> LoadByIdAsync(string id)
+        {
+            try
+            {
+                var response = await ApiClient.GetAsync($"/api/{_entityName}/{id}");
+                var result = await response.Content.ReadFromJsonAsync<Result<T>>();
+
+                if (result?.IsSuccess == true)
+                    return result.Data;
+            }
+            catch
+            {
+            }
+
+            return null;
+        }
     }
 
-    public static async Task InitializeAsync()
+    public class TuDienTraCuuDataProvider : BaseDataProvider<TuDienTraCuuDto> { }
+    public class NguyenLieuBanHangDataProvider : BaseDataProvider<NguyenLieuBanHangDto> { }
+    public class CongThucDataProvider : BaseDataProvider<CongThucDto> { }
+    public class SuDungNguyenLieuDataProvider : BaseDataProvider<SuDungNguyenLieuDto> { }
+    public class VoucherDataProvider : BaseDataProvider<VoucherDto> { }
+    public class SanPhamDataProvider : BaseDataProvider<SanPhamDto> { }
+    public class SanPhamBienTheDataProvider : BaseDataProvider<SanPhamBienTheDto> { }
+    public class TaiKhoanDataProvider : BaseDataProvider<TaiKhoanDto> { }
+    public class ToppingDataProvider : BaseDataProvider<ToppingDto> { }
+    public class KhachHangDataProvider : BaseDataProvider<KhachHangDto> { }
+    public class NhomSanPhamDataProvider : BaseDataProvider<NhomSanPhamDto> { }
+    public class HoaDonDataProvider : BaseDataProvider<HoaDonDto> { }
+
+    // THÊM MỚI
+    public class HoaDonNoDataProvider : BaseDataProvider<HoaDonNoDto>
     {
-        await EnsureCreatedAsync();
+        public override async Task<HoaDonNoDto?> LoadByIdAsync(string id)
+        {
+            try
+            {
+                var response = await ApiClient.GetAsync($"/api/Dashboard/get-hoa-don/{id}");
+                var result = await response.Content.ReadFromJsonAsync<Result<HoaDonNoDto>>();
 
-        await Task.WhenAll(
-           KhachHangs!.InitializeAsync(),
-           NhomSanPhams!.InitializeAsync(),
-           Toppings!.InitializeAsync(),
-           TaiKhoans!.InitializeAsync(),
-           SanPhams!.InitializeAsync(),
-           SanPhamBienThes!.InitializeAsync(),
-           Vouchers!.InitializeAsync(),
-           HoaDons!.InitializeAsync(),
-           PhuongThucThanhToans!.InitializeAsync(),
-           TuDienTraCuus!.InitializeAsync(),
-           NguyenLieuBanHangs!.InitializeAsync(),
-           CongThucs!.InitializeAsync(),
-           SuDungNguyenLieus!.InitializeAsync(),
-           Locations!.InitializeAsync(),
-           KhachHangGiaBans!.InitializeAsync(),
-           CongViecNoiBos!.InitializeAsync(),
-           ChiTietHoaDonThanhToans!.InitializeAsync(),
-           NguyenLieus!.InitializeAsync(),
-           ChiTieuHangNgays!.InitializeAsync()
-        );
+                if (result?.IsSuccess == true)
+                    return result.Data;
+            }
+            catch
+            {
+            }
 
-        BuildQuickOrderMenu();
+            return null;
+        }
+    }
+    public class PhuongThucThanhToanDataProvider : BaseDataProvider<PhuongThucThanhToanDto> { }
+    public class KhachHangGiaBanDataProvider : BaseDataProvider<KhachHangGiaBanDto> { }
+
+    public class CongViecNoiBoDataProvider : BaseDataProvider<CongViecNoiBoDto>
+    {
+        public event EventHandler? ItemsChanged;
+
+        public CongViecNoiBoDataProvider()
+        {
+            OnChanged += () => ItemsChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    public class ChiTietHoaDonThanhToanDataProvider : BaseDataProvider<ChiTietHoaDonThanhToanDto> { }
+    public class ChiTieuHangNgayDataProvider : BaseDataProvider<ChiTieuHangNgayDto> { }
+    public class NguyenLieuDataProvider : BaseDataProvider<NguyenLieuDto> { }
+
+
+    public static class AppProviders
+    {
+        public static TuDienTraCuuDataProvider? TuDienTraCuus { get; private set; }
+        public static NguyenLieuBanHangDataProvider? NguyenLieuBanHangs { get; private set; }
+        public static CongThucDataProvider? CongThucs { get; private set; }
+        public static SuDungNguyenLieuDataProvider? SuDungNguyenLieus { get; private set; }
+        public static VoucherDataProvider? Vouchers { get; private set; }
+        public static SanPhamDataProvider? SanPhams { get; private set; }
+        public static TaiKhoanDataProvider? TaiKhoans { get; private set; }
+        public static ToppingDataProvider? Toppings { get; private set; }
+        public static KhachHangDataProvider? KhachHangs { get; private set; }
+        public static NhomSanPhamDataProvider? NhomSanPhams { get; private set; }
+        public static HoaDonDataProvider? HoaDons { get; private set; }
+
+        // THÊM MỚI
+        public static HoaDonNoDataProvider? HoaDonNos { get; private set; }
+
+        public static PhuongThucThanhToanDataProvider? PhuongThucThanhToans { get; private set; }
+        public static KhachHangGiaBanDataProvider? KhachHangGiaBans { get; private set; }
+        public static CongViecNoiBoDataProvider? CongViecNoiBos { get; private set; }
+        public static ChiTietHoaDonThanhToanDataProvider? ChiTietHoaDonThanhToans { get; private set; }
+        public static ChiTieuHangNgayDataProvider? ChiTieuHangNgays { get; private set; }
+        public static NguyenLieuDataProvider? NguyenLieus { get; private set; }
+
+        public static TraSuaApp.WpfClient.Hubs.SignalRClient? SignalR { get; set; }
+
+        public static string QuickOrderMenu { get; private set; } = "";
+
+        private static bool _created;
+        private static readonly ConcurrentDictionary<string, byte> _processing = new();
+
+        public static void BuildQuickOrderMenu()
+        {
+            var items = SanPhams?.Items?
+                .Where(x => !x.NgungBan)
+                .OrderBy(x => x.Ten)
+                .Select(x => $"{x.Id}\t{x.TenKhongVietTat}")
+                ?? Enumerable.Empty<string>();
+
+            QuickOrderMenu = string.Join("\n", items);
+        }
+
+        private static async Task RefreshHoaDonProvidersAsync(string id)
+        {
+            if (HoaDonNos != null)
+            {
+                var itemNo = await HoaDonNos.LoadByIdAsync(id);
+                if (itemNo != null)
+                    HoaDonNos.Upsert(itemNo);
+            }
+        }
+
+        private static void RemoveHoaDonProviders(Guid id)
+        {
+            HoaDonNos?.Remove(id);
+        }
+
+        public static async Task ReloadAllAsync()
+        {
+            if (HoaDons != null) await HoaDons.ReloadAsync();
+            if (HoaDonNos != null) await HoaDonNos.ReloadAsync();
+            if (ChiTietHoaDonThanhToans != null) await ChiTietHoaDonThanhToans.ReloadAsync();
+            if (ChiTieuHangNgays != null) await ChiTieuHangNgays.ReloadAsync();
+            if (CongViecNoiBos != null) await CongViecNoiBos.ReloadAsync();
+            if (Toppings != null) await Toppings.ReloadAsync();
+            if (KhachHangs != null) await KhachHangs.ReloadAsync();
+            if (Vouchers != null) await Vouchers.ReloadAsync();
+            if (KhachHangGiaBans != null) await KhachHangGiaBans.ReloadAsync();
+            if (PhuongThucThanhToans != null) await PhuongThucThanhToans.ReloadAsync();
+            if (TuDienTraCuus != null) await TuDienTraCuus.ReloadAsync();
+            if (NguyenLieuBanHangs != null) await NguyenLieuBanHangs.ReloadAsync();
+            if (CongThucs != null) await CongThucs.ReloadAsync();
+            if (SuDungNguyenLieus != null) await SuDungNguyenLieus.ReloadAsync();
+
+            if (SanPhams != null)
+            {
+                await SanPhams.ReloadAsync();
+                BuildQuickOrderMenu();
+            }
+        }
+
+        public static async Task EnsureCreatedAsync()
+        {
+            if (_created) return;
+
+            TuDienTraCuus = new();
+            NguyenLieuBanHangs = new();
+            CongThucs = new();
+            SuDungNguyenLieus = new();
+            Vouchers = new();
+            SanPhams = new();
+            TaiKhoans = new();
+            Toppings = new();
+            KhachHangs = new();
+            NhomSanPhams = new();
+            HoaDons = new();
+
+            // THÊM MỚI
+            HoaDonNos = new();
+
+            PhuongThucThanhToans = new();
+            KhachHangGiaBans = new();
+            CongViecNoiBos = new();
+            ChiTietHoaDonThanhToans = new();
+            ChiTieuHangNgays = new();
+            NguyenLieus = new();
+
+            SanPhams.OnChanged += BuildQuickOrderMenu;
+
+            _created = true;
+            await Task.CompletedTask;
+        }
+
+        public static async Task InitializeAsync()
+        {
+            await EnsureCreatedAsync();
+
+            await Task.WhenAll(
+                KhachHangs!.InitializeAsync(),
+                NhomSanPhams!.InitializeAsync(),
+                Toppings!.InitializeAsync(),
+                TaiKhoans!.InitializeAsync(),
+                SanPhams!.InitializeAsync(),
+                Vouchers!.InitializeAsync(),
+                HoaDons!.InitializeAsync(),
+                HoaDonNos!.InitializeAsync(),
+                PhuongThucThanhToans!.InitializeAsync(),
+                TuDienTraCuus!.InitializeAsync(),
+                NguyenLieuBanHangs!.InitializeAsync(),
+                CongThucs!.InitializeAsync(),
+                SuDungNguyenLieus!.InitializeAsync(),
+                KhachHangGiaBans!.InitializeAsync(),
+                CongViecNoiBos!.InitializeAsync(),
+                ChiTietHoaDonThanhToans!.InitializeAsync(),
+                NguyenLieus!.InitializeAsync(),
+                ChiTieuHangNgays!.InitializeAsync()
+            );
+
+            BuildQuickOrderMenu();
+        }
+
+        public static async Task HandleSignalAsync(string action, string id)
+        {
+            if (!Guid.TryParse(id, out var guid))
+                return;
+
+            var key = $"{action}:{id}";
+            if (!_processing.TryAdd(key, 0))
+                return;
+
+            try
+            {
+                switch (action)
+                {
+                    case "CREATE":
+                    case "UPDATE":
+                    case "F12":
+                    case "ESC":
+                    case "PRINT":
+                        await RefreshHoaDonProvidersAsync(id);
+                        break;
+
+                    case "DEL":
+                        RemoveHoaDonProviders(guid);
+                        break;
+
+                    case "F1":
+                    case "F4":
+                    case "ROLLBACK":
+                        await RefreshHoaDonProvidersAsync(id);
+                        if (ChiTietHoaDonThanhToans != null)
+                            await ChiTietHoaDonThanhToans.ReloadAsync();
+                        break;
+
+                    default:
+                        Console.WriteLine($"Unknown signal: {action}");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Signal handle error ({action}): {ex.Message}");
+            }
+            finally
+            {
+                _processing.TryRemove(key, out _);
+            }
+        }
+    }
+}
+
+namespace TraSuaApp.WpfClient.Hubs
+{
+    using TraSuaApp.WpfClient.DataProviders;
+
+    public interface ISignalRClient
+    {
+        Task ConnectAsync();
+        Task<string?> GetConnectionId();
+        void OnDisconnected(Action onDisconnected);
+        void OnReconnected(Action onReconnected);
+    }
+
+    public class SignalRClient : ISignalRClient
+    {
+        private readonly HubConnection _connection;
+        private Action? _onDisconnected;
+        private Action? _onReconnected;
+        private string? _connectionId;
+
+        public SignalRClient(string hubUrl)
+        {
+            _connection = new HubConnectionBuilder()
+                .WithUrl(hubUrl)
+                .WithAutomaticReconnect()
+                .Build();
+
+            RegisterSignals();
+
+            _connection.Closed += async _ =>
+            {
+                Console.WriteLine("SignalR disconnected");
+                _onDisconnected?.Invoke();
+                await Task.CompletedTask;
+            };
+
+            _connection.Reconnecting += async _ =>
+            {
+                Console.WriteLine("SignalR reconnecting...");
+                await Task.CompletedTask;
+            };
+
+            _connection.Reconnected += async _ =>
+            {
+                Console.WriteLine("SignalR reconnected");
+
+                await RefreshConnectionIdAsync();
+                await AppProviders.ReloadAllAsync();
+
+                _onReconnected?.Invoke();
+            };
+        }
+
+        private void RegisterSignals()
+        {
+            Register("CREATE");
+            Register("UPDATE");
+            Register("DEL");
+            Register("F1");
+            Register("F4");
+            Register("F12");
+            Register("ESC");
+            Register("ROLLBACK");
+            Register("PRINT");
+        }
+
+        private void Register(string signal)
+        {
+            _connection.On<SignalMessageDto>(signal, async msg =>
+            {
+                if (msg == null)
+                    return;
+
+                if (!string.IsNullOrWhiteSpace(_connectionId) &&
+                    string.Equals(msg.SenderConnectionId, _connectionId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                Console.WriteLine($"Signal: {signal} - {msg.Id}");
+                await ForwardAsync(signal, msg.Id);
+            });
+        }
+
+        private async Task ForwardAsync(string action, string id)
+        {
+            try
+            {
+                await AppProviders.HandleSignalAsync(action, id);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Signal error ({action}): {ex.Message}");
+            }
+        }
+
+        private async Task RefreshConnectionIdAsync()
+        {
+            try
+            {
+                _connectionId = await _connection.InvokeAsync<string>("GetConnectionId");
+                ApiClient.ConnectionId = _connectionId;
+            }
+            catch
+            {
+                _connectionId = null;
+                ApiClient.ConnectionId = null;
+            }
+        }
+
+        public async Task ConnectAsync()
+        {
+            if (_connection.State == HubConnectionState.Disconnected)
+            {
+                await _connection.StartAsync();
+                Console.WriteLine("SignalR connected");
+            }
+
+            await RefreshConnectionIdAsync();
+        }
+
+        public void OnDisconnected(Action onDisconnected) => _onDisconnected = onDisconnected;
+        public void OnReconnected(Action onReconnected) => _onReconnected = onReconnected;
+
+        public async Task<string?> GetConnectionId()
+        {
+            if (!string.IsNullOrWhiteSpace(_connectionId))
+                return _connectionId;
+
+            try
+            {
+                _connectionId = await _connection.InvokeAsync<string>("GetConnectionId");
+                return _connectionId;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }

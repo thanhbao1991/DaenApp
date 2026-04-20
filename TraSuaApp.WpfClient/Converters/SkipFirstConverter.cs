@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 using System.Windows.Data;
-using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Infrastructure.Dtos;
 
 namespace TraSuaApp.WpfClient.Converters
 {

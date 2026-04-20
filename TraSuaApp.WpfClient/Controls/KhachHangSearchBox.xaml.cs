@@ -3,8 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.Controls
@@ -14,12 +14,11 @@ namespace TraSuaApp.WpfClient.Controls
         public ObservableCollection<KhachHangDto> KhachHangList = new();
         public KhachHangDto? SelectedKhachHang { get; private set; }
 
-        // 🟟 Sự kiện mở rộng
         public event Action<KhachHangDto>? KhachHangSelected;
-        public event Action<KhachHangDto>? KhachHangConfirmed;  // Double-click xác nhận chọn khách
+        public event Action<KhachHangDto>? KhachHangConfirmed;
         public event Action? KhachHangCleared;
-        public event Action? KhachMoiSelected;                   // Chọn “Khách mới”
-                                                                 // KhachHangSearchBox.xaml.cs  (thêm vào class KhachHangSearchBox)
+        public event Action? KhachMoiSelected;
+
         public bool TrySelectUniqueMatchFromText(bool fireConfirmedEvent = true)
         {
             string raw = SearchTextBox.Text?.Trim() ?? "";
@@ -27,24 +26,22 @@ namespace TraSuaApp.WpfClient.Controls
 
             string keyword = StringHelper.MyNormalizeText(raw);
 
-            // Lọc giống y như SearchTextBox_TextChanged để thống nhất tiêu chí
             var results = KhachHangList
                 .Where(x => x.TimKiem.Contains(keyword))
                 .OrderByDescending(x => x.ThuTu)
-                .Take(2) // chỉ cần biết 0/1/>1
+                .Take(2)
                 .ToList();
 
             if (results.Count == 1)
             {
                 var kh = results[0];
 
-                // Không bật popup
                 bool old = SuppressPopup;
                 SuppressPopup = true;
                 try
                 {
-                    Select(kh); // sẽ set SelectedKhachHang + Text + raise KhachHangSelected
-                    if (fireConfirmedEvent) KhachHangConfirmed?.Invoke(kh); // tuỳ chọn raise "đã xác nhận"
+                    Select(kh);
+                    if (fireConfirmedEvent) KhachHangConfirmed?.Invoke(kh);
                 }
                 finally
                 {
@@ -53,12 +50,12 @@ namespace TraSuaApp.WpfClient.Controls
                 return true;
             }
 
-            // 0 hoặc >1 kết quả: không làm gì, để hành vi cũ
             return false;
         }
-        // 🟟 Tuỳ chọn hành vi
+
         public bool ShowAllWhenEmpty { get; set; } = false;
         public bool SuppressPopup { get; set; } = false;
+
         public double? FixedPopupHeight
         {
             get => (double?)GetValue(FixedPopupHeightProperty);
@@ -68,6 +65,7 @@ namespace TraSuaApp.WpfClient.Controls
         public static readonly DependencyProperty FixedPopupHeightProperty =
             DependencyProperty.Register(nameof(FixedPopupHeight), typeof(double?), typeof(KhachHangSearchBox),
                 new PropertyMetadata(null));
+
         public KhachHangSearchBox()
         {
             InitializeComponent();
@@ -121,9 +119,6 @@ namespace TraSuaApp.WpfClient.Controls
             SearchTextBox.Focus();
         }
 
-        // ==========================
-        // 🟟 Xử lý tìm kiếm / hiển thị popup
-        // ==========================
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             ClearButton.Visibility = string.IsNullOrWhiteSpace(SearchTextBox.Text)
@@ -160,26 +155,21 @@ namespace TraSuaApp.WpfClient.Controls
                     .ToList();
             }
 
-
-
             ListBoxResults.ItemsSource = results;
             Popup.IsOpen = !SuppressPopup && results.Any();
         }
+
         public void TriggerSelectedEvent(KhachHangDto? kh)
         {
-            if (kh != null && KhachHangSelected != null)
-                KhachHangSelected.Invoke(kh);
+            if (kh != null)
+                KhachHangSelected?.Invoke(kh);
         }
-        // ==========================
-        // 🟟 Chọn khách hàng
-        // ==========================
+
         private void ListBoxResults_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (ListBoxResults.SelectedItem is KhachHangDto kh)
             {
                 Select(kh);
-
-                // 🟟 Khi click chọn khách xong thì coi như xác nhận luôn
                 KhachHangConfirmed?.Invoke(kh);
             }
 
@@ -191,7 +181,6 @@ namespace TraSuaApp.WpfClient.Controls
         {
             if (kh.Id == Guid.Empty)
             {
-                // 🟟 Khách mới
                 SelectedKhachHang = null;
                 SearchTextBox.Text = "!!! Nếu là KHÁCH MỚI nhấn vào đây, khách cũ nhập để tìm !!!";
                 Popup.IsOpen = false;
@@ -202,14 +191,13 @@ namespace TraSuaApp.WpfClient.Controls
             SelectedKhachHang = kh;
             SearchTextBox.Text = kh.Ten;
             SearchTextBox.CaretIndex = SearchTextBox.Text.Length;
+
             if (!ShowAllWhenEmpty)
                 Popup.IsOpen = false;
+
             KhachHangSelected?.Invoke(kh);
         }
 
-        // ==========================
-        // 🟟 Điều hướng bàn phím
-        // ==========================
         private void Root_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Down && Popup.IsOpen && ListBoxResults.Items.Count > 0)
@@ -253,12 +241,9 @@ namespace TraSuaApp.WpfClient.Controls
             {
                 if (Popup.IsOpen)
                 {
-                    KhachHangDto? item = null;
-
-                    if (ListBoxResults.SelectedItem is KhachHangDto selected)
-                        item = selected;
-                    else if (ListBoxResults.Items.Count > 0)
-                        item = ListBoxResults.Items[0] as KhachHangDto;
+                    KhachHangDto? item =
+                        ListBoxResults.SelectedItem as KhachHangDto
+                        ?? ListBoxResults.Items[0] as KhachHangDto;
 
                     if (item != null)
                     {
@@ -280,9 +265,7 @@ namespace TraSuaApp.WpfClient.Controls
             }
         }
 
-        // ==========================
-        // 🟟 Nút ▲ ▼ (đổi thứ tự)
-        // ==========================
+        // ================= MOVE =================
         private async void MoveButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is Guid khId)
@@ -290,43 +273,37 @@ namespace TraSuaApp.WpfClient.Controls
                 var results = ListBoxResults.ItemsSource as List<KhachHangDto>;
                 if (results == null) return;
 
-                var current = results.FirstOrDefault(r => r.Id == khId);
-                if (current == null) return;
-
                 int index = results.FindIndex(r => r.Id == khId);
+                if (index < 0) return;
+
+                var current = results[index];
                 KhachHangDto? neighbor = null;
 
                 if (btn.Name == "UpButton" && index > 0)
-                {
                     neighbor = results[index - 1];
-                }
                 else if (btn.Name != "UpButton" && index < results.Count - 1)
-                {
                     neighbor = results[index + 1];
-                }
 
-                if (neighbor != null)
+                if (neighbor == null) return;
+
+                (current.ThuTu, neighbor.ThuTu) = (neighbor.ThuTu, current.ThuTu);
+
+                current.LastModified = DateTime.Now;
+                neighbor.LastModified = DateTime.Now;
+
+                var api = Apis.KhachHang;
+
+                var result1 = await api.UpdateAsync(current.Id, current);
+                var result2 = await api.UpdateAsync(neighbor.Id, neighbor);
+
+                if (result1.IsSuccess && result2.IsSuccess)
                 {
-                    // 🟟 Hoán đổi thứ tự
-                    int temp = current.ThuTu;
-                    current.ThuTu = neighbor.ThuTu;
-                    neighbor.ThuTu = temp;
-
-                    current.LastModified = DateTime.Now;
-                    neighbor.LastModified = DateTime.Now;
-
-                    var api = new KhachHangApi();
-                    var result1 = await api.UpdateSingleAsync(current.Id, current);
-                    var result2 = await api.UpdateSingleAsync(neighbor.Id, neighbor);
-
-                    if (result1.IsSuccess && result2.IsSuccess)
-                    {
-                        SearchTextBox_TextChanged(null, null);
-                    }
-                    else
-                    {
-                        MessageBox.Show("Có lỗi khi cập nhật", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+                    SearchTextBox_TextChanged(null!, null!);
+                }
+                else
+                {
+                    MessageBox.Show("Có lỗi khi cập nhật", "Lỗi",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

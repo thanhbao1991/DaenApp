@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using TraSuaApp.Api.Hubs;
-using TraSuaApp.Applicationn.Interfaces;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using Microsoft.EntityFrameworkCore;
+
+using TraSuaApp.Infrastructure;
+using TraSuaApp.Infrastructure.Entities;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
 
@@ -14,91 +15,130 @@ namespace TraSuaApp.Api.Controllers;
 [Route("api/[controller]")]
 public class TaiKhoanController : BaseApiController
 {
-    private readonly ITaiKhoanService _service;
-    private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["TaiKhoan"];
+    private readonly AppDbContext _context;
+    private readonly string _friendlyName = TuDien._tableFriendlyNames["TaiKhoan"];
 
-    public TaiKhoanController(ITaiKhoanService service, IHubContext<SignalRHub> hub)
+    public TaiKhoanController(AppDbContext context)
     {
-        _service = service;
-        _hub = hub;
+        _context = context;
     }
 
-    private async Task NotifyClients(string action, Guid id)
+    private static TaiKhoanDto ToDto(TaiKhoan e)
     {
-        if (!string.IsNullOrEmpty(ConnectionId))
+        return new TaiKhoanDto
         {
-            await _hub.Clients
-                .AllExcept(ConnectionId)
-                .SendAsync("EntityChanged", "TaiKhoan", action, id.ToString(), ConnectionId ?? "");
-        }
-        else
-        {
-            await _hub.Clients.All.SendAsync("EntityChanged", "TaiKhoan", action, id.ToString(), ConnectionId ?? "");
-        }
+            Id = e.Id,
+            TenDangNhap = e.TenDangNhap,
+            TenHienThi = e.TenHienThi,
+            VaiTro = e.VaiTro,
+            IsActive = e.IsActive,
+            LastModified = e.LastModified
+        };
     }
 
+    // ======================
+    // GET ALL
+    // ======================
     [HttpGet]
     public async Task<ActionResult<Result<List<TaiKhoanDto>>>> GetAll()
     {
-        var list = await _service.GetAllAsync();
+        var list = await _context.TaiKhoans
+            .AsNoTracking()
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
+            .ToListAsync();
+
         return Result<List<TaiKhoanDto>>.Success(list);
     }
 
+    // ======================
+    // GET BY ID
+    // ======================
     [HttpGet("{id}")]
     public async Task<ActionResult<Result<TaiKhoanDto>>> GetById(Guid id)
     {
-        var dto = await _service.GetByIdAsync(id);
-        if (dto == null)
+        var entity = await _context.TaiKhoans
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (entity == null)
             return Result<TaiKhoanDto>.Failure($"Không tìm thấy {_friendlyName}.");
 
-        return Result<TaiKhoanDto>.Success(dto);
+        return Result<TaiKhoanDto>.Success(ToDto(entity));
     }
 
+    // ======================
+    // CREATE
+    // ======================
     [HttpPost]
     public async Task<ActionResult<Result<TaiKhoanDto>>> Create(TaiKhoanDto dto)
     {
-        var result = await _service.CreateAsync(dto);
-        if (result.IsSuccess && result.Data != null)
-            await NotifyClients("created", result.Data.Id);
+        if (string.IsNullOrWhiteSpace(dto.TenDangNhap) || string.IsNullOrWhiteSpace(dto.MatKhau))
+            return Result<TaiKhoanDto>.Failure("Thiếu thông tin.");
 
-        return result;
+        bool exist = await _context.TaiKhoans
+            .AnyAsync(x => x.TenDangNhap == dto.TenDangNhap);
+
+        if (exist)
+            return Result<TaiKhoanDto>.Failure("Tài khoản đã tồn tại.");
+
+        var entity = new TaiKhoan
+        {
+            Id = Guid.NewGuid(),
+            TenDangNhap = dto.TenDangNhap,
+            MatKhau = dto.MatKhau, // 🟟 nếu có hash thì thay ở đây
+            TenHienThi = dto.TenHienThi,
+            VaiTro = dto.VaiTro,
+            IsActive = dto.IsActive,
+            LastModified = DateTime.Now
+        };
+
+        _context.TaiKhoans.Add(entity);
+        await _context.SaveChangesAsync();
+
+        return Result<TaiKhoanDto>.Success(ToDto(entity), "Đã thêm tài khoản.")
+            ;
     }
 
+    // ======================
+    // UPDATE
+    // ======================
     [HttpPut("{id}")]
     public async Task<ActionResult<Result<TaiKhoanDto>>> Update(Guid id, TaiKhoanDto dto)
     {
-        var result = await _service.UpdateAsync(id, dto);
-        if (result.IsSuccess)
-            await NotifyClients("updated", id);
+        var entity = await _context.TaiKhoans
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
+        if (entity == null)
+            return Result<TaiKhoanDto>.Failure("Không tìm thấy.");
+
+        entity.TenHienThi = dto.TenHienThi;
+        entity.VaiTro = dto.VaiTro;
+        entity.IsActive = dto.IsActive;
+        entity.LastModified = DateTime.Now;
+
+        await _context.SaveChangesAsync();
+
+        return Result<TaiKhoanDto>.Success(ToDto(entity), "Đã cập nhật.")
+            ;
     }
 
+    // ======================
+    // DELETE (HARD DELETE)
+    // ======================
     [HttpDelete("{id}")]
     public async Task<ActionResult<Result<TaiKhoanDto>>> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("deleted", id);
+        var entity = await _context.TaiKhoans
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
-    }
+        if (entity == null)
+            return Result<TaiKhoanDto>.Failure("Không tìm thấy.");
 
-    [HttpPut("{id}/restore")]
-    public async Task<ActionResult<Result<TaiKhoanDto>>> Restore(Guid id)
-    {
-        var result = await _service.RestoreAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("restored", id);
+        _context.TaiKhoans.Remove(entity);
+        await _context.SaveChangesAsync();
 
-        return result;
-    }
-
-    [HttpGet("sync")]
-    public async Task<ActionResult<Result<List<TaiKhoanDto>>>> Sync(DateTime lastSync)
-    {
-        var list = await _service.GetUpdatedSince(lastSync);
-        return Result<List<TaiKhoanDto>>.Success(list);
+        return Result<TaiKhoanDto>.Success(null, "Đã xoá.")
+            ;
     }
 }

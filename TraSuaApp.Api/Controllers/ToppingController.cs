@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Api.Hubs;
-using TraSuaApp.Applicationn.Interfaces;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Entities;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.Shared.Config;
 
 namespace TraSuaApp.Api.Controllers;
 
@@ -14,13 +16,13 @@ namespace TraSuaApp.Api.Controllers;
 [Route("api/[controller]")]
 public class ToppingController : BaseApiController
 {
-    private readonly IToppingService _service;
+    private readonly AppDbContext _context;
     private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["Topping"];
+    private readonly string _friendlyName = TuDien._tableFriendlyNames["Topping"];
 
-    public ToppingController(IToppingService service, IHubContext<SignalRHub> hub)
+    public ToppingController(AppDbContext context, IHubContext<SignalRHub> hub)
     {
-        _service = service;
+        _context = context;
         _hub = hub;
     }
 
@@ -38,67 +40,166 @@ public class ToppingController : BaseApiController
         }
     }
 
+    private static ToppingDto ToDto(Topping entity)
+    {
+        return new ToppingDto
+        {
+            Id = entity.Id,
+            Ten = entity.Ten,
+            Gia = entity.Gia,
+            NgungBan = entity.NgungBan,
+            LastModified = entity.LastModified,
+
+            NhomSanPhams = entity.NhomSanPhams.Select(x => x.Id).ToList()
+        };
+    }
+
+    private async Task<List<NhomSanPham>> LoadNhomSanPhamsAsync(IEnumerable<Guid>? ids)
+    {
+        var list = ids?
+            .Where(x => x != Guid.Empty)
+            .Distinct()
+            .ToList() ?? new List<Guid>();
+
+        if (list.Count == 0)
+            return new List<NhomSanPham>();
+
+        return await _context.NhomSanPhams
+            .Where(x => list.Contains(x.Id))
+            .ToListAsync();
+    }
+
     [HttpGet]
     public async Task<ActionResult<Result<List<ToppingDto>>>> GetAll()
     {
-        var list = await _service.GetAllAsync();
+        var list = await _context.Toppings
+            .AsNoTracking()
+            .Include(x => x.NhomSanPhams)
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
+            .ToListAsync();
+
         return Result<List<ToppingDto>>.Success(list);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Result<ToppingDto>>> GetById(Guid id)
     {
-        var dto = await _service.GetByIdAsync(id);
-        if (dto == null)
+        var entity = await _context.Toppings
+            .AsNoTracking()
+            .Include(x => x.NhomSanPhams)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (entity == null)
             return Result<ToppingDto>.Failure($"Không tìm thấy {_friendlyName}.");
 
-        return Result<ToppingDto>.Success(dto);
+        return Result<ToppingDto>.Success(ToDto(entity));
     }
 
     [HttpPost]
     public async Task<ActionResult<Result<ToppingDto>>> Create(ToppingDto dto)
     {
-        var result = await _service.CreateAsync(dto);
-        if (result.IsSuccess && result.Data != null)
-            await NotifyClients("created", result.Data.Id);
+        var ten = (dto.Ten ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(ten))
+            return Result<ToppingDto>.Failure("Tên topping không được để trống.");
 
-        return result;
+        var exists = await _context.Toppings
+            .AnyAsync(x => x.Ten.ToLower() == ten.ToLower());
+
+        if (exists)
+            return Result<ToppingDto>.Failure($"Topping {ten} đã tồn tại.");
+
+        var now = DateTime.Now;
+        var nhoms = await LoadNhomSanPhamsAsync(dto.NhomSanPhams);
+
+        var entity = new Topping
+        {
+            Id = Guid.NewGuid(),
+            Ten = ten,
+            Gia = dto.Gia,
+            NgungBan = dto.NgungBan,
+            LastModified = now,
+            NhomSanPhams = nhoms
+        };
+
+        _context.Toppings.Add(entity);
+        await _context.SaveChangesAsync();
+
+        entity = await _context.Toppings
+            .AsNoTracking()
+            .Include(x => x.NhomSanPhams)
+            .FirstAsync(x => x.Id == entity.Id);
+
+        var after = ToDto(entity);
+        return Result<ToppingDto>.Success(after, $"Thêm {_friendlyName.ToLower()} thành công.")
+
+            ;
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<Result<ToppingDto>>> Update(Guid id, ToppingDto dto)
     {
-        var result = await _service.UpdateAsync(id, dto);
-        if (result.IsSuccess)
-            await NotifyClients("updated", id);
+        var entity = await _context.Toppings
+            .Include(x => x.NhomSanPhams)
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
+        if (entity == null)
+            return Result<ToppingDto>.Failure($"Không tìm thấy {_friendlyName}.");
+
+        var ten = (dto.Ten ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(ten))
+            return Result<ToppingDto>.Failure("Tên topping không được để trống.");
+
+        var exists = await _context.Toppings
+            .AnyAsync(x => x.Id != id && x.Ten.ToLower() == ten.ToLower());
+
+        if (exists)
+            return Result<ToppingDto>.Failure($"Topping {ten} đã tồn tại.");
+
+        var before = ToDto(entity);
+        var now = DateTime.Now;
+
+        entity.Ten = ten;
+        entity.Gia = dto.Gia;
+        entity.NgungBan = dto.NgungBan;
+        entity.LastModified = now;
+
+        var nhoms = await LoadNhomSanPhamsAsync(dto.NhomSanPhams);
+        entity.NhomSanPhams.Clear();
+        foreach (var nhom in nhoms)
+            entity.NhomSanPhams.Add(nhom);
+
+        await _context.SaveChangesAsync();
+
+        entity = await _context.Toppings
+            .AsNoTracking()
+            .Include(x => x.NhomSanPhams)
+            .FirstAsync(x => x.Id == id);
+
+        var after = ToDto(entity);
+        return Result<ToppingDto>.Success(after, $"Cập nhật {_friendlyName.ToLower()} thành công.")
+
+
+            ;
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult<Result<ToppingDto>>> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("deleted", id);
+        var entity = await _context.Toppings
+            .Include(x => x.NhomSanPhams)
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
-    }
+        if (entity == null)
+            return Result<ToppingDto>.Failure($"Không tìm thấy {_friendlyName}.");
 
-    [HttpPut("{id}/restore")]
-    public async Task<ActionResult<Result<ToppingDto>>> Restore(Guid id)
-    {
-        var result = await _service.RestoreAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("restored", id);
+        var before = ToDto(entity);
 
-        return result;
-    }
+        _context.Toppings.Remove(entity);
+        await _context.SaveChangesAsync();
 
-    [HttpGet("sync")]
-    public async Task<ActionResult<Result<List<ToppingDto>>>> Sync(DateTime lastSync)
-    {
-        var list = await _service.GetUpdatedSince(lastSync);
-        return Result<List<ToppingDto>>.Success(list);
+        return Result<ToppingDto>.Success(before, $"Đã xoá {_friendlyName.ToLower()}.")
+
+            ;
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
 
@@ -21,10 +21,7 @@ public abstract class BaseApiController : ControllerBase
             return Ok(new
             {
                 result.Message,
-                result.EntityId,
                 Data = result.Data,
-                Before = result.BeforeData,
-                After = result.AfterData
             });
         }
 

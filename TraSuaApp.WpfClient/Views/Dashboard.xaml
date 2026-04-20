@@ -8,7 +8,6 @@
     Title="Dashboard"
     AllowsTransparency="True"
     Background="Transparent"
-    Closing="Window_Closing"
     FontSize="{StaticResource FontSizeNormal}"
     FontWeight="Medium"
     PreviewKeyDown="Window_PreviewKeyDown"
@@ -116,85 +115,8 @@
                     <views:CongViecNoiBoTab x:Name="CongViecNoiBoTab" />
                 </TabItem>
 
-                <TabItem
-                    x:Name="DoanhThuTab"
-                    Header="D.Thu Tháng "
-                    Tag="DoanhThuThangTab"
-                    ToolTip="+"
-                    ToolTipService.IsEnabled="False">
-                    <views:DoanhThuThangTab x:Name="DoanhThuThangTab" />
-                </TabItem>
 
-                <TabItem
-                    Header="D.Thu Năm"
-                    Tag="DoanhThuNamTab"
-                    ToolTip="+"
-                    ToolTipService.IsEnabled="False">
-                    <views:DoanhThuNamTab x:Name="DoanhThuNamTab" />
-                </TabItem>
 
-                <TabItem
-                    x:Name="ReportsTab"
-                    Tag="ReportsLauncher"
-                    ToolTip="-"
-                    ToolTipService.IsEnabled="False">
-                    <TabItem.Header>
-                        <!--  Click vào header để mở ContextMenu  -->
-                        <Border
-                            Cursor="Hand"
-                            MouseLeftButtonDown="ReportsHeader_MouseLeftButtonDown"
-                            MouseRightButtonDown="ReportsHeader_MouseLeftButtonDown">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock x:Name="ReportsHeaderText" Text="Báo cáo" />
-                                <TextBlock Text="  ▼" />
-                            </StackPanel>
-
-                            <Border.ContextMenu>
-                                <ContextMenu x:Name="ReportsContextMenu">
-                                    <MenuItem
-                                        Padding="8"
-                                        Click="ReportMenu_Click"
-                                        Header="Ứng Nhã"
-                                        Tag="UngNha" />
-                                    <MenuItem
-                                        Padding="8"
-                                        Click="ReportMenu_Click"
-                                        Header="Chi Tiêu"
-                                        Tag="ChiTieu" />
-                                    <MenuItem
-                                        Padding="8"
-                                        Click="ReportMenu_Click"
-                                        Header="Vouchers"
-                                        Tag="Vouchers" />
-                                    <MenuItem
-                                        Padding="8"
-                                        Click="ReportMenu_Click"
-                                        Header="TOP Sản Phẩm"
-                                        Tag="SanPham" />
-                                    <MenuItem
-                                        Padding="8"
-                                        Click="ReportMenu_Click"
-                                        Header="TOP Khách Hàng"
-                                        Tag="KhachHang" />
-                                    <Separator />
-                                    <MenuItem
-                                        Padding="8"
-                                        Click="ReportMenu_Click"
-                                        Header="Xoá"
-                                        Tag="__Clear" />
-                                </ContextMenu>
-                            </Border.ContextMenu>
-                        </Border>
-                    </TabItem.Header>
-                    <Grid>
-                        <TextBlock
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            FontStyle="Italic"
-                            Opacity="0.7"
-                            Text="Chọn báo cáo từ tiêu đề tab..." />
-                    </Grid>
-                </TabItem>
             </TabControl>
 
             <Grid

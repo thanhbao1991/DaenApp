@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.Api.Filters
 {

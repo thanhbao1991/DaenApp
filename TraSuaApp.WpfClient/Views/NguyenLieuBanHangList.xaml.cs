@@ -1,12 +1,14 @@
 ﻿using System.ComponentModel;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.AdminViews
@@ -15,48 +17,78 @@ namespace TraSuaApp.WpfClient.AdminViews
     {
         private readonly CollectionViewSource _viewSource = new();
         private readonly WpfErrorHandler _errorHandler = new();
-        string _friendlyName = TuDien._tableFriendlyNames["NguyenLieuBanHang"];
+        private readonly string _friendlyName = TuDien._tableFriendlyNames["NguyenLieuBanHang"];
+
+        private Guid? _editingId;
 
         public NguyenLieuBanHangList()
         {
             InitializeComponent();
-            this.Title = _friendlyName;
-            this.TieuDeTextBlock.Text = _friendlyName;
-            this.PreviewKeyDown += NguyenLieuBanHangList_PreviewKeyDown;
 
-            // chờ AppProviders
-            while (AppProviders.NguyenLieuBanHangs?.Items == null)
-            {
-                Task.Delay(100);
-            }
+            Title = _friendlyName;
+            TieuDeTextBlock.Text = _friendlyName;
+            PreviewKeyDown += NguyenLieuBanHangList_PreviewKeyDown;
+            Closed += NguyenLieuBanHangList_Closed;
 
-            // 1. Gán Source
-            _viewSource.Source = AppProviders.NguyenLieuBanHangs.Items;
             _viewSource.Filter += ViewSource_Filter;
-            NguyenLieuBanHangDataGrid.ItemsSource = _viewSource.View;
+            BindSource();
 
-            // 2. Subscribe OnChanged
-            AppProviders.NguyenLieuBanHangs.OnChanged += () => ApplySearch();
+            AppProviders.NguyenLieuBanHangs.OnChanged += AppProviders_NguyenLieuBanHangs_OnChanged;
 
-            // 3. Reload lần đầu
             Loaded += async (_, __) =>
             {
-                await AppProviders.NguyenLieuBanHangs.ReloadAsync();
-                ApplySearch();
+                try
+                {
+                    Mouse.OverrideCursor = Cursors.Wait;
+                    await AppProviders.NguyenLieuBanHangs.ReloadAsync();
+                    BindSource();
+                    ApplySearch();
+                    SetAddMode();
+                }
+                catch (Exception ex)
+                {
+                    _errorHandler.Handle(ex, "Load");
+                }
+                finally
+                {
+                    Mouse.OverrideCursor = null;
+                }
             };
+        }
+
+        private void NguyenLieuBanHangList_Closed(object? sender, EventArgs e)
+        {
+            AppProviders.NguyenLieuBanHangs.OnChanged -= AppProviders_NguyenLieuBanHangs_OnChanged;
+        }
+
+        private void AppProviders_NguyenLieuBanHangs_OnChanged()
+        {
+            BindSource();
+            ApplySearch();
+        }
+
+        private void BindSource()
+        {
+            _viewSource.Source = AppProviders.NguyenLieuBanHangs.Items;
+            NguyenLieuBanHangDataGrid.ItemsSource = _viewSource.View;
         }
 
         private void ApplySearch()
         {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(ApplySearch);
+                return;
+            }
+
+            if (_viewSource.View == null)
+                return;
+
             _viewSource.View.Refresh();
 
             _viewSource.View.SortDescriptions.Clear();
             _viewSource.View.SortDescriptions.Add(
-                // new SortDescription(nameof(NguyenLieuBanHangDto.LastModified), ListSortDirection.Descending),
-                new SortDescription(nameof(NguyenLieuBanHangDto.TonKho), ListSortDirection.Descending)
-
-
-                );
+                new SortDescription(nameof(NguyenLieuBanHangDto.TonKho), ListSortDirection.Descending));
 
             var view = _viewSource.View.Cast<NguyenLieuBanHangDto>().ToList();
             for (int i = 0; i < view.Count; i++)
@@ -75,63 +107,226 @@ namespace TraSuaApp.WpfClient.AdminViews
             e.Accepted = string.IsNullOrEmpty(keyword) || (item.TimKiem?.Contains(keyword) ?? false);
         }
 
+        private void SetAddMode()
+        {
+            _editingId = null;
+            FormTitleTextBlock.Text = "Thêm nguyên liệu bán hàng";
+            SaveButton.Content = "Thêm";
+
+            TenTextBox.Text = string.Empty;
+            DonViTinhTextBox.Text = string.Empty;
+            TonKhoNumeric.Value = 0;
+            DangSuDungCheckBox.IsChecked = true;
+            ErrorTextBlock.Text = string.Empty;
+
+            NguyenLieuBanHangDataGrid.UnselectAll();
+            TenTextBox.Focus();
+        }
+
+        private void SetEditMode(NguyenLieuBanHangDto selected)
+        {
+            _editingId = selected.Id;
+            FormTitleTextBlock.Text = "Sửa nguyên liệu bán hàng";
+            SaveButton.Content = "Cập nhật";
+
+            TenTextBox.Text = selected.Ten;
+            DonViTinhTextBox.Text = selected.DonViTinh ?? string.Empty;
+            TonKhoNumeric.Value = selected.TonKho;
+            DangSuDungCheckBox.IsChecked = selected.DangSuDung;
+            ErrorTextBlock.Text = string.Empty;
+
+            TenTextBox.Focus();
+            TenTextBox.SelectAll();
+        }
+
+        private int FindIndex(Guid id)
+        {
+            for (int i = 0; i < AppProviders.NguyenLieuBanHangs.Items.Count; i++)
+            {
+                if (AppProviders.NguyenLieuBanHangs.Items[i].Id == id)
+                    return i;
+            }
+
+            return -1;
+        }
+
         private async void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
-            await AppProviders.NguyenLieuBanHangs.ReloadAsync();
-            ApplySearch();
+            await ReloadAsync();
         }
 
-        private async void AddButton_Click(object sender, RoutedEventArgs e)
+        private async Task ReloadAsync()
         {
-            var window = new NguyenLieuBanHangEdit();
-            window.Owner = this;
-            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
-            if (window.ShowDialog() == true)
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
                 await AppProviders.NguyenLieuBanHangs.ReloadAsync();
+                BindSource();
+                ApplySearch();
+                SetAddMode();
+            }
+            catch (Exception ex)
+            {
+                _errorHandler.Handle(ex, "Reload");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
         }
 
-        private async void EditButton_Click(object sender, RoutedEventArgs e)
+        private void AddButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetAddMode();
+        }
+
+        private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             if (NguyenLieuBanHangDataGrid.SelectedItem is not NguyenLieuBanHangDto selected)
             {
-                MessageBox.Show("Vui lòng chọn dòng cần sửa.", "Thông báo",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Vui lòng chọn dòng cần sửa.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            var window = new NguyenLieuBanHangEdit(selected);
-            window.Owner = this;
-            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            SetEditMode(selected);
+        }
 
-            if (window.ShowDialog() == true)
-                await AppProviders.NguyenLieuBanHangs.ReloadAsync();
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            ErrorTextBlock.Text = string.Empty;
+
+            var ten = TenTextBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(ten))
+            {
+                ErrorTextBlock.Text = $"Tên {_friendlyName} không được để trống.";
+                TenTextBox.Focus();
+                return;
+            }
+
+            if (TonKhoNumeric.Value < 0)
+            {
+                ErrorTextBlock.Text = "Tồn kho không được âm.";
+                TonKhoNumeric.Focus();
+                return;
+            }
+
+            var dto = new NguyenLieuBanHangDto
+            {
+                Ten = ten,
+                DonViTinh = string.IsNullOrWhiteSpace(DonViTinhTextBox.Text) ? null : DonViTinhTextBox.Text.Trim(),
+                TonKho = TonKhoNumeric.Value,
+                DangSuDung = DangSuDungCheckBox.IsChecked == true
+            };
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+
+                HttpResponseMessage response;
+
+                if (_editingId == null)
+                {
+                    response = await ApiClient.PostAsync("/api/NguyenLieuBanHang", dto);
+                }
+                else
+                {
+                    response = await ApiClient.PutAsync($"/api/NguyenLieuBanHang/{_editingId.Value}", dto);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    ErrorTextBlock.Text = $"{(_editingId == null ? "Thêm" : "Cập nhật")} thất bại ({(int)response.StatusCode}).";
+                    return;
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<Result<NguyenLieuBanHangDto>>();
+
+                if (result?.IsSuccess == true)
+                {
+                    if (result.Data != null)
+                    {
+                        var index = FindIndex(result.Data.Id);
+
+                        if (index >= 0)
+                            AppProviders.NguyenLieuBanHangs.Items[index] = result.Data;
+                        else
+                            AppProviders.NguyenLieuBanHangs.Items.Add(result.Data);
+                    }
+                    else
+                    {
+                        await AppProviders.NguyenLieuBanHangs.ReloadAsync();
+                    }
+
+                    NotiHelper.ShowSuccess(result.Message);
+                    BindSource();
+                    ApplySearch();
+                    SetAddMode();
+                }
+                else
+                {
+                    await AppProviders.NguyenLieuBanHangs.ReloadAsync();
+                    BindSource();
+                    ApplySearch();
+                    SetAddMode();
+                    NotiHelper.ShowSuccess(_editingId == null ? "Thêm thành công." : "Cập nhật thành công.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandler.Handle(ex, "Save");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
         }
 
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (NguyenLieuBanHangDataGrid.SelectedItem is not NguyenLieuBanHangDto selected)
             {
-                MessageBox.Show("Vui lòng chọn dòng cần xoá.", "Thông báo",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Vui lòng chọn dòng cần xoá.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             var confirm = MessageBox.Show(
                 $"Bạn có chắc chắn muốn xoá {_friendlyName} '{selected.Ten}'?",
-                "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                "Xác nhận xoá",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
 
-            if (confirm != MessageBoxResult.Yes) return;
+            if (confirm != MessageBoxResult.Yes)
+                return;
 
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
+
                 var response = await ApiClient.DeleteAsync($"/api/NguyenLieuBanHang/{selected.Id}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    NotiHelper.ShowError($"Xoá thất bại ({(int)response.StatusCode}).");
+                    return;
+                }
+
                 var result = await response.Content.ReadFromJsonAsync<Result<NguyenLieuBanHangDto>>();
-                if (result?.IsSuccess == true)
-                    AppProviders.NguyenLieuBanHangs.Remove(selected.Id);
+
+                var id = result?.Data?.Id != Guid.Empty
+                    ? result!.Data!.Id
+                    : selected.Id;
+
+                var index = FindIndex(id);
+
+                if (index >= 0)
+                    AppProviders.NguyenLieuBanHangs.Items.RemoveAt(index);
                 else
-                     NotiHelper.ShowError( result?.Message ?? "Không thể xoá.");
+                    await AppProviders.NguyenLieuBanHangs.ReloadAsync();
+
+                NotiHelper.ShowSuccess(result?.Message ?? "Xoá thành công.");
+                BindSource();
+                ApplySearch();
+                SetAddMode();
             }
             catch (Exception ex)
             {
@@ -143,21 +338,28 @@ namespace TraSuaApp.WpfClient.AdminViews
             }
         }
 
-        private async void NguyenLieuBanHangDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void CancelEditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (NguyenLieuBanHangDataGrid.SelectedItem is not NguyenLieuBanHangDto selected) return;
-            var window = new NguyenLieuBanHangEdit(selected);
-            window.Owner = this;
-            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            SetAddMode();
+        }
 
-            if (window.ShowDialog() == true)
-                await AppProviders.NguyenLieuBanHangs.ReloadAsync();
+        private void NguyenLieuBanHangDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (NguyenLieuBanHangDataGrid.SelectedItem is not NguyenLieuBanHangDto selected)
+                return;
+
+            SetEditMode(selected);
         }
 
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
-            => ApplySearch();
+        {
+            ApplySearch();
+        }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
 
         private void NguyenLieuBanHangList_PreviewKeyDown(object sender, KeyEventArgs e)
         {

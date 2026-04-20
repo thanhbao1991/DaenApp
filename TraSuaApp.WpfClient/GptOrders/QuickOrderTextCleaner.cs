@@ -1,9 +1,10 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.RegularExpressions;
-using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.WpfClient.DataProviders;
 
-namespace TraSuaApp.Shared.Helpers
+namespace TraSuaApp.Infrastructure.Helpers
 {
     /// <summary>
     /// Chuẩn hoá text đơn hàng (Messenger, GPT, v.v.)
@@ -32,7 +33,7 @@ namespace TraSuaApp.Shared.Helpers
                 if ((_dictExact.Count == 0 && _dictNormalized.Count == 0) || DateTime.UtcNow - _lastLoaded > CacheDuration)
                 {
                     var list = AppProviders.TuDienTraCuus?.Items ?? new ObservableCollection<TuDienTraCuuDto>();
-                    var active = list.Where(x => x.DangSuDung && !x.IsDeleted).ToList();
+                    var active = list.Where(x => x.DangSuDung).ToList();
 
                     // 1 chữ → lưu key KHÔNG DẤU
                     _dictExact = active

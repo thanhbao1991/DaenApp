@@ -1,12 +1,14 @@
 ﻿using System.ComponentModel;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
 
 namespace TraSuaApp.WpfClient.SettingsViews
@@ -17,35 +19,77 @@ namespace TraSuaApp.WpfClient.SettingsViews
         private readonly WpfErrorHandler _errorHandler = new();
         private readonly string _friendlyName = TuDien._tableFriendlyNames["KhachHangGiaBan"];
 
+        private Guid? _editingId;
+        private bool _editingIsDeleted;
+        private KhachHangGiaBanDto _editingModel = new();
+
         public KhachHangGiaBanList()
         {
             InitializeComponent();
+
             Title = _friendlyName;
             TieuDeTextBlock.Text = _friendlyName;
             PreviewKeyDown += KhachHangGiaBanList_PreviewKeyDown;
+            Closed += KhachHangGiaBanList_Closed;
 
-            // Gắn source ngay khi khởi tạo
-            _viewSource.Source = AppProviders.KhachHangGiaBans.Items;
             _viewSource.Filter += ViewSource_Filter;
-            KhachHangGiaBanDataGrid.ItemsSource = _viewSource.View;
+            BindSource();
 
-            // Subscribe thay đổi
-            AppProviders.KhachHangGiaBans.OnChanged += ApplySearch;
+            AppProviders.KhachHangGiaBans.OnChanged += AppProviders_KhachHangGiaBans_OnChanged;
 
-            // Reload khi loaded
             Loaded += async (_, __) =>
             {
-                await AppProviders.KhachHangGiaBans.ReloadAsync();
-                ApplySearch();
+                try
+                {
+                    Mouse.OverrideCursor = Cursors.Wait;
 
-                // (khuyến nghị) cũng load caches KH & Biến thể để Edit mở nhanh
-                if (AppProviders.KhachHangs != null) await AppProviders.KhachHangs.ReloadAsync();
-                if (AppProviders.SanPhamBienThes != null) await AppProviders.SanPhamBienThes.ReloadAsync();
+                    await AppProviders.KhachHangGiaBans.ReloadAsync();
+                    if (AppProviders.KhachHangs != null)
+                        await AppProviders.KhachHangs.ReloadAsync();
+
+                    BindSource();
+                    ApplySearch();
+                    SetNoSelectionMode();
+                }
+                catch (Exception ex)
+                {
+                    _errorHandler.Handle(ex, "Load");
+                }
+                finally
+                {
+                    Mouse.OverrideCursor = null;
+                }
             };
+        }
+
+        private void KhachHangGiaBanList_Closed(object? sender, EventArgs e)
+        {
+            AppProviders.KhachHangGiaBans.OnChanged -= AppProviders_KhachHangGiaBans_OnChanged;
+        }
+
+        private void AppProviders_KhachHangGiaBans_OnChanged()
+        {
+            BindSource();
+            ApplySearch();
+        }
+
+        private void BindSource()
+        {
+            _viewSource.Source = AppProviders.KhachHangGiaBans.Items;
+            KhachHangGiaBanDataGrid.ItemsSource = _viewSource.View;
         }
 
         private void ApplySearch()
         {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(ApplySearch);
+                return;
+            }
+
+            if (_viewSource.View == null)
+                return;
+
             _viewSource.View.Refresh();
 
             _viewSource.View.SortDescriptions.Clear();
@@ -59,77 +103,232 @@ namespace TraSuaApp.WpfClient.SettingsViews
 
         private void ViewSource_Filter(object sender, FilterEventArgs e)
         {
-            if (e.Item is not KhachHangGiaBanDto item) { e.Accepted = false; return; }
+            if (e.Item is not KhachHangGiaBanDto item)
+            {
+                e.Accepted = false;
+                return;
+            }
 
-            var keyword = StringHelper.MyNormalizeText((SearchTextBox.Text ?? "").Trim());
-            if (string.IsNullOrEmpty(keyword)) { e.Accepted = true; return; }
+            var keyword = StringHelper.MyNormalizeText(SearchTextBox.Text.Trim());
+            e.Accepted = string.IsNullOrEmpty(keyword) || (item.TimKiem?.Contains(keyword) ?? false);
+        }
 
-            var haystack = item.TimKiem ?? "";
-            e.Accepted = haystack.Contains(keyword);
+        private void SetNoSelectionMode()
+        {
+            _editingId = null;
+            _editingModel = new KhachHangGiaBanDto();
+
+            FormTitleTextBlock.Text = "Cập nhật giá bán";
+            SelectedInfoTextBlock.Text = "Chọn một dòng để sửa giá bán.";
+            GiaBanTextBox.Value = 0;
+            GiaBanTextBox.IsEnabled = false;
+            SaveButton.Content = "Lưu";
+            SaveButton.IsEnabled = false;
+            ErrorTextBlock.Text = string.Empty;
+
+            KhachHangGiaBanDataGrid.UnselectAll();
+        }
+
+        private void SetEditMode(KhachHangGiaBanDto selected)
+        {
+            _editingId = selected.Id;
+
+            _editingModel = new KhachHangGiaBanDto
+            {
+                Id = selected.Id,
+                KhachHangId = selected.KhachHangId,
+                SanPhamBienTheId = selected.SanPhamBienTheId,
+                GiaBan = selected.GiaBan,
+                LastModified = selected.LastModified
+            };
+
+            SelectedInfoTextBlock.Text = $"{selected.TenKhachHang} - {selected.TenSanPham} / {selected.TenBienThe}";
+            GiaBanTextBox.Value = selected.GiaBan;
+            SaveButton.IsEnabled = true;
+            ErrorTextBlock.Text = string.Empty;
+
+            GiaBanTextBox.Focus();
+            GiaBanTextBox.SelectAll();
+        }
+
+        private int FindIndex(Guid id)
+        {
+            for (int i = 0; i < AppProviders.KhachHangGiaBans.Items.Count; i++)
+            {
+                if (AppProviders.KhachHangGiaBans.Items[i].Id == id)
+                    return i;
+            }
+
+            return -1;
         }
 
         private async void ReloadButton_Click(object sender, RoutedEventArgs e)
         {
-            await AppProviders.KhachHangGiaBans.ReloadAsync();
-            ApplySearch();
+            await ReloadAsync();
         }
 
-        private async void AddButton_Click(object sender, RoutedEventArgs e)
+        private async Task ReloadAsync()
         {
-            var window = new KhachHangGiaBanEdit
+            try
             {
-                Width = ActualWidth,
-                Height = ActualHeight,
-                Owner = this
-            };
-            if (window.ShowDialog() == true)
+                Mouse.OverrideCursor = Cursors.Wait;
                 await AppProviders.KhachHangGiaBans.ReloadAsync();
+                BindSource();
+                ApplySearch();
+                SetNoSelectionMode();
+            }
+            catch (Exception ex)
+            {
+                _errorHandler.Handle(ex, "Reload");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
         }
 
-        private async void EditButton_Click(object sender, RoutedEventArgs e)
+        private void AddButton_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(
+                "Màn này chỉ dùng để sửa giá bán, không hỗ trợ thêm mới.",
+                "Thông báo",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+
+        private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             if (KhachHangGiaBanDataGrid.SelectedItem is not KhachHangGiaBanDto selected)
             {
-                MessageBox.Show("Vui lòng chọn dòng cần sửa.", "Thông báo",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Vui lòng chọn dòng cần sửa.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            var window = new KhachHangGiaBanEdit(selected)
+            SetEditMode(selected);
+        }
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            ErrorTextBlock.Text = string.Empty;
+
+            if (_editingId == null)
             {
-                Width = ActualWidth,
-                Height = ActualHeight,
-                Owner = this
-            };
-            if (window.ShowDialog() == true)
-                await AppProviders.KhachHangGiaBans.ReloadAsync();
+                MessageBox.Show("Vui lòng chọn một dòng cần sửa.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (!_editingIsDeleted && GiaBanTextBox.Value < 0)
+            {
+                ErrorTextBlock.Text = "Giá bán không được âm.";
+                GiaBanTextBox.Focus();
+                return;
+            }
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+
+                _editingModel.GiaBan = GiaBanTextBox.Value;
+
+                HttpResponseMessage response = await ApiClient.PutAsync(
+                    $"/api/KhachHangGiaBan/{_editingId.Value}",
+                    _editingModel);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    ErrorTextBlock.Text = $"Cập nhật thất bại ({(int)response.StatusCode}).";
+                    return;
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<Result<KhachHangGiaBanDto>>();
+
+                if (result?.IsSuccess == true)
+                {
+                    if (result.Data != null)
+                    {
+                        var index = FindIndex(result.Data.Id);
+
+                        if (index >= 0)
+                            AppProviders.KhachHangGiaBans.Items[index] = result.Data;
+                        else
+                            AppProviders.KhachHangGiaBans.Items.Add(result.Data);
+                    }
+                    else
+                    {
+                        await AppProviders.KhachHangGiaBans.ReloadAsync();
+                    }
+
+                    NotiHelper.ShowSuccess(result.Message);
+                    BindSource();
+                    ApplySearch();
+                    SetNoSelectionMode();
+                }
+                else
+                {
+                    await AppProviders.KhachHangGiaBans.ReloadAsync();
+                    BindSource();
+                    ApplySearch();
+                    SetNoSelectionMode();
+                    NotiHelper.ShowSuccess("Cập nhật giá bán thành công.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorHandler.Handle(ex, "Save");
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
         }
 
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (KhachHangGiaBanDataGrid.SelectedItem is not KhachHangGiaBanDto selected)
             {
-                MessageBox.Show("Vui lòng chọn dòng cần xoá.", "Thông báo",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Vui lòng chọn dòng cần xoá.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             var label = $"{selected.TenKhachHang} - {selected.TenSanPham} / {selected.TenBienThe}";
             var confirm = MessageBox.Show(
                 $"Bạn có chắc chắn muốn xoá {_friendlyName} của '{label}'?",
-                "Xác nhận xoá", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                "Xác nhận xoá",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
 
-            if (confirm != MessageBoxResult.Yes) return;
+            if (confirm != MessageBoxResult.Yes)
+                return;
 
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
+
                 var response = await ApiClient.DeleteAsync($"/api/KhachHangGiaBan/{selected.Id}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    NotiHelper.ShowError($"Xoá thất bại ({(int)response.StatusCode}).");
+                    return;
+                }
+
                 var result = await response.Content.ReadFromJsonAsync<Result<KhachHangGiaBanDto>>();
-                if (result?.IsSuccess == true)
-                    AppProviders.KhachHangGiaBans.Remove(selected.Id);
+
+                var id = result?.Data?.Id != Guid.Empty
+                    ? result!.Data!.Id
+                    : selected.Id;
+
+                var index = FindIndex(id);
+
+                if (index >= 0)
+                    AppProviders.KhachHangGiaBans.Items.RemoveAt(index);
                 else
-                    NotiHelper.ShowError(result?.Message ?? "Không thể xoá.");
+                    await AppProviders.KhachHangGiaBans.ReloadAsync();
+
+                NotiHelper.ShowSuccess(result?.Message ?? "Xoá thành công.");
+                BindSource();
+                ApplySearch();
+                SetNoSelectionMode();
             }
             catch (Exception ex)
             {
@@ -141,24 +340,51 @@ namespace TraSuaApp.WpfClient.SettingsViews
             }
         }
 
-        private async void KhachHangGiaBanDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void KhachHangGiaBanDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (KhachHangGiaBanDataGrid.SelectedItem is not KhachHangGiaBanDto selected) return;
-            var window = new KhachHangGiaBanEdit(selected) { Owner = this };
-            if (window.ShowDialog() == true)
-                await AppProviders.KhachHangGiaBans.ReloadAsync();
+            if (KhachHangGiaBanDataGrid.SelectedItem is not KhachHangGiaBanDto selected)
+                return;
+
+            SetEditMode(selected);
         }
 
-        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e) => ApplySearch();
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ApplySearch();
+        }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+        private void CancelEditButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetNoSelectionMode();
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
 
         private void KhachHangGiaBanList_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N) { AddButton_Click(null!, null!); e.Handled = true; }
-            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E) { EditButton_Click(null!, null!); e.Handled = true; }
-            else if (e.Key == Key.Delete) { DeleteButton_Click(null!, null!); e.Handled = true; }
-            else if (e.Key == Key.F5) { ReloadButton_Click(null!, null!); e.Handled = true; }
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N)
+            {
+                AddButton_Click(null!, null!);
+                e.Handled = true;
+            }
+            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.E)
+            {
+                EditButton_Click(null!, null!);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Delete)
+            {
+                DeleteButton_Click(null!, null!);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.F5)
+            {
+                ReloadButton_Click(null!, null!);
+                e.Handled = true;
+            }
         }
     }
 }

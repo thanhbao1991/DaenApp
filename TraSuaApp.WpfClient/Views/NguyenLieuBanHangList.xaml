@@ -2,6 +2,7 @@
     x:Class="TraSuaApp.WpfClient.AdminViews.NguyenLieuBanHangList"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrl="clr-namespace:TraSuaApp.WpfClient.Controls"
     Style="{StaticResource PopupWindowWithBorderStyle}"
     WindowStartupLocation="CenterScreen">
 
@@ -10,9 +11,10 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!--  Tiêu đề  -->
+        <!--  Title  -->
         <DockPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Name="TieuDeTextBlock" Style="{StaticResource TitleTextStyle}" />
             <Button
@@ -21,14 +23,13 @@
                 Style="{StaticResource CloseButtonStyle}" />
         </DockPanel>
 
-        <!--  Thanh công cụ  -->
+        <!--  Toolbar  -->
         <Grid Grid.Row="1" Margin="10,0,10,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <!--  Ô tìm kiếm  -->
             <Grid Margin="0,0,4,0">
                 <TextBox
                     x:Name="SearchTextBox"
@@ -40,7 +41,6 @@
                     Visibility="{Binding Text.IsEmpty, ElementName=SearchTextBox, Converter={StaticResource BoolToVisibilityConverter}}" />
             </Grid>
 
-            <!--  Nút  -->
             <StackPanel
                 Grid.Column="1"
                 HorizontalAlignment="Right"
@@ -71,50 +71,154 @@
             </StackPanel>
         </Grid>
 
-        <!--  Danh sách  -->
+        <!--  DataGrid  -->
         <DataGrid
             x:Name="NguyenLieuBanHangDataGrid"
             Grid.Row="2"
             Margin="10"
             AutoGenerateColumns="False"
             CanUserSortColumns="False"
-            IsReadOnly="True"
             MouseDoubleClick="NguyenLieuBanHangDataGrid_MouseDoubleClick">
-
             <DataGrid.Columns>
-                <!--  STT  -->
                 <DataGridTextColumn
                     Width="50"
                     Binding="{Binding Stt}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
                     Header="STT" />
-
-                <!--  Từ khoá không dấu  -->
                 <DataGridTextColumn
                     Width="*"
                     Binding="{Binding Ten}"
                     ElementStyle="{StaticResource LeftTextCellStyle}"
                     Header="Tên" />
-
                 <DataGridTextColumn
-                    Width="*"
-                    Binding="{Binding TonKho}"
+                    Width="120"
+                    Binding="{Binding TonKho, StringFormat={}{0:N0}}"
                     ElementStyle="{StaticResource RightTextCellStyle}"
                     Header="Tồn kho" />
-
-                <!--  Đơn vị bán  -->
                 <DataGridTextColumn
-                    Width="*"
+                    Width="120"
                     Binding="{Binding DonViTinh}"
                     ElementStyle="{StaticResource CenterTextCellStyle}"
-                    Header="Đơn vị bán" />
-
-                <!--  Đang sử dụng  -->
+                    Header="Đơn vị" />
                 <DataGridCheckBoxColumn
                     Width="90"
                     Binding="{Binding DangSuDung}"
                     Header="Đang dùng" />
             </DataGrid.Columns>
         </DataGrid>
+
+        <!--  Form  -->
+        <Border
+            Grid.Row="3"
+            Margin="10,10,10,0"
+            Padding="10"
+            Background="WhiteSmoke"
+            BorderBrush="Gray"
+            BorderThickness="1"
+            CornerRadius="8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="40" />
+                    <RowDefinition Height="40" />
+                    <RowDefinition Height="40" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    x:Name="FormTitleTextBlock"
+                    Grid.ColumnSpan="4"
+                    Margin="0,0,0,6"
+                    FontWeight="SemiBold"
+                    Text="Thêm nguyên liệu bán hàng" />
+
+                <!--  Row 1  -->
+                <TextBlock
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Text="Tên" />
+                <TextBox
+                    x:Name="TenTextBox"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Height="30"
+                    Margin="0,0,10,0"
+                    HorizontalAlignment="Stretch" />
+
+                <TextBlock
+                    Grid.Row="1"
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Text="Đơn vị" />
+                <TextBox
+                    x:Name="DonViTinhTextBox"
+                    Grid.Row="1"
+                    Grid.Column="3"
+                    Height="30"
+                    HorizontalAlignment="Stretch" />
+
+                <!--  Row 2  -->
+                <TextBlock
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Text="Tồn kho" />
+                <ctrl:NumericUpDown
+                    x:Name="TonKhoNumeric"
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Height="30"
+                    Margin="0,0,10,0"
+                    HorizontalAlignment="Stretch" />
+
+                <TextBlock
+                    Grid.Row="2"
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Text="Trạng thái" />
+                <CheckBox
+                    x:Name="DangSuDungCheckBox"
+                    Grid.Row="2"
+                    Grid.Column="3"
+                    VerticalAlignment="Center"
+                    Content="Đang dùng" />
+
+                <!--  Error  -->
+                <TextBlock
+                    x:Name="ErrorTextBlock"
+                    Grid.Row="4"
+                    Grid.ColumnSpan="4"
+                    Margin="0,8,0,6"
+                    Style="{StaticResource ErrorTextBlock}" />
+
+                <!--  Buttons  -->
+                <StackPanel
+                    Grid.Row="5"
+                    Grid.ColumnSpan="4"
+                    Orientation="Horizontal">
+                    <Button
+                        x:Name="SaveButton"
+                        Width="100"
+                        Margin="0,0,6,0"
+                        Click="SaveButton_Click"
+                        Content="Thêm"
+                        Style="{StaticResource AddButtonStyle}" />
+                    <Button
+                        Width="100"
+                        Click="CancelEditButton_Click"
+                        Content="Huỷ"
+                        Style="{StaticResource ReloadButtonStyle}" />
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

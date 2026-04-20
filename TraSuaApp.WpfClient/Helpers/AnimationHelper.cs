@@ -8,9 +8,9 @@ namespace TraSuaApp.WpfClient.Helpers
         public static async Task FadeSwitchAsync(
             FrameworkElement? oldContent,
             FrameworkElement? newContent,
-            int fadeOutMs = 180,
-            int fadeInMs = 240,
-            int delayMs = 50)
+            int fadeOutMs = 90,
+            int fadeInMs = 120,
+            int delayMs = 25)
         {
             // Fade-out
             if (oldContent != null && oldContent.IsVisible && oldContent.Opacity > 0.9)

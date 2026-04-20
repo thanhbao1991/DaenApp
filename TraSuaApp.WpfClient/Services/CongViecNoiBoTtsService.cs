@@ -1,4 +1,5 @@
 ﻿using System.Windows.Threading;
+using TraSuaApp.WpfClient.DataProviders;
 
 namespace TraSuaApp.WpfClient.Services
 {
@@ -79,7 +80,7 @@ namespace TraSuaApp.WpfClient.Services
                 if (provider?.Items == null || !provider.Items.Any()) return;
 
                 var items = provider.Items
-                    .Where(cv => !cv.IsDeleted && !cv.DaHoanThanh)
+                    .Where(cv => !cv.DaHoanThanh)
                     .ToList();
 
                 var today = DateTime.Today;

@@ -3,8 +3,8 @@
 //using System.Windows.Input;
 //using System.Windows.Media;
 //using TraSuaApp.Shared.Constants;
-//using TraSuaApp.Shared.Dtos;
-//using TraSuaApp.Shared.Helpers;
+//using TraSuaApp.Infrastructure.Dtos;
+//using TraSuaApp.Infrastructure.Helpers;
 //using TraSuaApp.WpfClient.Apis;
 //using TraSuaApp.WpfClient.Services;
 
@@ -208,8 +208,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using TraSuaApp.Shared.Constants;
-using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.WpfClient.DataProviders;
 
 namespace TraSuaApp.WpfClient.HoaDonViews;
 
@@ -263,14 +264,7 @@ public partial class ChiTietHoaDonThanhToanEdit : Window
 
         PhuongThucThanhToanComboBox.SelectedValue = dto.PhuongThucThanhToanId;
 
-        if (Model.IsDeleted)
-        {
-            TenTextBox.IsEnabled = false;
-            SoTienTextBox.IsEnabled = false;
-            PhuongThucThanhToanComboBox.IsEnabled = false;
 
-            SaveButton.Content = "Khôi phục";
-        }
     }
 
     // ==============================

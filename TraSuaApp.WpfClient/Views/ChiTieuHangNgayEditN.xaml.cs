@@ -1,20 +1,21 @@
 ﻿using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Net.Http.Json;
 using System.Windows;
-using TraSuaApp.Shared.Dtos;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.WpfClient.DataProviders;
+using TraSuaApp.WpfClient.Helpers;
 using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.HoaDonViews
 {
     public partial class ChiTieuHangNgayEditN : Window, INotifyPropertyChanged
     {
-        private readonly ChiTieuHangNgayApi _api;
         private readonly ChiTieuHangNgayDto? _editingItem;
         private readonly bool _isEdit;
-        /// <summary>
-        /// 
-        /// </summary>
+
         public ObservableCollection<ChiTieuRowVm> Items { get; } = new();
 
         public decimal TongTien => Items.Sum(x => x.ThanhTien);
@@ -24,51 +25,44 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         {
             InitializeComponent();
             DataContext = this;
-            int i;
-            _api = new ChiTieuHangNgayApi();
+
             NgayDatePicker.SelectedDate = DateTime.Today;
 
             NguyenLieuComboBox.NguyenLieuList = AppProviders.NguyenLieus.Items.ToList();
-
             NguyenLieuComboBox.NguyenLieuSelected += OnNguyenLieuSelected;
 
             Items.CollectionChanged += Items_CollectionChanged;
+
             NguyenLieuComboBox.Focus();
         }
+
         private void NhapTatCaNguyenLieu_Click(object sender, RoutedEventArgs e)
         {
             if (_isEdit) return;
 
-            var existingIds = Items
-                .Select(x => x.NguyenLieuId)
-                .ToHashSet();
+            var existingIds = Items.Select(x => x.NguyenLieuId).ToHashSet();
 
             foreach (var nl in AppProviders.NguyenLieus.Items)
             {
-                // tránh thêm trùng
                 if (existingIds.Contains(nl.Id))
                     continue;
 
-                var vm = new ChiTieuRowVm
+                Items.Add(new ChiTieuRowVm
                 {
                     NguyenLieuId = nl.Id,
                     Ten = nl.Ten,
-                    SoLuong = 0,                // ✅ MẶC ĐỊNH 0
+                    SoLuong = 0,
                     DonGia = nl.GiaNhap,
                     BillThang = BillThangCheckBox.IsChecked == true
-                };
-
-                Items.Add(vm);
+                });
             }
         }
+
         private void XoaDongSoLuong0_Click(object sender, RoutedEventArgs e)
         {
             if (_isEdit) return;
 
-            var toRemove = Items
-                .Where(x => x.SoLuong == 0)
-                .ToList();
-
+            var toRemove = Items.Where(x => x.SoLuong == 0).ToList();
             foreach (var item in toRemove)
                 Items.Remove(item);
         }
@@ -100,14 +94,12 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             NotifyTongTien();
         }
 
-        // ===== HANDLE COLLECTION =====
+        // ===== COLLECTION =====
         private void Items_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (e.NewItems != null)
-            {
                 foreach (ChiTieuRowVm vm in e.NewItems)
                     HookRow(vm);
-            }
 
             NotifyTongTien();
         }
@@ -126,24 +118,22 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             OnPropertyChanged(nameof(TongTien));
         }
 
-        // ===== NGUYÊN LIỆU SELECT =====
+        // ===== NGUYÊN LIỆU =====
         private void OnNguyenLieuSelected(NguyenLieuDto nl)
         {
             if (_isEdit) return;
 
-            var vm = new ChiTieuRowVm
+            Items.Add(new ChiTieuRowVm
             {
                 NguyenLieuId = nl.Id,
                 Ten = nl.Ten,
                 SoLuong = 1,
                 DonGia = nl.GiaNhap,
                 BillThang = BillThangCheckBox.IsChecked == true
-            };
-
-            Items.Add(vm);
+            });
         }
 
-        // ===== REMOVE ROW =====
+        // ===== REMOVE =====
         private void RemoveRow_Click(object sender, RoutedEventArgs e)
         {
             if (_isEdit) return;
@@ -164,6 +154,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         private async void Save_Click(object sender, RoutedEventArgs e)
         {
             ErrorTextBlock.Text = "";
+
+            var api = Apis.ChiTieuHangNgay;
 
             if (!Items.Any())
             {
@@ -187,14 +179,12 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     ThanhTien = row.ThanhTien,
                     GhiChu = row.GhiChu,
                     BillThang = row.BillThang,
-
                     Ngay = _editingItem?.Ngay ?? (NgayDatePicker.SelectedDate ?? DateTime.Today),
                     NgayGio = _editingItem?.NgayGio ?? DateTime.Now,
                     LastModified = _editingItem?.LastModified ?? DateTime.Now,
-
                 };
 
-                var res = await _api.UpdateAsync(row.Id, dto);
+                var res = await api.UpdateAsync(row.Id, dto);
                 if (!res.IsSuccess)
                 {
                     ErrorTextBlock.Text = res.Message;
@@ -208,7 +198,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
                 if (Items.Count == 1)
                 {
-                    var res = await _api.CreateAsync(row.ToDto(ngay, now));
+                    var res = await api.CreateAsync(row.ToDto(ngay, now));
                     if (!res.IsSuccess)
                     {
                         ErrorTextBlock.Text = res.Message;
@@ -225,10 +215,16 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                         Items = Items.Select(x => x.ToBulkItem()).ToList()
                     };
 
-                    var res = await _api.CreateBulkAsync(bulk);
-                    if (!res.IsSuccess)
+                    var response = await ApiClient.PostAsync(
+                        "/api/ChiTieuHangNgay/bulk",
+                        bulk,
+                        true);
+
+                    var result = await response.Content.ReadFromJsonAsync<Result<bool>>();
+
+                    if (result == null || !result.IsSuccess)
                     {
-                        ErrorTextBlock.Text = res.Message;
+                        ErrorTextBlock.Text = result?.Message ?? "Bulk create thất bại";
                         return;
                     }
                 }
@@ -241,11 +237,12 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         private void Cancel_Click(object sender, RoutedEventArgs e)
             => Close();
 
-        // ===== INotifyPropertyChanged =====
+        // ===== INotify =====
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged(string name)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
+        // ===== KEYBOARD =====
         private void ChiTieuGrid_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (ChiTieuGrid.SelectedItem is not ChiTieuRowVm vm)
@@ -253,61 +250,37 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
             int index = Items.IndexOf(vm);
 
-            // ===== ↑ CHUYỂN DÒNG LÊN =====
-            if (e.Key == System.Windows.Input.Key.Up)
+            if (e.Key == System.Windows.Input.Key.Up && index > 0)
             {
-                if (index > 0)
-                {
-                    ChiTieuGrid.SelectedItem = Items[index - 1];
-                    ChiTieuGrid.ScrollIntoView(Items[index - 1]);
-                }
+                ChiTieuGrid.SelectedItem = Items[index - 1];
+                ChiTieuGrid.ScrollIntoView(Items[index - 1]);
                 e.Handled = true;
-                return;
             }
-
-            // ===== ↓ CHUYỂN DÒNG XUỐNG =====
-            if (e.Key == System.Windows.Input.Key.Down)
+            else if (e.Key == System.Windows.Input.Key.Down && index < Items.Count - 1)
             {
-                if (index < Items.Count - 1)
-                {
-                    ChiTieuGrid.SelectedItem = Items[index + 1];
-                    ChiTieuGrid.ScrollIntoView(Items[index + 1]);
-                }
+                ChiTieuGrid.SelectedItem = Items[index + 1];
+                ChiTieuGrid.ScrollIntoView(Items[index + 1]);
                 e.Handled = true;
-                return;
             }
-
-            // ===== DELETE → XOÁ =====
-            if (!_isEdit && e.Key == System.Windows.Input.Key.Delete)
+            else if (!_isEdit && e.Key == System.Windows.Input.Key.Delete)
             {
                 Items.Remove(vm);
                 e.Handled = true;
-                return;
             }
-
-            // ===== + TĂNG SL =====
-            if (e.Key == System.Windows.Input.Key.OemPlus || e.Key == System.Windows.Input.Key.Add || e.Key == System.Windows.Input.Key.Right)
+            else if (e.Key == System.Windows.Input.Key.Add)
             {
                 vm.SoLuong += 1;
                 e.Handled = true;
-                return;
             }
-
-            // ===== - GIẢM SL =====
-            if (e.Key == System.Windows.Input.Key.OemMinus || e.Key == System.Windows.Input.Key.Subtract || e.Key == System.Windows.Input.Key.Left)
+            else if (e.Key == System.Windows.Input.Key.Subtract && vm.SoLuong > 0)
             {
-                if (vm.SoLuong > 0)
-                    vm.SoLuong -= 1;
+                vm.SoLuong -= 1;
                 e.Handled = true;
-                return;
             }
         }
-
     }
 
-    // ======================================================
-    // ================= ROW VIEW MODEL =====================
-    // ======================================================
+    // ================= ROW VM =================
     public class ChiTieuRowVm : INotifyPropertyChanged
     {
         public Guid Id { get; set; }

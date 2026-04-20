@@ -6,14 +6,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 using TraSuaApp.Shared.Config;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
 using TraSuaApp.WpfClient.AiOrdering;
-using TraSuaApp.WpfClient.Apis;
 using TraSuaApp.WpfClient.Controls;
+using TraSuaApp.WpfClient.DataProviders;
 using TraSuaApp.WpfClient.Helpers;
+using TraSuaApp.WpfClient.Services;
 
 namespace TraSuaApp.WpfClient.HoaDonViews
 {
@@ -73,8 +73,8 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 foreach (var ct in lines)
                 {
                     var customGia = khGiaBans.FirstOrDefault(x => x.KhachHangId == khId
-                                                               && x.SanPhamBienTheId == ct.SanPhamIdBienThe
-                                                               && !x.IsDeleted);
+                                                               && x.SanPhamBienTheId == ct.SanPhamBienTheId
+                                                               );
                     if (customGia != null && ct.DonGia != customGia.GiaBan)
                     {
                         ct.DonGia = customGia.GiaBan;
@@ -206,7 +206,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     Id = Guid.NewGuid(),
 
                     LastModified = DateTime.Now,
-                    SanPhamIdBienThe = bienThe.Id,
+                    SanPhamBienTheId = bienThe.Id,
                     TenSanPham = sanPham.Ten,
                     TenBienThe = bienThe.TenBienThe,
                     SoLuong = 1,
@@ -222,7 +222,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                     var customGia = AppProviders.KhachHangGiaBans.Items
                     .FirstOrDefault(x => x.KhachHangId == Model.KhachHangId.Value
                                       && x.SanPhamBienTheId == bienThe.Id
-                                      && !x.IsDeleted);
+                                      );
                     if (customGia != null)
                     {
                         donGia = customGia.GiaBan;
@@ -321,7 +321,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
             };
             KhachHangSearchBox.KhachHangCleared += () =>
             {
-                Model.KhachHang = null;
                 Model.KhachHangId = null;
                 DiaChiComboBox.ItemsSource = null;
                 DienThoaiComboBox.ItemsSource = null;
@@ -425,12 +424,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 Model.MaHoaDon = "HD" + DateTime.Now.Ticks.ToString()[^6..];
             }
 
-            if (Model.IsDeleted)
-            {
-                SaveButton.Content = "Khôi phục";
-                NoiDungForm.IsEnabled = false;
-                NoiDungForm.Opacity = 0.5;
-            }
+
 
             if (Model.ChiTietHoaDons == null)
                 Model.ChiTietHoaDons = new ObservableCollection<ChiTietHoaDonDto>();
@@ -749,30 +743,19 @@ namespace TraSuaApp.WpfClient.HoaDonViews
         }
         private void VoucherComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (Model.ChiTietHoaDonVouchers == null)
-                Model.ChiTietHoaDonVouchers = new List<ChiTietHoaDonVoucherDto>();
-
             if (VoucherComboBox.SelectedItem is VoucherDto selectedVoucher)
             {
                 Model.VoucherId = selectedVoucher.Id;
-                Model.ChiTietHoaDonVouchers.Clear();
-                Model.ChiTietHoaDonVouchers.Add(new ChiTietHoaDonVoucherDto
-                {
-                    VoucherId = selectedVoucher.Id,
-                    GiaTriApDung = selectedVoucher.GiaTri
-                });
                 HuyVoucherButton.Visibility = Visibility.Visible;
             }
             else
             {
                 Model.VoucherId = null;
-                Model.ChiTietHoaDonVouchers?.Clear();
                 HuyVoucherButton.Visibility = Visibility.Collapsed;
             }
 
             UpdateTotals();
         }
-
 
         private void RadioButton_PreviewMouseLeftButtonDown_Common(object sender, MouseButtonEventArgs e)
         {
@@ -808,7 +791,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                 radio.IsChecked = false;
             _isLoadingNote = false;
 
-            var sanPham = _sanPhamList.FirstOrDefault(sp => sp.BienThe.Any(bt => bt.Id == selected.SanPhamIdBienThe));
+            var sanPham = _sanPhamList.FirstOrDefault(sp => sp.BienThe.Any(bt => bt.Id == selected.SanPhamBienTheId));
             if (sanPham != null)
             {
                 SanPhamSearchBox.SuppressPopup = true;

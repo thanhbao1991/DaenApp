@@ -1,7 +1,8 @@
 ﻿using System.Windows;
 using System.Windows.Input;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
+using TraSuaApp.WpfClient.DataProviders;
 
 namespace TraSuaApp.WpfClient.HoaDonViews
 {
@@ -82,7 +83,7 @@ namespace TraSuaApp.WpfClient.HoaDonViews
                         {
                             Id = Guid.NewGuid(),
                             Ten = tenKhach,
-                            
+
                             LastModified = DateTime.Now,
                             Addresses = new List<KhachHangAddressDto>(),
                             Phones = new List<KhachHangPhoneDto>()
@@ -176,10 +177,6 @@ namespace TraSuaApp.WpfClient.HoaDonViews
 
                     if (result.IsSuccess && result.Data?.KhachHangId != null)
                         await AppProviders.KhachHangs.ReloadAsync();
-                }
-                else if (Model.IsDeleted)
-                {
-                    result = await _api.RestoreAsync(Model.Id);
                 }
                 else
                 {

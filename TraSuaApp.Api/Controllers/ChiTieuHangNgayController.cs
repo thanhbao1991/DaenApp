@@ -1,12 +1,11 @@
-﻿
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Api.Hubs;
-using TraSuaApp.Applicationn.Interfaces;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
 
@@ -15,107 +14,258 @@ namespace TraSuaApp.Api.Controllers;
 [Route("api/[controller]")]
 public class ChiTieuHangNgayController : BaseApiController
 {
-    private readonly IChiTieuHangNgayService _service;
+    private readonly AppDbContext _context;
     private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["ChiTieuHangNgay"];
 
-    public ChiTieuHangNgayController(IChiTieuHangNgayService service, IHubContext<SignalRHub> hub)
+    public ChiTieuHangNgayController(AppDbContext context, IHubContext<SignalRHub> hub)
     {
-        _service = service;
+        _context = context;
         _hub = hub;
     }
 
-    private async Task NotifyClients(string action, Guid id)
+    private static ChiTieuHangNgayDto ToDto(ChiTieuHangNgay e)
+    {
+        return new ChiTieuHangNgayDto
+        {
+            Id = e.Id,
+            Ten = e.Ten,
+            SoLuong = e.SoLuong,
+            DonGia = e.DonGia,
+            ThanhTien = e.ThanhTien,
+            Ngay = e.Ngay,
+            NgayGio = e.NgayGio,
+            NguyenLieuId = e.NguyenLieuId,
+            BillThang = e.BillThang,
+            LastModified = e.LastModified
+        };
+    }
+
+    private async Task Notify(string action, Guid id)
     {
         if (!string.IsNullOrEmpty(ConnectionId))
         {
-            await _hub.Clients
-                .AllExcept(ConnectionId)
-                .SendAsync("EntityChanged", "ChiTieuHangNgay", action, id.ToString(), ConnectionId ?? "");
+            await _hub.Clients.AllExcept(ConnectionId)
+                .SendAsync("EntityChanged", "ChiTieuHangNgay", action, id.ToString(), ConnectionId);
         }
         else
         {
-            await _hub.Clients.All.SendAsync("EntityChanged", "ChiTieuHangNgay", action, id.ToString(), ConnectionId ?? "");
+            await _hub.Clients.All
+                .SendAsync("EntityChanged", "ChiTieuHangNgay", action, id.ToString(), "");
         }
     }
 
+    // ======================
+    // GET ALL
+    // ======================
     [HttpGet]
-    public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> GetAll()
+    [HttpGet]
+    public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> GetAll(DateTime? ngay)
     {
-        var list = await _service.GetAllAsync();
+        var targetDate = ngay?.Date ?? DateTime.Today;
+        var nextDate = targetDate.AddDays(1);
+
+        var list = await _context.ChiTieuHangNgays
+            .AsNoTracking()
+            .Where(x => x.NgayGio >= targetDate &&
+                        x.NgayGio < nextDate)
+            .OrderByDescending(x => x.NgayGio)
+            .Select(x => new ChiTieuHangNgayDto
+            {
+                Id = x.Id,
+                Ten = x.Ten,
+                SoLuong = x.SoLuong,
+                DonGia = x.DonGia,
+                ThanhTien = x.ThanhTien,
+                Ngay = x.Ngay,
+                NgayGio = x.NgayGio,
+                NguyenLieuId = x.NguyenLieuId,
+                BillThang = x.BillThang,
+                LastModified = x.LastModified
+            })
+            .ToListAsync();
+
         return Result<List<ChiTieuHangNgayDto>>.Success(list);
     }
-
+    // ======================
+    // GET BY ID
+    // ======================
     [HttpGet("{id}")]
     public async Task<ActionResult<Result<ChiTieuHangNgayDto>>> GetById(Guid id)
     {
-        var dto = await _service.GetByIdAsync(id);
-        if (dto == null)
-            return Result<ChiTieuHangNgayDto>.Failure($"Không tìm thấy {_friendlyName}.");
+        var entity = await _context.ChiTieuHangNgays
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return Result<ChiTieuHangNgayDto>.Success(dto);
+        if (entity == null)
+            return Result<ChiTieuHangNgayDto>.Failure("Không tìm thấy.");
+
+        return Result<ChiTieuHangNgayDto>.Success(ToDto(entity));
     }
 
+    // ======================
+    // CREATE
+    // ======================
     [HttpPost]
     public async Task<ActionResult<Result<ChiTieuHangNgayDto>>> Create(ChiTieuHangNgayDto dto)
     {
-        var result = await _service.CreateAsync(dto);
-        if (result.IsSuccess && result.Data != null)
-            await NotifyClients("created", result.Data.Id);
+        var now = DateTime.Now;
 
-        return result;
+        var nl = await _context.NguyenLieus
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == dto.NguyenLieuId);
+
+        if (nl == null)
+            return Result<ChiTieuHangNgayDto>.Failure("Nguyên liệu không tồn tại.");
+
+        var entity = new ChiTieuHangNgay
+        {
+            Id = Guid.NewGuid(),
+            Ten = nl.Ten, // 🟟 FIX
+            SoLuong = dto.SoLuong,
+            DonGia = dto.DonGia,
+            ThanhTien = dto.ThanhTien > 0 ? dto.ThanhTien : dto.SoLuong * dto.DonGia,
+            NguyenLieuId = dto.NguyenLieuId,
+            Ngay = dto.Ngay,
+            NgayGio = dto.NgayGio == default ? now : dto.NgayGio,
+            BillThang = dto.BillThang,
+            LastModified = now
+        };
+
+        _context.ChiTieuHangNgays.Add(entity);
+
+        await ApplyTonKhoDeltaAsync(entity.NguyenLieuId, entity.SoLuong, entity.DonGia, now);
+
+        await _context.SaveChangesAsync();
+
+        await Notify("created", entity.Id);
+
+        return Result<ChiTieuHangNgayDto>.Success(ToDto(entity), "Đã thêm.")
+            ;
     }
 
+    // ======================
+    // BULK CREATE
+    // ======================
+    [HttpPost("bulk")]
+    public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> CreateBulk(ChiTieuHangNgayBulkCreateDto dto)
+    {
+        var now = DateTime.Now;
+        var result = new List<ChiTieuHangNgayDto>();
+
+        foreach (var item in dto.Items)
+        {
+            if (item.NguyenLieuId == Guid.Empty || item.SoLuong <= 0)
+                continue;
+
+            var nl = await _context.NguyenLieus
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == item.NguyenLieuId);
+
+            if (nl == null) continue;
+
+            var entity = new ChiTieuHangNgay
+            {
+                Id = Guid.NewGuid(),
+                Ten = nl.Ten, // 🟟 FIX
+                SoLuong = item.SoLuong,
+                DonGia = item.DonGia,
+                ThanhTien = item.ThanhTien ?? item.SoLuong * item.DonGia,
+                NguyenLieuId = item.NguyenLieuId,
+                Ngay = dto.Ngay,
+                NgayGio = dto.NgayGio ?? now,
+                BillThang = dto.BillThang,
+                LastModified = now
+            };
+
+            _context.ChiTieuHangNgays.Add(entity);
+
+            await ApplyTonKhoDeltaAsync(entity.NguyenLieuId, entity.SoLuong, entity.DonGia, now);
+
+            result.Add(ToDto(entity));
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Result<List<ChiTieuHangNgayDto>>.Success(result);
+    }
+
+    // ======================
+    // UPDATE
+    // ======================
     [HttpPut("{id}")]
     public async Task<ActionResult<Result<ChiTieuHangNgayDto>>> Update(Guid id, ChiTieuHangNgayDto dto)
     {
-        var result = await _service.UpdateAsync(id, dto);
-        if (result.IsSuccess)
-            await NotifyClients("updated", id);
+        var entity = await _context.ChiTieuHangNgays
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
+        if (entity == null)
+            return Result<ChiTieuHangNgayDto>.Failure("Không tìm thấy.");
+
+        var now = DateTime.Now;
+
+        await ApplyTonKhoDeltaAsync(entity.NguyenLieuId, -entity.SoLuong, entity.DonGia, now);
+
+        entity.BillThang = dto.BillThang;
+        entity.SoLuong = dto.SoLuong;
+        entity.DonGia = dto.DonGia;
+        entity.ThanhTien = dto.SoLuong * dto.DonGia;
+        entity.LastModified = now;
+
+        await ApplyTonKhoDeltaAsync(entity.NguyenLieuId, entity.SoLuong, entity.DonGia, now);
+
+        await _context.SaveChangesAsync();
+
+        await Notify("updated", id);
+
+        return Result<ChiTieuHangNgayDto>.Success(ToDto(entity), "Cập nhật thành công.")
+            ;
     }
 
+    // ======================
+    // DELETE
+    // ======================
     [HttpDelete("{id}")]
     public async Task<ActionResult<Result<ChiTieuHangNgayDto>>> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("deleted", id);
+        var entity = await _context.ChiTieuHangNgays
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
+        if (entity == null)
+            return Result<ChiTieuHangNgayDto>.Failure("Không tìm thấy.");
+
+        var now = DateTime.Now;
+
+        await ApplyTonKhoDeltaAsync(entity.NguyenLieuId, -entity.SoLuong, entity.DonGia, now);
+
+        _context.ChiTieuHangNgays.Remove(entity);
+        await _context.SaveChangesAsync();
+
+        await Notify("deleted", id);
+
+        return Result<ChiTieuHangNgayDto>.Success(null, "Đã xoá.")
+            ;
     }
 
-    [HttpPut("{id}/restore")]
-    public async Task<ActionResult<Result<ChiTieuHangNgayDto>>> Restore(Guid id)
+    // ======================
+    // KHO
+    // ======================
+    private async Task ApplyTonKhoDeltaAsync(Guid nguyenLieuId, decimal soLuong, decimal donGia, DateTime now)
     {
-        var result = await _service.RestoreAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("restored", id);
+        var nl = await _context.NguyenLieus
+            .Include(x => x.NguyenLieuBanHang)
+            .FirstOrDefaultAsync(x => x.Id == nguyenLieuId);
 
-        return result;
+        if (nl?.NguyenLieuBanHang == null) return;
+
+        var heSo = nl.HeSoQuyDoiBanHang ?? 0;
+        if (heSo <= 0) return;
+
+        var delta = soLuong * heSo;
+
+        nl.NguyenLieuBanHang.TonKho += delta;
+        nl.NguyenLieuBanHang.LastModified = now;
+
+        nl.GiaNhap = donGia;
+        nl.LastModified = now;
     }
-
-    [HttpGet("sync")]
-    public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> Sync(DateTime lastSync)
-    {
-        var list = await _service.GetUpdatedSince(lastSync);
-        return Result<List<ChiTieuHangNgayDto>>.Success(list);
-    }
-
-    [HttpPost("bulk")]
-    public async Task<ActionResult<Result<List<ChiTieuHangNgayDto>>>> CreateBulk(
-    ChiTieuHangNgayBulkCreateDto dto)
-    {
-        var result = await _service.CreateBulkAsync(dto);
-
-        if (result.IsSuccess && result.Data != null)
-        {
-            foreach (var item in result.Data)
-                await NotifyClients("created", item.Id);
-        }
-
-        return result;
-    }
-
 }

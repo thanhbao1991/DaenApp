@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Api.Hubs;
-using TraSuaApp.Applicationn.Interfaces;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure;
+using TraSuaApp.Infrastructure.Entities;
+using TraSuaApp.Shared.Config;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
 
@@ -14,91 +16,150 @@ namespace TraSuaApp.Api.Controllers;
 [Route("api/[controller]")]
 public class KhachHangGiaBanController : BaseApiController
 {
-    private readonly IKhachHangGiaBanService _service;
+    private readonly AppDbContext _context;
     private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["KhachHangGiaBan"];
+    private readonly string _friendlyName = TuDien._tableFriendlyNames["KhachHangGiaBan"];
 
-    public KhachHangGiaBanController(IKhachHangGiaBanService service, IHubContext<SignalRHub> hub)
+    public KhachHangGiaBanController(AppDbContext context, IHubContext<SignalRHub> hub)
     {
-        _service = service;
+        _context = context;
         _hub = hub;
     }
 
-    private async Task NotifyClients(string action, Guid id)
+    private static KhachHangGiaBanDto ToDto(KhachHangGiaBan e)
+    {
+        return new KhachHangGiaBanDto
+        {
+            Id = e.Id,
+            KhachHangId = e.KhachHangId,
+            SanPhamBienTheId = e.SanPhamBienTheId,
+            GiaBan = e.GiaBan,
+            LastModified = e.LastModified
+        };
+    }
+
+    private async Task Notify(string action, Guid id)
     {
         if (!string.IsNullOrEmpty(ConnectionId))
         {
-            await _hub.Clients
-                .AllExcept(ConnectionId)
-                .SendAsync("EntityChanged", "KhachHangGiaBan", action, id.ToString(), ConnectionId ?? "");
+            await _hub.Clients.AllExcept(ConnectionId)
+                .SendAsync("EntityChanged", "KhachHangGiaBan", action, id.ToString(), ConnectionId);
         }
         else
         {
-            await _hub.Clients.All.SendAsync("EntityChanged", "KhachHangGiaBan", action, id.ToString(), ConnectionId ?? "");
+            await _hub.Clients.All
+                .SendAsync("EntityChanged", "KhachHangGiaBan", action, id.ToString(), "");
         }
     }
 
+    // ======================
+    // GET ALL
+    // ======================
     [HttpGet]
     public async Task<ActionResult<Result<List<KhachHangGiaBanDto>>>> GetAll()
     {
-        var list = await _service.GetAllAsync();
+        var list = await _context.KhachHangGiaBans
+            .AsNoTracking()
+            .OrderByDescending(x => x.LastModified)
+            .Select(x => ToDto(x))
+            .ToListAsync();
+
         return Result<List<KhachHangGiaBanDto>>.Success(list);
     }
 
+    // ======================
+    // GET BY ID
+    // ======================
     [HttpGet("{id}")]
     public async Task<ActionResult<Result<KhachHangGiaBanDto>>> GetById(Guid id)
     {
-        var dto = await _service.GetByIdAsync(id);
-        if (dto == null)
+        var entity = await _context.KhachHangGiaBans
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (entity == null)
             return Result<KhachHangGiaBanDto>.Failure($"Không tìm thấy {_friendlyName}.");
 
-        return Result<KhachHangGiaBanDto>.Success(dto);
+        return Result<KhachHangGiaBanDto>.Success(ToDto(entity));
     }
 
+    // ======================
+    // CREATE
+    // ======================
     [HttpPost]
     public async Task<ActionResult<Result<KhachHangGiaBanDto>>> Create(KhachHangGiaBanDto dto)
     {
-        var result = await _service.CreateAsync(dto);
-        if (result.IsSuccess && result.Data != null)
-            await NotifyClients("created", result.Data.Id);
+        var entity = new KhachHangGiaBan
+        {
+            Id = Guid.NewGuid(),
+            KhachHangId = dto.KhachHangId,
+            SanPhamBienTheId = dto.SanPhamBienTheId,
+            GiaBan = dto.GiaBan,
+            LastModified = DateTime.Now
+        };
 
-        return result;
+        _context.KhachHangGiaBans.Add(entity);
+        await _context.SaveChangesAsync();
+
+        var after = ToDto(entity);
+
+        await Notify("created", entity.Id);
+
+        return Result<KhachHangGiaBanDto>.Success(after, "Đã thêm giá bán.")
+            
+            ;
     }
 
+    // ======================
+    // UPDATE
+    // ======================
     [HttpPut("{id}")]
     public async Task<ActionResult<Result<KhachHangGiaBanDto>>> Update(Guid id, KhachHangGiaBanDto dto)
     {
-        var result = await _service.UpdateAsync(id, dto);
-        if (result.IsSuccess)
-            await NotifyClients("updated", id);
+        var entity = await _context.KhachHangGiaBans
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
+        if (entity == null)
+            return Result<KhachHangGiaBanDto>.Failure("Không tìm thấy.");
+
+        var before = ToDto(entity);
+
+        entity.GiaBan = dto.GiaBan;
+        entity.LastModified = DateTime.Now;
+
+        await _context.SaveChangesAsync();
+
+        var after = ToDto(entity);
+
+        await Notify("updated", id);
+
+        return Result<KhachHangGiaBanDto>.Success(after, "Cập nhật thành công.")
+            
+            
+            ;
     }
 
+    // ======================
+    // DELETE (HARD DELETE)
+    // ======================
     [HttpDelete("{id}")]
     public async Task<ActionResult<Result<KhachHangGiaBanDto>>> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("deleted", id);
+        var entity = await _context.KhachHangGiaBans
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return result;
-    }
+        if (entity == null)
+            return Result<KhachHangGiaBanDto>.Failure("Không tìm thấy.");
 
-    [HttpPut("{id}/restore")]
-    public async Task<ActionResult<Result<KhachHangGiaBanDto>>> Restore(Guid id)
-    {
-        var result = await _service.RestoreAsync(id);
-        if (result.IsSuccess)
-            await NotifyClients("restored", id);
+        var before = ToDto(entity);
 
-        return result;
-    }
+        _context.KhachHangGiaBans.Remove(entity);
+        await _context.SaveChangesAsync();
 
-    [HttpGet("sync")]
-    public async Task<ActionResult<Result<List<KhachHangGiaBanDto>>>> Sync(DateTime lastSync)
-    {
-        var list = await _service.GetUpdatedSince(lastSync);
-        return Result<List<KhachHangGiaBanDto>>.Success(list);
+        await Notify("deleted", id);
+
+        return Result<KhachHangGiaBanDto>.Success(before, "Đã xoá.")
+            
+            ;
     }
 }

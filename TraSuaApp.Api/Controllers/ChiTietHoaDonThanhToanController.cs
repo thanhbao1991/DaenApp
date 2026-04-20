@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using TraSuaApp.Api.Hubs;
-using TraSuaApp.Applicationn.Interfaces;
-using TraSuaApp.Shared.Dtos;
-using TraSuaApp.Shared.Enums;
-using TraSuaApp.Shared.Helpers;
+using TraSuaApp.Infrastructure;
+using TraSuaApp.Infrastructure.Dtos;
+using TraSuaApp.Infrastructure.Entities;
+using TraSuaApp.Infrastructure.Helpers;
 
 namespace TraSuaApp.Api.Controllers;
 
@@ -14,172 +15,175 @@ namespace TraSuaApp.Api.Controllers;
 [Route("api/[controller]")]
 public class ChiTietHoaDonThanhToanController : BaseApiController
 {
-    private readonly IChiTietHoaDonThanhToanService _service;
+    private readonly AppDbContext _context;
     private readonly IHubContext<SignalRHub> _hub;
-    string _friendlyName = TuDien._tableFriendlyNames["ChiTietHoaDonThanhToan"];
 
-    public ChiTietHoaDonThanhToanController(
-        IChiTietHoaDonThanhToanService service,
-        IHubContext<SignalRHub> hub)
+    public ChiTietHoaDonThanhToanController(AppDbContext context, IHubContext<SignalRHub> hub)
     {
-        _service = service;
+        _context = context;
         _hub = hub;
     }
 
-    // ==============================
-    // 🟟 Helper phát tín hiệu chung
-    // ==============================
-    private async Task Notify(string entity, string action, Guid id)
+    private static ChiTietHoaDonThanhToanDto ToDto(ChiTietHoaDonThanhToan e)
+    {
+        return new ChiTietHoaDonThanhToanDto
+        {
+            Id = e.Id,
+            SoTien = e.SoTien,
+            Ngay = e.Ngay,
+            NgayGio = e.NgayGio,
+            HoaDonId = e.HoaDonId,
+            KhachHangId = e.KhachHangId,
+            PhuongThucThanhToanId = e.PhuongThucThanhToanId,
+            GhiChu = e.GhiChu,
+            LastModified = e.LastModified
+        };
+    }
+
+    private async Task Notify(string action, Guid id)
     {
         if (!string.IsNullOrEmpty(ConnectionId))
         {
             await _hub.Clients.AllExcept(ConnectionId)
-                .SendAsync("EntityChanged", entity, action, id.ToString(), ConnectionId);
+                .SendAsync("EntityChanged", "ChiTietHoaDonThanhToan", action, id.ToString(), ConnectionId);
         }
         else
         {
             await _hub.Clients.All
-                .SendAsync("EntityChanged", entity, action, id.ToString(), ConnectionId ?? "");
+                .SendAsync("EntityChanged", "ChiTietHoaDonThanhToan", action, id.ToString(), "");
         }
     }
 
-    // ✅ Helper an toàn cho Guid? (tránh .Value khi null)
-    private Task NotifyNullable(string entity, string action, Guid? id)
-    {
-        if (id.HasValue && id.Value != Guid.Empty)
-            return Notify(entity, action, id.Value);
-        return Task.CompletedTask;
-    }
-
-    // ==============================
-    // 🟟 CRUD
-    // ==============================
-
+    // ======================
+    // GET ALL
+    // ======================
     [HttpGet]
-    public async Task<ActionResult<Result<List<ChiTietHoaDonThanhToanDto>>>> GetAll()
+    public async Task<ActionResult<Result<List<ChiTietHoaDonThanhToanDto>>>> GetAll(DateTime? ngay)
     {
-        var list = await _service.GetAllAsync();
+        var targetDate = ngay?.Date ?? DateTime.Today;
+        var nextDate = targetDate.AddDays(1);
+
+        var list = await _context.ChiTietHoaDonThanhToans
+            .AsNoTracking()
+            .Where(x =>
+                        x.NgayGio >= targetDate &&
+                        x.NgayGio < nextDate)
+            .OrderByDescending(x => x.NgayGio)
+            .Select(x => new ChiTietHoaDonThanhToanDto
+            {
+                Id = x.Id,
+                SoTien = x.SoTien,
+                Ngay = x.Ngay,
+                NgayGio = x.NgayGio,
+                HoaDonId = x.HoaDonId,
+                KhachHangId = x.KhachHangId,
+                PhuongThucThanhToanId = x.PhuongThucThanhToanId,
+                GhiChu = x.GhiChu,
+                LastModified = x.LastModified
+            })
+            .ToListAsync();
+
         return Result<List<ChiTietHoaDonThanhToanDto>>.Success(list);
     }
 
+    // ======================
+    // GET BY ID
+    // ======================
     [HttpGet("{id}")]
     public async Task<ActionResult<Result<ChiTietHoaDonThanhToanDto>>> GetById(Guid id)
     {
-        var dto = await _service.GetByIdAsync(id);
-        if (dto == null)
-            return Result<ChiTietHoaDonThanhToanDto>.Failure($"Không tìm thấy {_friendlyName}.");
+        var entity = await _context.ChiTietHoaDonThanhToans
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        return Result<ChiTietHoaDonThanhToanDto>.Success(dto);
+        if (entity == null)
+            return Result<ChiTietHoaDonThanhToanDto>.Failure("Không tìm thấy.");
+
+        return Result<ChiTietHoaDonThanhToanDto>.Success(ToDto(entity));
     }
 
+    // ======================
+    // CREATE
+    // ======================
     [HttpPost]
     public async Task<ActionResult<Result<ChiTietHoaDonThanhToanDto>>> Create(ChiTietHoaDonThanhToanDto dto)
     {
-        var result = await _service.CreateAsync(dto);
+        if (dto.SoTien < 0)
+            return Result<ChiTietHoaDonThanhToanDto>.Failure("Số tiền không hợp lệ.");
 
-        if (result.IsSuccess && result.Data != null)
+        var hoaDon = await _context.HoaDons
+            .FirstOrDefaultAsync(x => x.Id == dto.HoaDonId);
+
+        if (hoaDon == null)
+            return Result<ChiTietHoaDonThanhToanDto>.Failure("Hóa đơn không tồn tại.");
+
+        var tongDaThanhToan = await _context.ChiTietHoaDonThanhToans
+            .Where(x => x.HoaDonId == dto.HoaDonId)
+            .SumAsync(x => x.SoTien);
+
+        var conLai = hoaDon.ThanhTien - tongDaThanhToan;
+
+        if (dto.SoTien > conLai)
+            return Result<ChiTietHoaDonThanhToanDto>.Failure($"Còn lại: {conLai:N0}");
+
+        var now = DateTime.Now;
+
+        var entity = new ChiTietHoaDonThanhToan
         {
-            var data = result.Data;
-            await Notify("ChiTietHoaDonThanhToan", "created", data.Id);
+            Id = Guid.NewGuid(),
+            SoTien = dto.SoTien,
+            HoaDonId = dto.HoaDonId,
+            KhachHangId = dto.KhachHangId,
+            PhuongThucThanhToanId = dto.PhuongThucThanhToanId,
+            GhiChu = dto.SoTien == conLai ? "Thanh toán đủ" : "Thanh toán thiếu",
+            Ngay = now.Date,
+            NgayGio = now,
+            LastModified = now
+        };
 
-            // ✅ an toàn với null
-            //0  await NotifyNullable("ChiTietHoaDonNo", "updated", data.ChiTietHoaDonNoId);
+        _context.ChiTietHoaDonThanhToans.Add(entity);
+        await _context.SaveChangesAsync();
 
-            if (data.HoaDonId != Guid.Empty)
-                await Notify("HoaDon", "updated", data.HoaDonId);
-        }
+        await Notify("created", entity.Id);
 
-        return result;
+        return Result<ChiTietHoaDonThanhToanDto>.Success(ToDto(entity), "Đã thêm")
+            ;
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<Result<ChiTietHoaDonThanhToanDto>>> Update(Guid id, ChiTietHoaDonThanhToanDto dto)
-    {
-        var result = await _service.UpdateAsync(id, dto);
-
-        if (result.IsSuccess)
-        {
-            await Notify("ChiTietHoaDonThanhToan", "updated", id);
-
-            if (result.Data != null)
-            {
-                //   await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
-
-                if (result.Data.HoaDonId != Guid.Empty)
-                    await Notify("HoaDon", "updated", result.Data.HoaDonId);
-            }
-        }
-
-        return result;
-    }
-
+    // ======================
+    // DELETE (HARD DELETE)
+    // ======================
     [HttpDelete("{id}")]
     public async Task<ActionResult<Result<ChiTietHoaDonThanhToanDto>>> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
+        var entity = await _context.ChiTietHoaDonThanhToans
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        if (result.IsSuccess)
-        {
-            await Notify("ChiTietHoaDonThanhToan", "deleted", id);
+        if (entity == null)
+            return Result<ChiTietHoaDonThanhToanDto>.Failure("Không tìm thấy.");
 
-            if (result.Data != null)
-            {
-                //    await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
+        _context.ChiTietHoaDonThanhToans.Remove(entity);
+        await _context.SaveChangesAsync();
 
-                if (result.Data.HoaDonId != Guid.Empty)
-                    await Notify("HoaDon", "updated", result.Data.HoaDonId);
-            }
-        }
+        await Notify("deleted", id);
 
-        return result;
+        return Result<ChiTietHoaDonThanhToanDto>.Success(null, "Đã xoá")
+            ;
     }
 
-    [HttpPut("{id}/restore")]
-    public async Task<ActionResult<Result<ChiTietHoaDonThanhToanDto>>> Restore(Guid id)
-    {
-        var result = await _service.RestoreAsync(id);
-
-        if (result.IsSuccess)
-        {
-            await Notify("ChiTietHoaDonThanhToan", "restored", id);
-
-            if (result.Data != null)
-            {
-                //    await NotifyNullable("ChiTietHoaDonNo", "updated", result.Data.ChiTietHoaDonNoId);
-
-                if (result.Data.HoaDonId != Guid.Empty)
-                    await Notify("HoaDon", "updated", result.Data.HoaDonId);
-            }
-        }
-
-        return result;
-    }
-
-    [HttpGet("sync")]
-    public async Task<ActionResult<Result<List<ChiTietHoaDonThanhToanDto>>>> Sync(DateTime lastSync)
-    {
-        var list = await _service.GetUpdatedSince(lastSync);
-        return Result<List<ChiTietHoaDonThanhToanDto>>.Success(list);
-    }
-
-
-
-
-
-
-
-
-
-
-
+    // ======================
+    // DELETE BY HOADON
+    // ======================
     [HttpDelete("byHoaDon/{hoaDonId}")]
-    public async Task<IActionResult> DeleteByHoaDon(Guid hoaDonId)
+    public async Task<ActionResult<Result<bool>>> DeleteByHoaDon(Guid hoaDonId)
     {
-        var result = await _service.DeleteByHoaDonAsync(hoaDonId);
+        var list = await _context.ChiTietHoaDonThanhToans
+            .Where(x => x.HoaDonId == hoaDonId)
+            .ToListAsync();
 
-        if (!result.IsSuccess)
-            return BadRequest(result);
+        _context.ChiTietHoaDonThanhToans.RemoveRange(list);
+        await _context.SaveChangesAsync();
 
-        return Ok(result);
+        return Result<bool>.Success(true);
     }
 }

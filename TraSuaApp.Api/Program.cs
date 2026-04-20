@@ -3,10 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TraSuaApp.Api.Hubs;
-using TraSuaApp.Api.Middleware;
-using TraSuaApp.Applicationn.Interfaces;
 using TraSuaApp.Infrastructure;
-using TraSuaApp.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,10 +39,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddMemoryCache();
 
 // 🟟 Đăng ký DI cho services (nếu chưa được AddInfrastructureServices thêm sẵn)
-builder.Services.AddInfrastructureServices();
-builder.Services.AddScoped<JwtTokenService>();
-builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
-
 // Nếu IPhuongThucThanhToanService chưa được đăng ký trong AddInfrastructureServices, mở dòng dưới:
 // builder.Services.AddScoped<IPhuongThucThanhToanService, PhuongThucThanhToanService>();
 
@@ -103,13 +96,16 @@ var app = builder.Build();
 
 // ---------------------- Pipeline ----------------------
 
-app.UseMiddleware<LogMiddleware>();
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/error");
 }
-
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Remove("Transfer-Encoding");
+    await next();
+});
 // ❌ Không dùng HTTPS redirection khi chỉ chạy HTTP
 
 app.UseCors("AllowFrontend");

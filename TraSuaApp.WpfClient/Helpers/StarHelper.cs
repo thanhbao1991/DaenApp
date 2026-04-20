@@ -1,4 +1,4 @@
-﻿namespace TraSuaApp.Shared.Helpers
+﻿namespace TraSuaApp.Infrastructure.Helpers
 {
     public static class StarHelper
     {
