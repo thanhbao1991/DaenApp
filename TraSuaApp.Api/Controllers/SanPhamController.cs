@@ -386,6 +386,7 @@ public class SanPhamController : BaseApiController
                 ;
 
             await NotifyClients("deleted", id);
+            //git
             return result;
         }
         catch (Exception ex)
